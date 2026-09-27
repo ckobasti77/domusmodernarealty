@@ -1,0 +1,728 @@
+{
+  "unsplash": [
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/white-and-brown-living-room-set-9M66C_w_ToM",
+      "url": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6",
+      "author": "Spacejoy",
+      "alt": "Sunlit open-plan living room with grey sofa, leather ottomans and floor-to-ceiling garden windows"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-with-a-couch-and-a-table-fPVWpK85oLk",
+      "url": "https://images.unsplash.com/photo-1699239116624-85268dce7377",
+      "author": "Le Quan",
+      "alt": "Minimalist living room with camel sectional sofa, arched doorway and black round coffee table"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-modern-living-room-with-a-large-window-7NvBEeHDY7M",
+      "url": "https://images.unsplash.com/photo-1682184805271-11671b7ecf4c",
+      "author": "Lumbardh Plluzhina",
+      "alt": "Bright white open-plan living room and kitchen with modular sofa and a large window onto a lakeside view"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/modern-living-room-with-large-windows-and-comfortable-seating-LqGf5UvHCZ8",
+      "url": "https://images.unsplash.com/photo-1757924461488-ef9ad0670978",
+      "author": "Aalo Lens",
+      "alt": "Contemporary living room with marble media wall, wood-panelled accent wall and wide garden windows (3D render)"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-large-window-9if4MIUhYl8",
+      "url": "https://images.unsplash.com/photo-1697947656193-a87d460b5fb5",
+      "author": "Le Quan",
+      "alt": "Modern living room with curved white sofa, sculptural coffee tables and wood-panelled walls"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-modern-living-room-with-a-large-window-vIbxvHj9m9g",
+      "url": "https://images.unsplash.com/photo-1724582586529-62622e50c0b3",
+      "author": "Prydumano Design",
+      "alt": "Calm living room with grey modular sofa, dark shelving and floor-to-ceiling glazing"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-with-a-couch-and-a-table-g_5UyVBIX_k",
+      "url": "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3",
+      "author": "Pipcke",
+      "alt": "Light living room with beige sectional sofa, globe pendant lights and oak floor"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-with-a-couch-and-a-table-9KGB4HspwsM",
+      "url": "https://images.unsplash.com/photo-1653972233229-1b8c042d6d8e",
+      "author": "dada design",
+      "alt": "Airy minimalist living area with tufted grey sofa, polished concrete floor and dining nook"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-kitchen-DS9Xc7AWmwQ",
+      "url": "https://images.unsplash.com/photo-1680416124510-5eae1beca412",
+      "author": "Christian",
+      "alt": "Warmly lit open-plan living room and kitchen at night with city lights through tall windows"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-with-a-large-green-couch-VZ2z8ozzy10",
+      "url": "https://images.unsplash.com/photo-1738168246881-40f35f8aba0a",
+      "author": "Prydumano Design",
+      "alt": "Olive-green sectional sofa in a modern apartment living room with large windows"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/modern-living-room-with-elegant-furniture-and-decor--QCjahEjubY",
+      "url": "https://images.unsplash.com/photo-1758448755952-42b404bc6f39",
+      "author": "Aalo Lens",
+      "alt": "Elegant living room with crystal chandelier, curved white sofa and gold-accented shelving"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-large-window-9kPH5hA-d7U",
+      "url": "https://images.unsplash.com/photo-1713832139688-79676097edde",
+      "author": "MD SHAFAAT HOSSAIN",
+      "alt": "Apartment living room with beige sofa, parquet floor and dining area by tall windows"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/luxurious-modern-living-room-with-large-windows-and-staircase-Ez7fz5mavj0",
+      "url": "https://images.unsplash.com/photo-1776362355123-ca966d36e29c",
+      "author": "Aalo Lens",
+      "alt": "Double-height luxury living room with glass staircase, sculptural chandelier and panoramic windows"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-flat-screen-tv-4-7s995Kv1U",
+      "url": "https://images.unsplash.com/photo-1638454795595-0a0abf68614d",
+      "author": "Lotus Design N Print",
+      "alt": "Art-filled apartment living room with concrete ceiling and floor-to-ceiling city-view windows"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/modern-living-room-with-sectional-sofa-and-large-window-yxO8YG082v8",
+      "url": "https://images.unsplash.com/photo-1758448511322-8bfc73daf606",
+      "author": "Aalo Lens",
+      "alt": "Modern living room with cream sectional sofa, marble TV wall and full-height window"
+    },
+    {
+      "category": "living",
+      "page": "https://unsplash.com/photos/living-room-with-brown-sofa-and-glass-window-4_jQL4JCS98",
+      "url": "https://images.unsplash.com/photo-1600210492493-0946911123ea",
+      "author": "Collov Home Design",
+      "alt": "Corner living room with tan leather sofa under a wood ceiling and wraparound windows onto greenery"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/a-modern-kitchen-with-a-bar-and-stools-vqMQN9zImG4",
+      "url": "https://images.unsplash.com/photo-1632583824020-937ae9564495",
+      "author": "Kam Idris",
+      "alt": "Dark modern kitchen with fluted cabinetry, wood-topped island, green velvet bar stools and a wavy LED pendant"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/a-kitchen-with-a-table-and-chairs-3-GXEUE_sCc",
+      "url": "https://images.unsplash.com/photo-1656402887556-e727ffe1f6d7",
+      "author": "Kam Idris",
+      "alt": "Charcoal handleless kitchen with marble backsplash, dining table, blush velvet chairs and globe chandelier"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/white-and-black-wooden-kitchen-cabinet-JG5cNEhSwvg",
+      "url": "https://images.unsplash.com/photo-1628745277866-0c4468030a81",
+      "author": "Zac Gudakov",
+      "alt": "White handleless kitchen with marble backsplash, induction hob and stainless extractor hood"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/brown-wooden-table-with-chairs-fZ1vlupgdSY",
+      "url": "https://images.unsplash.com/photo-1614597445336-8a67e9314d91",
+      "author": "Steven Ungermann",
+      "alt": "Modern white-and-black kitchen with marble island, built-in ovens and leather bar stools"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/a-modern-kitchen-with-stainless-steel-appliances-and-marble-counter-tops-j6QSUeiW6vo",
+      "url": "https://images.unsplash.com/photo-1639405069836-f82aa6dcb900",
+      "author": "Lotus Design N Print",
+      "alt": "Contemporary grey kitchen with built-in ovens, marble island and induction cooktop"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/modern-kitchen-with-grey-cabinets-RwXneIyqxAw",
+      "url": "https://images.unsplash.com/photo-1602028915047-37269d1a73f7",
+      "author": "Lotus Design N Print",
+      "alt": "Modern kitchen with glossy grey cabinets, white island and three pendant lights"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/modern-white-kitchen-with-marble-island-GliaHAJ3_5A",
+      "url": "https://images.unsplash.com/photo-1556911220-bff31c812dba",
+      "author": "Jason Briscoe",
+      "alt": "White kitchen with marble island styled with lemons, herbs and cookware"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/white-wooden-kitchen-cabinet-with-stainless-steel-faucet-ik9WP2V8Vas",
+      "url": "https://images.unsplash.com/photo-1600122272511-c85c3a0209f9",
+      "author": "Lotus Design N Print",
+      "alt": "Wood and grey kitchen with concrete-look island, open wine shelving and track lights"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/a-kitchen-with-a-refrigerator-freezer-sitting-next-to-a-counter-KYM5QsbRsxk",
+      "url": "https://images.unsplash.com/photo-1715985160053-d339e8b6eb94",
+      "author": "Gerda Kauks",
+      "alt": "Open-plan kitchen with white waterfall island, bar stools and stainless fridge beside the living area"
+    },
+    {
+      "category": "kitchen",
+      "page": "https://unsplash.com/photos/round-white-wooden-table-near-kitchen-island-MyeOnGcibCQ",
+      "url": "https://images.unsplash.com/photo-1512914890251-2f96a9b0bbe2",
+      "author": "Frames For Your Heart",
+      "alt": "Black glossy kitchen island with induction hob and stainless hood looking into a bright living space"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/a-bedroom-with-a-bed-and-a-chair-ErDrzSvSNv4",
+      "url": "https://images.unsplash.com/photo-1696762932825-2737db830bbe",
+      "author": "Le Quan",
+      "alt": "Modern bedroom with wood-panelled headboard wall, charcoal bedding and a lounge chair"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/modern-bedroom-with-wooden-accents-and-soft-lighting-u-RIsXlI8Q8",
+      "url": "https://images.unsplash.com/photo-1757344454333-cc666252e596",
+      "author": "POOJAN THANEKAR",
+      "alt": "Warm modern bedroom with walnut wardrobe, lit display niches and upholstered bed"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/a-large-bed-sitting-in-a-bedroom-next-to-a-chair-YmtlGsmTcgk",
+      "url": "https://images.unsplash.com/photo-1654064550858-c62b971a378a",
+      "author": "dada design",
+      "alt": "Soft neutral bedroom with upholstered bed, oval floor mirror and boucle armchair"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/a-bedroom-with-a-large-bed-and-a-large-window-k6CwSTSuOaw",
+      "url": "https://images.unsplash.com/photo-1653974123568-b5eff6d851e1",
+      "author": "dada design",
+      "alt": "Light bedroom with oak wall panelling, upholstered bed and sheer-curtained window"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/a-bedroom-with-a-large-bed-and-a-chair-vz9IbCAXHKQ",
+      "url": "https://images.unsplash.com/photo-1644057501622-dfa7dd26dbfb",
+      "author": "Ali Moradi",
+      "alt": "Dark luxurious bedroom with black panelled walls, grey upholstered bed and ring wall light"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/gray-bed-in-bedroom-R5v8Xtc0ecg",
+      "url": "https://images.unsplash.com/photo-1562438668-bcf0ca6578f0",
+      "author": "刘 强",
+      "alt": "Minimal hotel-style bedroom with grey bed, bench and glass-walled walk-in wardrobe"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/white-bed-near-glass-window-zrJ7GEmUknc",
+      "url": "https://images.unsplash.com/photo-1630427999287-692ff825c9d1",
+      "author": "Chet Yeary II",
+      "alt": "Bedroom with floor-to-ceiling windows, lounge chair and golden sunset light"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/white-bed-linen-on-bed-7jlVQPX8PLE",
+      "url": "https://images.unsplash.com/photo-1595526051245-4506e0005bd0",
+      "author": "Lotus Design N Print",
+      "alt": "Bright bedroom with charcoal tufted headboard, white bedding and LED wall light"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/a-bedroom-with-a-white-bed-and-a-wooden-headboard-WWYF8Lts8Ho",
+      "url": "https://images.unsplash.com/photo-1731336478850-6bce7235e320",
+      "author": "Antonio Araujo",
+      "alt": "Bedroom with a sculptural wooden headboard wall, white bedding and a desk by the window"
+    },
+    {
+      "category": "bedroom",
+      "page": "https://unsplash.com/photos/a-bedroom-with-a-large-bed-and-a-chair-anLoz4xfC8c",
+      "url": "https://images.unsplash.com/photo-1699800900071-ae073285ca02",
+      "author": "Le Quan",
+      "alt": "Moody modern bedroom with textured grey walls, circular wall art and blush upholstered bench (3D render)"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/white-ceramic-bathtub-near-green-potted-plant-Aac7IlKnYX8",
+      "url": "https://images.unsplash.com/photo-1620626011761-996317b8d101",
+      "author": "Steven Ungermann",
+      "alt": "White bathroom with freestanding tub, vessel basin and potted palm"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/white-ceramic-bathtub-PibraWHb4h8",
+      "url": "https://images.unsplash.com/photo-1507652313519-d4e9174996dd",
+      "author": "Jared Rice",
+      "alt": "Spa-like bathroom with freestanding stone tub, textured wall and palm on a pebble bed"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/a-bathroom-with-a-tub-sink-and-large-window-N03PjHWOEFA",
+      "url": "https://images.unsplash.com/photo-1733426107854-ee00a25d72a7",
+      "author": "Murad Kerimli",
+      "alt": "Bright bathroom with freestanding tub, walnut wall panel, walk-in shower and large window"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/a-bathroom-with-a-large-white-bathtub-next-to-a-walk-in-shower-Dk_o7KQyGkI",
+      "url": "https://images.unsplash.com/photo-1638799869566-b17fa794c4de",
+      "author": "Lotus Design N Print",
+      "alt": "Marble bathroom with freestanding tub, frameless glass shower and floating walnut vanity"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/a-bathroom-with-a-glass-shower-yH1k2Qp86Tk",
+      "url": "https://images.unsplash.com/photo-1651951646668-46562cfb4518",
+      "author": "Mohammad Najjar",
+      "alt": "Dark modern bathroom with glass walk-in shower, stone vanity and backlit mirror"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/a-bathroom-with-a-large-bathtub-next-to-a-toilet-BfVqm3io8uE",
+      "url": "https://images.unsplash.com/photo-1721825157088-1cf9e64ddba5",
+      "author": "Alex Tyson",
+      "alt": "Concrete-look bathroom with bathtub, black-framed shower screen and wall-hung toilet"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/a-bathroom-with-a-toilet-sink-and-bathtub-L4iRkKL5dng",
+      "url": "https://images.unsplash.com/photo-1631889993959-41b4e9c6e3c5",
+      "author": "Backbone",
+      "alt": "Modern bathroom with oak slat wall, built-in bathtub and floating white vanity"
+    },
+    {
+      "category": "bathroom",
+      "page": "https://unsplash.com/photos/modern-bathroom-design-with-elegant-lighting-lXHnEe5AGVo",
+      "url": "https://images.unsplash.com/photo-1742134131017-44d377a611b1",
+      "author": "POOJAN THANEKAR",
+      "alt": "Luxury bathroom with veined stone shower wall, lit niches and backlit mirror"
+    },
+    {
+      "category": "dining",
+      "page": "https://unsplash.com/photos/a-dining-room-with-a-table-and-chairs-aYjdg6wZrOU",
+      "url": "https://images.unsplash.com/photo-1723750290151-164cb19ebab7",
+      "author": "Clay Banks",
+      "alt": "Bright dining room with black oval table, wishbone chairs and tall forest-view windows"
+    },
+    {
+      "category": "dining",
+      "page": "https://unsplash.com/photos/modern-dining-room-with-table-chairs-and-kitchen-urH155LONWs",
+      "url": "https://images.unsplash.com/photo-1745794621090-d856c53b0cc2",
+      "author": "Clay Banks",
+      "alt": "Scandinavian-style dining area with walnut table, mid-century chairs and open kitchen"
+    },
+    {
+      "category": "dining",
+      "page": "https://unsplash.com/photos/a-dining-room-table-with-chairs-around-it-fE3kcMhB1oc",
+      "url": "https://images.unsplash.com/photo-1658280024253-34cafdfbb002",
+      "author": "Rebecca Chandler",
+      "alt": "Long dining table with grey upholstered chairs beside sheer curtains and a pool terrace"
+    },
+    {
+      "category": "dining",
+      "page": "https://unsplash.com/photos/white-round-table-with-chairs-SByfd_e-s2c",
+      "url": "https://images.unsplash.com/photo-1629236714868-9e43db5bd7c3",
+      "author": "Infinite Views",
+      "alt": "Round marble dining table with grey chairs, globe pendant and a balcony city view"
+    },
+    {
+      "category": "office",
+      "page": "https://unsplash.com/photos/black-and-brown-wooden-table-near-blue-padded-chair-EJSNrTzz6xk",
+      "url": "https://images.unsplash.com/photo-1595846723416-99a641e1231a",
+      "author": "Gian Paolo Aliatis",
+      "alt": "Study with walnut desk, teal velvet armchairs and marble coffee table"
+    },
+    {
+      "category": "office",
+      "page": "https://unsplash.com/photos/bright-room-with-bookshelves-and-two-desks-by-windows-Mb-lGau6K5U",
+      "url": "https://images.unsplash.com/photo-1777896193454-8b4863264f0b",
+      "author": "Clay Banks",
+      "alt": "Sunny study with a long desk beneath a row of windows and built-in bookshelves"
+    },
+    {
+      "category": "office",
+      "page": "https://unsplash.com/photos/elegant-library-room-featuring-a-large-bookshelf-and-two-sofas-Xfa7Pte_7YU",
+      "url": "https://images.unsplash.com/photo-1782248765552-e80331b41abe",
+      "author": "Lina Bob",
+      "alt": "Library lounge with floor-to-ceiling bookcase, two cream sofas and table lamps"
+    },
+    {
+      "category": "office",
+      "page": "https://unsplash.com/photos/a-home-office-with-a-desk-chair-and-computer-1T3Ng46czSw",
+      "url": "https://images.unsplash.com/photo-1641998148499-cb6b55a3c0d3",
+      "author": "Lotus Design N Print",
+      "alt": "Modern home office with sit-stand desk, dual monitors, leather lounge chair and console table"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/two-brown-wicker-armchairs-D7a8yW1MxQM",
+      "url": "https://images.unsplash.com/photo-1560448205-d82bf18b9bcf",
+      "author": "Francesca Tosolini",
+      "alt": "Balcony with wicker armchairs and planters overlooking rooftops and a lake"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/an-open-window-with-a-view-of-a-body-of-water-uH8GHfmgS3Y",
+      "url": "https://images.unsplash.com/photo-1696854649609-1fd6e5abf87f",
+      "author": "Bjorn Agerbeek",
+      "alt": "Open French window with wrought-iron balcony overlooking a sea bay and pines (Portofino)"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/a-building-with-a-body-of-water-in-the-background-aOjx_n__SKs",
+      "url": "https://images.unsplash.com/photo-1658048806266-f793f1f8c7c6",
+      "author": "Karl Hedin",
+      "alt": "Cosy lit balcony with fringed parasol above a lake at dusk"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/modern-balcony-with-city-view-and-hanging-chair-iqGUN6GIl78",
+      "url": "https://images.unsplash.com/photo-1776363116182-51694a04a1d5",
+      "author": "Aalo Lens",
+      "alt": "Modern balcony with hanging egg chair, lounge seating and city skyline at sunset (3D render)"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/a-rooftop-terrace-overlooking-a-building-with-a-green-roof-wuhwDJauICs",
+      "url": "https://images.unsplash.com/photo-1785486249823-02fbb298c918",
+      "author": "Omar Hakeem",
+      "alt": "Rooftop terrace with bench overlooking the city and a building with a planted roof"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/a-modern-rooftop-garden-with-planters-path-and-wooden-pergola-IFKgs02kdQ0",
+      "url": "https://images.unsplash.com/photo-1784878281083-58f3f8e6d5ab",
+      "author": "HANS-Y",
+      "alt": "Landscaped rooftop garden with planters, paved path and wooden pergola (Vienna)"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/a-table-and-chairs-on-a-balcony-overlooking-the-ocean-CU96aTBRQIg",
+      "url": "https://images.unsplash.com/photo-1714919286244-6f3f6cce6e65",
+      "author": "Romina Denti",
+      "alt": "Wrought-iron balcony table and chairs overlooking a Mediterranean harbour"
+    },
+    {
+      "category": "terrace",
+      "page": "https://unsplash.com/photos/modern-rooftop-patio-with-seating-and-a-tree-k1hCHacaUu0",
+      "url": "https://images.unsplash.com/photo-1776363284806-873eeef565a7",
+      "author": "Aalo Lens",
+      "alt": "Penthouse roof terrace with concrete frame, lounge furniture and a tree at dusk (3D render)"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/black-and-white-cocnrete-building-low-angle-photography-koH7IVuwRLw",
+      "url": "https://images.unsplash.com/photo-1515263487990-61b07816b324",
+      "author": "Luke van Zyl",
+      "alt": "Contemporary black-and-white apartment building with glazed corner balconies"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/apartment-building-reflecting-pink-sky-4453DIQWtsQ",
+      "url": "https://images.unsplash.com/photo-1624204386084-dd8c05e32226",
+      "author": "Tobias Wilden",
+      "alt": "Modern apartment tower with glass balconies against a pink evening sky"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/a-building-with-a-blue-sky-myCgLguuFzo",
+      "url": "https://images.unsplash.com/photo-1664813953897-ada06817c48c",
+      "author": "Burak Arslan",
+      "alt": "White residential building with stacked balconies, Berlin-Mitte"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/a-building-with-balconies-and-windows-uUzBpVxuxf0",
+      "url": "https://images.unsplash.com/photo-1664813954641-1ffcb7b55fd1",
+      "author": "Burak Arslan",
+      "alt": "Curved limestone apartment building with balconies, Berlin-Mitte"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/a-tall-brick-building-with-balconies-and-balconies-JIOlbLYmWlk",
+      "url": "https://images.unsplash.com/photo-1676680071181-0a0b45968d23",
+      "author": "Seb Doe",
+      "alt": "Dark brick apartment block with recessed balconies, London"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/black-and-white-modern-building-with-curved-glass-balconies-tA1O2mGZVKs",
+      "url": "https://images.unsplash.com/photo-1785606144879-6bc2e980e5a1",
+      "author": "Heng Chiu",
+      "alt": "Black-and-white detail of a modern building with curved glass balconies"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/beautiful-parisian-apartment-buildings-under-a-cloudy-sky-JcbUM1vhf1w",
+      "url": "https://images.unsplash.com/photo-1752887634231-5b3c6cb0d404",
+      "author": "Wyatt Simpson",
+      "alt": "Haussmann-style Parisian apartment buildings with wrought-iron balconies"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/modern-building-facade-with-concrete-wall-cjRJpduMgWU",
+      "url": "https://images.unsplash.com/photo-1787059501730-b3ec5ada19f6",
+      "author": "Richard Williams",
+      "alt": "Modern facade with glass balconies beside a weathered concrete wall"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/gray-concrete-building-near-green-grass-field-during-daytime-48Umuknbw08",
+      "url": "https://images.unsplash.com/photo-1624524799657-465e72edbcda",
+      "author": "Tomasz Dzioch",
+      "alt": "Terraced modern residential complex with stone cladding and lawns"
+    },
+    {
+      "category": "building",
+      "page": "https://unsplash.com/photos/a-white-building-with-a-railing-TgEoxRAVqwg",
+      "url": "https://images.unsplash.com/photo-1664813953289-7c3350f040e0",
+      "author": "Burak Arslan",
+      "alt": "Minimal white residential building corner with roof-terrace railing, Berlin"
+    },
+    {
+      "category": "villa",
+      "page": "https://unsplash.com/photos/modern-white-villa-with-swimming-pool-Id7u0EkTjBE",
+      "url": "https://images.unsplash.com/photo-1613977257363-707ba9348227",
+      "author": "John Fornander",
+      "alt": "Modern white villa with swimming pool, lounge terrace and floor-to-ceiling glazing"
+    },
+    {
+      "category": "villa",
+      "page": "https://unsplash.com/photos/white-and-brown-concrete-building-hHz4yrvxwlA",
+      "url": "https://images.unsplash.com/photo-1613490493576-7fde63acd811",
+      "author": "Avi Werde",
+      "alt": "Contemporary white villa with timber soffit and long pool"
+    },
+    {
+      "category": "villa",
+      "page": "https://unsplash.com/photos/modern-house-exterior-glows-with-lights-4vioYQ9Nn9Y",
+      "url": "https://images.unsplash.com/photo-1748063578185-3d68121b11ff",
+      "author": "Arthur BAUDRY",
+      "alt": "Modern two-storey house with glowing glazing and timber-lined upper level at dusk"
+    },
+    {
+      "category": "villa",
+      "page": "https://unsplash.com/photos/white-concrete-building-under-blue-sky-during-daytime-mR1CIDduGLc",
+      "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9",
+      "author": "Frames For Your Heart",
+      "alt": "White modern villa with roof terrace and swimming pool, Villamartin, Spain"
+    },
+    {
+      "category": "villa",
+      "page": "https://unsplash.com/photos/modern-house-with-pool-and-patio-b_79nOqf95I",
+      "url": "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf",
+      "author": "Florian Schmidinger",
+      "alt": "Glass-walled modern house with flat roof overhang beside a swimming pool"
+    },
+    {
+      "category": "villa",
+      "page": "https://unsplash.com/photos/modern-house-with-large-windows-and-a-green-lawn-d2hYqpR0YS0",
+      "url": "https://images.unsplash.com/photo-1766603636700-e9d80473f40f",
+      "author": "Alef Morais",
+      "alt": "Modern house with timber and stone facade, large windows and lawn"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/a-statue-of-a-man-standing-on-top-of-a-tower-Wa9gkmHOTf8",
+      "url": "https://images.unsplash.com/photo-1632343084107-353ad9e95e37",
+      "author": "Dimitrije Milenkovic",
+      "alt": "Pobednik (Victor) monument at Kalemegdan above the Sava-Danube confluence, Belgrade"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/an-aerial-view-of-a-city-with-a-castle-XP1ozWBIPb8",
+      "url": "https://images.unsplash.com/photo-1632343084054-5b108ffb8be3",
+      "author": "Dimitrije Milenkovic",
+      "alt": "Aerial view of Belgrade Fortress walls and Kalemegdan park"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/gray-stone-castle-J68ApjRXz1U",
+      "url": "https://images.unsplash.com/photo-1568234942177-2b37de78f6da",
+      "author": "Evgeny Smirnov",
+      "alt": "Stone gate towers and wooden bridge at Belgrade Fortress (Kalemegdan)"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/a-harbor-with-boats-and-a-city-in-the-background-TbhkJftacjc",
+      "url": "https://images.unsplash.com/photo-1727105538592-3074729d8abc",
+      "author": "Maria Ivanova",
+      "alt": "Sava riverfront with moored boats below Belgrade's old town and cathedral spire"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/an-aerial-view-of-a-bridge-over-a-river-PASnLl9Jmbw",
+      "url": "https://images.unsplash.com/photo-1706480228561-6e6ba0b5a44b",
+      "author": "Anton Lukin",
+      "alt": "Aerial view of the Ada Bridge pylon over the Sava river, Belgrade"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/a-city-at-night-with-a-bridge-over-water-CJrsTBcWcWM",
+      "url": "https://images.unsplash.com/photo-1711970908551-6bb1f39377b5",
+      "author": "Nikola Tasic",
+      "alt": "Belgrade Waterfront towers and an arched bridge reflected in the Sava at night"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/a-river-running-through-a-city-next-to-tall-buildings-3KP0-psxaYY",
+      "url": "https://images.unsplash.com/photo-1708253832369-ce7e621df31a",
+      "author": "Anton Lukin",
+      "alt": "Sava river with Belgrade Waterfront residential towers and Belgrade Tower, Savski Venac"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/aerial-view-of-city-buildings-during-daytime-t0sXKOz9qtk",
+      "url": "https://images.unsplash.com/photo-1608816747977-4d303f476571",
+      "author": "Nikola Cirkovic",
+      "alt": "Aerial view of the red-tiled rooftops of Zemun above the Danube, Belgrade"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/a-large-white-building-with-a-green-dome-X4ld3qM0PcM",
+      "url": "https://images.unsplash.com/photo-1643285677419-986d88603216",
+      "author": "Lazar Krstić",
+      "alt": "Temple of Saint Sava dome above snowy rooftops, Belgrade"
+    },
+    {
+      "category": "belgrade",
+      "page": "https://unsplash.com/photos/a-group-of-buildings-v-0OAOiULfk",
+      "url": "https://images.unsplash.com/photo-1655245934655-bde35a9dae80",
+      "author": "Mirko Božić",
+      "alt": "Ornate historic facades and a street lamp in central Belgrade"
+    },
+    {
+      "category": "novisad",
+      "page": "https://unsplash.com/photos/brown-concrete-building-near-body-of-water-during-daytime-1V5YCyhC4W0",
+      "url": "https://images.unsplash.com/photo-1630137294649-ab67a2c9891c",
+      "author": "Stefan Kostić",
+      "alt": "Petrovaradin Fortress above the Danube, Novi Sad"
+    },
+    {
+      "category": "novisad",
+      "page": "https://unsplash.com/photos/the-sun-is-setting-over-a-city-with-tall-buildings-2iZuC-LK7EQ",
+      "url": "https://images.unsplash.com/photo-1635183529733-df2fc30650be",
+      "author": "Nikola Johnny Mirkovic",
+      "alt": "Sunset over Novi Sad old-town rooftops and the Name of Mary Church spire"
+    },
+    {
+      "category": "novisad",
+      "page": "https://unsplash.com/photos/the-sun-is-setting-over-a-river-with-purple-flowers-in-the-foreground-Wocu01-O6Fw",
+      "url": "https://images.unsplash.com/photo-1652987044170-523d5858e559",
+      "author": "Nemanja Ćirić",
+      "alt": "Arched Danube bridge at sunset with wildflowers in the foreground, Novi Sad"
+    },
+    {
+      "category": "novisad",
+      "page": "https://unsplash.com/photos/bridge-over-river-during-sunset-k7vQnFkVz4o",
+      "url": "https://images.unsplash.com/photo-1579981596048-b9ba73dc0091",
+      "author": "Nikola Rakic",
+      "alt": "Danube bridge and the Novi Sad skyline under a dramatic dusk sky"
+    }
+  ],
+  "panoramas": [
+    {
+      "id": "glasshouse_interior",
+      "page": "https://polyhaven.com/a/glasshouse_interior",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/glasshouse_interior.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "brown_photostudio_04",
+      "page": "https://polyhaven.com/a/brown_photostudio_04",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/brown_photostudio_04.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "brown_photostudio_02",
+      "page": "https://polyhaven.com/a/brown_photostudio_02",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/brown_photostudio_02.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "relax_inn_seaview_suite",
+      "page": "https://polyhaven.com/a/relax_inn_seaview_suite",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/relax_inn_seaview_suite.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "modern_bathroom",
+      "page": "https://polyhaven.com/a/modern_bathroom",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/modern_bathroom.jpg",
+      "license": "CC0"
+    },
+    {
+      "id": "photo_studio_loft_hall",
+      "page": "https://polyhaven.com/a/photo_studio_loft_hall",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/photo_studio_loft_hall.jpg",
+      "license": "CC0"
+    }
+  ],
+  "splats": [
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/9d370db9/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Modern dining/reading room with long oak table, walnut wall panels and framed photo wall. 'Reading Room (No Lidar, Only Photos)' by ethan3111 on SuperSplat, https://superspl.at/scene/9d370db9 (real photo capture (Insta360 Ace Pro 2, MipMap Desktop)); 5.72M splats, ~65.7 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/9917211a/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Open-plan living room with sofa, dining table and kitchen on herringbone floor. 'Living Room and Kitchen' by ethan3111 on SuperSplat, https://superspl.at/scene/9917211a (reconstructed with MipMap Desktop); 3.85M splats, ~43.1 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/ef3837bd/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Bedroom with double bed, framed paintings and wooden shelving. 'Bedroom' by ethan3111 on SuperSplat, https://superspl.at/scene/ef3837bd (synthetic: trained from captures of an Unreal Engine scene (per description)); 4.36M splats, ~49.8 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/4de797f4/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Empty white Haussmann-style room with herringbone parquet and three French windows. 'HAUSSMANN APARTMENT' by sa3d on SuperSplat, https://superspl.at/scene/4de797f4 (synthetic: 3ds Max/Corona renders (per description)); 3.00M splats, ~43.6 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/c37cb759/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Bright modern studio-apartment living area with sofa, lounge chair and large windows. 'Studio 11' by milanoski on SuperSplat, https://superspl.at/scene/c37cb759 (synthetic: UE5 scene via Unreal-to-COLMAP + LichtFeld Studio (per description)); 5.00M splats, ~57.3 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/1a55cdea/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Modern apartment living room with sectional sofa, zebra rug and sheer curtains. 'Apartment 07' by milanoski on SuperSplat, https://superspl.at/scene/1a55cdea (synthetic: UE5 scene via Unreal-to-COLMAP + LichtFeld Studio (per description)); 5.00M splats, ~67.4 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://d28zzqy0iyovbz.cloudfront.net/1e56ea8e/v1/meta.json",
+      "format": "sog",
+      "license": "CC BY 4.0",
+      "desc": "Studio-apartment kitchen/dining corner with black cabinets, brick wall and wall clock (SH degree 3). 'Apartment_SH3' by milanoski on SuperSplat, https://superspl.at/scene/1e56ea8e (synthetic: UE5 scene via Unreal-to-COLMAP + LichtFeld Studio (per description)); 5.00M splats, ~66.0 MB total (SOG v2: meta.json + WebP textures in same folder); attribution required"
+    },
+    {
+      "url": "https://storage.googleapis.com/forge-dev-public/painted_bedroom.spz",
+      "format": "spz",
+      "license": "Unspecified - World Labs-hosted asset loaded by Spark's MIT-licensed 'Interactive Holes' example; no license stated (prototyping only)",
+      "desc": "Stylised hand-painted-look fantasy bedroom (round window, bed with green blanket, plants); 500k splats, 7.8 MB"
+    },
+    {
+      "url": "https://storage.googleapis.com/forge-dev-public/marble-scenes/greyscale-room.spz",
+      "format": "spz",
+      "license": "Unspecified - World Labs-hosted asset loaded by Spark's MIT-licensed 'Splat Painter' example; no license stated (prototyping only)",
+      "desc": "Greyscale classic French-style bedroom (panelled walls, tall windows, paintings, bed) used as a colouring canvas; 2.0M splats, 30.7 MB"
+    }
+  ]
+}

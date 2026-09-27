@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "convex/_generated/**",
+    "night-run/**",
+    ".claude/**",
+    ".agents/**",
+    ".shots/**",
+    "public/maplibre/**",
   ]),
 ]);
 

@@ -6,9 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "typegen": "next typegen",
+    "convex:once": "convex dev --once",
+    "verify": "npm run convex:once && npm run typegen && npm run typecheck && npm run lint && npm run build",
+    "shots": "node scripts/shots.mjs"
   },
   "dependencies": {
+    "convex": "^1.46.0",
     "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8"

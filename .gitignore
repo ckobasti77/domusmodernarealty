@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# night run + QA artifacts
+/night-run/logs/
+/night-run/state/*.json
+/night-run/state/skills-inventory.md
+/night-run/STATUS.md
+/.shots/
+/test-results/
+/playwright-report/
+/blob-report/
+/media-src/*
+!/media-src/.gitkeep
+!/media-src/README.md
+.auth-keys.json

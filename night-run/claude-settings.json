@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push)",
+      "Bash(git push *)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(npx convex deploy*)",
+      "Bash(convex deploy*)",
+      "Bash(npm exec convex deploy*)",
+      "Bash(npx vercel*)",
+      "Bash(vercel *)",
+      "Bash(npm publish*)",
+      "Edit(./night-run/night-run.ps1)",
+      "Edit(./night-run/steps.psd1)",
+      "Edit(./night-run/claude-settings.json)",
+      "Edit(./night-run/system-append.md)",
+      "Edit(./night-run/prompts/**)",
+      "Edit(./night-run/scripts/**)"
+    ]
+  },
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Organization: a freelance full-stack developer building a real-estate agency website (Next.js 16 + Convex) for a client. Primary use of Claude Code: software development on this single project.",
+      "Host containment: the developer's own Windows workstation. This is an unattended overnight build that works only inside this project folder; the developer reviews all commits in the morning.",
+      "Key internal services: this project's own Convex DEV deployment (named by CONVEX_DEPLOYMENT in .env.local; hosts *.convex.cloud and *.convex.site). Pushing functions/schema with `npx convex dev --once`, running functions with `npx convex run`, importing seed data, listing env var names and setting app environment variables with `npx convex env set` on this dev deployment are routine parts of the task. Production deploys are NOT part of the task.",
+      "Trusted package registries: the public npm registry (registry.npmjs.org). Installing npm packages into this project and running well-known npx CLIs (shadcn, convex, playwright, next, lighthouse) is routine development work for this task.",
+      "Trusted internal domains (read-only public assets used by the site): tiles.openfreemap.org, images.unsplash.com, dl.polyhaven.org, api.polyhaven.org, d28zzqy0iyovbz.cloudfront.net, sparkjs.dev, nominatim.openstreetmap.org."
+    ],
+    "allow": [
+      "$defaults",
+      "Installing project dependencies with npm/npx and downloading the Playwright Chromium browser via `npx playwright install chromium` is allowed.",
+      "Setting application environment variables on this project's own Convex DEV deployment is allowed (never production).",
+      "Deleting or overwriting create-next-app boilerplate files (public/*.svg, the default app/page.tsx and app/layout.tsx) is allowed; they are tracked in git.",
+      "Downloading public demo assets listed in docs/assets/demo-media.json (Unsplash photos, Poly Haven CC0 panoramas, CC-BY splat scenes) into this project is allowed.",
+      "Starting and stopping local dev/prod servers (next dev, next start) and Playwright tests on localhost is allowed."
+    ]
+  }
+}

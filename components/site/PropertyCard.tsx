@@ -125,7 +125,12 @@ export function PropertyCard({
       </div>
 
       <div className="mt-5 flex flex-col gap-3">
-        <h3 id={`card-title-${listing._id}`} className="font-display text-h3 font-normal">
+        {/* Two lines reserved and clamped, so cards in a row keep their prices,
+            meta rows and references on the same baselines. */}
+        <h3
+          id={`card-title-${listing._id}`}
+          className="line-clamp-2 min-h-[2lh] font-display text-h3 font-normal"
+        >
           <Link
             href={{ pathname: "/properties/[slug]", params: { slug: listing.slug } }}
             prefetch={false}
@@ -262,6 +267,7 @@ function Gallery({
                 aria-label={single ? undefined : `${i + 1} / ${frames.length}`}
               >
                 <Image
+                  data-card-image=""
                   src={frame.url}
                   alt={frameAlt.text}
                   fill

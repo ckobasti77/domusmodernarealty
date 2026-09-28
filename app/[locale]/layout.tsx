@@ -14,6 +14,10 @@ import { SkipLink } from "@/components/site/SkipLink";
 import { htmlLang, locales, routing } from "@/i18n/routing";
 import "@/app/globals.css";
 
+/** Resting states for everything the motion layer starts hidden. */
+const NO_SCRIPT_CSS =
+  "[data-hero-reveal],[data-split]{opacity:1!important}[data-image-reveal]{clip-path:none!important}";
+
 export const viewport: Viewport = {
   themeColor: "#0e0d0b",
   colorScheme: "light",
@@ -60,8 +64,12 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
   const messages = await getMessages({ locale });
 
   return (
-    <html lang={htmlLang[locale]} className={fontVariables}>
+    // The preloader gate script writes `data-intro` onto <html> before React
+    // hydrates it, so the attribute is expected to differ from the server tree.
+    <html lang={htmlLang[locale]} className={fontVariables} suppressHydrationWarning>
       <body>
+        {/* Without JavaScript nothing may stay in its pre-animation state. */}
+        <noscript dangerouslySetInnerHTML={{ __html: `<style>${NO_SCRIPT_CSS}</style>` }} />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ConvexClientProvider>
             <SmoothScroll>

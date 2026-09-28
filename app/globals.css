@@ -328,3 +328,90 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   First-visit preloader (DESIGN §6.1), see components/motion/Preloader.tsx.
+   The gate script writes `<html data-intro="play|skip">` before the curtain is
+   parsed; without it (no JS, reduced motion, a repeat visit) the curtain never
+   renders at all. Timings: wordmark rise 0-0.8s, hairline 0.1-0.8s, curtain
+   lift 0.85-1.75s on expo.inOut. Keep LIFT_AT_MS / DONE_AT_MS in sync.
+--------------------------------------------------------------------------- */
+[data-preloader] {
+  display: none;
+}
+
+html[data-intro="play"] [data-preloader] {
+  display: flex;
+  animation:
+    me-preloader-lift 0.9s cubic-bezier(0.87, 0, 0.13, 1) 0.85s both,
+    me-preloader-done 0s linear 1.75s both;
+}
+
+html[data-intro="play"] [data-preloader-mark] {
+  animation: me-preloader-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html[data-intro="play"] [data-preloader-rule] {
+  animation: me-preloader-rule 0.7s linear 0.1s both;
+}
+
+@keyframes me-preloader-rise {
+  from {
+    transform: translateY(110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes me-preloader-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes me-preloader-lift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes me-preloader-done {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Landing entrance. The hero's text starts from these states so nothing is
+   painted and then yanked back when GSAP takes over at hydration. Only when
+   motion is allowed: a reduced-motion visitor gets the finished hero on the
+   first paint, and the <noscript> rule in the locale layout covers no-JS.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-hero-reveal] {
+    opacity: 0;
+  }
+}
+
+/* The hero's scroll cue: a short bronze segment travelling down a hairline.
+   CSS, not GSAP — it is ambient, and the global reduced-motion rule stops it. */
+@keyframes me-scroll-cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  60%,
+  100% {
+    transform: translateY(250%);
+  }
+}
+
+.scroll-cue-line {
+  animation: me-scroll-cue 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}

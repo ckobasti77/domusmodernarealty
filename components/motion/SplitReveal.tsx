@@ -114,7 +114,7 @@ export function SplitReveal({
       <span className="sr-only">{content}</span>
       {/* The animated copy starts invisible so the un-split text never flashes
           before the fonts resolve; every matchMedia branch sets it to 1. */}
-      <span ref={root} aria-hidden="true" className="block opacity-0">
+      <span ref={root} data-split="" aria-hidden="true" className="block opacity-0">
         {content}
       </span>
     </Tag>

@@ -1,39 +1,43 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { gsap, MOTION_QUERIES, useGSAP } from "@/components/motion/gsap";
+import { contextSafeFn, gsap, MOTION_QUERIES, SplitText, useGSAP } from "@/components/motion/gsap";
+import { onIntroReveal } from "@/components/motion/intro";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import type { MediaImage, MediaVideo } from "@/lib/media";
-import { mediaSrcSet } from "@/lib/media";
+import type { MediaVideo, ResponsiveImage } from "@/lib/media";
 
 /**
- * The hero stage (DESIGN §6.2): full-bleed media behind the headline, a scrim
- * that deepens as the page scrolls, and content that drifts up slower than the
- * background.
+ * The hero stage (DESIGN §6.2): full-bleed media, a scrim that deepens as the
+ * page scrolls, and the entrance of the server-rendered copy it wraps.
  *
- * Performance shape, in the order the browser sees it:
- *  1. the poster `<img>` is server-rendered with `fetchPriority="high"` and is
- *     the LCP element (the parent server component also calls `preload()`);
- *  2. nothing else is requested until `load` has fired — only then is the
- *     `<video>` mounted, with `preload="metadata"`, and it cross-fades in when
- *     it can actually play, so a slow connection simply keeps the still;
- *  3. the video is paused whenever the hero leaves the viewport.
+ * Load order, which is what keeps the poster the LCP element:
+ *  1. the poster `<img>` is in the server HTML with `fetchPriority="high"`
+ *     (and preloaded by the page), art-directed to the 9:16 render on phones;
+ *  2. the `<video>` is mounted only after `load`, with `preload="metadata"`,
+ *     and cross-fades in once it is actually playing — its first frame is the
+ *     poster, so the hand-off is invisible;
+ *  3. it pauses whenever the hero leaves the viewport.
+ * Phones, data-saver connections and reduced motion keep the still. A still
+ * carries the shot on its own with a slow Ken Burns (1.12 → 1 over 12s), so a
+ * missing `hero.mp4` degrades to exactly the design's fallback.
  *
- * If no hero video was delivered, the poster gets the Ken Burns treatment
- * instead (scale 1.12 → 1 over 12s with a small drift) — so dropping
- * `hero.mp4` into `media-src/` and re-running `npm run media:optimize` upgrades
- * the hero with no code change.
+ * The copy is marked up by the server: `[data-hero-reveal]` elements start
+ * transparent (globals.css, only when motion is allowed) and `[data-hero-title]`
+ * is the headline that is split into masked lines. The entrance waits for the
+ * preloader's curtain (`onIntroReveal`), so the hero is already moving when the
+ * curtain lifts.
  */
 
 export type HeroStageProps = {
-  /** Landscape poster. Also the LCP element. */
-  poster: MediaImage;
-  /** 9:16 art-directed poster for phones, when one was delivered. */
-  posterMobile: MediaImage | null;
+  poster: ResponsiveImage;
+  /** Portrait art direction below 768px, when one was delivered. */
+  posterMobile: ResponsiveImage | null;
   video: MediaVideo | null;
   alt: string;
   children: ReactNode;
 };
+
+const PHONE = "(max-width: 767px)";
 
 /** `navigator.connection` is still not in lib.dom. */
 type SaveDataConnection = { saveData?: boolean };
@@ -43,6 +47,14 @@ function prefersLightPayload(): boolean {
   return connection?.saveData === true;
 }
 
+/** Resolves when the webfonts are in, but never waits longer than `ms`. */
+function fontsReady(ms: number): Promise<void> {
+  return Promise.race([
+    document.fonts.ready.then(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, ms)),
+  ]);
+}
+
 export function HeroStage({ poster, posterMobile, video, alt, children }: HeroStageProps) {
   const root = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -50,35 +62,29 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
   const [mountVideo, setMountVideo] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
 
-  // Mount the video only after the page has finished loading, so it never
-  // competes with the LCP image for bandwidth.
+  // The video never competes with the poster for bandwidth: it is mounted only
+  // once the page has finished loading, and never on phones.
   useEffect(() => {
-    if (video === null || reduced) return;
-    if (prefersLightPayload()) return;
-
-    let idle = 0;
+    if (video === null || reduced || prefersLightPayload()) return;
+    let timer = 0;
     const schedule = () => {
-      idle = window.setTimeout(() => setMountVideo(true), 200);
+      if (window.matchMedia(PHONE).matches) return;
+      timer = window.setTimeout(() => setMountVideo(true), 200);
     };
-
-    if (document.readyState === "complete") {
-      schedule();
-      return () => window.clearTimeout(idle);
-    }
-
-    window.addEventListener("load", schedule, { once: true });
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
     return () => {
       window.removeEventListener("load", schedule);
-      window.clearTimeout(idle);
+      window.clearTimeout(timer);
     };
   }, [reduced, video]);
 
-  // Pause while offscreen. A muted looping video still decodes frames and keeps
-  // the GPU busy behind ten screens of content.
+  // Pause while offscreen: a muted loop still decodes frames and keeps the GPU
+  // busy behind ten screens of content.
   useEffect(() => {
     const element = videoRef.current;
-    if (element === null) return;
-
+    const section = root.current;
+    if (element === null || section === null) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry === undefined) return;
@@ -87,7 +93,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
       },
       { threshold: 0.05 },
     );
-    observer.observe(element);
+    observer.observe(section);
     return () => observer.disconnect();
   }, [mountVideo]);
 
@@ -95,142 +101,220 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
     () => {
       const section = root.current;
       if (section === null) return;
-      const frame = section.querySelector<HTMLElement>("[data-hero-frame]");
-      const scrim = section.querySelector<HTMLElement>("[data-hero-scrim]");
-      const content = section.querySelector<HTMLElement>("[data-hero-content]");
-      if (frame === null || scrim === null || content === null) return;
+      const q = gsap.utils.selector(section);
+      const [parallax] = q("[data-hero-parallax]");
+      const [frame] = q("[data-hero-frame]");
+      const [scrim] = q("[data-hero-scrim]");
+      const [content] = q("[data-hero-content]");
+      const [title] = q("[data-hero-title]");
+      const [eyebrow] = q('[data-hero-reveal="eyebrow"]');
+      const [lede] = q('[data-hero-reveal="lede"]');
+      const [search] = q('[data-hero-reveal="search"]');
+      const [cue] = q('[data-hero-reveal="cue"]');
+      if (parallax === undefined || frame === undefined || scrim === undefined || content === undefined) return;
+      const copy = [eyebrow, title, lede, search, cue].filter((el): el is HTMLElement => el !== undefined);
 
+      // Survives a matchMedia branch change: resizing across 1024px must not
+      // replay the entrance, only re-create the scroll behaviour.
+      let entered = false;
       const mm = gsap.matchMedia();
 
       mm.add(MOTION_QUERIES.reduced, () => {
-        gsap.set(frame, { scale: 1, xPercent: 0, yPercent: 0 });
+        gsap.set(copy, { opacity: 1 });
         gsap.set(scrim, { opacity: 0.45 });
       });
 
-      const settle = () => {
-        // With a video the poster only has to hand over cleanly, so the media
-        // settles from 1.08. Without one, the still carries the whole shot and
-        // gets the slow Ken Burns pass from DESIGN §6 "Hero motion fallback".
-        if (video !== null) {
-          return gsap.fromTo(
-            frame,
-            { scale: 1.08 },
-            { scale: 1, duration: 1.8, ease: "estate", clearProps: "willChange" },
-          );
-        }
-        return gsap.fromTo(
-          frame,
-          { scale: 1.12, xPercent: -1.2, yPercent: -0.8 },
-          { scale: 1, xPercent: 1.2, yPercent: 0.8, duration: 12, ease: "none" },
-        );
-      };
+      const build = (
+        contextSafe: gsap.ContextSafeFunc | undefined,
+        tuning: { drift: number; depth: number; lines: number; stagger: number },
+      ) => {
+        const stillOnly = video === null || window.matchMedia(PHONE).matches;
 
-      const scrub = (drift: number) => {
+        // Scroll: the copy drifts up slower than the page, the media slower
+        // still, and the scrim deepens from 0.25 to 0.6.
         gsap.set(scrim, { opacity: 0.25 });
         gsap
           .timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top top",
-              end: "bottom top",
-              scrub: true,
-            },
+            scrollTrigger: { trigger: section, start: "top top", end: "bottom top", scrub: true },
           })
           .to(scrim, { opacity: 0.6, ease: "none" }, 0)
-          .to(content, { yPercent: drift, ease: "none" }, 0)
-          .to(frame, { yPercent: drift / -2.2, ease: "none" }, 0);
+          .to(content, { yPercent: tuning.drift, ease: "none" }, 0)
+          .to(parallax, { yPercent: tuning.depth, ease: "none" }, 0);
+
+        if (entered) {
+          gsap.set(copy, { opacity: 1 });
+          return undefined;
+        }
+
+        let split: SplitText | null = null;
+        let started = false;
+        let disposed = false;
+
+        // The headline waits for the webfont, so it is split in a later task;
+        // `contextSafe` keeps that late split and its tween inside this
+        // branch's context, so a branch change or an unmount reverts them.
+        const enterTitle = contextSafeFn(contextSafe, (tl: gsap.core.Timeline) => {
+          if (title === undefined || disposed) return;
+          split = SplitText.create(title, {
+            type: "lines",
+            mask: "lines",
+            linesClass: "split-line",
+            reduceWhiteSpace: false,
+          });
+          gsap.set(title, { opacity: 1 });
+          tl.from(
+            split.lines,
+            {
+              yPercent: 110,
+              duration: tuning.lines,
+              stagger: tuning.stagger,
+              // The lines only exist for the entrance. Reverting afterwards
+              // hands the headline back to normal text flow, so a later
+              // resize re-wraps it instead of stretching frozen lines.
+              onComplete: () => {
+                split?.revert();
+                split = null;
+              },
+            },
+            0.2,
+          );
+        });
+
+        const play = contextSafeFn(contextSafe, () => {
+          if (started || disposed) return;
+          started = true;
+          entered = true;
+
+          const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+
+          // The media settles first, so the curtain lifts onto movement.
+          if (stillOnly) {
+            tl.fromTo(
+              frame,
+              { scale: 1.12, xPercent: -1.2, yPercent: -0.8 },
+              { scale: 1, xPercent: 1.2, yPercent: 0.8, duration: 12, ease: "none" },
+              0,
+            );
+          } else {
+            tl.fromTo(frame, { scale: 1.08 }, { scale: 1, duration: 1.8, ease: "estate" }, 0);
+          }
+
+          if (eyebrow !== undefined) {
+            tl.fromTo(eyebrow, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.9 }, 0.1);
+          }
+          if (lede !== undefined) {
+            tl.fromTo(lede, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.1 }, 0.55);
+          }
+          if (search !== undefined) {
+            tl.fromTo(search, { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 1.1 }, 0.7);
+          }
+          if (cue !== undefined) {
+            tl.fromTo(cue, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" }, 1.1);
+          }
+
+          // Split against the real face: measuring the fallback font would
+          // break every line the moment EB Garamond swaps in.
+          if (title !== undefined) void fontsReady(700).then(() => enterTitle(tl));
+        });
+
+        const unsubscribe = onIntroReveal(play);
+        // Belt and braces: if the preloader never signals, enter anyway.
+        const fallback = gsap.delayedCall(2.6, play);
+
+        return () => {
+          disposed = true;
+          unsubscribe();
+          fallback.kill();
+          split?.revert();
+          split = null;
+        };
       };
 
-      mm.add(MOTION_QUERIES.mobile, () => {
-        gsap.set(frame, { willChange: "transform" });
-        settle();
-        // A phone hero is barely taller than the content, so a long drift
-        // detaches the headline from the photograph. Half the travel.
-        scrub(-8);
-      });
+      mm.add(MOTION_QUERIES.mobile, (_context, contextSafe) =>
+        // A phone hero is barely taller than its copy: a long drift detaches
+        // the headline from the photograph.
+        build(contextSafe, { drift: 6, depth: 12, lines: 1, stagger: 0.06 }),
+      );
 
-      mm.add(MOTION_QUERIES.desktop, () => {
-        gsap.set(frame, { willChange: "transform" });
-        settle();
-        scrub(-18);
-      });
+      mm.add(MOTION_QUERIES.desktop, (_context, contextSafe) =>
+        build(contextSafe, { drift: 14, depth: 24, lines: 1.2, stagger: 0.08 }),
+      );
 
       return () => mm.revert();
     },
     { scope: root, dependencies: [video] },
   );
 
-  const sources = video?.sources ?? [];
-
   return (
-    <div ref={root} className="absolute inset-0 overflow-clip">
-      <div data-hero-frame className="absolute inset-0">
-        <picture>
-          {posterMobile !== null ? (
-            <>
-              <source
-                media="(max-width: 767px)"
-                type="image/avif"
-                srcSet={mediaSrcSet(posterMobile, "avif")}
-                sizes="100vw"
-              />
-              <source
-                media="(max-width: 767px)"
-                type="image/webp"
-                srcSet={mediaSrcSet(posterMobile, "webp")}
-                sizes="100vw"
-              />
-            </>
-          ) : null}
-          <source type="image/avif" srcSet={mediaSrcSet(poster, "avif")} sizes="100vw" />
-          <source type="image/webp" srcSet={mediaSrcSet(poster, "webp")} sizes="100vw" />
-          <img
-            src={poster.fallback}
-            alt={alt}
-            width={poster.width}
-            height={poster.height}
-            fetchPriority="high"
-            decoding="async"
-            className="size-full object-cover"
-          />
-        </picture>
-
-        {mountVideo && video !== null ? (
-          <video
-            ref={videoRef}
-            poster={video.poster}
-            preload="metadata"
-            autoPlay
-            muted
-            loop
-            playsInline
-            aria-hidden="true"
-            tabIndex={-1}
-            onCanPlay={() => setVideoReady(true)}
-            className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ease-out ${
-              videoReady ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            {/* The 720p MP4 first for phones: one `media` hint saves ~9 MB. */}
-            {video.mobileSrc !== undefined ? (
-              <source src={video.mobileSrc} type="video/mp4" media="(max-width: 767px)" />
-            ) : null}
-            {sources.map((source) => (
-              <source key={source.src} src={source.src} type={source.type} />
+    <div ref={root} className="relative isolate flex min-h-svh flex-col justify-end overflow-clip">
+      <div data-hero-parallax="" className="absolute inset-0 -z-10">
+        <div data-hero-frame="" className="absolute inset-0">
+          <picture>
+            {posterMobile !== null
+              ? posterMobile.sources.map((source) => (
+                  <source
+                    key={`m-${source.type}`}
+                    media={PHONE}
+                    type={source.type}
+                    srcSet={source.srcSet}
+                    sizes="100vw"
+                  />
+                ))
+              : null}
+            {poster.sources.map((source) => (
+              <source key={source.type} type={source.type} srcSet={source.srcSet} sizes="100vw" />
             ))}
-          </video>
-        ) : null}
+            {/* The LCP element. */}
+            <img
+              src={poster.src}
+              srcSet={poster.srcSet}
+              sizes={poster.srcSet !== undefined ? "100vw" : undefined}
+              alt={alt}
+              width={poster.width}
+              height={poster.height}
+              fetchPriority="high"
+              className="size-full object-cover"
+            />
+          </picture>
+
+          {mountVideo && video !== null ? (
+            <video
+              ref={videoRef}
+              preload="metadata"
+              autoPlay
+              muted
+              loop
+              playsInline
+              disablePictureInPicture
+              disableRemotePlayback
+              aria-hidden="true"
+              tabIndex={-1}
+              onPlaying={() => setVideoReady(true)}
+              className={`absolute inset-0 size-full object-cover transition-opacity duration-700 ease-out ${
+                videoReady ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              {/* 720p for tablets; the full 1080p only from 1280px up. */}
+              {video.mobileSrc !== undefined ? (
+                <source src={video.mobileSrc} type="video/mp4" media="(max-width: 1279px)" />
+              ) : null}
+              {video.sources.map((source) => (
+                <source key={source.src} src={source.src} type={source.type} />
+              ))}
+            </video>
+          ) : null}
+        </div>
       </div>
 
-      {/* Two layers: a constant bottom-up gradient that guarantees contrast for
-          the headline, and the flat scrim GSAP deepens with scroll. */}
+      {/* A constant bottom-up gradient that guarantees the copy's contrast, and
+          the flat scrim GSAP deepens on scroll (DESIGN §5). */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-linear-to-t from-ink via-ink/55 via-45% to-ink/15"
+        className="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/60 via-40% to-ink/10"
       />
-      <div data-hero-scrim aria-hidden="true" className="absolute inset-0 bg-ink opacity-45" />
+      <div data-hero-scrim="" aria-hidden="true" className="absolute inset-0 -z-10 bg-ink opacity-25" />
 
-      <div data-hero-content className="relative flex size-full flex-col justify-end">
+      <div data-hero-content="" className="relative">
         {children}
       </div>
     </div>

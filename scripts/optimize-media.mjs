@@ -5,7 +5,7 @@
 //
 // Usage: node scripts/optimize-media.mjs [--force] [--only hero,city]
 //
-//   Images -> <name>/<name>-{640,1280,1920,2560}.avif + .webp + -fallback.jpg
+//   Images -> <name>/<name>-{640,1280,1920,2560,native}.avif + .webp + -fallback.jpg
 //             plus a 24px blurDataURL, skipping widths above the source width.
 //   Videos -> <name>/<name>.mp4 (H.264 1080p CRF 24, +faststart)
 //             <name>/<name>.webm (VP9 CRF 34)
@@ -82,7 +82,10 @@ async function optimizeImage(file) {
   const sourceWidth = meta.width ?? WIDTHS.at(-1);
   const sourceHeight = meta.height ?? 0;
   const widths = WIDTHS.filter((w) => w <= sourceWidth);
-  if (widths.length === 0) widths.push(sourceWidth);
+  // The native width is the top tier whenever it falls between two ladder
+  // steps: a 1672px hero render must not top out at 1280px on a 2x screen, and
+  // a 941px portrait poster must not stop at 640px on a 3x phone.
+  if (sourceWidth <= WIDTHS.at(-1) && widths.at(-1) !== sourceWidth) widths.push(sourceWidth);
 
   const variants = [];
   let built = 0;

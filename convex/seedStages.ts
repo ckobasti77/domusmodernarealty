@@ -12,6 +12,7 @@ import { FIRST_REF_NUMBER, formatRef, listingSlug } from "./lib/slug";
 import { l10nValues } from "./lib/derive";
 import { roleV } from "./lib/validators";
 import type {
+  ImageRef,
   L10n,
   L10nList,
   LeadStatus,
@@ -22,8 +23,9 @@ import type {
 } from "./lib/validators";
 import { SEED_AGENTS } from "./seed/agents";
 import { SEED_LOCATIONS } from "./seed/locations";
+import type { SeedLocation } from "./seed/locations";
 import { SEED_LISTINGS } from "./seed/spec";
-import { DEMO_PANORAMAS, DEMO_SPLATS } from "./seed/media.generated";
+import { DEMO_PANORAMAS, DEMO_PHOTOS, DEMO_SPLATS } from "./seed/media.generated";
 import { buildPhotoPlan, pickPhoto, photoUrl, toMediaItems } from "./seed/media";
 import { LISTING_COPY_1 } from "./seed/content/listings1";
 import { LISTING_COPY_2 } from "./seed/content/listings2";
@@ -224,22 +226,47 @@ export const seedSettings = internalMutation({
 
 /* ---------------------------------------------------------------- locations */
 
+/**
+ * The cover for a seeded location: the pinned verified photo when the spec
+ * names one, otherwise the next photo of the spec's category. Never a URL that
+ * `scripts/verify-demo-media.mjs` did not check.
+ */
+function locationCover(item: SeedLocation, order: number): ImageRef | undefined {
+  if (item.coverPhoto !== undefined) {
+    const photo = DEMO_PHOTOS.find((candidate) => candidate.url === item.coverPhoto);
+    if (photo === undefined) {
+      throw new Error(`Location "${item.slug}" names an unverified cover photo`);
+    }
+    return { kind: "url", url: photoUrl(photo.url, 1600) };
+  }
+  if (item.cover === undefined) return undefined;
+  const photo = pickPhoto(item.cover, order);
+  return photo !== undefined ? { kind: "url", url: photoUrl(photo.url, 1600) } : undefined;
+}
+
 export const seedLocations = internalMutation({
   args: {},
-  returns: v.object({ created: v.number(), total: v.number() }),
+  returns: v.object({ created: v.number(), covered: v.number(), total: v.number() }),
   handler: async (ctx) => {
     const bySlug = new Map<string, Id<"locations">>();
     let created = 0;
+    let covered = 0;
 
     for (const [order, item] of SEED_LOCATIONS.entries()) {
       // `order` comes from the spec index, not a mutable counter: a partial
       // re-seed would otherwise give two locations the same `order`.
+      const cover = locationCover(item, order);
       const existing = await ctx.db
         .query("locations")
         .withIndex("by_slug", (q) => q.eq("slug", item.slug))
         .unique();
       if (existing !== null) {
         bySlug.set(item.slug, existing._id);
+        // Backfill only: a cover the owner set in admin is never replaced.
+        if (existing.isDemo && existing.cover === undefined && cover !== undefined) {
+          await ctx.db.patch("locations", existing._id, { cover });
+          covered += 1;
+        }
         continue;
       }
 
@@ -250,6 +277,7 @@ export const seedLocations = internalMutation({
         slug: item.slug,
         name: l10n(item.name),
         ...(item.intro !== undefined ? { intro: l10n(item.intro) } : {}),
+        ...(cover !== undefined ? { cover } : {}),
         lat: item.lat,
         lng: item.lng,
         ...(item.sale !== undefined ? { avgPricePerM2Sale: item.sale } : {}),
@@ -260,9 +288,10 @@ export const seedLocations = internalMutation({
       });
       bySlug.set(item.slug, id);
       created += 1;
+      if (cover !== undefined) covered += 1;
     }
 
-    return { created, total: SEED_LOCATIONS.length };
+    return { created, covered, total: SEED_LOCATIONS.length };
   },
 });
 

@@ -52,11 +52,53 @@ export function mediaVideo(key: string): MediaVideo | null {
 /**
  * `srcSet` for a `<source>` element, newest format first. `next/image` is not
  * used for these: they are static art direction, not user uploads, and the
- * optimizer has already produced exactly the two widths the layout asks for.
+ * optimizer has already produced exactly the widths the layout asks for.
  */
 export function mediaSrcSet(image: MediaImage, format: "avif" | "webp"): string {
   return image.variants
     .filter((variant) => variant.format === format)
     .map((variant) => `${variant.src} ${variant.width}w`)
     .join(", ");
+}
+
+/**
+ * What an art-directed `<picture>` renders, whichever pipeline produced the
+ * pixels: the owner's optimized renders (typed AVIF/WebP sources) or a verified
+ * remote photo (one `srcSet` on the `<img>`, the CDN negotiates the format).
+ */
+export type ResponsiveImage = {
+  width: number;
+  height: number;
+  /** `<img src>`, a format every browser decodes. */
+  src: string;
+  /** Typed `<source>` sets, best format first. */
+  sources: { type: "image/avif" | "image/webp"; srcSet: string }[];
+  /** `srcSet` on the `<img>` itself, for remote images without typed sources. */
+  srcSet?: string;
+};
+
+export function responsiveImage(image: MediaImage): ResponsiveImage {
+  const sources: ResponsiveImage["sources"] = [];
+  for (const format of ["avif", "webp"] as const) {
+    const srcSet = mediaSrcSet(image, format);
+    if (srcSet.length > 0) sources.push({ type: `image/${format}`, srcSet });
+  }
+  return { width: image.width, height: image.height, src: image.fallback, sources };
+}
+
+const REMOTE_WIDTHS = [640, 1280, 1920, 2560] as const;
+
+/**
+ * A verified Unsplash photo (`docs/assets/demo-media.json`) as a responsive
+ * image. `base` must be a URL from that list — never an invented one.
+ */
+export function remoteResponsiveImage(base: string, width: number, height: number): ResponsiveImage {
+  const at = (w: number) => `${base}?w=${w}&q=80&auto=format&fit=crop`;
+  return {
+    width,
+    height,
+    src: at(1920),
+    sources: [],
+    srcSet: REMOTE_WIDTHS.map((w) => `${at(w)} ${w}w`).join(", "),
+  };
 }

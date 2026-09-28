@@ -16,6 +16,13 @@ export type SeedLocation = {
   featured?: boolean;
   /** Photo category used for the cover image. */
   cover?: "belgrade" | "novisad" | "building" | "villa" | "terrace";
+  /**
+   * An exact photo for places the verified pool actually shows (Vračar gets the
+   * Temple of Saint Sava, not whichever Belgrade photo the category cursor hands
+   * out). Must be a URL from docs/assets/demo-media.json; the seed throws on
+   * anything else. Wins over `cover`.
+   */
+  coverPhoto?: string;
 };
 
 export const SEED_LOCATIONS: SeedLocation[] = [
@@ -36,6 +43,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 12,
     featured: true,
     cover: "belgrade",
+    // Belgrade Fortress and Kalemegdan from the air
+    coverPhoto: "https://images.unsplash.com/photo-1632343084054-5b108ffb8be3",
   },
   {
     slug: "novi-sad",
@@ -126,6 +135,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 14,
     featured: true,
     cover: "building",
+    // the Temple of Saint Sava stands on Vračar
+    coverPhoto: "https://images.unsplash.com/photo-1643285677419-986d88603216",
   },
   {
     slug: "stari-grad",
@@ -138,6 +149,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 15,
     featured: true,
     cover: "belgrade",
+    // the Sava riverfront below the old town and the cathedral
+    coverPhoto: "https://images.unsplash.com/photo-1727105538592-3074729d8abc",
   },
   {
     slug: "savski-venac",
@@ -150,6 +163,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 16,
     featured: true,
     cover: "villa",
+    // the Sava and the Belgrade Waterfront towers
+    coverPhoto: "https://images.unsplash.com/photo-1708253832369-ce7e621df31a",
   },
   {
     slug: "novi-beograd",
@@ -168,6 +183,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 12,
     featured: true,
     cover: "building",
+    // the Ada Bridge pylon over the Sava
+    coverPhoto: "https://images.unsplash.com/photo-1706480228561-6e6ba0b5a44b",
   },
   {
     slug: "zemun",
@@ -179,6 +196,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     sale: 2800,
     rent: 10,
     cover: "building",
+    // the rooftops of Zemun above the Danube
+    coverPhoto: "https://images.unsplash.com/photo-1608816747977-4d303f476571",
   },
   {
     slug: "vozdovac",
@@ -277,6 +296,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 16,
     featured: true,
     cover: "belgrade",
+    // historic facades in the old centre
+    coverPhoto: "https://images.unsplash.com/photo-1655245934655-bde35a9dae80",
   },
   {
     slug: "kosancicev-venac",
@@ -292,6 +313,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4512,
     sale: 5400,
     rent: 17,
+    // the same slope, seen from the Sava
+    coverPhoto: "https://images.unsplash.com/photo-1727105538592-3074729d8abc",
   },
   {
     slug: "senjak",
@@ -338,6 +361,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 21,
     featured: true,
     cover: "terrace",
+    // the Waterfront towers at night
+    coverPhoto: "https://images.unsplash.com/photo-1711970908551-6bb1f39377b5",
   },
   {
     slug: "blok-19a",
@@ -383,6 +408,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4098,
     sale: 2900,
     rent: 10,
+    // the rooftops of Zemun above the Danube
+    coverPhoto: "https://images.unsplash.com/photo-1608816747977-4d303f476571",
   },
   {
     slug: "zemunske-kapije",

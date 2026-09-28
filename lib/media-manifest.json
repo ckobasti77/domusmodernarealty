@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T06:28:49.680Z",
+  "generatedAt": "2026-09-28T08:34:23.446Z",
   "items": {
     "about": {
       "key": "about",
@@ -28,6 +28,16 @@
           "width": 1280,
           "format": "webp",
           "src": "/media/about/about-1280.webp"
+        },
+        {
+          "width": 1536,
+          "format": "avif",
+          "src": "/media/about/about-1536.avif"
+        },
+        {
+          "width": 1536,
+          "format": "webp",
+          "src": "/media/about/about-1536.webp"
         }
       ]
     },
@@ -77,6 +87,16 @@
           "width": 1280,
           "format": "webp",
           "src": "/media/hero-desktop/hero-desktop-1280.webp"
+        },
+        {
+          "width": 1672,
+          "format": "avif",
+          "src": "/media/hero-desktop/hero-desktop-1672.avif"
+        },
+        {
+          "width": 1672,
+          "format": "webp",
+          "src": "/media/hero-desktop/hero-desktop-1672.webp"
         }
       ]
     },
@@ -97,6 +117,16 @@
           "width": 640,
           "format": "webp",
           "src": "/media/hero-mobile/hero-mobile-640.webp"
+        },
+        {
+          "width": 941,
+          "format": "avif",
+          "src": "/media/hero-mobile/hero-mobile-941.avif"
+        },
+        {
+          "width": 941,
+          "format": "webp",
+          "src": "/media/hero-mobile/hero-mobile-941.webp"
         }
       ]
     },
@@ -146,6 +176,16 @@
           "width": 1280,
           "format": "webp",
           "src": "/media/sell/sell-1280.webp"
+        },
+        {
+          "width": 1536,
+          "format": "avif",
+          "src": "/media/sell/sell-1536.avif"
+        },
+        {
+          "width": 1536,
+          "format": "webp",
+          "src": "/media/sell/sell-1536.webp"
         }
       ]
     },
@@ -176,6 +216,16 @@
           "width": 1280,
           "format": "webp",
           "src": "/media/tours3d-alt/tours3d-alt-1280.webp"
+        },
+        {
+          "width": 1672,
+          "format": "avif",
+          "src": "/media/tours3d-alt/tours3d-alt-1672.avif"
+        },
+        {
+          "width": 1672,
+          "format": "webp",
+          "src": "/media/tours3d-alt/tours3d-alt-1672.webp"
         }
       ]
     },
@@ -206,6 +256,16 @@
           "width": 1280,
           "format": "webp",
           "src": "/media/tours3d/tours3d-1280.webp"
+        },
+        {
+          "width": 1672,
+          "format": "avif",
+          "src": "/media/tours3d/tours3d-1672.avif"
+        },
+        {
+          "width": 1672,
+          "format": "webp",
+          "src": "/media/tours3d/tours3d-1672.webp"
         }
       ]
     },
@@ -236,6 +296,16 @@
           "width": 1280,
           "format": "webp",
           "src": "/media/valuation/valuation-1280.webp"
+        },
+        {
+          "width": 1536,
+          "format": "avif",
+          "src": "/media/valuation/valuation-1536.avif"
+        },
+        {
+          "width": 1536,
+          "format": "webp",
+          "src": "/media/valuation/valuation-1536.webp"
         }
       ]
     },

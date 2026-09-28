@@ -49,3 +49,16 @@ export const MOTION_QUERIES = {
   mobile: "(max-width: 1023px) and (prefers-reduced-motion: no-preference)",
   reduced: "(prefers-reduced-motion: reduce)",
 } as const;
+
+/**
+ * `contextSafe` (the second argument of a `useGSAP` or `matchMedia` callback)
+ * with the wrapped function's signature preserved — GSAP types the result as a
+ * bare `Function`. Anything a wrapped function creates later (in an event
+ * handler, a timer, a promise) is recorded in that context and reverted with it.
+ */
+export function contextSafeFn<A extends unknown[]>(
+  contextSafe: gsap.ContextSafeFunc | undefined,
+  fn: (...args: A) => void,
+): (...args: A) => void {
+  return contextSafe === undefined ? fn : (contextSafe(fn) as (...args: A) => void);
+}

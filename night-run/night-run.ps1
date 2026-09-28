@@ -35,6 +35,7 @@ param(
     [switch]$DryRun,
     [switch]$SkipPreflight,
     [switch]$Fresh,
+    [switch]$SkipUpdate,
     [string]$ClaudePath
 )
 
@@ -383,6 +384,7 @@ function Invoke-ClaudeRun {
 }
 
 # ------------------------------------------------------------------ outcome handling
+$NetRx = '(?i)(ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|fetch failed|getaddrinfo|reach the API server|check your internet|network error|connection error|OAuth access token has expired)'
 $LimitRx = '(?i)(hit your (session|weekly|opus|sonnet|fable|usage|daily)[a-z ]* limit|usage limit (reached|hit)|limit reached|reached your .*limit|out of (extra )?usage|rate-limit-options|resets? (at )?\d{1,2}(:\d{2})?\s*(am|pm))'
 function Get-ResultText($R) {
     $t = ''
@@ -400,6 +402,7 @@ function Get-Outcome($R) {
     }
     $blob = ($text + "`n" + $R.stderr + "`n" + $R.lastText)
     if ($blob -match $LimitRx) { return 'usage_limit' }
+    if ($blob -match $NetRx) { return 'network' }
     if ($blob -match '(?i)(Request rejected \(429\)|"rate_limit"|api_retry rate_limit|temporarily limiting requests)') { return 'rate_limit' }
     if ($blob -match '(?i)(overloaded|high load|\b529\b|server_error|api_retry (overloaded|server_error|unknown))') { return 'overloaded' }
     if ($blob -match '(?i)(not a recognized model|model[^\n]{0,60}not found|issue with the selected model|model_not_found|is not available (with|on) (your|the))') { return 'model_unavailable' }
@@ -605,11 +608,22 @@ function Invoke-Preflight {
     # Claude CLI
     $v = Get-ClaudeVersion
     Write-Log "Claude Code: $script:ClaudeExe ($v)" 'INFO'
-    if ($v -and $v -lt [version]'2.1.280') {
-        Write-Log 'Claude Code is older than 2.1.280 (needed for Opus 5.5) - running `claude update`...' 'WARN'
-        $u = Invoke-Native $script:ClaudeExe @('update'); Write-Log (Get-ShortText $u.out 300) 'INFO'
+    if ($v -and $v -lt [version]'2.1.280' -and -not $SkipUpdate) {
+        Write-Log 'Claude Code is older than 2.1.280 (needed for Opus 5.5) - running `claude update` (max 10 min)...' 'WARN'
+        $updExe = $script:ClaudeExe
+        if ([System.IO.Path]::GetExtension($updExe).ToLowerInvariant() -eq '.ps1') {
+            $cmdAlt = [System.IO.Path]::ChangeExtension($updExe, '.cmd')
+            if (Test-Path -LiteralPath $cmdAlt) { $updExe = $cmdAlt }
+        }
+        $prevDA = $env:DISABLE_AUTOUPDATER; $env:DISABLE_AUTOUPDATER = $null
+        $ulog = Join-Path $LogDir 'claude-update.log'
+        $ucode = Invoke-Shell ('"' + $updExe + '" update') $ulog 10
+        $env:DISABLE_AUTOUPDATER = $prevDA
+        $utail = ''; if (Test-Path -LiteralPath $ulog) { $utail = (Get-Content -LiteralPath $ulog -Tail 6 -Encoding UTF8) -join ' | ' }
+        Write-Log ("claude update exit {0}: {1}" -f $ucode, (Get-ShortText $utail 300)) 'INFO'
+        try { $script:ClaudeExe = Resolve-Claude } catch { }
         $v = Get-ClaudeVersion
-        Write-Log "Claude Code now: $v" 'INFO'
+        Write-Log "Claude Code now: $script:ClaudeExe ($v)" 'INFO'
     }
     if ($v -and $v -lt [version]'2.1.259') { $script:SupportsPromptsNone = $false; $script:SupportsGoal = $false; Write-Log 'Old CLI: running without --permission-prompts none and without /goal loops.' 'WARN' }
     if ($v -and $v -lt [version]'2.1.203') { $script:SupportsUltracode = $false }
@@ -714,11 +728,11 @@ function Invoke-Step($Step, [int]$Index) {
 
     if ($mode -eq 'goal' -and -not $script:SupportsGoal) { $mode = 'auto' }
     switch ($mode) { 'plan' { $prompt = Get-PlanText $Step } 'auto' { $prompt = Get-AutoText $Step } default { $prompt = Get-GoalText $Step } }
-    $fixes = 0; $errors = 0; $timeouts = 0; $permOverride = $null; $attempt = 0
+    $fixes = 0; $errors = 0; $timeouts = 0; $netWaits = 0; $permOverride = $null; $attempt = 0
 
     :attemptLoop while ($true) {
         $attempt++; $st.attempts = [int]$st.attempts + 1
-        if ($attempt -gt 14) { $st.status = 'failed'; Set-StepNote $Step 'too many attempts'; break attemptLoop }
+        if (($attempt - $netWaits) -gt 14) { $st.status = 'failed'; Set-StepNote $Step 'too many attempts'; break attemptLoop }
         $script:Current = "$label (attempt $attempt, model $model, effort $($Step.Effort))"
         Update-Status
         $args2 = Build-Args $Step $model $Step.Effort $prompt $resumeId $permOverride
@@ -807,6 +821,31 @@ function Invoke-Step($Step, [int]$Index) {
                     $next = Get-NextModel $model
                     if ($next) { Write-Log "Still limited after 4h - switching $model -> $next" 'WARN'; $script:State.modelMap[$model] = $next; $model = $next; $st.model = $model; Save-State }
                 }
+                if ($mode -ne 'goal') { $prompt = 'Continue exactly where you left off and complete the task.' }
+                continue attemptLoop
+            }
+            'network' {
+                # Internet/DNS outage or an OAuth token that could not refresh while offline.
+                # Never count this as a step failure: wait until the API answers again, then resume the SAME session.
+                $netWaits++
+                if ($netWaits -gt 20) {
+                    Write-Log 'Too many network interruptions in this step - finishing it with issues' 'WARN'
+                    $g = Invoke-Gate $Step 'after-network'
+                    Save-Checkpoint $Step ' (network)'
+                    $st.status = 'done-with-issues'; Set-StepNote $Step "network errors x$netWaits; verify ok=$($g.ok)"
+                    break attemptLoop
+                }
+                $maxNet = [double]$Cfg.MaxNetworkWaitHours; if ($maxNet -le 0) { $maxNet = 8 }
+                $netDeadline = (Get-Date).AddHours($maxNet)
+                Set-StepNote $Step "network/API unreachable - waiting (since $(Get-Date -Format 'HH:mm'))"
+                while ($true) {
+                    Wait-Until (Get-Date).AddMinutes(3) 'network/API unreachable'
+                    $p = Test-ModelReady $model
+                    if ($p.ok) { Write-Log 'API reachable again - resuming the step' 'OK'; break }
+                    if ($p.outcome -eq 'auth') { throw 'Stopping: Claude Code needs a new login (run claude once, then re-run this script).' }
+                    if ((Get-Date) -gt $netDeadline) { throw "Stopping: API unreachable for $maxNet h (internet or login). Fix it, then re-run this script (no -Fresh needed)." }
+                }
+                Set-StepNote $Step ''
                 if ($mode -ne 'goal') { $prompt = 'Continue exactly where you left off and complete the task.' }
                 continue attemptLoop
             }

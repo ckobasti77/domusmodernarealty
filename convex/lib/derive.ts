@@ -1,0 +1,92 @@
+/**
+ * Derived listing fields. Every listing write goes through `applyDerived` so the
+ * index drivers (`scope`, `pricePerM2`, `floorNum`, `hasTour`, `searchText`,
+ * `mandateEnd`) can never drift from the source fields.
+ */
+import type { Doc } from "../_generated/dataModel";
+import type { QueryCtx } from "../_generated/server";
+import { floorToNumber } from "./money";
+import { buildSearchText, scopeKey } from "./search";
+import { DEFAULT_L10N_KEY, L10N_KEYS, LOCALE_FIELD } from "./validators";
+import type { L10n, Locale } from "./validators";
+
+export type ListingDoc = Doc<"listings">;
+/** A listing without system fields and without the derived fields. */
+export type ListingInput = Omit<
+  ListingDoc,
+  "_id" | "_creationTime" | "scope" | "pricePerM2" | "floorNum" | "hasTour" | "searchText" | "mandateEnd"
+>;
+
+/** All locale variants of a localized string, in a stable order. */
+export function l10nValues(value: L10n | undefined): string[] {
+  if (value === undefined) return [];
+  return L10N_KEYS.map((key) => value[key]).filter(
+    (item): item is string => typeof item === "string" && item.length > 0,
+  );
+}
+
+/** Localized read with the mandated fallback to sr-Latn. */
+export function pickLocale(value: L10n, locale: Locale): string {
+  const candidate = value[LOCALE_FIELD[locale]];
+  return candidate !== undefined && candidate.length > 0
+    ? candidate
+    : value[DEFAULT_L10N_KEY];
+}
+
+export type DerivedFields = Pick<
+  ListingDoc,
+  "scope" | "pricePerM2" | "floorNum" | "hasTour" | "searchText" | "mandateEnd"
+>;
+
+/**
+ * `locationNames` are the city/municipality/neighborhood names that go into the
+ * search haystack; the caller loads them because this must stay synchronous.
+ */
+export function applyDerived(
+  listing: ListingInput,
+  locationNames: readonly string[],
+  hasTourScenes = false,
+): DerivedFields {
+  const area = listing.areaM2 > 0 ? listing.areaM2 : 1;
+  const pricePerM2 = Math.round((listing.price / area) * 100) / 100;
+
+  const hasTour =
+    (listing.tour360?.published ?? false) ||
+    (listing.walk3d?.published ?? false) ||
+    hasTourScenes;
+
+  return {
+    scope: scopeKey(listing.status, listing.transaction),
+    pricePerM2,
+    floorNum: floorToNumber(listing.floor, listing.totalFloors),
+    hasTour,
+    mandateEnd: listing.mandate?.end,
+    searchText: buildSearchText([
+      ...l10nValues(listing.title),
+      ...locationNames,
+      listing.location.street,
+      listing.ref,
+      listing.propertyType,
+      listing.subtype,
+      listing.transaction === "sale" ? "prodaja sale kauf" : "izdavanje rent miete",
+    ]),
+  };
+}
+
+/** Loads the names that `applyDerived` needs for the haystack. */
+export async function locationNamesFor(
+  ctx: QueryCtx,
+  ids: {
+    cityId: ListingDoc["cityId"];
+    municipalityId?: ListingDoc["municipalityId"];
+    neighborhoodId?: ListingDoc["neighborhoodId"];
+  },
+): Promise<string[]> {
+  const names: string[] = [];
+  for (const id of [ids.cityId, ids.municipalityId, ids.neighborhoodId]) {
+    if (id === undefined) continue;
+    const location = await ctx.db.get("locations", id);
+    if (location !== null) names.push(...l10nValues(location.name));
+  }
+  return names;
+}

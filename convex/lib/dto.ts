@@ -319,7 +319,8 @@ export const listingDetailV = listingCardV.extend({
   street: v.optional(v.string()),
   streetNo: v.optional(v.string()),
   poi: v.optional(v.array(poiV)),
-  priceHistory: v.array(v.object({ at: v.number(), price: v.number() })),
+  /** Oldest first; `from` is the price before that change. */
+  priceHistory: v.array(v.object({ at: v.number(), from: v.number(), price: v.number() })),
   agent: agentPublicV,
   city: v.optional(locationRefV),
   municipality: v.optional(locationRefV),
@@ -560,7 +561,11 @@ export async function toDetail(
       ? { streetNo: listing.location.streetNo }
       : {}),
     ...(listing.poi !== undefined ? { poi: listing.poi } : {}),
-    priceHistory: changes.map((change) => ({ at: change.at, price: change.to })),
+    priceHistory: changes.map((change) => ({
+      at: change.at,
+      from: change.from,
+      price: change.to,
+    })),
     agent: await toAgentPublic(ctx, agentDoc),
     ...(city !== null ? { city: locationRef(city) } : {}),
     ...(municipality !== null ? { municipality: locationRef(municipality) } : {}),

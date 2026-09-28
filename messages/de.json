@@ -229,7 +229,309 @@
     "statusRented": "Vermietet",
     "exclusive": "Exklusiv",
     "new": "Neu",
-    "soon": "Demnächst"
+    "soon": "Demnächst",
+    "breadcrumbLabel": "Navigationspfad",
+    "verifiedDocs": "Unterlagen geprüft",
+    "verifiedDocsHint": "Unser Makler hat die Eigentumsunterlagen am {date} geprüft.",
+    "refCode": "Objektnummer {ref}",
+    "compliance": "{company} · Maklerregister Nr. {registryNo}",
+    "propertyType": {
+      "apartment": "Wohnung",
+      "house": "Haus",
+      "commercial": "Ladenlokal",
+      "office": "Büro",
+      "land": "Grundstück",
+      "garage": "Garage",
+      "cottage": "Ferienhaus"
+    },
+    "transaction": {
+      "sale": "Kauf",
+      "rent": "Miete"
+    },
+    "structure": {
+      "r05": "Studio",
+      "r1": "1-Zimmer",
+      "r15": "1,5-Zimmer",
+      "r2": "2-Zimmer",
+      "r25": "2,5-Zimmer",
+      "r3": "3-Zimmer",
+      "r35": "3,5-Zimmer",
+      "r4": "4-Zimmer",
+      "r45": "4,5-Zimmer",
+      "r5": "5 Zimmer und mehr"
+    },
+    "structureApartment": {
+      "r05": "Studio",
+      "r1": "1-Zimmer-Wohnung",
+      "r15": "1,5-Zimmer-Wohnung",
+      "r2": "2-Zimmer-Wohnung",
+      "r25": "2,5-Zimmer-Wohnung",
+      "r3": "3-Zimmer-Wohnung",
+      "r35": "3,5-Zimmer-Wohnung",
+      "r4": "4-Zimmer-Wohnung",
+      "r45": "4,5-Zimmer-Wohnung",
+      "r5": "5-Zimmer-Wohnung"
+    },
+    "typeWithArea": "{type}, {area}",
+    "tabs": {
+      "label": "Fotos, Grundrisse und Rundgänge",
+      "photos": "Fotos",
+      "floorPlans": "Grundriss",
+      "video": "Video",
+      "tour360": "360°-Tour",
+      "walk3d": "3D-Rundgang"
+    },
+    "galleryUi": {
+      "showAll": "Alle Fotos ({count})",
+      "open": "Foto {index} von {total} öffnen",
+      "filterLabel": "Nach Raum anzeigen",
+      "all": "Alle",
+      "counter": "{index} / {total}",
+      "credit": "Foto: {author}"
+    },
+    "room": {
+      "living": "Wohnzimmer",
+      "kitchen": "Küche",
+      "dining": "Esszimmer",
+      "bedroom": "Schlafzimmer",
+      "bathroom": "Badezimmer",
+      "office": "Arbeitszimmer",
+      "terrace": "Terrasse",
+      "hall": "Flur",
+      "exterior": "Außenansicht",
+      "building": "Gebäude",
+      "view": "Aussicht",
+      "plan": "Grundriss",
+      "other": "Sonstiges"
+    },
+    "video": {
+      "play": "Video abspielen",
+      "notice": "Das Video wird erst nach Ihrem Klick von {provider} geladen.",
+      "openExternal": "Video auf {provider} öffnen"
+    },
+    "tourSlot": {
+      "heading360": "360°-Besichtigung",
+      "heading3d": "3D-Rundgang durch die Räume",
+      "scenes": "{count, plural, one {# Raum} other {# Räume}}",
+      "soonBody": "Der interaktive Rundgang ist bald verfügbar. Bis dahin können Sie sich die Fotos ansehen oder eine Besichtigung vor Ort oder per Videoanruf vereinbaren."
+    },
+    "price": {
+      "drop": "Preis gesenkt",
+      "dropBy": "Preis um {pct} % gesenkt",
+      "historyInitial": "Ursprünglicher Preis",
+      "historyChange": "Neuer Preis",
+      "historyEmpty": "Der Preis ist seit der Veröffentlichung unverändert.",
+      "showRsd": "In Dinar anzeigen",
+      "showEur": "In Euro anzeigen",
+      "rsdNote": "Zur Orientierung, zum Kurs von {rate} RSD je 1 €",
+      "vatIncluded": "Die MwSt. ist im Preis enthalten",
+      "deposit": "Kaution {amount}"
+    },
+    "facts": {
+      "heading": "Eckdaten",
+      "registeredArea": "Fläche laut Grundbuch",
+      "plotArea": "Grundstücksfläche",
+      "bedrooms": "Schlafzimmer",
+      "bathrooms": "Badezimmer",
+      "floorOf": "{floor} von {total}",
+      "renovated": "Renoviert",
+      "construction": "Bauart",
+      "condition": "Zustand",
+      "elevator": "Aufzug",
+      "outdoor": "Außenbereich",
+      "orientation": "Ausrichtung",
+      "bills": "Monatliche Nebenkosten",
+      "billsValue": "Infostan ca. {infostan}, Hausgeld ca. {maintenance}",
+      "availableFrom": "Bezugsfertig ab",
+      "completion": "Fertigstellung",
+      "minLease": "Mindestmietdauer",
+      "minLeaseValue": "{count, plural, one {# Monat} other {# Monate}}",
+      "pets": "Haustiere",
+      "utilitiesIncluded": "Nebenkosten inklusive",
+      "yes": "Ja",
+      "no": "Nein"
+    },
+    "condition": {
+      "original": "Originalzustand",
+      "renovated": "Renoviert",
+      "lux": "Gehobener Standard",
+      "needs_renovation": "Renovierungsbedürftig"
+    },
+    "construction": {
+      "new": "Neubau",
+      "old": "Altbau",
+      "under_construction": "Im Bau"
+    },
+    "furnishingValue": {
+      "furnished": "Möbliert",
+      "semi": "Teilmöbliert",
+      "unfurnished": "Unmöbliert"
+    },
+    "heatingValue": {
+      "CG": "Fernwärme",
+      "EG": "Etagenheizung",
+      "TA": "Nachtspeicheröfen",
+      "gas": "Gas",
+      "floor": "Fußbodenheizung",
+      "heat_pump": "Wärmepumpe",
+      "AC": "Klimaanlage",
+      "pellet": "Pellets",
+      "other": "Sonstige"
+    },
+    "parkingValue": {
+      "garage": "Garage",
+      "garage_spot": "Garagenstellplatz",
+      "parking_spot": "Stellplatz",
+      "street_zone": "Straßenparken (Parkzone)"
+    },
+    "orientationValue": {
+      "N": "Nord",
+      "E": "Ost",
+      "S": "Süd",
+      "W": "West"
+    },
+    "floorValue": {
+      "SUT": "Souterrain",
+      "PSUT": "Hochsouterrain",
+      "PR": "Erdgeschoss",
+      "VPR": "Hochparterre",
+      "PK": "Dachgeschoss"
+    },
+    "highlights": "Auf einen Blick",
+    "featureGroups": {
+      "interior": "Innenausstattung",
+      "building": "Gebäude",
+      "outdoor": "Außenbereich",
+      "legal": "Rechtliches und Finanzen"
+    },
+    "feature": {
+      "elevator": "Aufzug",
+      "terrace": "Terrasse",
+      "loggia": "Loggia",
+      "balcony": "Balkon",
+      "frenchBalcony": "Französischer Balkon",
+      "garden": "Garten",
+      "basement": "Keller",
+      "storage": "Abstellraum",
+      "ac": "Klimaanlage",
+      "intercom": "Gegensprechanlage",
+      "videoSurveillance": "Videoüberwachung",
+      "alarm": "Alarmanlage",
+      "pool": "Pool",
+      "fireplace": "Kamin",
+      "parking": "Parkplatz",
+      "registered": "Im Grundbuch eingetragen",
+      "occupancyPermit": "Nutzungsgenehmigung",
+      "vatRefund": "MwSt.-Rückerstattung",
+      "mortgage": "Finanzierbar",
+      "installments": "Ratenzahlung möglich",
+      "swap": "Tausch möglich",
+      "furnished": "Möbliert"
+    },
+    "legalBlock": {
+      "registration": "Grundbucheintrag",
+      "legalization": "Legalisierung",
+      "occupancyPermit": "Nutzungsgenehmigung",
+      "encumbrance": "Belastungen",
+      "noEncumbrance": "Keine Belastungen eingetragen",
+      "ownershipShare": "Eigentumsanteil",
+      "commission": "Maklerprovision",
+      "verifiedNote": "Unser Makler hat die Eigentumsunterlagen gemäß Artikel 16 des serbischen Gesetzes über die Vermittlung beim Verkauf und bei der Vermietung von Immobilien geprüft.",
+      "unverifiedNote": "Wir prüfen die Unterlagen vor der Vertragsunterzeichnung. Einsicht erhalten Sie auf Anfrage bei Ihrem Ansprechpartner.",
+      "termsLink": "Allgemeine Geschäftsbedingungen"
+    },
+    "registration": {
+      "registered": "Im Grundbuch eingetragen",
+      "in_progress": "Grundbucheintragung läuft",
+      "not_registered": "Nicht im Grundbuch eingetragen"
+    },
+    "legalization": {
+      "legal": "Mit Baugenehmigung errichtet",
+      "legalized": "Legalisiert (nachträglich genehmigt)",
+      "in_progress": "Legalisierung läuft"
+    },
+    "locationBlock": {
+      "exact": "Genaue Lage der Immobilie.",
+      "approximate": "Die Karte zeigt die ungefähre Lage. Die genaue Adresse erhalten Sie vor der Besichtigung von Ihrem Ansprechpartner.",
+      "mapLabel": "Karte mit der Lage der Immobilie",
+      "loadMap": "Karte anzeigen",
+      "poiHeading": "In der Nähe",
+      "neighborhoodCta": "Lernen Sie {name} kennen",
+      "attribution": "Karte: OpenFreeMap, Daten © OpenStreetMap"
+    },
+    "poi": {
+      "school": "Schule",
+      "kindergarten": "Kindergarten",
+      "transit": "Nahverkehr",
+      "park": "Park",
+      "shop": "Einkaufen",
+      "health": "Gesundheit"
+    },
+    "mortgage": {
+      "heading": "Finanzierungsrechner",
+      "price": "Kaufpreis",
+      "downPct": "Eigenkapital (%)",
+      "years": "Laufzeit (Jahre)",
+      "rate": "Zinssatz (%)",
+      "presetsLabel": "Eigenkapital schnell wählen",
+      "preset": "{pct} % Eigenkapital",
+      "monthly": "Monatliche Rate",
+      "loan": "Darlehensbetrag",
+      "downPayment": "Eigenkapital",
+      "totalInterest": "Zinsen gesamt",
+      "term": "{years, plural, one {# Jahr} other {# Jahre}} · {months} Raten",
+      "youngNote": "Käufer bis 35 Jahre, die ihre erste Wohnung erwerben, können ein staatliches Förderprogramm für Wohnungskredite mit geringerem Eigenkapital nutzen. Die Konditionen erfahren Sie bei Ihrer Bank.",
+      "disclaimer": "Unverbindliche Beispielrechnung auf Annuitätenbasis. Der effektive Jahreszins und die endgültigen Konditionen hängen von der Bank, der Versicherung und Ihrer Bonität ab."
+    },
+    "costs": {
+      "heading": "Gesamtkosten des Kaufs",
+      "transferTax": "Grunderwerbsteuer ({rate} %)",
+      "transferTaxNote": "Gesetzlich trägt sie der Verkäufer, vertraglich wird sie jedoch häufig auf den Käufer übertragen.",
+      "firstHome": "Wer seine erste Wohnung kauft, kann für 40 m² für sich selbst und je 15 m² für jedes weitere Haushaltsmitglied von dieser Steuer befreit werden. Die Befreiung wird beim Finanzamt geltend gemacht, daher ziehen wir sie hier nicht ab.",
+      "vat": "MwSt. ({rate} %)",
+      "vatIncluded": "im Preis enthalten",
+      "vatNote": "Beim Erstverkauf eines Neubaus fällt statt der Grunderwerbsteuer Mehrwertsteuer an. Wer seine erste Wohnung kauft, kann die MwSt.-Rückerstattung für 40 m² für sich selbst und je 15 m² für jedes weitere Haushaltsmitglied beantragen.",
+      "agencyFee": "Maklerprovision ({rate} %)",
+      "agencyFeePct": "Provision (%)",
+      "agencyFeeNote": "Die genaue Höhe wird im Maklervertrag vereinbart.",
+      "notary": "Notarkosten (ca.)",
+      "cadastre": "Grundbucheintragung (ca.)",
+      "extras": "Kaufnebenkosten",
+      "total": "Gesamt",
+      "disclaimer": "Richtwerte, nur zur Orientierung. Keine Steuer- oder Rechtsberatung."
+    },
+    "agentCard": {
+      "languages": "Sprachen: {languages}",
+      "call": "Anrufen",
+      "email": "E-Mail schreiben",
+      "license": "Lizenz-Nr. {id}",
+      "contactHeading": "Ihr Ansprechpartner für diese Immobilie"
+    },
+    "actionBar": {
+      "label": "Schnellaktionen",
+      "call": "Anrufen",
+      "book": "Termin buchen"
+    },
+    "share": {
+      "heading": "Teilen",
+      "email": "E-Mail",
+      "emailSubject": "{title} – Mihajlo Estate"
+    },
+    "closed": {
+      "sold": "Diese Immobilie ist verkauft. Sehen Sie sich ähnliche Angebote an oder schreiben Sie uns, wonach Sie suchen – wir finden es für Sie.",
+      "rented": "Diese Immobilie ist vermietet. Sehen Sie sich ähnliche Angebote an oder schreiben Sie uns, wonach Sie suchen – wir finden es für Sie.",
+      "reserved": "Diese Immobilie ist reserviert. Senden Sie uns eine Anfrage, wenn wir Sie benachrichtigen sollen, falls der Kauf nicht zustande kommt.",
+      "browse": "Angebote ansehen"
+    },
+    "contactHeading": "Haben Sie Interesse?",
+    "formTabs": {
+      "label": "Art der Kontaktaufnahme",
+      "inquiry": "Anfrage",
+      "viewing": "Besichtigung"
+    },
+    "seoTitle": "{structure} in {place} – {price}",
+    "seoDescription": "{title}. {area}, {floor}. Preis {price} ({perM2}). Objektnummer {ref}.",
+    "ogAlt": "{title} – {price}"
   },
   "card": {
     "exclusive": "Exklusiv",
@@ -260,7 +562,24 @@
     "invalidPhone": "Bitte geben Sie eine gültige Telefonnummer ein",
     "tooShort": "Bitte geben Sie mindestens {min} Zeichen ein",
     "tooLong": "Höchstens {max} Zeichen",
-    "optional": "optional"
+    "optional": "optional",
+    "inquiryMessageDefault": "Ich interessiere mich für die Immobilie {ref}. Bitte senden Sie mir weitere Informationen.",
+    "purpose": "Wir verwenden Ihre Daten ausschließlich, um Ihre Anfrage zu beantworten. Rechtsgrundlage ist Ihre Einwilligung, die Sie jederzeit widerrufen können.",
+    "consentPrivacy": "Ich willige in die Verarbeitung meiner personenbezogenen Daten zur Beantwortung meiner Anfrage gemäß der <link>Datenschutzerklärung</link> ein.",
+    "consentRequired": "Ohne Ihre Einwilligung können wir Ihre Anfrage nicht beantworten.",
+    "marketingOptIn": "Ich möchte gelegentlich eine Auswahl neuer Immobilien erhalten.",
+    "honeypot": "Lassen Sie dieses Feld leer",
+    "successHeading": "Ihre Anfrage wurde gesendet",
+    "sendAnother": "Weitere Anfrage senden",
+    "viewingDate": "Tag wählen",
+    "viewingTime": "Uhrzeit wählen",
+    "viewingNoSlots": "An diesem Tag sind keine Termine frei. Bitte wählen Sie einen anderen Tag.",
+    "viewingTimezone": "Alle Uhrzeiten in Belgrader Ortszeit.",
+    "viewingSlotRequired": "Bitte wählen Sie einen Tag und eine Uhrzeit.",
+    "viewingSelected": "Ihre Auswahl: {date} um {time} Uhr.",
+    "viewingSuccessHeading": "Ihre Besichtigungsanfrage wurde gesendet",
+    "viewingMessage": "Anmerkung für Ihren Ansprechpartner",
+    "slotTaken": "vergeben"
   },
   "consent": {
     "bannerHeading": "Cookies",
@@ -395,7 +714,10 @@
     "SLOT_TAKEN": "Dieser Termin ist bereits vergeben. Bitte wählen Sie einen anderen.",
     "PUBLISH_BLOCKED": "Die Veröffentlichung ist blockiert, weil erforderliche Angaben fehlen.",
     "INVITE_INVALID": "Die Einladung ist abgelaufen oder wurde bereits verwendet.",
-    "UPLOAD_REJECTED": "Die Datei wurde nicht akzeptiert. Bitte prüfen Sie Format und Größe."
+    "UPLOAD_REJECTED": "Die Datei wurde nicht akzeptiert. Bitte prüfen Sie Format und Größe.",
+    "INVALID_INPUT": "Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut.",
+    "SPAM": "Die Anfrage wurde nicht angenommen. Bitte versuchen Sie es erneut.",
+    "offline": "Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
   },
   "seo": {
     "defaultTitle": "Mihajlo Estate — Immobilien in Belgrad und Serbien",

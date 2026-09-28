@@ -229,7 +229,309 @@
     "statusRented": "Let",
     "exclusive": "Exclusive",
     "new": "New",
-    "soon": "Coming soon"
+    "soon": "Coming soon",
+    "breadcrumbLabel": "Breadcrumb",
+    "verifiedDocs": "Documents verified",
+    "verifiedDocsHint": "The agent checked the ownership documents on {date}.",
+    "refCode": "Ref. {ref}",
+    "compliance": "{company} · Register of Brokers no. {registryNo}",
+    "propertyType": {
+      "apartment": "Apartment",
+      "house": "House",
+      "commercial": "Retail unit",
+      "office": "Office",
+      "land": "Land plot",
+      "garage": "Garage",
+      "cottage": "Holiday cottage"
+    },
+    "transaction": {
+      "sale": "For sale",
+      "rent": "For rent"
+    },
+    "structure": {
+      "r05": "Studio",
+      "r1": "1-room",
+      "r15": "1.5-room",
+      "r2": "2-room",
+      "r25": "2.5-room",
+      "r3": "3-room",
+      "r35": "3.5-room",
+      "r4": "4-room",
+      "r45": "4.5-room",
+      "r5": "5+ rooms"
+    },
+    "structureApartment": {
+      "r05": "Studio",
+      "r1": "1-room apartment",
+      "r15": "1.5-room apartment",
+      "r2": "2-room apartment",
+      "r25": "2.5-room apartment",
+      "r3": "3-room apartment",
+      "r35": "3.5-room apartment",
+      "r4": "4-room apartment",
+      "r45": "4.5-room apartment",
+      "r5": "5-room apartment"
+    },
+    "typeWithArea": "{type}, {area}",
+    "tabs": {
+      "label": "Photos, plans and tours",
+      "photos": "Photos",
+      "floorPlans": "Floor plan",
+      "video": "Video",
+      "tour360": "360° tour",
+      "walk3d": "3D walkthrough"
+    },
+    "galleryUi": {
+      "showAll": "All photos ({count})",
+      "open": "Open photo {index} of {total}",
+      "filterLabel": "View by room",
+      "all": "All",
+      "counter": "{index} / {total}",
+      "credit": "Photo: {author}"
+    },
+    "room": {
+      "living": "Living room",
+      "kitchen": "Kitchen",
+      "dining": "Dining room",
+      "bedroom": "Bedroom",
+      "bathroom": "Bathroom",
+      "office": "Study",
+      "terrace": "Terrace",
+      "hall": "Hallway",
+      "exterior": "Exterior",
+      "building": "Building",
+      "view": "View",
+      "plan": "Floor plan",
+      "other": "Other"
+    },
+    "video": {
+      "play": "Play video",
+      "notice": "The video loads from {provider} only when you click.",
+      "openExternal": "Open the video on {provider}"
+    },
+    "tourSlot": {
+      "heading360": "360° tour",
+      "heading3d": "Walk through the space in 3D",
+      "scenes": "{count, plural, one {# room} other {# rooms}}",
+      "soonBody": "An interactive tour is coming to the site soon. In the meantime, browse the photos or book a viewing, in person or by video call."
+    },
+    "price": {
+      "drop": "Price reduced",
+      "dropBy": "Price reduced by {pct}%",
+      "historyInitial": "Original price",
+      "historyChange": "New price",
+      "historyEmpty": "The price has not changed since the property was listed.",
+      "showRsd": "Show in dinars",
+      "showEur": "Show in euros",
+      "rsdNote": "Indicative, at {rate} RSD to €1",
+      "vatIncluded": "Price includes VAT",
+      "deposit": "Deposit {amount}"
+    },
+    "facts": {
+      "heading": "Key facts",
+      "registeredArea": "Registered floor area",
+      "plotArea": "Plot area",
+      "bedrooms": "Bedrooms",
+      "bathrooms": "Bathrooms",
+      "floorOf": "{floor} of {total}",
+      "renovated": "Renovated",
+      "construction": "Construction",
+      "condition": "Condition",
+      "elevator": "Lift",
+      "outdoor": "Outdoor space",
+      "orientation": "Aspect",
+      "bills": "Monthly costs",
+      "billsValue": "Infostan utilities ~{infostan}, service charge ~{maintenance}",
+      "availableFrom": "Available from",
+      "completion": "Construction completion",
+      "minLease": "Minimum tenancy",
+      "minLeaseValue": "{count, plural, one {# month} other {# months}}",
+      "pets": "Pets allowed",
+      "utilitiesIncluded": "Bills included",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "condition": {
+      "original": "Original condition",
+      "renovated": "Renovated",
+      "lux": "High-end finish",
+      "needs_renovation": "Needs renovation"
+    },
+    "construction": {
+      "new": "New build",
+      "old": "Older building",
+      "under_construction": "Under construction"
+    },
+    "furnishingValue": {
+      "furnished": "Furnished",
+      "semi": "Part-furnished",
+      "unfurnished": "Unfurnished"
+    },
+    "heatingValue": {
+      "CG": "District heating",
+      "EG": "Individual central heating",
+      "TA": "Storage heaters",
+      "gas": "Gas",
+      "floor": "Underfloor heating",
+      "heat_pump": "Heat pump",
+      "AC": "Air conditioning",
+      "pellet": "Pellet heating",
+      "other": "Other"
+    },
+    "parkingValue": {
+      "garage": "Garage",
+      "garage_spot": "Garage space",
+      "parking_spot": "Parking space",
+      "street_zone": "Street parking (paid zone)"
+    },
+    "orientationValue": {
+      "N": "north",
+      "E": "east",
+      "S": "south",
+      "W": "west"
+    },
+    "floorValue": {
+      "SUT": "Semi-basement",
+      "PSUT": "Lower ground floor",
+      "PR": "Ground floor",
+      "VPR": "Raised ground floor",
+      "PK": "Attic"
+    },
+    "highlights": "At a glance",
+    "featureGroups": {
+      "interior": "Interior",
+      "building": "Building",
+      "outdoor": "Outdoor space",
+      "legal": "Legal and financial"
+    },
+    "feature": {
+      "elevator": "Lift",
+      "terrace": "Terrace",
+      "loggia": "Loggia",
+      "balcony": "Balcony",
+      "frenchBalcony": "Juliet balcony",
+      "garden": "Garden",
+      "basement": "Cellar",
+      "storage": "Storeroom",
+      "ac": "Air conditioning",
+      "intercom": "Intercom",
+      "videoSurveillance": "CCTV",
+      "alarm": "Alarm system",
+      "pool": "Swimming pool",
+      "fireplace": "Fireplace",
+      "parking": "Parking",
+      "registered": "Registered title",
+      "occupancyPermit": "Occupancy permit",
+      "vatRefund": "Eligible for VAT refund",
+      "mortgage": "Mortgage possible",
+      "installments": "Payment in instalments",
+      "swap": "Part exchange considered",
+      "furnished": "Furnished"
+    },
+    "legalBlock": {
+      "registration": "Title registration",
+      "legalization": "Legalization",
+      "occupancyPermit": "Occupancy permit",
+      "encumbrance": "Encumbrances",
+      "noEncumbrance": "No registered encumbrances",
+      "ownershipShare": "Ownership share",
+      "commission": "Commission",
+      "verifiedNote": "Our agent has checked the ownership documents, in accordance with Article 16 of the Law on Brokerage in Real Estate Transactions and Leases.",
+      "unverifiedNote": "We check the documents before any contract is signed. You can ask the agent to see them.",
+      "termsLink": "Terms of business"
+    },
+    "registration": {
+      "registered": "Registered in the cadastre",
+      "in_progress": "Registration in progress",
+      "not_registered": "Not registered"
+    },
+    "legalization": {
+      "legal": "Built with a building permit",
+      "legalized": "Legalized",
+      "in_progress": "Legalization in progress"
+    },
+    "locationBlock": {
+      "exact": "Exact location of the property.",
+      "approximate": "The location shown is approximate. Your agent will give you the exact address before the viewing.",
+      "mapLabel": "Map showing the property location",
+      "loadMap": "Show map",
+      "poiHeading": "Nearby",
+      "neighborhoodCta": "Get to know {name}",
+      "attribution": "Map: OpenFreeMap, data © OpenStreetMap contributors"
+    },
+    "poi": {
+      "school": "School",
+      "kindergarten": "Nursery",
+      "transit": "Public transport",
+      "park": "Park",
+      "shop": "Shop",
+      "health": "Healthcare"
+    },
+    "mortgage": {
+      "heading": "Mortgage calculator",
+      "price": "Price",
+      "downPct": "Deposit (%)",
+      "years": "Term (years)",
+      "rate": "Interest rate (%)",
+      "presetsLabel": "Quick deposit options",
+      "preset": "{pct}% deposit",
+      "monthly": "Monthly repayment",
+      "loan": "Loan amount",
+      "downPayment": "Deposit",
+      "totalInterest": "Total interest",
+      "term": "{years}-year term · {months} repayments",
+      "youngNote": "Buyers aged 35 or under purchasing their first home can use the state housing loan scheme, which requires a lower deposit. Check the terms with your bank.",
+      "disclaimer": "An indicative calculation using the annuity (equal repayments) method. The effective interest rate (EIR) and final terms depend on the bank, insurance and your creditworthiness."
+    },
+    "costs": {
+      "heading": "Total purchase costs",
+      "transferTax": "Property transfer tax ({rate}%)",
+      "transferTaxNote": "The seller is liable by law, but contracts often pass it on to the buyer.",
+      "firstHome": "A first-time buyer may be exempt from this tax on 40 m² for themselves and 15 m² for each household member. The exemption is claimed from the tax office, so we do not deduct it here.",
+      "vat": "VAT ({rate}%)",
+      "vatIncluded": "included in the price",
+      "vatNote": "The first sale of a new build is subject to VAT instead of transfer tax. A first-time buyer can claim a VAT refund on 40 m² for themselves and 15 m² for each household member.",
+      "agencyFee": "Agency commission ({rate}%)",
+      "agencyFeePct": "Commission (%)",
+      "agencyFeeNote": "The exact amount is agreed in the brokerage agreement.",
+      "notary": "Notary (approx.)",
+      "cadastre": "Cadastre registration (approx.)",
+      "extras": "Costs on top of the price",
+      "total": "Total",
+      "disclaimer": "Approximate figures, for information only. This is not tax or legal advice."
+    },
+    "agentCard": {
+      "languages": "Speaks {languages}",
+      "call": "Call",
+      "email": "Email",
+      "license": "Licence no. {id}",
+      "contactHeading": "Your contact for this property"
+    },
+    "actionBar": {
+      "label": "Quick actions",
+      "call": "Call",
+      "book": "Book a viewing"
+    },
+    "share": {
+      "heading": "Share",
+      "email": "Email",
+      "emailSubject": "{title} — Mihajlo Estate"
+    },
+    "closed": {
+      "sold": "This property has been sold. Browse similar properties, or tell us what you are looking for and we will find it for you.",
+      "rented": "This property has been let. Browse similar properties, or tell us what you are looking for and we will find it for you.",
+      "reserved": "This property is reserved. Send us an enquiry if you would like to hear from us should the sale fall through.",
+      "browse": "Browse properties"
+    },
+    "contactHeading": "Interested?",
+    "formTabs": {
+      "label": "Contact method",
+      "inquiry": "Enquiry",
+      "viewing": "Viewing"
+    },
+    "seoTitle": "{structure}, {place} — {price}",
+    "seoDescription": "{title}. {area}, {floor}. Price {price} ({perM2}). Ref. {ref}.",
+    "ogAlt": "{title} — {price}"
   },
   "card": {
     "exclusive": "Exclusive",
@@ -260,7 +562,24 @@
     "invalidPhone": "Enter a valid telephone number",
     "tooShort": "Enter at least {min} characters",
     "tooLong": "Maximum {max} characters",
-    "optional": "optional"
+    "optional": "optional",
+    "inquiryMessageDefault": "I am interested in property {ref}. Please send me further details.",
+    "purpose": "We use your details only to reply to your enquiry. The legal basis is your consent, which you can withdraw at any time.",
+    "consentPrivacy": "I consent to the processing of my personal data for the purpose of replying to my enquiry, in accordance with the <link>privacy policy</link>.",
+    "consentRequired": "We cannot reply to your enquiry without your consent.",
+    "marketingOptIn": "I would like to receive an occasional selection of new properties.",
+    "honeypot": "Leave this field empty",
+    "successHeading": "Your enquiry has been sent",
+    "sendAnother": "Send another enquiry",
+    "viewingDate": "Choose a day",
+    "viewingTime": "Choose a time",
+    "viewingNoSlots": "There are no times available that day. Please choose another day.",
+    "viewingTimezone": "All times are Belgrade time.",
+    "viewingSlotRequired": "Please choose a day and a time.",
+    "viewingSelected": "You have chosen {date} at {time}.",
+    "viewingSuccessHeading": "Your viewing request has been sent",
+    "viewingMessage": "Note for the agent",
+    "slotTaken": "booked"
   },
   "consent": {
     "bannerHeading": "Cookies",
@@ -395,7 +714,10 @@
     "SLOT_TAKEN": "That time is already taken. Please choose another.",
     "PUBLISH_BLOCKED": "Publishing is blocked because required details are missing.",
     "INVITE_INVALID": "This invitation has expired or has already been used.",
-    "UPLOAD_REJECTED": "The file was not accepted. Check the format and the size."
+    "UPLOAD_REJECTED": "The file was not accepted. Check the format and the size.",
+    "INVALID_INPUT": "Please check the details you entered and try again.",
+    "SPAM": "Your request was not accepted. Please try again.",
+    "offline": "We could not reach the server. Check your internet connection and try again."
   },
   "seo": {
     "defaultTitle": "Mihajlo Estate — property in Belgrade and Serbia",

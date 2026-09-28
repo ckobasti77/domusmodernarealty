@@ -91,7 +91,10 @@
     "RATE_LIMITED": "Poslali ste previše zahteva. Pokušajte ponovo za nekoliko minuta.",
     "retry": "Pokušajte ponovo",
     "SLOT_TAKEN": "Taj termin je već zauzet. Izaberite drugi.",
-    "UPLOAD_REJECTED": "Fajl nije prihvaćen. Proverite format i veličinu."
+    "UPLOAD_REJECTED": "Fajl nije prihvaćen. Proverite format i veličinu.",
+    "INVALID_INPUT": "Proverite unete podatke i pokušajte ponovo.",
+    "SPAM": "Zahtev nije prihvaćen. Pokušajte ponovo.",
+    "offline": "Veza sa serverom nije uspostavljena. Proverite internet i pokušajte ponovo."
   },
   "favorites": {
     "clear": "Očisti listu",
@@ -158,7 +161,24 @@
     "success": "Hvala. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
     "successViewing": "Zahtev je poslat. Potvrdićemo termin telefonom.",
     "tooLong": "Najviše {max} znakova",
-    "tooShort": "Unesite najmanje {min} znakova"
+    "tooShort": "Unesite najmanje {min} znakova",
+    "inquiryMessageDefault": "Zanima me nekretnina {ref}. Molim Vas za više informacija.",
+    "purpose": "Podatke koristimo samo da bismo odgovorili na Vaš upit. Pravni osnov je Vaša saglasnost, koju možete povući u svakom trenutku.",
+    "consentPrivacy": "Saglasan/na sam sa obradom podataka o ličnosti u svrhu odgovora na upit, u skladu sa <link>Politikom privatnosti</link>.",
+    "consentRequired": "Bez Vaše saglasnosti ne možemo da odgovorimo na upit.",
+    "marketingOptIn": "Želim da povremeno primam izbor novih nekretnina.",
+    "honeypot": "Ostavite ovo polje prazno",
+    "successHeading": "Upit je poslat",
+    "sendAnother": "Pošaljite novi upit",
+    "viewingDate": "Izaberite dan",
+    "viewingTime": "Izaberite termin",
+    "viewingNoSlots": "Tog dana nema slobodnih termina. Izaberite drugi dan.",
+    "viewingTimezone": "Termini su po beogradskom vremenu.",
+    "viewingSlotRequired": "Izaberite dan i termin.",
+    "viewingSelected": "Izabrali ste {date} u {time}.",
+    "viewingSuccessHeading": "Zahtev za razgledanje je poslat",
+    "viewingMessage": "Napomena za agenta",
+    "slotTaken": "zauzeto"
   },
   "home": {
     "cityFilmAlt": "Reka i krovovi grada iz vazduha, u zlatnom satu",
@@ -320,7 +340,309 @@
     "tour360": "360° obilazak",
     "viewGallery": "{count, plural, one {Pogledajte # fotografiju} few {Pogledajte # fotografije} other {Pogledajte # fotografija}}",
     "walk3d": "3D šetnja",
-    "yearBuilt": "Godina izgradnje"
+    "yearBuilt": "Godina izgradnje",
+    "breadcrumbLabel": "Putanja",
+    "verifiedDocs": "Verifikovana dokumentacija",
+    "verifiedDocsHint": "Agent je proverio vlasničku dokumentaciju {date}.",
+    "refCode": "Šifra {ref}",
+    "compliance": "{company} · Registar posrednika br. {registryNo}",
+    "propertyType": {
+      "apartment": "Stan",
+      "house": "Kuća",
+      "commercial": "Lokal",
+      "office": "Kancelarija",
+      "land": "Plac",
+      "garage": "Garaža",
+      "cottage": "Vikendica"
+    },
+    "transaction": {
+      "sale": "Prodaja",
+      "rent": "Izdavanje"
+    },
+    "structure": {
+      "r05": "Garsonjera",
+      "r1": "Jednosoban",
+      "r15": "Jednoiposoban",
+      "r2": "Dvosoban",
+      "r25": "Dvoiposoban",
+      "r3": "Trosoban",
+      "r35": "Troiposoban",
+      "r4": "Četvorosoban",
+      "r45": "Četvoroiposoban",
+      "r5": "Petosoban i veći"
+    },
+    "structureApartment": {
+      "r05": "Garsonjera",
+      "r1": "Jednosoban stan",
+      "r15": "Jednoiposoban stan",
+      "r2": "Dvosoban stan",
+      "r25": "Dvoiposoban stan",
+      "r3": "Trosoban stan",
+      "r35": "Troiposoban stan",
+      "r4": "Četvorosoban stan",
+      "r45": "Četvoroiposoban stan",
+      "r5": "Petosoban stan"
+    },
+    "typeWithArea": "{type}, {area}",
+    "tabs": {
+      "label": "Fotografije, planovi i obilasci",
+      "photos": "Fotografije",
+      "floorPlans": "Tlocrt",
+      "video": "Video",
+      "tour360": "360° tura",
+      "walk3d": "3D šetnja"
+    },
+    "galleryUi": {
+      "showAll": "Sve fotografije ({count})",
+      "open": "Otvorite fotografiju {index} od {total}",
+      "filterLabel": "Prikaz po prostoriji",
+      "all": "Sve",
+      "counter": "{index} / {total}",
+      "credit": "Fotografija: {author}"
+    },
+    "room": {
+      "living": "Dnevna soba",
+      "kitchen": "Kuhinja",
+      "dining": "Trpezarija",
+      "bedroom": "Spavaća soba",
+      "bathroom": "Kupatilo",
+      "office": "Radna soba",
+      "terrace": "Terasa",
+      "hall": "Hodnik",
+      "exterior": "Spoljašnjost",
+      "building": "Zgrada",
+      "view": "Pogled",
+      "plan": "Tlocrt",
+      "other": "Ostalo"
+    },
+    "video": {
+      "play": "Pustite video",
+      "notice": "Video se učitava sa servisa {provider} tek kada kliknete.",
+      "openExternal": "Otvorite video na servisu {provider}"
+    },
+    "tourSlot": {
+      "heading360": "360° obilazak",
+      "heading3d": "3D šetnja kroz prostor",
+      "scenes": "{count, plural, one {# prostorija} few {# prostorije} other {# prostorija}}",
+      "soonBody": "Interaktivni obilazak uskoro stiže na sajt. Do tada pogledajte fotografije ili zakažite razgledanje uživo ili video pozivom."
+    },
+    "price": {
+      "drop": "Snižena cena",
+      "dropBy": "Cena snižena {pct}%",
+      "historyInitial": "Početna cena",
+      "historyChange": "Nova cena",
+      "historyEmpty": "Cena nije menjana od objave.",
+      "showRsd": "Prikaži u dinarima",
+      "showEur": "Prikaži u evrima",
+      "rsdNote": "Informativno, po kursu {rate} RSD za 1 €",
+      "vatIncluded": "PDV je uračunat u cenu",
+      "deposit": "Depozit {amount}"
+    },
+    "facts": {
+      "heading": "Osnovni podaci",
+      "registeredArea": "Uknjižena površina",
+      "plotArea": "Površina placa",
+      "bedrooms": "Spavaće sobe",
+      "bathrooms": "Kupatila",
+      "floorOf": "{floor} od {total}",
+      "renovated": "Renovirano",
+      "construction": "Gradnja",
+      "condition": "Stanje",
+      "elevator": "Lift",
+      "outdoor": "Spoljni prostor",
+      "orientation": "Orijentacija",
+      "bills": "Mesečni troškovi",
+      "billsValue": "Infostan ~{infostan}, održavanje ~{maintenance}",
+      "availableFrom": "Useljivo od",
+      "completion": "Završetak gradnje",
+      "minLease": "Minimalni zakup",
+      "minLeaseValue": "{count, plural, one {# mesec} few {# meseca} other {# meseci}}",
+      "pets": "Kućni ljubimci",
+      "utilitiesIncluded": "Režije uračunate",
+      "yes": "Da",
+      "no": "Ne"
+    },
+    "condition": {
+      "original": "Izvorno stanje",
+      "renovated": "Renovirano",
+      "lux": "Lux",
+      "needs_renovation": "Za renoviranje"
+    },
+    "construction": {
+      "new": "Novogradnja",
+      "old": "Starogradnja",
+      "under_construction": "U izgradnji"
+    },
+    "furnishingValue": {
+      "furnished": "Namešten",
+      "semi": "Polunamešten",
+      "unfurnished": "Prazan"
+    },
+    "heatingValue": {
+      "CG": "Centralno (CG)",
+      "EG": "Etažno (EG)",
+      "TA": "TA peć",
+      "gas": "Gas",
+      "floor": "Podno",
+      "heat_pump": "Toplotna pumpa",
+      "AC": "Klima uređaj",
+      "pellet": "Pelet",
+      "other": "Drugo"
+    },
+    "parkingValue": {
+      "garage": "Garaža",
+      "garage_spot": "Garažno mesto",
+      "parking_spot": "Parking mesto",
+      "street_zone": "Ulična zona"
+    },
+    "orientationValue": {
+      "N": "sever",
+      "E": "istok",
+      "S": "jug",
+      "W": "zapad"
+    },
+    "floorValue": {
+      "SUT": "Suteren",
+      "PSUT": "Polusuteren",
+      "PR": "Prizemlje",
+      "VPR": "Visoko prizemlje",
+      "PK": "Potkrovlje"
+    },
+    "highlights": "Ukratko",
+    "featureGroups": {
+      "interior": "Enterijer",
+      "building": "Zgrada",
+      "outdoor": "Spoljašnji prostor",
+      "legal": "Pravno i finansije"
+    },
+    "feature": {
+      "elevator": "Lift",
+      "terrace": "Terasa",
+      "loggia": "Lođa",
+      "balcony": "Balkon",
+      "frenchBalcony": "Francuski balkon",
+      "garden": "Bašta",
+      "basement": "Podrum",
+      "storage": "Ostava",
+      "ac": "Klima",
+      "intercom": "Interfon",
+      "videoSurveillance": "Video nadzor",
+      "alarm": "Alarm",
+      "pool": "Bazen",
+      "fireplace": "Kamin",
+      "parking": "Parking",
+      "registered": "Uknjiženo",
+      "occupancyPermit": "Upotrebna dozvola",
+      "vatRefund": "Povraćaj PDV-a",
+      "mortgage": "Može na kredit",
+      "installments": "Plaćanje na rate",
+      "swap": "Moguća zamena",
+      "furnished": "Namešteno"
+    },
+    "legalBlock": {
+      "registration": "Uknjiženost",
+      "legalization": "Legalizacija",
+      "occupancyPermit": "Upotrebna dozvola",
+      "encumbrance": "Teret",
+      "noEncumbrance": "Bez upisanog tereta",
+      "ownershipShare": "Udeo u vlasništvu",
+      "commission": "Provizija",
+      "verifiedNote": "Naš agent je proverio vlasničku dokumentaciju, u skladu sa članom 16 Zakona o posredovanju u prometu i zakupu nepokretnosti.",
+      "unverifiedNote": "Dokumentaciju proveravamo pre potpisivanja ugovora. Uvid možete zatražiti od agenta.",
+      "termsLink": "Uslovi poslovanja"
+    },
+    "registration": {
+      "registered": "Uknjiženo",
+      "in_progress": "U postupku uknjižbe",
+      "not_registered": "Nije uknjiženo"
+    },
+    "legalization": {
+      "legal": "Izgrađeno po dozvoli",
+      "legalized": "Legalizovano (ozakonjeno)",
+      "in_progress": "U postupku ozakonjenja"
+    },
+    "locationBlock": {
+      "exact": "Tačna lokacija nekretnine.",
+      "approximate": "Prikazana je približna lokacija. Tačnu adresu dobijate od agenta pre razgledanja.",
+      "mapLabel": "Mapa lokacije nekretnine",
+      "loadMap": "Prikaži mapu",
+      "poiHeading": "U blizini",
+      "neighborhoodCta": "Upoznajte kraj {name}",
+      "attribution": "Mapa: OpenFreeMap, podaci © OpenStreetMap"
+    },
+    "poi": {
+      "school": "Škola",
+      "kindergarten": "Vrtić",
+      "transit": "Prevoz",
+      "park": "Park",
+      "shop": "Prodavnica",
+      "health": "Zdravstvo"
+    },
+    "mortgage": {
+      "heading": "Kreditni kalkulator",
+      "price": "Cena",
+      "downPct": "Učešće (%)",
+      "years": "Rok otplate (godina)",
+      "rate": "Kamatna stopa (%)",
+      "presetsLabel": "Brzi izbor učešća",
+      "preset": "Učešće {pct}%",
+      "monthly": "Mesečna rata",
+      "loan": "Iznos kredita",
+      "downPayment": "Učešće",
+      "totalInterest": "Ukupna kamata",
+      "term": "{years} god. · {months} rata",
+      "youngNote": "Mladi do 35 godina koji kupuju prvi stan mogu da koriste državni program stambenih kredita sa nižim učešćem. Uslove proverite u banci.",
+      "disclaimer": "Informativni obračun po anuitetskom modelu. Efektivna kamatna stopa (EKS) i konačni uslovi zavise od banke, osiguranja i Vaše kreditne sposobnosti."
+    },
+    "costs": {
+      "heading": "Ukupni troškovi kupovine",
+      "transferTax": "Porez na prenos apsolutnih prava ({rate}%)",
+      "transferTaxNote": "Zakonski ga plaća prodavac, ali se ugovorom često prenosi na kupca.",
+      "firstHome": "Kupac prvog stana može biti oslobođen ovog poreza za 40 m² za sebe i po 15 m² za svakog člana domaćinstva. Pravo se ostvaruje u poreskoj upravi, pa ga ovde ne oduzimamo.",
+      "vat": "PDV ({rate}%)",
+      "vatIncluded": "uračunat u cenu",
+      "vatNote": "Prva prodaja novogradnje oporezuje se PDV-om umesto porezom na prenos. Kupac prvog stana može tražiti povraćaj PDV-a za 40 m² za sebe i po 15 m² za svakog člana domaćinstva.",
+      "agencyFee": "Agencijska provizija ({rate}%)",
+      "agencyFeePct": "Provizija (%)",
+      "agencyFeeNote": "Tačan iznos se ugovara ugovorom o posredovanju.",
+      "notary": "Notar (okvirno)",
+      "cadastre": "Upis u katastar (okvirno)",
+      "extras": "Troškovi pored cene",
+      "total": "Ukupno",
+      "disclaimer": "Okvirni iznosi, samo za informaciju. Nisu poreski ni pravni savet."
+    },
+    "agentCard": {
+      "languages": "Govori: {languages}",
+      "call": "Pozovite",
+      "email": "Pišite",
+      "license": "Licenca {id}",
+      "contactHeading": "Kontakt za ovu nekretninu"
+    },
+    "actionBar": {
+      "label": "Brze akcije",
+      "call": "Pozovi",
+      "book": "Zakaži"
+    },
+    "share": {
+      "heading": "Podelite",
+      "email": "E-pošta",
+      "emailSubject": "{title} — Mihajlo Estate"
+    },
+    "closed": {
+      "sold": "Ova nekretnina je prodata. Pogledajte slične ponude ili nam pišite šta tražite, pronaći ćemo za Vas.",
+      "rented": "Ova nekretnina je izdata. Pogledajte slične ponude ili nam pišite šta tražite, pronaći ćemo za Vas.",
+      "reserved": "Nekretnina je rezervisana. Pošaljite upit ako želite da Vas obavestimo ukoliko se kupovina ne realizuje.",
+      "browse": "Pogledajte ponudu"
+    },
+    "contactHeading": "Zainteresovani ste?",
+    "formTabs": {
+      "label": "Način kontakta",
+      "inquiry": "Upit",
+      "viewing": "Razgledanje"
+    },
+    "seoTitle": "{structure}, {place} — {price}",
+    "seoDescription": "{title}. {area}, {floor}. Cena {price} ({perM2}). Šifra {ref}.",
+    "ogAlt": "{title} — {price}"
   },
   "locations": {
     "avgPriceRent": "Prosečno izdavanje",

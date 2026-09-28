@@ -30,34 +30,84 @@ const ROOM_LABEL: Record<RoomTag, L10n> = {
 };
 
 /**
- * Deterministic, non-repeating pick: `offset` walks the category list so two
- * listings rarely open with the same photo, and a listing never repeats one.
+ * Assigns photos to ALL demo listings in one deterministic pass.
+ *
+ * Doing it globally (rather than per listing with a modulo cursor) is what keeps
+ * covers distinct: pass one hands every listing an unused photo for its first
+ * category, and only then does pass two fill the remaining gallery slots. A
+ * per-listing `index % pool.length` cursor collides as soon as two listings that
+ * share a first category are `pool.length` apart — which is exactly what the six
+ * villa photos did.
+ *
+ * Interior slots may still repeat across listings once a pool is exhausted: the
+ * verified pool in `docs/assets/demo-media.json` is 90 photos for ~220 slots, and
+ * inventing image URLs is forbidden.
  */
-export function pickPhotos(
-  categories: readonly PhotoCategory[],
-  offset: number,
-): DemoPhoto[] {
-  const used = new Set<string>();
-  const out: DemoPhoto[] = [];
-  const perCategoryCursor = new Map<string, number>();
+export function buildPhotoPlan(
+  listings: readonly { photos: readonly PhotoCategory[] }[],
+): DemoPhoto[][] {
+  const plan: DemoPhoto[][] = listings.map(() => []);
+  const usedGlobally = new Set<string>();
+  const cursor = new Map<PhotoCategory, number>();
 
-  for (const category of categories) {
+  /** Next photo in `category` that no one has taken yet; wraps when exhausted. */
+  function next(category: PhotoCategory, usedHere: Set<string>): DemoPhoto | undefined {
     const pool = DEMO_PHOTOS_BY_CATEGORY[category] ?? [];
-    if (pool.length === 0) continue;
-    const start = (perCategoryCursor.get(category) ?? offset) % pool.length;
-    let picked: DemoPhoto | undefined;
+    if (pool.length === 0) return undefined;
+    const start = cursor.get(category) ?? 0;
+
+    // First choice: unused anywhere and unused in this listing.
     for (let step = 0; step < pool.length; step += 1) {
       const candidate = pool[(start + step) % pool.length];
-      if (used.has(candidate.url)) continue;
-      picked = candidate;
-      perCategoryCursor.set(category, (start + step + 1) % pool.length);
-      break;
+      if (usedGlobally.has(candidate.url) || usedHere.has(candidate.url)) continue;
+      cursor.set(category, (start + step + 1) % pool.length);
+      return candidate;
     }
-    if (picked === undefined) continue;
-    used.add(picked.url);
-    out.push(picked);
+    // Fallback: the pool is exhausted globally, so only avoid repeats here.
+    for (let step = 0; step < pool.length; step += 1) {
+      const candidate = pool[(start + step) % pool.length];
+      if (usedHere.has(candidate.url)) continue;
+      cursor.set(category, (start + step + 1) % pool.length);
+      return candidate;
+    }
+    return undefined;
   }
-  return out;
+
+  const usedPerListing = listings.map(() => new Set<string>());
+
+  // Pass 1 — the cover of every listing, so covers get first claim on the pools.
+  for (const [index, listing] of listings.entries()) {
+    const category = listing.photos[0];
+    if (category === undefined) continue;
+    const photo = next(category, usedPerListing[index]);
+    if (photo === undefined) continue;
+    usedGlobally.add(photo.url);
+    usedPerListing[index].add(photo.url);
+    plan[index].push(photo);
+  }
+
+  // Pass 2 — the remaining gallery slots, listing by listing.
+  for (const [index, listing] of listings.entries()) {
+    for (const category of listing.photos.slice(1)) {
+      const photo = next(category, usedPerListing[index]);
+      if (photo === undefined) continue;
+      usedGlobally.add(photo.url);
+      usedPerListing[index].add(photo.url);
+      plan[index].push(photo);
+    }
+  }
+
+  return plan;
+}
+
+/** Single-category pick, used for post and location cover images. */
+export function pickPhoto(
+  category: PhotoCategory,
+  offset: number,
+): DemoPhoto | undefined {
+  const pool = DEMO_PHOTOS_BY_CATEGORY[category] ?? [];
+  if (pool.length === 0) return undefined;
+  return pool[offset % pool.length];
 }
 
 export function toMediaItems(

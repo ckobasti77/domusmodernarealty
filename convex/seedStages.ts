@@ -24,7 +24,7 @@ import { SEED_AGENTS } from "./seed/agents";
 import { SEED_LOCATIONS } from "./seed/locations";
 import { SEED_LISTINGS } from "./seed/spec";
 import { DEMO_PANORAMAS, DEMO_SPLATS } from "./seed/media.generated";
-import { pickPhotos, photoUrl, toMediaItems } from "./seed/media";
+import { buildPhotoPlan, pickPhoto, photoUrl, toMediaItems } from "./seed/media";
 import { LISTING_COPY_1 } from "./seed/content/listings1";
 import { LISTING_COPY_2 } from "./seed/content/listings2";
 import { LISTING_COPY_3 } from "./seed/content/listings3";
@@ -40,6 +40,9 @@ const LISTING_COPY: SeedListingCopy[] = [
 
 /** Stable "now" for the seed so mandates and publish dates look natural. */
 const DAY = 86_400_000;
+
+/** Photo assignment for all 30 demo listings, computed once from the spec. */
+const PHOTO_PLAN = buildPhotoPlan(SEED_LISTINGS);
 
 function l10n(text: { sr: string; en?: string; ru?: string; de?: string }): L10n {
   return {
@@ -327,7 +330,7 @@ export const seedContent = internalMutation({
         .unique();
       if (existing !== null) continue;
 
-      const cover = pickPhotos([post.coverCategory], index * 3)[0];
+      const cover = pickPhoto(post.coverCategory, index * 3);
       await ctx.db.insert("posts", {
         slug: post.slug,
         title: l10n(post.title),
@@ -427,7 +430,7 @@ export const seedListings = internalMutation({
       }
 
       const title = l10n(copy.title);
-      const photos = pickPhotos(spec.photos, index * 2 + 1);
+      const photos = PHOTO_PLAN[index] ?? [];
       const media: MediaItem[] = toMediaItems(
         photos,
         spec.roomTags as readonly RoomTag[],

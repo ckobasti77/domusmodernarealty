@@ -1,5 +1,6 @@
 import { fetchQuery } from "convex/nextjs";
 import { getLocale, getTranslations } from "next-intl/server";
+import { unstable_rethrow } from "next/navigation";
 import { cache } from "react";
 import { api } from "@/convex/_generated/api";
 import { Link } from "@/i18n/navigation";
@@ -56,7 +57,10 @@ function socialLinks(socials: {
 export const getPublicSettings = cache(async () => {
   try {
     return await fetchQuery(api.settings.publicSettings, {});
-  } catch {
+  } catch (error) {
+    // Next's own prerender bail-out must reach Next, or a page could be
+    // baked with the "settings missing" footer.
+    unstable_rethrow(error);
     return null;
   }
 });

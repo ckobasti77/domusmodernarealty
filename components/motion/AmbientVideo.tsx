@@ -14,7 +14,9 @@ import { cn } from "@/lib/utils";
  *    otherwise — off-screen video decoding is pure battery drain.
  *  - It cross-fades in once it is actually playing, so a slow connection just
  *    keeps the still.
- *  - Reduced motion and data-saver connections never mount it.
+ *  - Reduced motion, data-saver connections and viewports outside `media`
+ *    (phones, by default) never mount it: a decorative loop is not worth
+ *    2 MB of a mobile data plan.
  *
  * Decorative by contract: it is `aria-hidden` and carries no controls, so it
  * must never hold information the still and the copy do not.
@@ -27,7 +29,16 @@ function prefersLightPayload(): boolean {
   return connection?.saveData === true;
 }
 
-export function AmbientVideo({ video, className }: { video: MediaVideo; className?: string }) {
+export function AmbientVideo({
+  video,
+  media = "(min-width: 768px)",
+  className,
+}: {
+  video: MediaVideo;
+  /** Only viewports matching this query ever load the video. */
+  media?: string;
+  className?: string;
+}) {
   const host = useRef<HTMLDivElement>(null);
   const element = useRef<HTMLVideoElement>(null);
   const reduced = useReducedMotion();
@@ -36,7 +47,7 @@ export function AmbientVideo({ video, className }: { video: MediaVideo; classNam
 
   useEffect(() => {
     const target = host.current;
-    if (target === null || reduced || prefersLightPayload()) return;
+    if (target === null || reduced || prefersLightPayload() || !window.matchMedia(media).matches) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting !== true) return;
@@ -47,7 +58,7 @@ export function AmbientVideo({ video, className }: { video: MediaVideo; classNam
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [reduced]);
+  }, [media, reduced]);
 
   useEffect(() => {
     const target = host.current;

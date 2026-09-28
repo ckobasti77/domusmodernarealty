@@ -19,7 +19,7 @@ Calm, precise, confident, warm. We speak like a trusted advisor, not a salesman.
   - Kupovina: "Pronalazimo, proveravamo i pregovaramo za Vas."
   - Prodaja: "Prava cena, prava publika, bez stresa."
   - Zakup: "Pouzdani zakupci i uredni ugovori."
-  - Procena: "Realna vrednost na osnovu stvarnih transakcija."
+  - Procena: "Okvirna procena onlajn za dva minuta, a na terenu i detaljna analiza sa uporedivim prodajama iz Vašeg kraja." (owner decision 2026-09-28: only the on-site valuation may cite real transactions)
   - 3D ture: "Nekretnina dostupna svakome, u svakom trenutku."
   - Relokacija i dijaspora: "Kupovina iz inostranstva, bez putovanja."
 - **3D teaser:** "Prošetajte pre nego što dođete." / "Virtuelne 360° ture i 3D šetnje za odabrane nekretnine."
@@ -30,8 +30,8 @@ Calm, precise, confident, warm. We speak like a trusted advisor, not a salesman.
   4. Razgledanja i pregovori
   5. Ugovor i primopredaja
 - **Numbers labels:** "godina iskustva", "prodatih nekretnina", "zadovoljnih klijenata", "dana do prodaje (prosek)". Values come from settings and are marked demo until edited.
-- **Valuation CTA:** "Koliko vredi Vaš stan?" / "Besplatna procena za 2 minuta, bez obaveza." / CTA "Započni procenu"
-- **Final CTA:** "Razgovarajmo." / "Pozovite nas, pišite na Viber ili WhatsApp — odgovaramo istog dana."
+- **Valuation CTA:** "Koliko vredi Vaš stan?" / "Okvirna procena za dva minuta, na osnovu prosečnih cena u Vašem kraju. Bez obaveza i bez poziva koje niste tražili." / CTA "Započnite procenu"
+- **Final CTA:** "Razgovarajmo." / "Pozovite nas ili pišite na Viber, WhatsApp ili e-poštu. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata." (the one site-wide reply-time promise)
 
 ## UI microcopy (examples)
 - Form consent (required): "Saglasan/na sam sa obradom podataka o ličnosti u svrhu odgovora na upit, u skladu sa [Politikom privatnosti]."

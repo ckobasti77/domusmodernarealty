@@ -170,7 +170,7 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     slug: "novi-beograd",
     kind: "municipality",
     parent: "beograd",
-    name: { sr: "Novi Beograd", en: "New Belgrade", ru: "Нови-Белград", de: "Neu-Belgrad" },
+    name: { sr: "Novi Beograd", en: "Novi Beograd", ru: "Нови-Белград", de: "Novi Beograd" },
     intro: {
       sr: "Blokovi iz sedamdesetih i osamdesetih, zelene unutrašnjosti i najviše ponude dvosobnih i trosobnih stanova u gradu. Uz njih novi poslovni koridor.",
       en: "Blocks from the 1970s and 80s, green interiors, and the city's deepest supply of two- and three-room flats, next to the new business corridor.",

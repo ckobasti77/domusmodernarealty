@@ -2,6 +2,7 @@ import "server-only";
 
 import { fetchQuery } from "convex/nextjs";
 import type { FunctionReturnType } from "convex/server";
+import { unstable_rethrow } from "next/navigation";
 import { getPublicSettings } from "@/components/site/Footer";
 import { api } from "@/convex/_generated/api";
 import type { ListingCard } from "@/convex/lib/dto";
@@ -32,6 +33,9 @@ export type HomeData = {
 
 function settled<T, F>(result: PromiseSettledResult<T>, fallback: F, label: string): T | F {
   if (result.status === "fulfilled") return result.value;
+  // A no-store fetch during prerendering throws Next's own "dynamic usage"
+  // signal; swallowing it would let the build bake an empty landing.
+  unstable_rethrow(result.reason);
   console.error(`[home] ${label} failed:`, result.reason);
   return fallback;
 }

@@ -112,9 +112,9 @@ export const SEED_AGENTS: SeedAgent[] = [
     },
     bio: {
       sr: "Radi sa investitorima i kupcima iz dijaspore na Novom Beogradu i u Zemunu. Prati rokove završetka, povraćaj PDV-a za prvi stan i uslove kreditiranja po projektima.",
-      en: "Works with investors and diaspora buyers in New Belgrade and Zemun. Tracks completion dates, the first-home VAT refund and the financing terms available per development.",
+      en: "Works with investors and diaspora buyers in Novi Beograd and Zemun. Tracks completion dates, the first-home VAT refund and the financing terms available per development.",
       ru: "Работает с инвесторами и покупателями из диаспоры в Нови-Белграде и Земуне. Отслеживает сроки сдачи, возврат НДС за первую квартиру и условия кредитования по проектам.",
-      de: "Arbeitet mit Investoren und Käufern aus der Diaspora in Neu-Belgrad und Zemun. Verfolgt Fertigstellungstermine, die MwSt.-Rückerstattung für die erste Wohnung und die Finanzierungsbedingungen je Projekt.",
+      de: "Arbeitet mit Investoren und Käufern aus der Diaspora in Novi Beograd und Zemun. Verfolgt Fertigstellungstermine, die MwSt.-Rückerstattung für die erste Wohnung und die Finanzierungsbedingungen je Projekt.",
     },
     languages: ["sr", "en", "ru"],
     phone: "+381 11 000 0014",

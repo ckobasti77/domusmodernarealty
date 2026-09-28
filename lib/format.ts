@@ -104,6 +104,23 @@ export function fixOrphans(text: string): string {
   return text.replace(ORPHANS, "$1$2\u00A0");
 }
 
+/**
+ * `fixOrphans` for display headlines, plus no lone last word: in a headline of
+ * four or more words the last two are joined with a non-breaking space when
+ * together they stay short ("Koliko vredi / Va\u0161 stan?" instead of "Koliko
+ * vredi Va\u0161 / stan?"). `maxChars` caps the joined pair so it can never be wider
+ * than a phone's measure at the size it is set in \u2014 lower it for larger type.
+ */
+export function fixWidows(text: string, maxChars = 16): string {
+  const fixed = fixOrphans(text);
+  const words = fixed.split(" ");
+  if (words.length < 4) return fixed;
+  const last = words.at(-1) ?? "";
+  const before = words.at(-2) ?? "";
+  if (before.length + 1 + last.length > maxChars) return fixed;
+  return `${words.slice(0, -2).join(" ")} ${before}\u00A0${last}`;
+}
+
 /** Percentage change between two prices, negative when the price was reduced. */
 export function priceDeltaPct(previous: number, current: number): number {
   if (previous <= 0) return 0;
@@ -128,7 +145,7 @@ export function formatRsd(eur: number, rate: number, locale: Locale): string {
  * `fixOrphans` so the landing's measured headlines do not re-wrap.
  */
 const NUMBER_UNIT =
-  /(\d)\s+(?=(?:m²|м²|m2|m|м|km|км|€|EUR|RSD|min|мин|god\.|godina|metara|минут|metres|meters|Meter)(?![\p{L}\d]))/gu;
+  /(\d)\s+(?=(?:m²|м²|m2|m|м|km|км|€|EUR|RSD|min|мин|god\.|godina|metara|минут|metres|meters|Meter|sata|sati|sat|dana|часов|часа|час|дней|hours|hour|days|Stunden|Stunde|Tagen|Tage)(?![\p{L}\d]))/gu;
 const TWO_LETTER =
   /(^|[\s\u00A0])(sa|na|od|za|do|iz|uz|po|ka|Sa|Na|Od|Za|Do|Iz|Uz|Po|Ka|на|по|за|от|до|из|со|во|На|По|За|От|До|Из|Со|Во)\s+/g;
 

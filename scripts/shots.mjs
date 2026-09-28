@@ -3,7 +3,8 @@
 //
 // Usage:
 //   node scripts/shots.mjs [--base http://localhost:3000] [--routes /sr,/sr/nekretnine] [--widths 390,1440]
-//                          [--scroll-steps 6] [--delays 300,1200,2500] [--full] [--reduced] [--out .shots/name]
+//                          [--scroll-steps 6] [--delays 300,1200,2500] [--full] [--reduced] [--consent]
+//                          [--out .shots/name]
 //
 //   --routes        comma-separated paths (default: key public pages in sr-Latn)
 //   --widths        viewport widths; height is derived (390 -> 844, 768 -> 1024, else 900)
@@ -12,6 +13,8 @@
 //   --delays        extra captures of the first viewport at these ms after load (intro animations)
 //   --full          also capture a full-page screenshot per route/width
 //   --reduced       emulate prefers-reduced-motion: reduce
+//   --consent       start with a stored "necessary only" cookie decision, so the consent banner does
+//                   not cover the bottom of every capture (the banner itself is reviewed without it)
 // Before every capture the script waits for the network to go idle, for
 // document.fonts.ready and for every <img> to decode, so a screenshot never
 // shows an LQIP placeholder or a fallback face (which made a warm photograph
@@ -46,6 +49,7 @@ const delays = String(arg("delays", ""))
   .filter((d) => d > 0);
 const full = arg("full", false) === true;
 const reduced = arg("reduced", false) === true;
+const consent = arg("consent", false) === true;
 const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 const outDir = String(arg("out", path.join(".shots", stamp)));
 mkdirSync(outDir, { recursive: true });
@@ -91,6 +95,15 @@ try {
       hasTouch: width <= 800,
       isMobile: width <= 500,
     });
+    if (consent) {
+      // Mirrors lib/stores/consent.ts (key "me.consent.v1", version 1).
+      await context.addInitScript(() => {
+        window.localStorage.setItem(
+          "me.consent.v1",
+          JSON.stringify({ v: 1, decidedAt: Date.now(), categories: { necessary: true, analytics: false, marketing: false } }),
+        );
+      });
+    }
     for (const route of routes) {
       const page = await context.newPage();
       const entry = { route, width, consoleErrors: [], pageErrors: [], failedRequests: [], status: null };

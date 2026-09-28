@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixTypography, parseLocaleNumber } from "./format";
+import { fixTypography, fixWidows, parseLocaleNumber } from "./format";
 
 const NBSP = " ";
 
@@ -15,8 +15,32 @@ describe("fixTypography", () => {
     expect(fixTypography("квартира на Врачаре")).toBe(`квартира на${NBSP}Врачаре`);
   });
 
+  it("keeps a time span with its unit", () => {
+    expect(fixTypography("u roku od 24 sata")).toBe(`u${NBSP}roku od${NBSP}24${NBSP}sata`);
+    expect(fixTypography("within 24 hours")).toBe(`within 24${NBSP}hours`);
+    expect(fixTypography("в течение 24 часов")).toBe(`в${NBSP}течение 24${NBSP}часов`);
+    expect(fixTypography("innerhalb von 24 Stunden")).toBe(`innerhalb von 24${NBSP}Stunden`);
+  });
+
   it("leaves a digit followed by an ordinary word alone", () => {
     expect(fixTypography("zgrada iz 1938 godine")).toBe(`zgrada iz${NBSP}1938 godine`);
+  });
+});
+
+describe("fixWidows", () => {
+  it("joins a short last pair in a headline of four or more words", () => {
+    expect(fixWidows("Koliko vredi Vaš stan?")).toBe(`Koliko vredi Vaš${NBSP}stan?`);
+    expect(fixWidows("Dom koji se pamti.", 10)).toBe(`Dom koji se${NBSP}pamti.`);
+  });
+
+  it("leaves short headlines and long pairs alone", () => {
+    expect(fixWidows("Izdvojene nekretnine")).toBe("Izdvojene nekretnine");
+    expect(fixWidows("Kako Vam pomažemo")).toBe("Kako Vam pomažemo");
+    expect(fixWidows("Ein Zuhause, das man nicht vergisst.", 10)).toBe("Ein Zuhause, das man nicht vergisst.");
+  });
+
+  it("still binds one-letter prepositions", () => {
+    expect(fixWidows("Tržište i saveti")).toBe(`Tržište i${NBSP}saveti`);
   });
 });
 

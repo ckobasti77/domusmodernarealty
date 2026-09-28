@@ -420,6 +420,20 @@ html[data-intro="play"] [data-preloader-rule] {
   [data-hero-reveal] {
     opacity: 0;
   }
+
+  /* components/motion/ClipReveal.tsx: closed until its reveal runs. */
+  [data-clip-reveal="bottom"] {
+    clip-path: inset(0% 0% 100% 0%);
+  }
+  [data-clip-reveal="top"] {
+    clip-path: inset(100% 0% 0% 0%);
+  }
+  [data-clip-reveal="left"] {
+    clip-path: inset(0% 100% 0% 0%);
+  }
+  [data-clip-reveal="right"] {
+    clip-path: inset(0% 0% 0% 100%);
+  }
 }
 
 /* The hero's scroll cue: a short bronze segment travelling down a hairline.

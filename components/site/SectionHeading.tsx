@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { SplitReveal } from "@/components/motion/SplitReveal";
-import { fixOrphans } from "@/lib/format";
+import { fixOrphans, fixWidows } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Eyebrow } from "./Eyebrow";
 
@@ -67,7 +67,7 @@ export function SectionHeading({
           )}
         >
           <SplitReveal as="span" className="block">
-            {typeof title === "string" ? fixOrphans(title) : title}
+            {typeof title === "string" ? fixWidows(title) : title}
           </SplitReveal>
         </Heading>
         {action !== undefined ? <div className="shrink-0 pb-1">{action}</div> : null}

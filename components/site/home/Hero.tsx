@@ -3,7 +3,7 @@ import { preload } from "react-dom";
 import { Container } from "@/components/site/Container";
 import { Eyebrow } from "@/components/site/Eyebrow";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixOrphans, fixWidows } from "@/lib/format";
 import {
   mediaImage,
   mediaVideo,
@@ -101,7 +101,8 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
               data-hero-reveal="title"
               className="col-span-4 max-w-[11ch] font-display text-display-xl font-normal text-ivory lg:col-span-8"
             >
-              {fixOrphans(t("heroHeadline"))}
+              {/* Display-xl: only a pair this short may be joined, or it would not fit a phone. */}
+              {fixWidows(t("heroHeadline"), 10)}
             </h1>
             <p
               data-hero-reveal="lede"

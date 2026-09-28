@@ -1,0 +1,117 @@
+import { ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import { ImageReveal } from "@/components/motion/ImageReveal";
+import { Container } from "@/components/site/Container";
+import { SectionHeading } from "@/components/site/SectionHeading";
+import { textLinkClasses } from "@/components/site/TextLink";
+import { Link } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
+import { fixOrphans } from "@/lib/format";
+import { pickL10n } from "@/lib/l10n";
+import { cn } from "@/lib/utils";
+import type { PostCard } from "./data";
+
+/**
+ * Journal teaser (DESIGN §6.11), on ivory: the three newest published posts,
+ * one large beside two small. Each post is one link (the title stretched over
+ * its article). Covers are decorative next to the title, so their alt is empty.
+ * With no published posts the section is left out.
+ */
+
+type Size = "lead" | "side";
+
+async function Post({ post, size, locale }: { post: PostCard; size: Size; locale: Locale }) {
+  const t = await getTranslations({ locale, namespace: "home" });
+  const tJournal = await getTranslations({ locale, namespace: "journal" });
+  const title = pickL10n(post.title, locale);
+  const excerpt = pickL10n(post.excerpt, locale);
+  const lead = size === "lead";
+
+  return (
+    <article className="group/post relative">
+      {post.coverUrl !== undefined ? (
+        <ImageReveal
+          src={post.coverUrl}
+          alt=""
+          ratio={lead ? "aspect-[4/3]" : "aspect-[3/2]"}
+          sizes={lead ? "(min-width: 1024px) 56vw, 92vw" : "(min-width: 1024px) 30vw, 92vw"}
+          imageClassName="transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]"
+        />
+      ) : null}
+
+      <p className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-label uppercase">
+        <span className="text-bronze-text">{tJournal(`categories.${post.category}`)}</span>
+        {post.readingMinutes !== undefined ? (
+          <span className="text-stone-text">{t("journalReadingTime", { minutes: post.readingMinutes })}</span>
+        ) : null}
+      </p>
+
+      <h3
+        lang={title.lang !== locale ? title.lang : undefined}
+        className={cn("mt-3 font-display font-normal", lead ? "text-display-m max-w-[20ch]" : "text-h2 max-w-[24ch]")}
+      >
+        <Link
+          href={{ pathname: "/journal/[slug]", params: { slug: post.slug } }}
+          prefetch={false}
+          className="transition-colors duration-200 before:absolute before:inset-0 pointer-fine:group-hover/post:text-bronze-text"
+        >
+          {fixOrphans(title.text)}
+        </Link>
+      </h3>
+
+      {lead ? (
+        <p lang={excerpt.lang !== locale ? excerpt.lang : undefined} className="mt-4 max-w-[56ch] text-body-l text-stone-text">
+          {fixOrphans(excerpt.text)}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+export async function JournalTeaser({ locale, posts }: { locale: Locale; posts: readonly PostCard[] }) {
+  const [first, ...rest] = posts;
+  if (first === undefined) return null;
+  const t = await getTranslations({ locale, namespace: "home" });
+
+  return (
+    <section aria-labelledby="journal-title" className="bg-ivory py-section text-ink lg:py-section-lg">
+      <Container>
+        <SectionHeading
+          id="journal-title"
+          eyebrow={t("journalEyebrow")}
+          title={t("journalHeading")}
+          action={
+            <Link
+              href="/journal"
+              prefetch={false}
+              className={textLinkClasses(
+                "light",
+                "group/all inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]",
+              )}
+            >
+              {t("journalAll")}
+              <ArrowRight
+                aria-hidden="true"
+                strokeWidth={1.25}
+                className="size-4 transition-transform duration-300 ease-out pointer-fine:group-hover/all:translate-x-1"
+              />
+            </Link>
+          }
+        />
+
+        <div className="mt-14 grid grid-cols-4 gap-x-6 gap-y-16 lg:mt-20 lg:grid-cols-12">
+          <div className="col-span-4 lg:col-span-7">
+            <Post post={first} size="lead" locale={locale} />
+          </div>
+          {rest.length > 0 ? (
+            <div className="col-span-4 flex flex-col gap-16 lg:col-span-4 lg:col-start-9">
+              {rest.slice(0, 2).map((post) => (
+                <Post key={post._id} post={post} size="side" locale={locale} />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </Container>
+    </section>
+  );
+}

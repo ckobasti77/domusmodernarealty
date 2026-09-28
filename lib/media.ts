@@ -86,6 +86,17 @@ export function responsiveImage(image: MediaImage): ResponsiveImage {
   return { width: image.width, height: image.height, src: image.fallback, sources };
 }
 
+/**
+ * The owner's render for `key` when it was delivered, otherwise a verified
+ * demo photo (`fallback` must be a base URL from `docs/assets/demo-media.json`).
+ * Every landing still goes through this, so a half-filled `media-src/` never
+ * leaves a section without an image.
+ */
+export function artImage(key: string, fallback: string): ResponsiveImage {
+  const image = mediaImage(key);
+  return image !== null ? responsiveImage(image) : remoteResponsiveImage(fallback, 1920, 1280);
+}
+
 const REMOTE_WIDTHS = [640, 1280, 1920, 2560] as const;
 
 /**

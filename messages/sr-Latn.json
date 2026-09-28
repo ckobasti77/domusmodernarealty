@@ -44,7 +44,9 @@
     "rights": "© {year} {brand}. Sva prava zadržana.",
     "madeIn": "Beograd, Srbija",
     "newsletterHeading": "Nove nekretnine u vašem sandučetu",
-    "newsletterCta": "Prijavite se"
+    "newsletterCta": "Prijavite se",
+    "settingsMissing": "Podaci o agenciji nisu dostupni. Unesite ih u administraciji pre objave sajta.",
+    "demoDataWarning": "Prikazani su demo podaci. PIB, matični broj i broj iz Registra posrednika još nisu uneti."
   },
   "home": {
     "heroEyebrow": "Beograd · Srbija",
@@ -343,5 +345,41 @@
     "floorSemiBasement": "PSUT",
     "distanceM": "{meters} m",
     "minutesWalk": "{minutes} min hoda"
+  },
+  "styleguide": {
+    "accordion": "Akordeon",
+    "badges": "Oznake",
+    "buttons": "Dugmad",
+    "cards": "Kartice nekretnina",
+    "cardsEmpty": "Demo nekretnine nisu dostupne. Pokrenite seed pa osvežite stranicu.",
+    "contrast": "Kontrast",
+    "contrastPass": "Svi parovi zadovoljavaju WCAG AA za tekst normalne veličine.",
+    "counter": "Brojač",
+    "cursorList": "Lista sa slikom uz kursor",
+    "divider": "Linija koja se crta",
+    "formError": "Unesite ispravnu adresu e-pošte.",
+    "forms": "Obrasci",
+    "lede": "Svi tokeni, komponente i stanja na jednom mestu. Interna stranica za razvoj i kontrolu kvaliteta.",
+    "links": "Linkovi",
+    "magnetic": "Magnetno dugme",
+    "marquee": "Traka",
+    "motion": "Pokret",
+    "noindexNote": "Ova stranica je isključena iz indeksiranja.",
+    "palette": "Paleta",
+    "parallax": "Paralaks",
+    "progress": "Napredak skrolovanja",
+    "reveal": "Otkrivanje slike",
+    "sampleAnswer1": "Za stanove sa uređenom dokumentacijom prosečno 45 do 90 dana, zavisno od cene i lokacije. Prvu procenu dobijate u roku od 24 sata.",
+    "sampleAnswer2": "Porez na prenos apsolutnih prava ili PDV, taksu za overu kod notara i upis u katastar. Tačan iznos računamo pre potpisivanja predugovora.",
+    "sampleQuestion1": "Koliko traje prodaja stana u Beogradu?",
+    "sampleQuestion2": "Koje troškove kupac plaća pored cene?",
+    "specimen": "Uzorak pisma",
+    "tabDetails": "Detalji",
+    "tabLegal": "Pravno",
+    "tabOverview": "Pregled",
+    "tabs": "Tabovi",
+    "title": "Vizualni sistem",
+    "tokens": "Tokeni",
+    "typography": "Tipografija"
   }
 }

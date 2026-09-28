@@ -44,7 +44,9 @@
     "rights": "© {year} {brand}. All rights reserved.",
     "madeIn": "Belgrade, Serbia",
     "newsletterHeading": "New properties, straight to your inbox",
-    "newsletterCta": "Subscribe"
+    "newsletterCta": "Subscribe",
+    "settingsMissing": "Agency details are unavailable. Enter them in the admin panel before the site goes live.",
+    "demoDataWarning": "Demo data is shown. The tax number, company number and broker-registry number have not been entered yet."
   },
   "home": {
     "heroEyebrow": "Belgrade · Serbia",
@@ -343,5 +345,41 @@
     "floorSemiBasement": "Semi-basement",
     "distanceM": "{meters} m",
     "minutesWalk": "{minutes} min walk"
+  },
+  "styleguide": {
+    "accordion": "Accordion",
+    "badges": "Badges",
+    "buttons": "Buttons",
+    "cards": "Property cards",
+    "cardsEmpty": "No demo listings available. Run the seed and reload the page.",
+    "contrast": "Contrast",
+    "contrastPass": "Every pair meets WCAG AA for normal-size text.",
+    "counter": "Counter",
+    "cursorList": "Cursor-following list",
+    "divider": "Hairline draw",
+    "formError": "Enter a valid email address.",
+    "forms": "Forms",
+    "lede": "Every token, component and state in one place. An internal page for development and QA.",
+    "links": "Links",
+    "magnetic": "Magnetic button",
+    "marquee": "Marquee",
+    "motion": "Motion",
+    "noindexNote": "This page is excluded from indexing.",
+    "palette": "Palette",
+    "parallax": "Parallax",
+    "progress": "Scroll progress",
+    "reveal": "Image reveal",
+    "sampleAnswer1": "With the paperwork in order, 45 to 90 days on average, depending on price and location. You get a first valuation within 24 hours.",
+    "sampleAnswer2": "Transfer tax or VAT, the notary fee and the cadastre registration. We calculate the exact figure before the preliminary contract is signed.",
+    "sampleQuestion1": "How long does selling an apartment in Belgrade take?",
+    "sampleQuestion2": "What does a buyer pay on top of the price?",
+    "specimen": "Type specimen",
+    "tabDetails": "Details",
+    "tabLegal": "Legal",
+    "tabOverview": "Overview",
+    "tabs": "Tabs",
+    "title": "Visual system",
+    "tokens": "Tokens",
+    "typography": "Typography"
   }
 }

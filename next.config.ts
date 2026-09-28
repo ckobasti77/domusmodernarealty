@@ -11,10 +11,14 @@ const nextConfig: NextConfig = {
     globalNotFound: true,
   },
   images: {
+    // Object form, NOT `new URL(...)`: a URL instance carries `search: ""`, and
+    // `match-remote-pattern` treats a defined `search` as an exact match — which
+    // rejects every demo photo, since they all arrive as
+    // `...?w=1600&q=80&auto=format&fit=crop`. Omitting `search` allows any query.
     remotePatterns: [
-      new URL("https://*.convex.cloud/api/storage/**"),
-      new URL("https://images.unsplash.com/**"),
-      new URL("https://dl.polyhaven.org/**"),
+      { protocol: "https", hostname: "*.convex.cloud", pathname: "/api/storage/**" },
+      { protocol: "https", hostname: "images.unsplash.com", pathname: "/**" },
+      { protocol: "https", hostname: "dl.polyhaven.org", pathname: "/**" },
     ],
     qualities: [60, 75, 85, 90],
     minimumCacheTTL: 14400,

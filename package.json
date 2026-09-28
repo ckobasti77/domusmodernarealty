@@ -14,6 +14,7 @@
     "convex:once": "convex dev --once",
     "verify": "npm run convex:once && npm run typegen && npm run typecheck && npm run lint && npm run build",
     "i18n:check": "node scripts/i18n-check.mjs",
+    "cn:tables": "cn build --css app/globals.css --content \"app/**/*.tsx,components/**/*.tsx,components/**/*.ts,lib/**/*.ts,hooks/**/*.ts\" --out lib/cn-tables.ts",
     "media:optimize": "node scripts/optimize-media.mjs",
     "test:e2e": "playwright test",
     "test:unit": "vitest run",

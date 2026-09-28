@@ -44,7 +44,9 @@
     "rights": "© {year} {brand}. Alle Rechte vorbehalten.",
     "madeIn": "Belgrad, Serbien",
     "newsletterHeading": "Neue Immobilien in Ihrem Postfach",
-    "newsletterCta": "Anmelden"
+    "newsletterCta": "Anmelden",
+    "settingsMissing": "Die Angaben zur Agentur fehlen. Tragen Sie sie im Admin-Bereich ein, bevor die Website online geht.",
+    "demoDataWarning": "Es werden Demodaten angezeigt. Steuernummer, Handelsregisternummer und die Nummer im Maklerregister sind noch nicht eingetragen."
   },
   "home": {
     "heroEyebrow": "Belgrad · Serbien",
@@ -343,5 +345,41 @@
     "floorSemiBasement": "Souterrain",
     "distanceM": "{meters} m",
     "minutesWalk": "{minutes} Min. zu Fuß"
+  },
+  "styleguide": {
+    "accordion": "Akkordeon",
+    "badges": "Kennzeichnungen",
+    "buttons": "Schaltflächen",
+    "cards": "Objektkarten",
+    "cardsEmpty": "Keine Demo-Objekte vorhanden. Führen Sie den Seed aus und laden Sie die Seite neu.",
+    "contrast": "Kontrast",
+    "contrastPass": "Alle Paare erfüllen WCAG AA für Text in normaler Größe.",
+    "counter": "Zähler",
+    "cursorList": "Liste mit Bild am Zeiger",
+    "divider": "Haarlinien-Zeichnung",
+    "formError": "Geben Sie eine gültige E-Mail-Adresse ein.",
+    "forms": "Formulare",
+    "lede": "Alle Tokens, Komponenten und Zustände an einem Ort. Eine interne Seite für Entwicklung und QA.",
+    "links": "Links",
+    "magnetic": "Magnetische Schaltfläche",
+    "marquee": "Laufband",
+    "motion": "Bewegung",
+    "noindexNote": "Diese Seite ist von der Indexierung ausgeschlossen.",
+    "palette": "Palette",
+    "parallax": "Parallaxe",
+    "progress": "Scroll-Fortschritt",
+    "reveal": "Bildenthüllung",
+    "sampleAnswer1": "Bei vollständigen Unterlagen durchschnittlich 45 bis 90 Tage, je nach Preis und Lage. Die erste Bewertung erhalten Sie innerhalb von 24 Stunden.",
+    "sampleAnswer2": "Grunderwerbsteuer oder Mehrwertsteuer, die Notargebühr und die Eintragung im Kataster. Den genauen Betrag berechnen wir vor der Unterzeichnung des Vorvertrags.",
+    "sampleQuestion1": "Wie lange dauert der Verkauf einer Wohnung in Belgrad?",
+    "sampleQuestion2": "Welche Kosten trägt der Käufer zusätzlich zum Preis?",
+    "specimen": "Schriftmuster",
+    "tabDetails": "Details",
+    "tabLegal": "Rechtliches",
+    "tabOverview": "Überblick",
+    "tabs": "Tabs",
+    "title": "Visuelles System",
+    "tokens": "Tokens",
+    "typography": "Typografie"
   }
 }

@@ -1,0 +1,219 @@
+{
+  "meta": {
+    "name": "Mihajlo Estate - Editorial Luxury",
+    "description": "Design DNA for a premium Serbian real-estate agency. Dark cinematic hero, ivory and charcoal editorial body, one bronze accent, camera-like motion. Extracted from the references in docs/03-DESIGN-SYSTEM.md and reconciled with the project tokens in app/globals.css, which win on every conflict.",
+    "source_references": [
+      "Sotheby's International Realty - restrained navy/ivory editorial grid, photography-first cards, serif wordmark with a hairline rule",
+      "The Agency - near-black chrome, oversized serif statements, wide letter-spaced wordmark, minimal chrome over full-bleed media",
+      "Aman - extreme whitespace, slow cross-fades, small tracked sans labels against very large serif headings, no shadows",
+      "Awwwards real-estate winners (ERA Residence, Belgrade Arbor by Square43, Silver Pinewood, Luxury Places, Carlin Residence Club) - pinned horizontal listing tracks, cursor-following imagery on location lists, clip-path image reveals, hairline draw-ins",
+      "docs/03-DESIGN-SYSTEM.md (authoritative)",
+      "app/globals.css @theme (authoritative token values)"
+    ],
+    "created_at": "2026-09-28",
+    "authority": "app/globals.css > docs/03-DESIGN-SYSTEM.md > this file. Additions this file introduced are logged in docs/DECISIONS.md."
+  },
+  "design_system": {
+    "color": {
+      "palette_type": "Near-monochrome warm neutral with a single metallic accent",
+      "primary": { "hex": "#0E0D0B", "role": "ink - dark sections, primary text on light surfaces" },
+      "secondary": { "hex": "#F4EFE6", "role": "ivory - the main light page background and text on ink" },
+      "accent": { "hex": "#B08D57", "role": "bronze - links and active states on ink, hairlines, key figures. Never a large fill." },
+      "neutral": {
+        "scale": ["#0E0D0B", "#171512", "#24211C", "#6C655B", "#8A8275", "#B9B0A2", "#EAE3D6", "#F4EFE6", "#FBF9F5"],
+        "usage": "ink / ink-2 / ink-3 are the dark surfaces and their hairlines; stone-text and stone are muted text and rules on light; mist is muted text on dark; ivory-2 is a raised light surface; paper is inputs and the lightest surface."
+      },
+      "semantic": { "success": "#4F7A5A", "warning": "#B7852F", "error": "#A4473A", "info": "#8C6D3F" },
+      "surface": { "background": "#F4EFE6", "card": "#EAE3D6", "elevated": "#FBF9F5" },
+      "contrast_strategy": "Every text/background pair is checked at WCAG AA for normal text, not just large text. Three tokens exist purely so AA holds on light surfaces: bronze-text #7A623C for accent text, stone-text #6C655B for muted text and warning-text #835F22. The bright bronze #B08D57 is only allowed on the ink family (5.19:1 on ink-3) or as a fill behind ink text (6.28:1). Depth never comes from a shadow - it comes from the photography, overlap and scale."
+    },
+    "typography": {
+      "type_scale": {
+        "display": { "size": "clamp(3.5rem, 9vw, 9.5rem)", "weight": 300, "line_height": 0.92, "tracking": "-0.02em" },
+        "heading_1": { "size": "clamp(2.75rem, 6vw, 6rem)", "weight": 300, "line_height": 0.95, "tracking": "-0.015em" },
+        "heading_2": { "size": "clamp(2.25rem, 4.2vw, 4rem)", "weight": 300, "line_height": 1.0, "tracking": "-0.01em" },
+        "heading_3": { "size": "clamp(1.75rem, 2.6vw, 2.5rem)", "weight": 400, "line_height": 1.1, "tracking": "-0.005em" },
+        "body": { "size": "1rem", "weight": 400, "line_height": 1.6, "tracking": "0" },
+        "body_small": { "size": "0.875rem", "weight": 400, "line_height": 1.5, "tracking": "0" },
+        "caption": { "size": "0.6875rem", "weight": 400, "line_height": 1.2, "tracking": "0.08em" },
+        "overline": { "size": "0.75rem", "weight": 500, "line_height": 1.2, "tracking": "0.18em" }
+      },
+      "font_families": {
+        "heading": "Cormorant Garamond (300/400/500 + italic; latin, latin-ext, cyrillic)",
+        "body": "Manrope (variable 200-800; latin, latin-ext, cyrillic)",
+        "mono": "JetBrains Mono 400 (latin, latin-ext, cyrillic) - reference codes, counters, coordinates only"
+      },
+      "font_style_notes": "Serif carries the voice; the sans carries the facts. Prices and every figure are tabular-nums lining-nums. Body measure stays under 68 characters, serif ledes under 52. Cyrillic and the Serbian diacritics must render in all three families, which is why every subset list includes cyrillic and latin-ext. Never set text-wrap: balance on an element SplitText will split."
+    },
+    "spacing": {
+      "base_unit": "4px (Tailwind default), with named rhythm tokens on top",
+      "scale": ["4px", "8px", "12px", "16px", "24px", "32px", "48px", "64px", "96px", "160px"],
+      "content_density": "Low. Whitespace is the luxury signal - a section is allowed to hold one sentence.",
+      "section_rhythm": "96px vertical on mobile, 160px from 1024px up. Gutters 24 / 32 / 48."
+    },
+    "layout": {
+      "grid_system": "12 columns, asymmetric editorial placements rather than centred blocks",
+      "max_content_width": "1440px content, 1600px for full-bleed media",
+      "columns": 12,
+      "gutter": "24px mobile, 32px tablet, 48px desktop",
+      "breakpoints": ["390", "768", "1024", "1280", "1440"],
+      "alignment_tendency": "Left-aligned with deliberate offsets; captions overlap the image edge; oversized figures break the grid on purpose. Centring is reserved for the final CTA."
+    },
+    "shape": {
+      "border_radius": { "small": "0px", "medium": "2px", "large": "2px", "pill": "none - pills are banned on the public site" },
+      "border_usage": "1px hairlines only: ink at 12% on light, ivory at 12% on dark. A hairline is the primary structural device - it separates, frames and draws.",
+      "divider_style": "Full-bleed or column-width 1px rule that draws from 0 to 100% width on scroll"
+    },
+    "elevation": {
+      "shadow_style": "None on the public site",
+      "levels": { "low": "none", "medium": "none", "high": "none (admin uses shadcn subtle shadows)" },
+      "depth_cues": "Overlap, scale change, an ink gradient scrim over the bottom 40% of dark-section imagery, and parallax rate differences"
+    },
+    "iconography": {
+      "style": "Line, geometric, no fills",
+      "stroke_weight": "1.25-1.5px at 20-24px",
+      "size_scale": ["16px", "20px", "24px"],
+      "preferred_set": "lucide-react, plus hand-authored SVG for the wordmark, the monogram and the scroll cue"
+    },
+    "motion": {
+      "easing": "CustomEase estate = cubic-bezier(0.22, 1, 0.36, 1) for reveals; expo.out for hero lines; expo.inOut for curtains; power3.out for UI; linear for marquees and progress",
+      "duration_scale": { "micro": "120-280ms", "normal": "900-1100ms", "macro": "1100-1400ms" },
+      "entrance_pattern": "Masked line rise (yPercent 110 to 0, stagger 0.08), clip-path inset reveal for imagery, hairline draw for rules",
+      "exit_pattern": "Ink panel wipe upward on route change; overlays fade and scale from 0.97, never from 0",
+      "philosophy": "Motion is a camera move, not a transition library. GSAP owns scroll choreography and section reveals; every hover, menu and toast is a CSS transition under 300ms. Three matchMedia branches always exist: desktop pinning, a simpler mobile branch, and a reduced branch that paints the final state instantly."
+    },
+    "components": {
+      "button_style": "Sharp 52px rectangle. Primary is ink-on-ivory or ivory-on-ink; secondary is a hairline outline; a bronze rule grows from the left on hover while the label shifts 2px. Active state scales to 0.98.",
+      "input_style": "Underline only - no boxes. Paper background at most, a 1px bottom rule that turns bronze on focus, a label that floats up, and errors as red text plus an icon, never colour alone. 44px minimum touch target.",
+      "card_style": "No border, no shadow, no radius. A 4:5 (landing) or 3:2 (search) photograph, the image scaling 1.04 to 1 over 700ms on hover, then price, meta row split by hairlines, and badges as uppercase text inside a hairline box.",
+      "navigation_pattern": "Transparent header over the hero that solidifies to ink on scroll; a full-screen ink overlay menu on mobile with staggered serif items",
+      "modal_style": "Full-bleed ink overlay or a bottom sheet; scale from 0.97 with opacity, centred origin, data-lenis-prevent on the scrollable body",
+      "list_style": "Oversized serif rows separated by hairlines, the count in mono on the right, a cursor-following image on hover at desktop",
+      "component_notes": "Every badge is text in a hairline box - no filled pills, no emoji, no drop shadows, no glassmorphism, no gradient decoration."
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": "Composed, nocturnal, expensive, unhurried",
+      "visual_metaphor": "A printed architecture monograph opened under a warm lamp",
+      "era_influence": "Swiss editorial grid discipline crossed with 1960s Italian architectural publishing",
+      "genre": "Editorial luxury",
+      "personality_traits": ["restrained", "authoritative", "warm", "precise", "confident"],
+      "adjectives": ["quiet", "architectural", "tactile", "cinematic", "spacious"]
+    },
+    "visual_language": {
+      "complexity": "Low element count, high craft per element",
+      "ornamentation": "Almost none. The only ornaments are the hairline and the bronze rule.",
+      "whitespace_usage": "Generous and deliberate - it is the product, not the leftover",
+      "visual_weight_distribution": "One dominant photograph or one oversized serif line per viewport; everything else recedes",
+      "focal_strategy": "Scale contrast: a 9.5rem serif line beside 0.75rem tracked labels",
+      "contrast_level": "High in value, near-zero in hue",
+      "texture_usage": "Photographic grain only. No noise overlays, no patterns."
+    },
+    "composition": {
+      "hierarchy_method": "Size and whitespace first, colour last",
+      "balance_type": "Asymmetric",
+      "flow_direction": "Vertical with two deliberate horizontal interruptions (the pinned featured track and the marquee)",
+      "grouping_strategy": "Hairline-separated bands; a band is one idea",
+      "negative_space_role": "Primary structural material"
+    },
+    "imagery": {
+      "photo_treatment": "Warm natural light, architecture-forward, no faces. On ink sections an ink gradient covers the bottom 40% so captions stay legible.",
+      "illustration_style": "None",
+      "graphic_elements": "Hairlines, the ME monogram, the scroll cue, mono index numbers",
+      "pattern_usage": "None",
+      "image_shape": "Hard rectangles - 16:9 hero (9:16 or 4:5 on mobile), 4:5 and 3:2 cards, 3:4 plus 4:3 editorial pairs"
+    },
+    "interaction_feel": {
+      "feedback_style": "Immediate and physical - a 0.98 press scale, a rule that grows, a label that shifts 2px",
+      "hover_behavior": "Gated behind (hover: hover) and (pointer: fine). Image scale, hairline growth, cursor-following imagery on lists.",
+      "transition_personality": "Slow and weighted on scroll reveals, crisp and sub-300ms in the UI",
+      "loading_style": "A first-visit preloader (max 1.8s, once per session) then a bronze hairline progress bar; skeletons are ivory-2 blocks with no shimmer",
+      "microinteraction_density": "Low and consistent - the same three gestures reused everywhere"
+    },
+    "brand_voice_in_ui": {
+      "tone": "Direct, warm, expert. Serbian formal Vi.",
+      "formality": "High but not stiff",
+      "cta_style": "A verb and its object, no arrow glyph in the label: Pogledajte nekretnine, Zakazite obilazak",
+      "empty_state_approach": "State the fact, then offer the single most useful next action",
+      "error_tone": "Plain, specific, never apologetic or cute"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "moderate",
+      "performance_tier": "mid - the landing must stay at 60fps on a mid-range phone; the 360 and splat viewers are the only heavy routes and they are lazy-loaded",
+      "fallback_strategy": "Every effect has a static final state. The gsap.matchMedia reduced branch paints it instantly, Lenis is never mounted under reduced motion, and the WebGL routes device-tier before downloading.",
+      "primary_technology": "GSAP 3.15 (ScrollTrigger, SplitText, Flip, CustomEase) + Lenis 1.3; CSS transitions for UI"
+    },
+    "background_effects": {
+      "type": "scrim",
+      "description": "A linear ink gradient over the bottom 40% of dark-section media, plus a hero overlay whose opacity scrubs 0.25 to 0.6 as the hero leaves",
+      "technology": "CSS gradient + one scrubbed GSAP tween on opacity",
+      "params": { "color_palette": ["#0E0D0B"], "speed": "scroll-linked", "density": "n/a", "opacity": "0.25-0.6", "blend_mode": "normal" }
+    },
+    "particle_systems": {
+      "enabled": false,
+      "type": "none",
+      "description": "Deliberately absent - particles read as decoration and break the quiet-luxury brief",
+      "technology": "none",
+      "params": { "count": 0, "shape": "n/a", "size_range": "n/a", "movement_pattern": "n/a", "color_behavior": "n/a", "interaction": "n/a", "spawn_area": "n/a" }
+    },
+    "3d_elements": {
+      "enabled": true,
+      "type": "gaussian-splat walkthrough and 360 panorama tours",
+      "description": "Per-listing immersive routes only, never on the landing. Spark 2 SplatMesh over three.js for the walkthrough, Photo Sphere Viewer 5 for panoramas.",
+      "technology": "@sparkjsdev/spark + three.js 0.186; @photo-sphere-viewer/core 5",
+      "params": {
+        "renderer": "WebGL2, next/dynamic with ssr:false",
+        "lighting": "baked into the capture",
+        "camera": "1.6m eye height, 1.2 m/s walk, clamped to the floor polygon",
+        "materials": "splat point cloud / equirectangular texture",
+        "geometry": "PCSOGS splat scene; 4096x2048 panoramas with a 2048 mobile variant"
+      }
+    },
+    "scroll_effects": {
+      "enabled": true,
+      "type": "pinned horizontal track, parallax, clip-path reveals, hairline draws, scrubbed zoom",
+      "description": "Featured listings pin and translate horizontally at 1024px and up; images parallax at yPercent plus/minus 8; figures and imagery reveal with clip-path inset; rules draw 0 to 100%; the 3D-tour frame scales while pinned.",
+      "technology": "GSAP ScrollTrigger driven by Lenis through a single gsap.ticker raf",
+      "params": { "trigger": "top 80% for once-only reveals", "scrub": "true only for parallax and pins", "reduced": "final state set instantly, no ScrollTrigger created" }
+    },
+    "cursor_effects": {
+      "enabled": true,
+      "type": "cursor-following image reveal and a magnetic CTA",
+      "description": "Hovering a neighborhood row reveals a photograph that trails the pointer with gsap.quickTo; the primary CTA leans up to 8px toward the pointer. Desktop fine-pointer only.",
+      "technology": "gsap.quickTo inside useGSAP, gated by matchMedia",
+      "params": { "lag": "0.4s power3", "max_offset": "8px", "gate": "(min-width:1024px) and (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference)" }
+    },
+    "text_effects": {
+      "enabled": true,
+      "type": "masked line and word reveals",
+      "description": "SplitText lines rise from yPercent 110 behind an overflow-clip mask; the intro statement words scrub from 0.15 to 1 opacity.",
+      "technology": "GSAP SplitText with autoSplit, mask lines, aria auto, the tween created inside onSplit, after document.fonts.ready",
+      "params": { "stagger": "0.08", "duration": "1.2s", "ease": "expo.out" }
+    },
+    "svg_animations": {
+      "enabled": true,
+      "type": "hairline draw and the wordmark mask reveal",
+      "description": "Dividers and the process spine draw their stroke on scroll; the preloader raises the wordmark letters behind a mask over a bronze progress rule.",
+      "technology": "GSAP tweens on scaleX / clip-path (no DrawSVG needed for straight rules)",
+      "params": { "duration": "0.9-1.1s", "ease": "estate" }
+    },
+    "glassmorphism": {
+      "enabled": false,
+      "type": "none",
+      "description": "Explicitly banned by docs/03-DESIGN-SYSTEM.md - blurred translucent panels read as generic AI output",
+      "technology": "none",
+      "params": {}
+    },
+    "transitions": {
+      "enabled": true,
+      "type": "ink panel wipe",
+      "description": "A full-bleed ink panel wipes up over 0.6s between public routes, then lifts to reveal the new page. Skipped entirely under reduced motion.",
+      "technology": "GSAP timeline on a fixed panel, driven by the next-intl pathname",
+      "params": { "duration": "0.6s", "ease": "expo.inOut" }
+    },
+    "composite_notes": "The award-winning references lean on one pinned horizontal moment plus one cursor-driven list; both are reproduced. What is deliberately NOT reproduced: WebGL distortion on hover, scroll-jacked full-page sections, particles, and animated gradients - each of them fights the restraint the brief asks for, and three of them cost frames on a mid-range phone."
+  }
+}

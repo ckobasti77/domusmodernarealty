@@ -1,5 +1,28 @@
 import { expect, test, type ConsoleMessage, type Page } from "@playwright/test";
 
+/**
+ * Step 04 added the cookie banner, which covers the bottom of the viewport, and
+ * moved the language switcher into the header (where it is hidden below 768px
+ * and lives in the mobile menu instead). Both helpers below exist so these
+ * smoke tests keep asserting the same things through the real shell.
+ */
+async function dismissConsent(page: Page) {
+  const banner = page.getByRole("dialog").filter({ hasText: /kolačić|cookie|файл|Cookies/i });
+  if (await banner.isVisible().catch(() => false)) {
+    await banner.getByRole("button").first().click();
+    await expect(banner).toBeHidden();
+  }
+}
+
+/** Reveals the language switcher, opening the mobile menu when necessary. */
+async function openLocaleSwitcher(page: Page) {
+  const menuToggle = page.getByRole("button", { name: /otvori meni|open menu|Menü|меню/i });
+  if (await menuToggle.isVisible().catch(() => false)) {
+    await menuToggle.click();
+    await expect(page.getByRole("dialog", { name: /meni|menu|Menü|меню/i })).toBeVisible();
+  }
+}
+
 const LOCALES = [
   { prefix: "/sr", lang: "sr-Latn" },
   { prefix: "/en", lang: "en" },
@@ -33,6 +56,7 @@ for (const { prefix, lang } of LOCALES) {
 
     await expect(page.locator("html")).toHaveAttribute("lang", lang);
     await expect(page.locator("h1")).toBeVisible();
+    await dismissConsent(page);
 
     expect(errors, `console errors on ${prefix}:\n${errors.join("\n")}`).toEqual([]);
   });
@@ -40,13 +64,16 @@ for (const { prefix, lang } of LOCALES) {
 
 test("the locale switcher keeps the visitor on the same route", async ({ page }) => {
   await page.goto("/sr");
-  await page.getByRole("button", { name: "Русский" }).click();
+  await dismissConsent(page);
+  await openLocaleSwitcher(page);
+  await page.getByRole("button", { name: "Русский" }).filter({ visible: true }).first().click();
   await expect(page).toHaveURL(/\/ru\/?$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 });
 
 test("both font families expose their CSS variables", async ({ page }) => {
   await page.goto("/sr");
+  await dismissConsent(page);
 
   const fonts = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement);

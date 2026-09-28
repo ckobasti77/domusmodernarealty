@@ -17,14 +17,17 @@
   --color-ivory: #f4efe6;
   --color-ivory-2: #eae3d6;
   --color-paper: #fbf9f5;
-  --color-stone: #8a8275;
-  --color-stone-text: #6f685c; /* AA-safe muted text below 16px */
-  --color-mist: #b9b0a2;
-  --color-bronze: #b08d57;
-  --color-bronze-deep: #8c6d3f;
+  --color-stone: #8a8275; /* 3.32:1 on ivory - decorative/hairlines only */
+  --color-stone-text: #6c655b; /* muted body text on ivory/ivory-2/paper, >= 4.5:1 */
+  --color-mist: #b9b0a2; /* 7.48:1 on ink-3 - muted text on every ink surface */
+  --color-bronze: #b08d57; /* accent ON INK (5.19:1 on ink-3) + hairlines + fills */
+  --color-bronze-deep: #8c6d3f; /* accent fill on light; paper text on it is 4.57:1 */
+  --color-bronze-text: #7a623c; /* accent TEXT on light (4.52:1 on ivory-2) */
   --color-success: #4f7a5a;
-  --color-danger: #a4473a;
-  --color-warning: #b7852f;
+  --color-success-text: #476e51;
+  --color-danger: #a4473a; /* 4.65:1 on ivory-2, also fine as a fill */
+  --color-warning: #b7852f; /* icon/fill only: 3.12:1 on paper */
+  --color-warning-text: #835f22;
 
   /* Hairlines */
   --color-hairline-dark: color-mix(in oklab, var(--color-ivory) 12%, transparent);
@@ -82,6 +85,14 @@
   --ease-estate: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-curtain: cubic-bezier(0.87, 0, 0.13, 1);
+
+  /* Layer scale. Public chrome only; shadcn portals sit above at 60+. */
+  --z-sticky: 10;
+  --z-header: 30;
+  --z-overlay: 40;
+  --z-menu: 50;
+  --z-curtain: 70;
+  --z-preloader: 80;
 }
 
 /* ---------------------------------------------------------------------------
@@ -244,6 +255,19 @@
     background-color: #b08d57;
     color: #0e0d0b;
   }
+
+  /* One focus ring for the whole public site. `currentColor` inherits the
+     surface's text colour, so it is contrast-safe on ink and on ivory alike. */
+  :focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  /* WCAG 2.2 2.4.11: the sticky header must never hide the focused element. */
+  :target,
+  :focus {
+    scroll-margin-top: 6rem;
+  }
 }
 
 @utility eyebrow {
@@ -258,7 +282,23 @@
   border-bottom: 1px solid var(--color-hairline-light);
 }
 
+@utility hairline-t-dark {
+  border-top: 1px solid var(--color-hairline-dark);
+}
+
+@utility hairline-b-dark {
+  border-bottom: 1px solid var(--color-hairline-dark);
+}
+
+/* Hover-only affordances. Touch devices fire :hover on tap, which leaves
+   cards and links stuck in their hover state. */
+@custom-variant pointer-fine (@media (hover: hover) and (pointer: fine));
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
   *,
   *::before,
   *::after {

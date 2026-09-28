@@ -166,7 +166,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     mandateMonths: 9,
     hasTourScenes: true,
     poi: [
-      { kind: "school", name: "OŠ „Vlada Aksentijević”", distanceM: 260 },
+      { kind: "school", name: "OŠ „Sveti Sava”", distanceM: 260 },
       { kind: "park", name: "Park Neimar", distanceM: 120 },
       { kind: "transit", name: "Tramvaj 9, 10 — Neimar", distanceM: 180 },
       { kind: "shop", name: "Maxi Njegoševa", distanceM: 210 },
@@ -479,7 +479,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     hasTourScenes: true,
     poi: [
       { kind: "park", name: "Topčiderski park", distanceM: 600 },
-      { kind: "school", name: "OŠ „Vojvoda Radomir Putnik”", distanceM: 750 },
+      { kind: "school", name: "OŠ „Isidora Sekulić”", distanceM: 750 },
       { kind: "transit", name: "Tramvaj 3 — Senjak", distanceM: 480 },
       { kind: "health", name: "Dom zdravlja Savski venac", distanceM: 1100 },
     ],
@@ -1344,7 +1344,7 @@ export const SEED_LISTINGS: SeedListing[] = [
     mandateMonths: 6,
     poi: [
       { kind: "transit", name: "Autobus 65 — Hadžipopovac", distanceM: 240 },
-      { kind: "school", name: "OŠ „Stari grad”", distanceM: 460 },
+      { kind: "school", name: "OŠ „Jelena Ćetković”", distanceM: 460 },
       { kind: "shop", name: "IDEA Hadžipopovac", distanceM: 180 },
     ],
     costs: { infostan: 64, maintenance: 16, utilitiesIncluded: false },

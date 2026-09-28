@@ -168,6 +168,7 @@ export const constructionTypeV = v.union(
   v.literal("old"),
   v.literal("under_construction"),
 );
+export type ConstructionType = Infer<typeof constructionTypeV>;
 
 export const conditionV = v.union(
   v.literal("original"),
@@ -175,6 +176,7 @@ export const conditionV = v.union(
   v.literal("lux"),
   v.literal("needs_renovation"),
 );
+export type Condition = Infer<typeof conditionV>;
 
 export const heatingV = v.union(
   v.literal("CG"),
@@ -202,6 +204,7 @@ export const furnishingV = v.union(
   v.literal("semi"),
   v.literal("unfurnished"),
 );
+export type Furnishing = Infer<typeof furnishingV>;
 
 export const energyClassV = v.union(
   v.literal("A+"),

@@ -183,7 +183,6 @@
   "home": {
     "cityFilmAlt": "Reka i krovovi grada iz vazduha, u zlatnom satu",
     "featuredAll": "Sve nekretnine",
-    "featuredCounter": "{current} / {total}",
     "featuredEmpty": "Trenutno nema izdvojenih nekretnina. Javite nam šta tražite i obavestićemo Vas čim se pojavi nešto što odgovara.",
     "featuredEmptyCta": "Pišite nam",
     "featuredEyebrow": "Izabrano",
@@ -275,7 +274,6 @@
     "valuationArea": "Kvadratura",
     "valuationAreaInvalid": "Unesite kvadraturu između {min} i {max} m².",
     "valuationAreaPlaceholder": "npr. 68",
-    "valuationCta": "Zatražite procenu",
     "valuationEyebrow": "Procena",
     "valuationHeading": "Koliko vredi Vaš stan?",
     "valuationLede": "Okvirna procena za dva minuta, na osnovu prosečnih cena u Vašem kraju. Bez obaveza i bez poziva koje niste tražili.",

@@ -51,7 +51,6 @@
   "home": {
     "cityFilmAlt": "Luftaufnahme von Fluss und Dächern der Stadt zur goldenen Stunde",
     "featuredAll": "Alle Immobilien",
-    "featuredCounter": "{current} / {total}",
     "featuredEmpty": "Derzeit sind keine empfohlenen Immobilien verfügbar. Sagen Sie uns, was Sie suchen – wir melden uns, sobald sich etwas Passendes ergibt.",
     "featuredEmptyCta": "Schreiben Sie uns",
     "featuredEyebrow": "Auswahl",
@@ -143,7 +142,6 @@
     "valuationArea": "Wohnfläche",
     "valuationAreaInvalid": "Bitte geben Sie eine Wohnfläche zwischen {min} und {max} m² ein.",
     "valuationAreaPlaceholder": "z. B. 68",
-    "valuationCta": "Bewertung anfragen",
     "valuationEyebrow": "Bewertung",
     "valuationHeading": "Was ist Ihre Wohnung wert?",
     "valuationLede": "Ein Richtwert in zwei Minuten, auf Basis der Durchschnittspreise in Ihrem Viertel. Unverbindlich und ohne unerwünschte Anrufe.",

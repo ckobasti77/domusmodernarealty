@@ -87,9 +87,12 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
   return (
     <section aria-labelledby="hero-title" className="bg-ink text-ivory">
       <HeroStage poster={poster} posterMobile={posterMobile} video={mediaVideo("hero")} alt={t("heroMediaAlt")}>
-        {/* Bottom-aligned over the photograph; the padding clears the fixed
-            header above and the consent banner below (`--consent-h`). */}
-        <Container className="pb-[calc(2.5rem+var(--consent-h,0px))] pt-36 lg:pb-[calc(3.5rem+var(--consent-h,0px))]">
+        {/* Bottom-aligned over the photograph; the top padding clears the fixed
+            header. The consent banner is deliberately NOT subtracted here: it can
+            only measure itself after hydration, and padding the hero by its height
+            then lifted the whole hero copy by 240-300px at ~400ms (CLS 0.15-0.35).
+            On a first visit the banner overlays the bottom of the hero instead. */}
+        <Container className="pb-10 pt-36 lg:pb-14">
           <div data-hero-reveal="eyebrow">
             <Eyebrow tone="accentDark">{t("heroEyebrow")}</Eyebrow>
           </div>

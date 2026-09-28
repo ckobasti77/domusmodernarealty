@@ -51,7 +51,6 @@
   "home": {
     "cityFilmAlt": "Aerial view of the river and the city's rooftops at golden hour",
     "featuredAll": "All properties",
-    "featuredCounter": "{current} / {total}",
     "featuredEmpty": "There are no featured properties at the moment. Tell us what you are looking for and we will let you know as soon as something suitable comes up.",
     "featuredEmptyCta": "Write to us",
     "featuredEyebrow": "Our selection",
@@ -143,7 +142,6 @@
     "valuationArea": "Floor area",
     "valuationAreaInvalid": "Enter a floor area between {min} and {max} m².",
     "valuationAreaPlaceholder": "e.g. 68",
-    "valuationCta": "Request a valuation",
     "valuationEyebrow": "Valuation",
     "valuationHeading": "What is your apartment worth?",
     "valuationLede": "An indicative estimate in two minutes, based on average prices in your neighbourhood. No obligation, and no unsolicited calls.",

@@ -55,10 +55,15 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
         >
           <div data-featured-viewport="" className="overflow-x-auto [scrollbar-width:none]">
             <div data-featured-track="" className={`flex flex-col lg:w-max lg:flex-row lg:items-center ${EDGE}`}>
-              {/* The opening panel. Above the carousel below 1024px. */}
-              <header className="px-gutter md:px-gutter-md lg:w-[min(30rem,30vw)] lg:shrink-0 lg:px-0 lg:pr-16">
+              {/* The opening panel, above the carousel below 1024px. Sized so the
+                  longest single word of any locale ("Рекомендуемые") fits it:
+                  4.6vw type in a 32vw column. */}
+              <header className="px-gutter md:px-gutter-md lg:w-[min(32rem,32vw)] lg:shrink-0 lg:px-0 lg:pr-12">
                 <Eyebrow>{t("featuredEyebrow")}</Eyebrow>
-                <h2 id="featured-title" className="mt-4 max-w-[12ch] font-display text-display-l font-normal">
+                <h2
+                  id="featured-title"
+                  className="mt-4 max-w-[12ch] font-display text-display-l font-normal lg:max-w-none lg:text-[clamp(2.5rem,4.6vw,4.75rem)] lg:leading-[0.98]"
+                >
                   {fixOrphans(t("featuredHeading"))}
                 </h2>
               </header>

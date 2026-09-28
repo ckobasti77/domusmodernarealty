@@ -10,7 +10,7 @@ import { DURATION, gsap, MOTION_QUERIES, SplitText, STAGGER, useGSAP } from "./g
  * `overflow: clip` wrapper (DESIGN §6.2).
  *
  * Four things here are load-bearing and easy to get wrong:
- *  - `document.fonts.ready` is awaited, because splitting before Cormorant
+ *  - `document.fonts.ready` is awaited, because splitting before the display face
  *    arrives measures the fallback face and breaks every line;
  *  - `autoSplit` re-splits on a width change, so the tween MUST be created
  *    inside `onSplit` and returned from it — that is what lets SplitText revert

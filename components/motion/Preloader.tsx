@@ -6,9 +6,9 @@ import { Logo } from "@/components/site/Logo";
 import { revealIntro } from "./intro";
 
 /**
- * First-visit preloader (DESIGN §6.1): the wordmark rises behind a mask over a
- * bronze hairline, then the ink curtain lifts on `expo.inOut` to reveal the hero
- * already in motion. 1.75s end to end.
+ * First-visit preloader (DESIGN §6.1): the wordmark's letters rise one by one
+ * behind a mask over a bronze hairline, then the ink curtain lifts on
+ * `expo.inOut` to reveal the hero already in motion. 1.8s end to end.
  *
  * The whole sequence is server-rendered and runs on CSS keyframes
  * (`me-preloader-*` in globals.css), not on hydration:
@@ -27,8 +27,8 @@ import { revealIntro } from "./intro";
 const KEY = "me.preloaded.v1";
 
 /** Mirrors the keyframe timings in globals.css. */
-const LIFT_AT_MS = 850;
-const DONE_AT_MS = 1750;
+const LIFT_AT_MS = 1000;
+const DONE_AT_MS = 1800;
 
 /**
  * Runs during HTML parsing, before the curtain is painted. Reduced motion,

@@ -51,7 +51,6 @@
   "home": {
     "cityFilmAlt": "Вид с высоты на реку и городские крыши в золотой час",
     "featuredAll": "Вся недвижимость",
-    "featuredCounter": "{current} / {total}",
     "featuredEmpty": "Сейчас в подборке нет объектов. Расскажите, что Вы ищете, и мы сообщим Вам, как только появится подходящий вариант.",
     "featuredEmptyCta": "Написать нам",
     "featuredEyebrow": "Наш выбор",
@@ -143,7 +142,6 @@
     "valuationArea": "Площадь",
     "valuationAreaInvalid": "Укажите площадь от {min} до {max} м².",
     "valuationAreaPlaceholder": "например, 68",
-    "valuationCta": "Запросить оценку",
     "valuationEyebrow": "Оценка",
     "valuationHeading": "Сколько стоит Ваша квартира?",
     "valuationLede": "Ориентировочная оценка за две минуты на основе средних цен в Вашем районе. Без обязательств и без звонков, о которых Вы не просили.",

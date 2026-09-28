@@ -66,8 +66,14 @@ test.describe("listing detail — content, SEO, compliance", () => {
 
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
     const graph = blocks.flatMap((text) => JSON.parse(text) as Record<string, unknown>[]);
-    const listing = graph.find((node) => node["@type"] === "RealEstateListing") as Record<string, any>;
-    const crumbs = graph.find((node) => node["@type"] === "BreadcrumbList") as Record<string, any>;
+    // Typed to the fields asserted below, nothing more.
+    type ListingNode = {
+      offers: { price: number; priceCurrency: string };
+      about: { "@type": string; floorSize: unknown; geo?: unknown };
+    };
+    type CrumbsNode = { itemListElement: unknown[] };
+    const listing = graph.find((node) => node["@type"] === "RealEstateListing") as unknown as ListingNode;
+    const crumbs = graph.find((node) => node["@type"] === "BreadcrumbList") as unknown as CrumbsNode;
     expect(listing).toBeDefined();
     expect(listing.offers.price).toBe(430000);
     expect(listing.offers.priceCurrency).toBe("EUR");

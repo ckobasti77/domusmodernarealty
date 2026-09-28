@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mihajlo Estate">
+  <rect width="64" height="64" fill="#0E0D0B"/>
+  <path d="M12 46V18h4.6l8.6 18.2L33.8 18h4.6v28h-4V26.4l-7.6 16h-2.6l-7.6-16V46H12Z" fill="#F4EFE6"/>
+  <path d="M44 46V18h12v3.8h-8v8.1h7.4v3.8H48v8.5h8V46H44Z" fill="#B08D57"/>
+</svg>

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,6 +13,10 @@
     "typegen": "next typegen",
     "convex:once": "convex dev --once",
     "verify": "npm run convex:once && npm run typegen && npm run typecheck && npm run lint && npm run build",
+    "i18n:check": "node scripts/i18n-check.mjs",
+    "media:optimize": "node scripts/optimize-media.mjs",
+    "test:e2e": "playwright test",
+    "test:unit": "vitest run",
     "shots": "node scripts/shots.mjs"
   },
   "dependencies": {

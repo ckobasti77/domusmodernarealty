@@ -1,0 +1,262 @@
+{
+  "generatedAt": "2026-09-28T01:08:06.340Z",
+  "items": {
+    "about": {
+      "key": "about",
+      "kind": "image",
+      "width": 1536,
+      "height": 1024,
+      "fallback": "/media/about/about-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRqQAAABXRUJQVlA4IJgAAABQBACdASoYABAAPu1iqU2ppaOiMAgBMB2JZACdMoR3A8ABFoKGup1JteyAAM49SEUpkp54cNjxva6lLQmljHqdccC1AoOWWHIx4QcRTlEbDPxnzCpoL3X+FyWkwRZEx9SAPk2mrUaqrpQ5lV9vVW473+RUDzrHCyelCanukkezRSH+RfhT6r5+IA6FBmc3A8nqZFSdGtMwAA==",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/about/about-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/about/about-640.webp"
+        },
+        {
+          "width": 1280,
+          "format": "avif",
+          "src": "/media/about/about-1280.avif"
+        },
+        {
+          "width": 1280,
+          "format": "webp",
+          "src": "/media/about/about-1280.webp"
+        }
+      ]
+    },
+    "city": {
+      "key": "city",
+      "kind": "video",
+      "width": 1920,
+      "height": 1080,
+      "poster": "/media/city/city-poster.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRpgAAABXRUJQVlA4IIwAAAAwBACdASoYAA4APu1iqk2ppaQiMAgBMB2JQBOmUABsDV9hHgzJxhmBjwAA/sOKLftI5Tb90+YebS+flqilZAw618RIqyAyBqO9ysYYaEvaOmsy+ZSQWdTAsoLPDqOC20ksXqWYukpP6436YQHk2M9EkxraHBKfynuV5iY5jNLE9R1AXf5FZYUO4gAAAA==",
+      "sources": [
+        {
+          "type": "video/webm",
+          "src": "/media/city/city.webm"
+        },
+        {
+          "type": "video/mp4",
+          "src": "/media/city/city.mp4"
+        }
+      ],
+      "mobileSrc": "/media/city/city-720.mp4"
+    },
+    "hero-desktop": {
+      "key": "hero-desktop",
+      "kind": "image",
+      "width": 1672,
+      "height": 941,
+      "fallback": "/media/hero-desktop/hero-desktop-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRpAAAABXRUJQVlA4IIQAAAAwBACdASoYAA4APu1iqk2ppaQiMAgBMB2JYgCdB3gAmo2aYOg2u5PHAAAA+of1adpWbleuq5Vdx6iQb6hT1oc/z1HQZsWVTR+pn6B9lv2ocK5BPucTqcM/fw8ufXzl53qa6II+DzcIoGL8uNzctVoMyC4eYSqNP6eXieVMNZUkvUT9wAA=",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/hero-desktop/hero-desktop-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/hero-desktop/hero-desktop-640.webp"
+        },
+        {
+          "width": 1280,
+          "format": "avif",
+          "src": "/media/hero-desktop/hero-desktop-1280.avif"
+        },
+        {
+          "width": 1280,
+          "format": "webp",
+          "src": "/media/hero-desktop/hero-desktop-1280.webp"
+        }
+      ]
+    },
+    "hero-mobile": {
+      "key": "hero-mobile",
+      "kind": "image",
+      "width": 941,
+      "height": 1672,
+      "fallback": "/media/hero-mobile/hero-mobile-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRgABAABXRUJQVlA4IPQAAABQBgCdASoYACsAPu1grE+ppSQiMBVaqTAdiWQAtRuYRHtOs/vxSD3tNu5dOxxqoiCuyBaIzAbYYFm+gAD+2VMJsPxO+gkjaMYZ+S+OsbYDPN2fZli4KXmeD5reRhV8YQGEAJm8+WM/1AUTHPPSj9U7dIHdxWHWSV2jYAxP9mHc1jvypFQeKoiGRlYA46rjjkQ7VTOc+JZ83fZq9bYs0DYKk6Bq7B1D2X2mR7ahRY3CbXp/zCTCmHdX4MyZvjnzzTHeeaFrNL2/RMjGN6xt6uxrE+eCll5JdCA2IeLq/woyO4voPy+aEG5ZF7OBuF1IqOh7OgAA",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/hero-mobile/hero-mobile-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/hero-mobile/hero-mobile-640.webp"
+        }
+      ]
+    },
+    "hero": {
+      "key": "hero",
+      "kind": "video",
+      "width": 1920,
+      "height": 1080,
+      "poster": "/media/hero/hero-poster.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAADwAwCdASoYAA4APu1mq04ppaQiMAgBMB2JZACdACHOjbK+RqxkA0UAAPqIkb9u6ohomfucLEuw59JPPCmll5/etMt0pH2Y5w5ZBSajU8PPIiqCnLLDel1fBagGmRG1HJJ4fdDlu3/FZM1KvfAtu2CnY4UFzIwtuJY/noDgAAA=",
+      "sources": [
+        {
+          "type": "video/webm",
+          "src": "/media/hero/hero.webm"
+        },
+        {
+          "type": "video/mp4",
+          "src": "/media/hero/hero.mp4"
+        }
+      ],
+      "mobileSrc": "/media/hero/hero-720.mp4"
+    },
+    "sell": {
+      "key": "sell",
+      "kind": "image",
+      "width": 1536,
+      "height": 1024,
+      "fallback": "/media/sell/sell-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRpoAAABXRUJQVlA4II4AAAAQBACdASoYABAAPu1iqU2ppaOiMAgBMB2JZACdABeFf29l87uCTP3wMAD+EdnVZ8Twb/jom/aZ5Dyb2yyIuEZBpm1wxnoxXyDqU06Y/Yn2AL62kYxYeHybZQJ+PfSb0j0PrqCVrjMB68/jtNdiQr0rUYreBYAmNMMGLdQU7p+ZlAUKZo5ENBARvIvq4AAA",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/sell/sell-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/sell/sell-640.webp"
+        },
+        {
+          "width": 1280,
+          "format": "avif",
+          "src": "/media/sell/sell-1280.avif"
+        },
+        {
+          "width": 1280,
+          "format": "webp",
+          "src": "/media/sell/sell-1280.webp"
+        }
+      ]
+    },
+    "tours3d-alt": {
+      "key": "tours3d-alt",
+      "kind": "image",
+      "width": 1672,
+      "height": 941,
+      "fallback": "/media/tours3d-alt/tours3d-alt-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRo4AAABXRUJQVlA4IIIAAAAQBACdASoYAA4APu1iqU2ppaOiMAgBMB2JQBOmUAA+XqZYkYksdWZ6AAD+5b0nrbHMIAywxlUq8aU9oCWybBeLcOd2pjDOEXMf4gVNyUKFnrB9oLgO3NcjxMwZui+0UCn0E46QeqOieIeNPDz/y4jNqDXdpzOZPVu23RY+NEX7VAAA",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/tours3d-alt/tours3d-alt-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/tours3d-alt/tours3d-alt-640.webp"
+        },
+        {
+          "width": 1280,
+          "format": "avif",
+          "src": "/media/tours3d-alt/tours3d-alt-1280.avif"
+        },
+        {
+          "width": 1280,
+          "format": "webp",
+          "src": "/media/tours3d-alt/tours3d-alt-1280.webp"
+        }
+      ]
+    },
+    "tours3d": {
+      "key": "tours3d",
+      "kind": "image",
+      "width": 1672,
+      "height": 941,
+      "fallback": "/media/tours3d/tours3d-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRo4AAABXRUJQVlA4IIIAAABQBACdASoYAA4APu1iqU2ppaOiMAgBMB2JZACdMoADTfUcZz8dIlpeyHNIAP7jUXOmyfOeIG5uK63luRmNei8SPOPXvrefMIQ53LEED8mcJjNjvGtuDCSGQ2OiK+SCquEsvPeLTdyCR6OfFC+GsUBPaNq7LuinL2q50SROnPzEKwAA",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/tours3d/tours3d-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/tours3d/tours3d-640.webp"
+        },
+        {
+          "width": 1280,
+          "format": "avif",
+          "src": "/media/tours3d/tours3d-1280.avif"
+        },
+        {
+          "width": 1280,
+          "format": "webp",
+          "src": "/media/tours3d/tours3d-1280.webp"
+        }
+      ]
+    },
+    "valuation": {
+      "key": "valuation",
+      "kind": "image",
+      "width": 1536,
+      "height": 1024,
+      "fallback": "/media/valuation/valuation-fallback.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRsYAAABXRUJQVlA4ILoAAACwBACdASoYABAAPu1iqU2ppaOiMAgBMB2JZACdMoMYJn/FsEqFY3/5s71fMl+YAP2y6FmCFXJpCDZpW9mk7tLoFhiNyjETxxT/EkWF8AxGHVlvOi5+DAljs9gIz3nuAODVvBWDU9JkmRWBaetwMaW5VtYh8sJ1E03TmpDOwk/cvwB9ecOWZ6dBDGrBkdvhwXMxRWaMMmYUxtE1y3GFihh9A6FmKgpJA/conyWRpqIsS64dyGvlshaoMAA=",
+      "variants": [
+        {
+          "width": 640,
+          "format": "avif",
+          "src": "/media/valuation/valuation-640.avif"
+        },
+        {
+          "width": 640,
+          "format": "webp",
+          "src": "/media/valuation/valuation-640.webp"
+        },
+        {
+          "width": 1280,
+          "format": "avif",
+          "src": "/media/valuation/valuation-1280.avif"
+        },
+        {
+          "width": 1280,
+          "format": "webp",
+          "src": "/media/valuation/valuation-1280.webp"
+        }
+      ]
+    },
+    "walkthrough": {
+      "key": "walkthrough",
+      "kind": "video",
+      "width": 1920,
+      "height": 1080,
+      "poster": "/media/walkthrough/walkthrough-poster.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4IIoAAAAwBACdASoYAA4APu1iqU2ppaOiMAgBMB2JQBWAA3R5yvQ09QUCRIQnfUAA4m6TLWq5Qzq9nSDxhVfsR5kMJUjkBbJHaNLm5HOPeDAuY4sdti30GxGGxzXweDmlgS71+zSekhqOwo6LZqK6TUt7KPjA9ldjiqdmX/D1GhKpqxjpnlOA+6njCfhAAAA=",
+      "sources": [
+        {
+          "type": "video/webm",
+          "src": "/media/walkthrough/walkthrough.webm"
+        },
+        {
+          "type": "video/mp4",
+          "src": "/media/walkthrough/walkthrough.mp4"
+        }
+      ],
+      "mobileSrc": "/media/walkthrough/walkthrough-720.mp4"
+    }
+  }
+}

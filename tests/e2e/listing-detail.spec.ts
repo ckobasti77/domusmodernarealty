@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 /**
@@ -106,6 +107,19 @@ test.describe("listing detail — content, SEO, compliance", () => {
     const response = await request.get("/sr/nekretnine/ne-postoji-me-9999");
     expect(response.status()).toBe(404);
   });
+});
+
+test.describe("accessibility", () => {
+  for (const slug of [LISTING, SOLD]) {
+    test(`axe finds no WCAG 2.2 AA violations on ${slug.slice(-7)}`, async ({ page }) => {
+      await quietVisit(page, `/sr/nekretnine/${slug}`);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const results = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+      expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
+    });
+  }
 });
 
 test.describe("gallery lightbox", () => {

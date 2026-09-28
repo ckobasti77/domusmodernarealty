@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from "react";
+import type { CSSProperties, ElementType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -73,6 +73,7 @@ export function Section({
   tone?: "ivory" | "ivory-2" | "ink" | "none";
   className?: string;
   id?: string;
+  style?: CSSProperties;
   "aria-labelledby"?: string;
 }) {
   return (

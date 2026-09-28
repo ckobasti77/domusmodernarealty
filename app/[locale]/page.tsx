@@ -27,19 +27,28 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
   return (
     <>
-      <Section tone="ink" className="flex min-h-svh flex-col justify-end pb-16 pt-40 lg:pb-24">
+      {/* The consent banner is fixed to the bottom of the viewport, and a
+          bottom-aligned full-height hero puts its CTAs and scroll cue exactly
+          there. `--consent-h` is published by the banner while it is up. */}
+      <Section
+        tone="ink"
+        className="flex min-h-svh flex-col justify-end pt-32 lg:pt-40"
+        style={{ paddingBottom: "calc(4rem + var(--consent-h, 0px))" }}
+      >
         <Container>
           <Eyebrow tone="accentDark">{t("heroEyebrow")}</Eyebrow>
 
-          <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-normal text-ivory">
+          {/* 0.92 is the right leading at 130px, not at the 56px mobile floor,
+              where the descender of "koji" would collide with the next line. */}
+          <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-normal leading-[1.0] text-ivory lg:leading-[0.92]">
             <SplitReveal as="span" className="block">
               {t("heroHeadline")}
             </SplitReveal>
           </h1>
 
-          <p className="mt-10 max-w-[52ch] text-body-l text-mist">{t("heroLede")}</p>
+          <p className="mt-8 max-w-[52ch] text-body-l text-mist lg:mt-10">{t("heroLede")}</p>
 
-          <div className="mt-12 flex flex-wrap items-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center gap-4 lg:mt-12">
             <Link href="/properties" prefetch={false} className={buttonClasses({ variant: "inverse" })}>
               <span>{t("heroCta")}</span>
             </Link>
@@ -48,7 +57,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             </Link>
           </div>
 
-          <div className="mt-16 flex items-center gap-4">
+          <div className="mt-10 flex items-center gap-4 lg:mt-16">
             {/* The thin line of DESIGN 6.2; `mist` is the muted-on-ink token,
                 `stone` is documented as decorative only. */}
             <span aria-hidden="true" className="block h-12 w-px bg-linear-to-b from-bronze to-transparent" />

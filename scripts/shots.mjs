@@ -54,6 +54,28 @@ const heightFor = (w) => (w <= 400 ? 844 : w <= 800 ? 1024 : 900);
 const slug = (r) => r.replace(/^\//, "").replace(/[^a-zA-Z0-9-]+/g, "_") || "root";
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Wait for fonts and images, but never longer than `ms`. `img.decode()` on an
+ * image that never finishes loading returns a promise that never settles, so
+ * the raw version of this deadlocked the whole run.
+ */
+async function settleAssets(page, ms = 4000) {
+  await page
+    .evaluate(async (limit) => {
+      const cap = new Promise((res) => setTimeout(res, limit));
+      const work = (async () => {
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((img) =>
+            img.complete ? null : img.decode().catch(() => {}),
+          ),
+        );
+      })();
+      await Promise.race([work, cap]);
+    }, ms)
+    .catch(() => {});
+}
+
 const launchOptions = {};
 if (process.env.SHOTS_CHROMIUM_PATH) launchOptions.executablePath = process.env.SHOTS_CHROMIUM_PATH;
 const browser = await chromium.launch(launchOptions);
@@ -91,14 +113,7 @@ try {
         // Fonts and images must be resolved before the first capture, or the
         // shot shows a fallback face and an LQIP placeholder rather than the
         // thing under review.
-        await page
-          .evaluate(async () => {
-            await document.fonts.ready;
-            await Promise.all(
-              [...document.images].map((img) => (img.complete ? null : img.decode().catch(() => {}))),
-            );
-          })
-          .catch(() => {});
+        await settleAssets(page);
         await sleep(2200);
         const first = path.join(outDir, `${name}_00.png`);
         await page.screenshot({ path: first });
@@ -107,13 +122,7 @@ try {
           await page.mouse.move(width / 2, heightFor(width) / 2);
           await page.mouse.wheel(0, Math.round(heightFor(width) * 0.9));
           await sleep(1400);
-          await page
-            .evaluate(() =>
-              Promise.all(
-                [...document.images].map((img) => (img.complete ? null : img.decode().catch(() => {}))),
-              ),
-            )
-            .catch(() => {});
+          await settleAssets(page, 2500);
           const f = path.join(outDir, `${name}_${String(i).padStart(2, "0")}.png`);
           await page.screenshot({ path: f });
           files.push(f);

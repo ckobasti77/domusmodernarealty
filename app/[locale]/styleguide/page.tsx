@@ -268,7 +268,13 @@ export default async function StyleguidePage({
                   <span>{step.token}</span>
                   <span className="normal-case tracking-normal">{step.spec}</span>
                 </dt>
-                <dd className={`mt-3 font-display font-normal ${step.cls}`}>{step.text}</dd>
+                <dd
+                  className={`mt-3 font-display font-normal ${step.cls} ${
+                    step.token === "display-xl" ? "leading-[1.0] lg:leading-[0.92]" : ""
+                  }`}
+                >
+                  {step.text}
+                </dd>
               </div>
             ))}
             <div className="hairline-b pb-6">

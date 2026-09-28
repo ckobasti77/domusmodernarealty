@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { Link } from "@/i18n/navigation";
 import {
@@ -37,10 +37,13 @@ export function CookieConsent() {
   const headingId = useId();
   const panel = useRef<HTMLDivElement>(null);
 
+  const visible = hydrated && record === null;
+  useConsentHeight(panel, visible);
+
   // The server cannot know the stored choice, so the banner only appears once
   // the client has hydrated. Otherwise a visitor who already decided would see
   // the banner flash for one frame.
-  if (!hydrated || record !== null) return null;
+  if (!visible) return null;
 
   const save = (categories: ConsentCategories) => {
     setConsent(categories);
@@ -56,11 +59,11 @@ export function CookieConsent() {
       className={cn(
         // Capped at 38svh on a phone: at 85svh the bar ate 40% of the screen
         // and buried the hero's CTAs and scroll cue.
-        "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[38svh] overflow-y-auto md:max-h-[70svh]",
+        "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[34svh] overflow-y-auto md:max-h-[70svh]",
         "border-t border-hairline-dark bg-ink text-ivory",
       )}
     >
-      <div className="mx-auto flex max-w-content flex-col gap-6 px-gutter py-6 md:px-gutter-md lg:flex-row lg:items-start lg:gap-12 lg:px-gutter-lg lg:py-8">
+      <div className="mx-auto flex max-w-content flex-col gap-4 px-gutter py-4 md:px-gutter-md md:gap-6 md:py-6 lg:flex-row lg:items-start lg:gap-12 lg:px-gutter-lg lg:py-8">
         <div className="flex-1">
           {/* The serif title is a luxury flourish on a compliance notice; at
               390px it costs a line the body needs. Kept as the accessible name
@@ -71,7 +74,7 @@ export function CookieConsent() {
           >
             {t("bannerHeading")}
           </h2>
-          <p className="mt-2 max-w-[64ch] text-small text-mist md:mt-3">
+          <p className="mt-1.5 max-w-[64ch] text-small text-mist md:mt-3">
             {t("bannerBody")}{" "}
             <Link
               href="/privacy"
@@ -114,7 +117,7 @@ export function CookieConsent() {
         {/* Both choices get identical weight. An emphasised "accept all" beside
             a quiet "necessary only" is a dark pattern under EDPB guidance, and a
             quiet-luxury site should not be shouting either way. */}
-        <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:w-[260px] lg:flex-col">
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:gap-3 lg:w-[260px] lg:flex-col">
           <Button
             variant="outlineDark"
             onClick={() => save(ALL_CATEGORIES)}
@@ -156,6 +159,32 @@ export function CookieConsent() {
  * Footer link that re-opens the banner. GDPR requires consent to be as easy to
  * withdraw as it was to give, which means a permanent entry point.
  */
+/**
+ * Publishes the banner's height as `--consent-h` on `<html>` so a `min-h-svh`
+ * hero can hold its CTAs above it (`app/[locale]/page.tsx`). It is cleared when
+ * the banner unmounts, so the padding disappears with it.
+ */
+function useConsentHeight(panel: React.RefObject<HTMLDivElement | null>, active: boolean) {
+  useEffect(() => {
+    const el = panel.current;
+    const root = document.documentElement;
+    if (!active || el === null) {
+      root.style.removeProperty("--consent-h");
+      return;
+    }
+    const write = () => {
+      root.style.setProperty("--consent-h", `${Math.round(el.getBoundingClientRect().height)}px`);
+    };
+    write();
+    const observer = new ResizeObserver(write);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--consent-h");
+    };
+  }, [panel, active]);
+}
+
 export function ConsentSettingsButton({ className }: { className?: string }) {
   const t = useTranslations("consent");
 

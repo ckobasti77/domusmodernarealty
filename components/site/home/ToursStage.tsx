@@ -4,7 +4,9 @@ import Image from "next/image";
 import { useRef } from "react";
 import { AmbientVideo } from "@/components/motion/AmbientVideo";
 import { gsap, MOTION_QUERIES, useGSAP } from "@/components/motion/gsap";
+import { buttonClasses } from "@/components/site/Button";
 import { Picture } from "@/components/site/Picture";
+import { Link } from "@/i18n/navigation";
 import type { MediaVideo, ResponsiveImage } from "@/lib/media";
 
 /**
@@ -15,27 +17,33 @@ import type { MediaVideo, ResponsiveImage } from "@/lib/media";
  *    muted loop), framed by a hairline.
  *
  * Desktop (≥1024px, motion allowed): the stage pins and the scroll opens the
- * window from 58% to full bleed while the film inside settles from 1.25 → 1
- * and the hairline frame runs ahead of it and dissolves — the visitor steps
- * out of the scan and into the walk. Everything is `transform` and `opacity`;
- * the timeline is scrubbed and has `ease: "none"` so the scroll owns the pace.
- * Below 1024px the window uncovers once with a `clip-path` inset, no pin; with
+ * window from 58% to full bleed while the film inside settles from 1.25 → 1.
+ * The frame is four 1px lines kept exactly 40px outside the window, so it
+ * stays a crisp hairline at every size (a scaled border would thin to a soft
+ * 0.6px), and it dissolves as the window reaches the edges. In the last beat
+ * the call to action rises over the film. Everything is `transform` and
+ * `opacity`; the timeline is scrubbed with `ease: "none"`, so the scroll owns
+ * the pace. Below 1024px the window uncovers once with a `clip-path`; with
  * reduced motion it is simply open.
  *
- * All the media is decorative atmosphere (AI-generated, never a real
- * listing), so only the backdrop carries an alt text and the film is hidden
- * from assistive technology.
+ * All the media is decorative atmosphere (AI-generated, never a real listing),
+ * so only the backdrop carries an alt text and the film is hidden from
+ * assistive technology.
  */
 
 const START = 0.58;
+/** Frame-to-window distance in px. */
+const GUTTER = 40;
 
 export type ToursStageProps = {
   backdrop: ResponsiveImage;
   backdropAlt: string;
   film: MediaVideo | null;
+  /** The end-beat link to a listing with a tour; the heading above always has one too. */
+  cta: { slug: string; label: string } | null;
 };
 
-export function ToursStage({ backdrop, backdropAlt, film }: ToursStageProps) {
+export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps) {
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -47,12 +55,33 @@ export function ToursStage({ backdrop, backdropAlt, film }: ToursStageProps) {
       const [frame] = q("[data-tours-frame]");
       const [pane] = q("[data-tours-window]");
       const [inner] = q("[data-tours-inner]");
+      const [end] = q("[data-tours-end]");
+      const [top, bottom, left, right] = q("[data-tours-line]");
       if (layer === undefined || frame === undefined || pane === undefined || inner === undefined) return;
 
       const mm = gsap.matchMedia();
 
       mm.add(MOTION_QUERIES.desktop, () => {
-        gsap
+        // Draws the frame around a window at scale `s`: each line moves out
+        // from the centre and stretches along its own axis only.
+        const draw = (s: number) => {
+          if (top === undefined || bottom === undefined || left === undefined || right === undefined) return;
+          const w = stage.clientWidth;
+          const h = stage.clientHeight;
+          const dx = (s * w) / 2 + GUTTER;
+          const dy = (s * h) / 2 + GUTTER;
+          gsap.set([top, bottom], { scaleX: (s * w + 2 * GUTTER) / w });
+          gsap.set(top, { y: -dy });
+          gsap.set(bottom, { y: dy });
+          gsap.set([left, right], { scaleY: (s * h + 2 * GUTTER) / h });
+          gsap.set(left, { x: -dx });
+          gsap.set(right, { x: dx });
+        };
+        const zoom = { s: START };
+        draw(START);
+        if (end !== undefined) gsap.set(end, { autoAlpha: 0 });
+
+        const tl = gsap
           .timeline({
             defaults: { ease: "none" },
             scrollTrigger: {
@@ -62,12 +91,15 @@ export function ToursStage({ backdrop, backdropAlt, film }: ToursStageProps) {
               pin: true,
               scrub: true,
               invalidateOnRefresh: true,
+              onRefresh: () => draw(zoom.s),
             },
           })
-          .fromTo(pane, { scale: START }, { scale: 1 }, 0)
-          .fromTo(inner, { scale: 1.25 }, { scale: 1 }, 0)
-          .fromTo(layer, { scale: 1.08 }, { scale: 1 }, 0)
-          .fromTo(frame, { scale: START * 1.1, opacity: 1 }, { scale: 1.12, opacity: 0 }, 0);
+          .fromTo(pane, { scale: START }, { scale: 1, duration: 1 }, 0)
+          .fromTo(inner, { scale: 1.25 }, { scale: 1, duration: 1 }, 0)
+          .fromTo(layer, { scale: 1.08 }, { scale: 1, duration: 1 }, 0)
+          .fromTo(zoom, { s: START }, { s: 1, duration: 1, onUpdate: () => draw(zoom.s) }, 0)
+          .fromTo(frame, { opacity: 1 }, { opacity: 0, duration: 0.45 }, 0.55);
+        if (end !== undefined) tl.to(end, { autoAlpha: 1, duration: 0.15 }, 0.85);
       });
 
       mm.add(MOTION_QUERIES.mobile, () => {
@@ -114,11 +146,30 @@ export function ToursStage({ backdrop, backdropAlt, film }: ToursStageProps) {
         </div>
       </div>
 
-      <div
-        data-tours-frame=""
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 hidden border border-ivory/45 lg:block"
-      />
+      {/* Invisible until the desktop timeline draws it; otherwise the four lines
+          would sit as a cross in the middle of the stage. */}
+      <div data-tours-frame="" aria-hidden="true" className="pointer-events-none absolute inset-0 hidden opacity-0 lg:block">
+        <span data-tours-line="" className="absolute inset-x-0 top-1/2 h-px bg-ivory/50" />
+        <span data-tours-line="" className="absolute inset-x-0 top-1/2 h-px bg-ivory/50" />
+        <span data-tours-line="" className="absolute inset-y-0 left-1/2 w-px bg-ivory/50" />
+        <span data-tours-line="" className="absolute inset-y-0 left-1/2 w-px bg-ivory/50" />
+      </div>
+
+      {cta !== null ? (
+        <div
+          data-tours-end=""
+          className="invisible absolute inset-x-0 bottom-0 hidden bg-linear-to-t from-ink/70 to-transparent px-gutter-lg pb-14 pt-40 lg:block"
+        >
+          <div className="mx-auto max-w-content">
+            <Link
+              href={{ pathname: "/properties/[slug]", params: { slug: cta.slug } }}
+              className={buttonClasses({ variant: "inverse" })}
+            >
+              <span>{cta.label}</span>
+            </Link>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

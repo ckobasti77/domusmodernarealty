@@ -26,7 +26,7 @@ function dialable(phone: string): string {
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <li className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 border-b border-hairline-dark py-6">
+    <li className="flex flex-col items-start gap-2 border-b border-hairline-dark py-6 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-8">
       <span className="font-mono text-label uppercase text-mist">{label}</span>
       <span className="flex flex-wrap items-baseline gap-x-8 gap-y-2">{children}</span>
     </li>
@@ -72,7 +72,7 @@ export async function FinalCta({ locale, settings }: { locale: Locale; settings:
 
           <div className="mt-12 grid grid-cols-4 gap-x-6 gap-y-14 lg:mt-16 lg:grid-cols-12 lg:items-end">
             <div className="col-span-4 lg:col-span-5">
-              <p className="max-w-[44ch] text-body-l text-mist">{fixTypography(t("finalLede"))}</p>
+              <p className="max-w-[44ch] text-pretty text-body-l text-mist">{fixTypography(t("finalLede"))}</p>
               <MagneticButton className="mt-10">
                 <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "inverse" })}>
                   <span>{t("finalCta")}</span>
@@ -80,8 +80,9 @@ export async function FinalCta({ locale, settings }: { locale: Locale; settings:
               </MagneticButton>
             </div>
 
+            {/* The block closes on its own hairline, so the last row does not add one. */}
             {phone !== undefined || viber !== undefined || whatsapp !== undefined || email !== undefined ? (
-              <ul className="col-span-4 border-t border-hairline-dark lg:col-span-6 lg:col-start-7">
+              <ul className="col-span-4 border-t border-hairline-dark lg:col-span-6 lg:col-start-7 [&>li:last-child]:border-b-0">
                 {phone !== undefined ? (
                   <Row label={tCommon("phone")}>
                     <Channel href={`tel:${dialable(phone)}`}>{phone}</Channel>

@@ -6,7 +6,7 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { textLinkClasses } from "@/components/site/TextLink";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
 import type { PostCard } from "./data";
@@ -27,41 +27,56 @@ async function Post({ post, size, locale }: { post: PostCard; size: Size; locale
   const excerpt = pickL10n(post.excerpt, locale);
   const lead = size === "lead";
 
+  const plate = lead && post.coverUrl !== undefined;
+
   return (
-    <article className="group/post relative">
+    // `isolate` + a negative z-index on the photograph let the lead's title
+    // plate overlap the picture while staying un-positioned, so the stretched
+    // title link still covers the whole article.
+    <article className="group/post relative isolate">
       {post.coverUrl !== undefined ? (
         <ImageReveal
           src={post.coverUrl}
           alt=""
           ratio={lead ? "aspect-[4/3]" : "aspect-[3/2]"}
           sizes={lead ? "(min-width: 1024px) 56vw, 92vw" : "(min-width: 1024px) 30vw, 92vw"}
-          imageClassName="transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]"
+          className="-z-10"
+          imageClassName="photo-grade transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]"
         />
       ) : null}
 
-      <p className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-label uppercase">
-        <span className="text-bronze-text">{tJournal(`categories.${post.category}`)}</span>
-        {post.readingMinutes !== undefined ? (
-          <span className="text-stone-text">{t("journalReadingTime", { minutes: post.readingMinutes })}</span>
-        ) : null}
-      </p>
+      <div className={plate ? "-mt-16 w-fit max-w-[88%] bg-ivory pr-8 pt-6 lg:-mt-20 lg:pr-12 lg:pt-8" : "mt-6"}>
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-label uppercase">
+          <span className="text-bronze-text">{tJournal(`categories.${post.category}`)}</span>
+          {post.readingMinutes !== undefined ? (
+            <span className="text-stone-text">{t("journalReadingTime", { minutes: post.readingMinutes })}</span>
+          ) : null}
+        </p>
 
-      <h3
-        lang={title.lang !== locale ? title.lang : undefined}
-        className={cn("mt-3 font-display font-normal", lead ? "text-display-m max-w-[20ch]" : "text-h2 max-w-[24ch]")}
-      >
-        <Link
-          href={{ pathname: "/journal/[slug]", params: { slug: post.slug } }}
-          prefetch={false}
-          className="transition-colors duration-200 before:absolute before:inset-0 pointer-fine:group-hover/post:text-bronze-text"
+        <h3
+          lang={title.lang !== locale ? title.lang : undefined}
+          className={cn(
+            // Not a SplitText target, so balanced wrapping is allowed here.
+            "mt-3 text-balance font-display font-normal",
+            lead ? "max-w-[22ch] text-[clamp(2rem,3.2vw,3rem)] leading-[1.05]" : "max-w-[24ch] text-h2",
+          )}
         >
-          {fixOrphans(title.text)}
-        </Link>
-      </h3>
+          <Link
+            href={{ pathname: "/journal/[slug]", params: { slug: post.slug } }}
+            prefetch={false}
+            className="transition-colors duration-200 before:absolute before:inset-0 pointer-fine:group-hover/post:text-bronze-text"
+          >
+            {fixTypography(title.text)}
+          </Link>
+        </h3>
+      </div>
 
       {lead ? (
-        <p lang={excerpt.lang !== locale ? excerpt.lang : undefined} className="mt-4 max-w-[56ch] text-body-l text-stone-text">
-          {fixOrphans(excerpt.text)}
+        <p
+          lang={excerpt.lang !== locale ? excerpt.lang : undefined}
+          className="mt-4 max-w-[56ch] text-pretty text-body-l text-stone-text"
+        >
+          {fixTypography(excerpt.text)}
         </p>
       ) : null}
     </article>

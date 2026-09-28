@@ -126,10 +126,11 @@ function TransactionSwitch({
             aria-pressed={active}
             onClick={() => state.switchTransaction(option)}
             className={cn(
-              "min-h-11 flex-1 px-5 font-sans text-small font-medium uppercase tracking-[0.12em]",
+              "relative min-h-11 flex-1 px-4 font-sans text-small font-medium uppercase tracking-[0.12em]",
               "transition-colors duration-200 ease-out",
               "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bronze",
-              active ? "bg-ivory text-ink" : "text-mist pointer-fine:hover:text-ivory",
+              "after:absolute after:inset-x-4 after:bottom-1.5 after:h-px after:bg-bronze after:transition-transform after:duration-300 after:ease-out",
+              active ? "text-ivory after:scale-x-100" : "text-mist after:scale-x-0 pointer-fine:hover:text-ivory",
             )}
           >
             {labels[option]}
@@ -208,13 +209,15 @@ export function HeroSearch({ locations, className }: HeroSearchProps) {
         aria-label={t("searchLegend")}
         className="hidden border border-ivory/25 bg-ink/55 backdrop-blur-[2px] md:block"
       >
-        <TransactionSwitch
-          state={state}
-          labels={labels}
-          legend={t("searchLegend")}
-          className="w-full max-w-sm border-b border-r border-ivory/25"
-        />
+        {/* One row: the transaction toggle is the bar's first cell, so the
+            search button is the only filled shape in the hero. */}
         <div className="flex items-stretch divide-x divide-ivory/25">
+          <TransactionSwitch
+            state={state}
+            labels={labels}
+            legend={t("searchLegend")}
+            className="shrink-0 items-center px-2"
+          />
           <Fields state={state} idPrefix={`${baseId}-bar`} />
           <div className="flex items-center p-3">
             <button type="submit" className={buttonClasses({ variant: "inverse" })}>

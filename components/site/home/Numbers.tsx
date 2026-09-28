@@ -5,7 +5,7 @@ import { Container } from "@/components/site/Container";
 import { Picture } from "@/components/site/Picture";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { artImage, mediaImage } from "@/lib/media";
 import { parseStat, type PublicSettings } from "./data";
@@ -29,9 +29,9 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
   return (
     <section aria-labelledby="numbers-title" className="bg-ivory-2 py-section text-ink lg:py-section-lg">
       <Container>
-        <div className="grid grid-cols-4 gap-x-6 gap-y-14 lg:grid-cols-12 lg:items-center">
+        <div className="grid grid-cols-4 gap-x-6 gap-y-14 lg:grid-cols-12 lg:items-start">
           <div className="col-span-4 lg:col-span-6">
-            <SectionHeading id="numbers-title" eyebrow={t("numbersEyebrow")} title={t("numbersHeading")} />
+            <SectionHeading id="numbers-title" title={t("numbersHeading")} />
 
             <dl className="mt-12 grid grid-cols-2 border-t border-hairline-light lg:mt-16">
               {stats.slice(0, 4).map((stat, index) => {
@@ -44,10 +44,10 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
                     key={`${stat.value}-${index}`}
                     className="flex flex-col-reverse justify-end gap-3 border-b border-hairline-light py-8 odd:pr-6 even:border-l even:pl-6 lg:py-10 lg:even:pl-10"
                   >
-                    <dt lang={label.lang !== locale ? label.lang : undefined} className="max-w-[18ch] font-mono text-label uppercase text-stone-text">
+                    <dt lang={label.lang !== locale ? label.lang : undefined} className="min-h-[2lh] max-w-[14ch] font-mono text-label uppercase text-stone-text">
                       {label.text}
                     </dt>
-                    <dd className="font-display text-display-l font-normal leading-none">
+                    <dd className="font-display text-display-xl font-normal leading-none">
                       {parsed !== null ? (
                         <Counter value={parsed.value} prefix={parsed.prefix || undefined} suffix={parsed.suffix || undefined} />
                       ) : (
@@ -60,11 +60,16 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
             </dl>
 
             {anyDemo ? (
-              <p className="mt-8 max-w-[52ch] text-small text-stone-text">{fixOrphans(t("numbersDemo"))}</p>
+              <p className="mt-8 max-w-[52ch] text-pretty text-small text-stone-text">{fixTypography(t("numbersDemo"))}</p>
             ) : null}
           </div>
 
-          <ClipReveal from="top" className="col-span-4 aspect-[4/5] md:aspect-[16/10] lg:col-span-5 lg:col-start-8 lg:aspect-[4/5]">
+          {/* On desktop the facade straddles the seam with the section above: the
+              one image on the page that breaks its band. */}
+          <ClipReveal
+            from="top"
+            className="relative z-10 col-span-4 aspect-video md:aspect-[16/10] lg:col-span-5 lg:col-start-8 lg:-mt-64 lg:aspect-[4/5]"
+          >
             <Picture
               image={artImage("about", FALLBACK_IMAGE)}
               alt={mediaImage("about") !== null ? t("numbersMediaAlt") : ""}

@@ -3,7 +3,7 @@ import { ClipReveal } from "@/components/motion/ClipReveal";
 import { Picture } from "@/components/site/Picture";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { artImage, mediaImage } from "@/lib/media";
 import type { LocationOption } from "./types";
 import { ValuationForm } from "./ValuationForm";
@@ -37,7 +37,8 @@ export async function ValuationCta({ locale, locations }: { locale: Locale; loca
           />
         </ClipReveal>
 
-        <div className="flex flex-col justify-center px-gutter py-section md:px-gutter-md lg:px-16 lg:py-section-lg xl:px-24">
+        {/* One measure for the heading, the form and the note: a single right edge. */}
+        <div className="flex flex-col justify-center px-gutter py-section md:px-gutter-md lg:px-16 lg:py-section-lg xl:px-24 [&>*]:max-w-[34rem]">
           <SectionHeading
             id="valuation-title"
             eyebrow={t("valuationEyebrow")}
@@ -47,8 +48,8 @@ export async function ValuationCta({ locale, locations }: { locale: Locale; loca
             tone="dark"
           />
           <ValuationForm locations={locations} />
-          <p className="mt-8 max-w-[52ch] border-t border-hairline-dark pt-6 text-small text-mist">
-            {fixOrphans(t("valuationNote"))}
+          <p className="mt-8 w-full border-t border-hairline-dark pt-6 text-pretty text-small text-mist">
+            {fixTypography(t("valuationNote"))}
           </p>
         </div>
       </div>

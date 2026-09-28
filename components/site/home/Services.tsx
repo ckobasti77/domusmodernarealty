@@ -6,7 +6,7 @@ import { Container } from "@/components/site/Container";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { searchQuery } from "@/lib/search-params";
 import { cn } from "@/lib/utils";
 
@@ -61,18 +61,20 @@ export async function Services({ locale }: { locale: Locale }) {
         <Reveal as="ol" stagger={0.06} distance={20} className="mt-14 border-t border-hairline-light lg:mt-20">
           {SERVICES.map((service, index) => (
             <li key={service.key} className="group/svc relative border-b border-hairline-light">
-              <div className="grid grid-cols-4 gap-x-6 py-8 lg:grid-cols-12 lg:items-center lg:py-9">
+              {/* Below 1024px the number gets a narrow track of its own, so the text
+                  keeps a readable measure instead of losing a quarter of the row. */}
+              <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 py-8 md:grid-cols-[4rem_minmax(0,1fr)] md:gap-x-6 lg:grid-cols-12 lg:items-center lg:py-9">
                 <span
                   aria-hidden="true"
                   data-numeric=""
-                  className="col-span-1 pt-2 font-mono text-label text-bronze-text lg:self-start lg:pt-5"
+                  className="pt-2 font-mono text-label text-bronze-text lg:col-span-1 lg:self-start lg:pt-5"
                 >
                   {pad(index + 1)}
                 </span>
 
                 <h3
                   className={cn(
-                    "col-span-3 font-display text-h2 font-normal lg:col-span-5 lg:text-display-m",
+                    "col-start-2 font-display text-h2 font-normal lg:col-span-5 lg:text-display-m",
                     "transition-[translate,color] duration-300 ease-estate",
                     "lg:pointer-fine:group-hover/svc:translate-x-3 lg:pointer-fine:group-hover/svc:text-bronze-text",
                   )}
@@ -80,9 +82,9 @@ export async function Services({ locale }: { locale: Locale }) {
                   {t(`services${service.key}Title`)}
                 </h3>
 
-                <div className={cn("col-span-3 col-start-2 mt-4 lg:col-span-5 lg:col-start-7 lg:mt-0", FOLDED)}>
-                  <p className="max-w-[48ch] text-body text-stone-text">
-                    {fixOrphans(t(`services${service.key}Body`))}{" "}
+                <div className={cn("col-start-2 mt-4 lg:col-span-5 lg:col-start-7 lg:mt-0", FOLDED)}>
+                  <p className="max-w-[56ch] text-pretty text-body text-stone-text">
+                    {fixTypography(t(`services${service.key}Body`))}{" "}
                     <Link
                       href={service.href}
                       prefetch={false}

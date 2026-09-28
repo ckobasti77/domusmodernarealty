@@ -410,13 +410,27 @@ export const featured = query({
           q.eq("isFeatured", true).eq("scope", listedScope(transaction)),
         )
         .order("desc")
-        .take(limit);
+        // Twice the page, so a listing skipped below for a repeated cover still
+        // leaves enough to fill the rail. Bounded: at most 2 x 24 per scope.
+        .take(limit * 2);
       docs.push(...found);
     }
     docs.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
 
+    // Two cards with the same photograph read as one room sold twice, so a
+    // listing whose cover is already on the rail gives its place to the next.
     const cards: ListingCard[] = [];
-    for (const doc of docs.slice(0, limit)) cards.push(await toCard(ctx, doc));
+    const covers = new Set<string>();
+    for (const doc of docs) {
+      if (cards.length === limit) break;
+      const card = await toCard(ctx, doc);
+      const cover = card.cover?.url;
+      if (cover !== undefined) {
+        if (covers.has(cover)) continue;
+        covers.add(cover);
+      }
+      cards.push(card);
+    }
     return cards;
   },
 });

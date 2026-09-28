@@ -5,6 +5,7 @@ import { contextSafeFn, gsap, MOTION_QUERIES, SplitText, useGSAP } from "@/compo
 import { onIntroReveal } from "@/components/motion/intro";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { MediaVideo, ResponsiveImage } from "@/lib/media";
+import { PORTRAIT } from "./art-direction";
 
 /**
  * The hero stage (DESIGN §6.2): full-bleed media, a scrim that deepens as the
@@ -12,13 +13,14 @@ import type { MediaVideo, ResponsiveImage } from "@/lib/media";
  *
  * Load order, which is what keeps the poster the LCP element:
  *  1. the poster `<img>` is in the server HTML with `fetchPriority="high"`
- *     (and preloaded by the page), art-directed to the 9:16 render on phones;
+ *     (and preloaded by the page), art-directed to the 9:16 render on phones
+ *     and upright tablets (`PORTRAIT`);
  *  2. the `<video>` is mounted only after `load`, with `preload="metadata"`,
  *     and cross-fades in once it is actually playing — its first frame is the
  *     poster, so the hand-off is invisible;
  *  3. it pauses whenever the hero leaves the viewport.
- * Phones, data-saver connections and reduced motion keep the still. A still
- * carries the shot on its own with a slow Ken Burns (1.12 → 1 over 12s), so a
+ * Portrait viewports, data-saver connections and reduced motion keep the
+ * still, which carries the shot on its own with a slow Ken Burns (1.12 → 1 over 12s), so a
  * missing `hero.mp4` degrades to exactly the design's fallback.
  *
  * The copy is marked up by the server: `[data-hero-reveal]` elements start
@@ -37,7 +39,6 @@ export type HeroStageProps = {
   children: ReactNode;
 };
 
-const PHONE = "(max-width: 767px)";
 
 /** `navigator.connection` is still not in lib.dom. */
 type SaveDataConnection = { saveData?: boolean };
@@ -63,12 +64,12 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
   const [videoReady, setVideoReady] = useState(false);
 
   // The video never competes with the poster for bandwidth: it is mounted only
-  // once the page has finished loading, and never on phones.
+  // once the page has finished loading, and never in portrait.
   useEffect(() => {
     if (video === null || reduced || prefersLightPayload()) return;
     let timer = 0;
     const schedule = () => {
-      if (window.matchMedia(PHONE).matches) return;
+      if (window.matchMedia(PORTRAIT).matches) return;
       timer = window.setTimeout(() => setMountVideo(true), 200);
     };
     if (document.readyState === "complete") schedule();
@@ -128,7 +129,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
         contextSafe: gsap.ContextSafeFunc | undefined,
         tuning: { drift: number; depth: number; lines: number; stagger: number },
       ) => {
-        const stillOnly = video === null || window.matchMedia(PHONE).matches;
+        const stillOnly = video === null || window.matchMedia(PORTRAIT).matches;
 
         // Scroll: the copy drifts up slower than the page, the media slower
         // still, and the scrim deepens from 0.25 to 0.6.
@@ -258,7 +259,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
               ? posterMobile.sources.map((source) => (
                   <source
                     key={`m-${source.type}`}
-                    media={PHONE}
+                    media={PORTRAIT}
                     type={source.type}
                     srcSet={source.srcSet}
                     sizes="100vw"
@@ -315,6 +316,13 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/60 via-40% to-ink/10"
+      />
+      {/* Two soft pools of ink exactly where the copy sits on wide screens: the
+          headline over the lit skyline and the lede over the river lights
+          (DESIGN §5: never text over a busy area without a scrim). */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 hidden bg-[radial-gradient(55%_45%_at_18%_70%,rgb(14_13_11/0.55),transparent_75%),radial-gradient(35%_30%_at_80%_66%,rgb(14_13_11/0.5),transparent_75%)] lg:block"
       />
       <div data-hero-scrim="" aria-hidden="true" className="absolute inset-0 -z-10 bg-ink opacity-25" />
 

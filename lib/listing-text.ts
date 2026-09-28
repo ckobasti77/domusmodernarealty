@@ -96,3 +96,42 @@ export function placeLine(listing: PlaceInput, locale: Locale): string {
 export function placeShort(listing: PlaceInput, locale: Locale): string {
   return pickL10n(listing.locationLabel, locale).text;
 }
+
+/**
+ * Words a clipped title must never end on: prepositions, articles and the
+ * "and" of each locale. "…pogled na…" reads as unedited CMS copy.
+ */
+const DANGLING = new Set([
+  // sr
+  "na", "sa", "s", "u", "i", "a", "o", "k", "od", "do", "za", "iz", "uz", "po", "pri", "nad", "pod", "kod", "ka",
+  // en
+  "a", "an", "the", "and", "with", "on", "of", "at", "in", "to", "for", "by", "above", "facing",
+  // ru
+  "на", "с", "в", "и", "о", "к", "по", "до", "от", "из", "для", "над", "под", "у", "со", "во",
+  // de
+  "mit", "am", "im", "in", "an", "auf", "über", "von", "vom", "und", "dem", "der", "die", "das", "zum", "zur", "bei",
+]);
+
+const CONJUNCTIONS = new Set(["i", "and", "и", "und"]);
+
+/**
+ * A listing title that fits a card's two lines: returned whole when it is
+ * short enough, otherwise cut at a comma that falls late enough to keep most
+ * of the title, else at a word boundary — and then walked back until it no
+ * longer ends on a dangling preposition or on "and" plus one word. CSS
+ * `line-clamp` stays underneath as the safety net for unusually wide glyphs.
+ */
+export function clipTitle(text: string, max = 52): { text: string; clipped: boolean } {
+  const clean = text.trim();
+  if (clean.length <= max) return { text: clean, clipped: false };
+
+  const head = clean.slice(0, max + 1);
+  const comma = head.lastIndexOf(",");
+  let words = (comma >= max * 0.6 ? head.slice(0, comma) : head.slice(0, head.lastIndexOf(" "))).split(" ");
+
+  const bare = (word: string) => word.toLowerCase().replace(/[,;:–—-]+$/, "");
+  while (words.length > 1 && DANGLING.has(bare(words[words.length - 1] ?? ""))) words = words.slice(0, -1);
+  if (words.length > 2 && CONJUNCTIONS.has(bare(words[words.length - 2] ?? ""))) words = words.slice(0, -2);
+
+  return { text: `${words.join(" ").replace(/[ ,;:–—-]+$/, "")}…`, clipped: true };
+}

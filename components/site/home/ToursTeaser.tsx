@@ -6,7 +6,7 @@ import { textLinkClasses } from "@/components/site/TextLink";
 import type { ListingCard } from "@/convex/lib/dto";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { artImage, mediaImage, mediaVideo } from "@/lib/media";
 import { searchQuery } from "@/lib/search-params";
 import { ToursStage } from "./ToursStage";
@@ -41,7 +41,7 @@ export async function ToursTeaser({ locale, listing }: { locale: Locale; listing
             className="col-span-4 lg:col-span-7"
           />
           <div className="col-span-4 lg:col-span-4 lg:col-start-9 lg:pb-2">
-            <p className="max-w-[40ch] text-body-l text-mist">{fixOrphans(t("toursLede"))}</p>
+            <p className="max-w-[40ch] text-pretty text-body-l text-mist">{fixTypography(t("toursLede"))}</p>
             <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-5">
               {listing !== null ? (
                 <Link
@@ -68,6 +68,7 @@ export async function ToursTeaser({ locale, listing }: { locale: Locale; listing
         // The alt describes the owner's scan render; the stand-in photo is atmosphere only.
         backdropAlt={mediaImage("tours3d") !== null ? t("toursMediaAlt") : ""}
         film={mediaVideo("walkthrough")}
+        cta={listing !== null ? { slug: listing.slug, label: t("toursCta") } : null}
       />
     </section>
   );

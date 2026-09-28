@@ -118,7 +118,7 @@ export function ProcessSteps({ steps }: { steps: readonly ProcessStep[] }) {
                 {pad(index + 1)}
               </p>
               <h3 className="mt-3 font-display text-h3 font-normal lg:text-h2">{step.title}</h3>
-              <p className="mt-3 max-w-[48ch] text-body text-stone-text">{step.body}</p>
+              <p className="mt-3 max-w-[48ch] text-pretty text-body text-stone-text">{step.body}</p>
             </div>
           </li>
         ))}

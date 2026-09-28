@@ -28,15 +28,20 @@ describe("fixTypography", () => {
 });
 
 describe("fixWidows", () => {
-  it("joins a short last pair in a headline of four or more words", () => {
+  it("joins a short last pair in a headline of three or more words", () => {
+    expect(fixWidows("Poznajemo svaku ulicu.")).toBe(`Poznajemo svaku${NBSP}ulicu.`);
     expect(fixWidows("Koliko vredi Vaš stan?")).toBe(`Koliko vredi Vaš${NBSP}stan?`);
     expect(fixWidows("Dom koji se pamti.", 10)).toBe(`Dom koji se${NBSP}pamti.`);
   });
 
   it("leaves short headlines and long pairs alone", () => {
     expect(fixWidows("Izdvojene nekretnine")).toBe("Izdvojene nekretnine");
-    expect(fixWidows("Kako Vam pomažemo")).toBe("Kako Vam pomažemo");
     expect(fixWidows("Ein Zuhause, das man nicht vergisst.", 10)).toBe("Ein Zuhause, das man nicht vergisst.");
+  });
+
+  it("keeps a conjunction together instead of forming a long unbreakable tail", () => {
+    // "pre nego što" is one unit; the pair after it would be 20 characters, so it stays free.
+    expect(fixWidows("Prošetajte pre nego što dođete.")).toBe(`Prošetajte pre${NBSP}nego${NBSP}što dođete.`);
   });
 
   it("still binds one-letter prepositions", () => {

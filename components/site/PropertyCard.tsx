@@ -10,6 +10,7 @@ import type { Floor } from "@/convex/lib/validators";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { fixOrphans, formatArea } from "@/lib/format";
+import { clipTitle } from "@/lib/listing-text";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
@@ -74,6 +75,7 @@ export function PropertyCard({
   const tUnits = useTranslations("units");
 
   const title = pickL10n(listing.title, locale);
+  const shown = clipTitle(title.text);
   const location = pickL10n(listing.locationLabel, locale);
 
   const frames: readonly PublicImage[] =
@@ -137,7 +139,15 @@ export function PropertyCard({
             lang={title.lang === locale ? undefined : title.lang}
             className="after:absolute after:inset-0 after:z-10 after:content-[''] pointer-fine:group-hover/card:text-bronze-text transition-colors duration-200"
           >
-            {fixOrphans(title.text)}
+            {shown.clipped ? (
+              <>
+                {/* The clipped wording is for the eye; assistive technology gets the whole title. */}
+                <span aria-hidden="true">{fixOrphans(shown.text)}</span>
+                <span className="sr-only">{title.text}</span>
+              </>
+            ) : (
+              fixOrphans(shown.text)
+            )}
           </Link>
         </h3>
 

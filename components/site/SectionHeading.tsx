@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { SplitReveal } from "@/components/motion/SplitReveal";
-import { fixOrphans, fixWidows } from "@/lib/format";
+import { fixTypography, fixWidows } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Eyebrow } from "./Eyebrow";
 
@@ -17,6 +17,8 @@ import { Eyebrow } from "./Eyebrow";
 export type SectionHeadingProps = {
   eyebrow?: ReactNode;
   eyebrowIndex?: number;
+  /** Overrides the surface-derived eyebrow tone, e.g. "dark" over a photograph. */
+  eyebrowTone?: "light" | "dark" | "accent" | "accentDark";
   title: ReactNode;
   lede?: ReactNode;
   /** 1 only for the page's single main title. */
@@ -38,6 +40,7 @@ const SIZE = {
 export function SectionHeading({
   eyebrow,
   eyebrowIndex,
+  eyebrowTone,
   title,
   lede,
   level = 2,
@@ -52,7 +55,7 @@ export function SectionHeading({
   return (
     <div className={cn("flex flex-col gap-4", className)}>
       {eyebrow !== undefined ? (
-        <Eyebrow index={eyebrowIndex} tone={tone === "dark" ? "accentDark" : "accent"}>
+        <Eyebrow index={eyebrowIndex} tone={eyebrowTone ?? (tone === "dark" ? "accentDark" : "accent")}>
           {eyebrow}
         </Eyebrow>
       ) : null}
@@ -76,11 +79,11 @@ export function SectionHeading({
       {lede !== undefined ? (
         <p
           className={cn(
-            "mt-4 max-w-[56ch] text-body-l lg:mt-6",
+            "mt-4 max-w-[56ch] text-pretty text-body-l lg:mt-6",
             tone === "dark" ? "text-mist" : "text-stone-text",
           )}
         >
-          {typeof lede === "string" ? fixOrphans(lede) : lede}
+          {typeof lede === "string" ? fixTypography(lede) : lede}
         </p>
       ) : null}
     </div>

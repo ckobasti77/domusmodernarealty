@@ -62,6 +62,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 11,
     featured: true,
     cover: "novisad",
+    // Petrovaradin Fortress above the Danube
+    coverPhoto: "https://images.unsplash.com/photo-1630137294649-ab67a2c9891c",
   },
   {
     slug: "nis",
@@ -104,8 +106,9 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lat: 43.7286,
     lng: 19.7016,
     sale: 2500,
-    featured: true,
     cover: "villa",
+    // a balcony above rooftops and a lake
+    coverPhoto: "https://images.unsplash.com/photo-1560448205-d82bf18b9bcf",
   },
   {
     slug: "kopaonik",
@@ -135,8 +138,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 14,
     featured: true,
     cover: "building",
-    // the Temple of Saint Sava stands on Vračar
-    coverPhoto: "https://images.unsplash.com/photo-1643285677419-986d88603216",
+    // period facades and a street lamp in central Belgrade
+    coverPhoto: "https://images.unsplash.com/photo-1655245934655-bde35a9dae80",
   },
   {
     slug: "stari-grad",
@@ -147,10 +150,9 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4589,
     sale: 4900,
     rent: 15,
-    featured: true,
     cover: "belgrade",
-    // the Sava riverfront below the old town and the cathedral
-    coverPhoto: "https://images.unsplash.com/photo-1727105538592-3074729d8abc",
+    // the stone gate towers of Belgrade Fortress
+    coverPhoto: "https://images.unsplash.com/photo-1568234942177-2b37de78f6da",
   },
   {
     slug: "savski-venac",
@@ -161,10 +163,9 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4501,
     sale: 5200,
     rent: 16,
-    featured: true,
     cover: "villa",
-    // the Sava and the Belgrade Waterfront towers
-    coverPhoto: "https://images.unsplash.com/photo-1708253832369-ce7e621df31a",
+    // the Sava riverfront below the old town
+    coverPhoto: "https://images.unsplash.com/photo-1727105538592-3074729d8abc",
   },
   {
     slug: "novi-beograd",
@@ -195,6 +196,7 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4012,
     sale: 2800,
     rent: 10,
+    featured: true,
     cover: "building",
     // the rooftops of Zemun above the Danube
     coverPhoto: "https://images.unsplash.com/photo-1608816747977-4d303f476571",
@@ -256,7 +258,6 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4791,
     sale: 4800,
     rent: 15,
-    featured: true,
     cover: "building",
   },
   {
@@ -296,8 +297,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 16,
     featured: true,
     cover: "belgrade",
-    // historic facades in the old centre
-    coverPhoto: "https://images.unsplash.com/photo-1655245934655-bde35a9dae80",
+    // Kalemegdan and the fortress walls above Dorćol, from the air
+    coverPhoto: "https://images.unsplash.com/photo-1632343084054-5b108ffb8be3",
   },
   {
     slug: "kosancicev-venac",
@@ -327,6 +328,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 17,
     featured: true,
     cover: "villa",
+    // a modern two-storey house at dusk
+    coverPhoto: "https://images.unsplash.com/photo-1748063578185-3d68121b11ff",
   },
   {
     slug: "dedinje",
@@ -337,7 +340,10 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4556,
     sale: 5900,
     rent: 18,
+    featured: true,
     cover: "villa",
+    // a timber-and-stone house behind a lawn
+    coverPhoto: "https://images.unsplash.com/photo-1766603636700-e9d80473f40f",
   },
   {
     slug: "beograd-na-vodi",
@@ -361,8 +367,8 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     rent: 21,
     featured: true,
     cover: "terrace",
-    // the Waterfront towers at night
-    coverPhoto: "https://images.unsplash.com/photo-1711970908551-6bb1f39377b5",
+    // the Sava and the Belgrade Waterfront towers
+    coverPhoto: "https://images.unsplash.com/photo-1708253832369-ce7e621df31a",
   },
   {
     slug: "blok-19a",
@@ -505,8 +511,9 @@ export const SEED_LOCATIONS: SeedLocation[] = [
     lng: 20.4235,
     sale: 3000,
     rent: 11,
-    featured: true,
     cover: "building",
+    // a terraced residential complex with lawns
+    coverPhoto: "https://images.unsplash.com/photo-1624524799657-465e72edbcda",
   },
   {
     slug: "julino-brdo",

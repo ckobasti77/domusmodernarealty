@@ -44,8 +44,9 @@ export async function Neighborhoods({ locale, items }: { locale: Locale; items: 
             index below starts on flat ink without a seam. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/70 via-35% to-ink/35"
+          className="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/70 via-35% to-ink/55"
         />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-ink/50 to-transparent to-60%" />
 
         <Container
           className={cn(
@@ -55,6 +56,7 @@ export async function Neighborhoods({ locale, items }: { locale: Locale; items: 
         >
           <SectionHeading
             id="neighborhoods-title"
+            eyebrowTone="dark"
             eyebrow={t("neighborhoodsEyebrow")}
             title={t("neighborhoodsHeading")}
             lede={t("neighborhoodsLede")}

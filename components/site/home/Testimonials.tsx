@@ -3,7 +3,7 @@ import { Reveal } from "@/components/motion/Reveal";
 import { Container } from "@/components/site/Container";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import type { Testimonial } from "./data";
 
@@ -32,7 +32,7 @@ export async function Testimonials({ locale, items }: { locale: Locale; items: r
                   lang={quote.lang !== locale ? quote.lang : undefined}
                   className="font-display text-h3 font-normal leading-snug"
                 >
-                  <p>{fixOrphans(quote.text)}</p>
+                  <p>{fixTypography(quote.text)}</p>
                 </blockquote>
                 <figcaption className="mt-6 text-small">
                   <span className="block font-medium">{item.author}</span>

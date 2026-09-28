@@ -109,7 +109,8 @@ export function neighborhoodItems(nodes: readonly LocationNode[], locale: Locale
   const rank = (node: LocationNode) => (node.kind === "city" ? 1 : 0);
   featured.sort((a, b) => rank(a) - rank(b) || a.order - b.order);
 
-  return featured.map((node) => {
+  // DESIGN §6.5 names eight places; more rows turn the index into a wall.
+  return featured.slice(0, 8).map((node) => {
     const name = pickL10n(node.name, locale);
     const parent = node.parentId !== undefined ? byId.get(node.parentId) : undefined;
     return {

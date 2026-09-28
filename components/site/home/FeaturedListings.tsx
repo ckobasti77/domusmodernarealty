@@ -2,14 +2,13 @@ import { ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { buttonClasses } from "@/components/site/Button";
 import { Container } from "@/components/site/Container";
-import { Eyebrow } from "@/components/site/Eyebrow";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { textLinkClasses } from "@/components/site/TextLink";
 import type { ListingCard } from "@/convex/lib/dto";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixOrphans, fixTypography } from "@/lib/format";
 import { FeaturedRail } from "./FeaturedRail";
 
 /**
@@ -36,8 +35,8 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
     return (
       <section aria-labelledby="featured-title" className="bg-ivory py-section text-ink lg:py-section-lg">
         <Container className="flex flex-col items-start gap-8">
-          <SectionHeading id="featured-title" eyebrow={t("featuredEyebrow")} title={t("featuredHeading")} />
-          <p className="max-w-[52ch] text-body-l text-stone-text">{fixOrphans(t("featuredEmpty"))}</p>
+          <SectionHeading id="featured-title" title={t("featuredHeading")} />
+          <p className="max-w-[52ch] text-body-l text-stone-text">{fixTypography(t("featuredEmpty"))}</p>
           <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "primary" })}>
             <span>{t("featuredEmptyCta")}</span>
           </Link>
@@ -47,7 +46,7 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
   }
 
   return (
-    <section aria-labelledby="featured-title" className="bg-ivory text-ink">
+    <section aria-labelledby="featured-title" className="bg-ivory text-ink lg:pb-24">
       <FeaturedRail total={total}>
         <div
           data-featured-pin=""
@@ -59,10 +58,9 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
                   longest single word of any locale ("Рекомендуемые") fits it:
                   4.6vw type in a 32vw column. */}
               <header className="px-gutter md:px-gutter-md lg:w-[min(32rem,32vw)] lg:shrink-0 lg:px-0 lg:pr-12">
-                <Eyebrow>{t("featuredEyebrow")}</Eyebrow>
                 <h2
                   id="featured-title"
-                  className="mt-4 max-w-[12ch] font-display text-display-l font-normal lg:max-w-none lg:text-[clamp(2.5rem,4.6vw,4.75rem)] lg:leading-[0.98]"
+                  className="max-w-[12ch] font-display text-display-l font-normal lg:max-w-none lg:text-[clamp(2.5rem,4.6vw,4.75rem)] lg:leading-[0.98]"
                 >
                   {fixOrphans(t("featuredHeading"))}
                 </h2>
@@ -92,13 +90,13 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
               </ul>
 
               {/* The closing panel, desktop only: the journey ends on the CTA. */}
-              <div className="hidden lg:flex lg:w-[min(26rem,26vw)] lg:shrink-0 lg:flex-col lg:items-start lg:pl-16">
+              <div className="hidden lg:flex lg:shrink-0 lg:flex-col lg:items-start lg:pl-16 lg:pr-4">
                 <Link
                   href="/properties"
                   prefetch={false}
                   className="group/all flex items-center gap-5 font-display text-display-m font-normal text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text"
                 >
-                  <span>{t("featuredAll")}</span>
+                  <span className="whitespace-nowrap">{t("featuredAll")}</span>
                   <ArrowRight
                     aria-hidden="true"
                     strokeWidth={1}

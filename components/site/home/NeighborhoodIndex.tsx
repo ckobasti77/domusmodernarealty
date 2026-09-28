@@ -5,29 +5,29 @@ import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { contextSafeFn, gsap, MOTION_QUERIES, ScrollTrigger, useGSAP } from "@/components/motion/gsap";
 import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import type { NeighborhoodItem } from "./types";
 
 /**
  * The neighborhood index (DESIGN §6.5).
  *
- *  - Desktop: a big serif list with the listing count in mono. Rows reveal with
- *    a hairline that draws from the left; hovering a row brings up that
- *    neighborhood's photograph, trailing the pointer to the right of it so it
- *    never covers the name being read.
- *  - Below 1024px: the same links become stacked image cards, two or three to
- *    a row, fading up once.
- *  - Reduced motion: all of it static, and no follower.
+ *  - Desktop: a big serif list with the listing count in mono beside a sticky
+ *    photograph. The photograph always shows the row at the middle of the
+ *    viewport, so the section has a focal point without a pointer; hovering a
+ *    row brings that row's photograph up instead, and the picture leans a few
+ *    pixels toward the pointer. Rows reveal with a hairline drawn from the left.
+ *  - Below 1024px: the same links become stacked image cards, at most six so
+ *    the section stays a section on a phone, and an odd last card spans the row.
+ *  - Reduced motion: no reveals and no lean; the photograph still follows the
+ *    reading position and the pointer, but switches without a fade.
  *
- * One list serves every breakpoint, so each destination has exactly one link
- * in the accessibility tree. The follower is decorative (`aria-hidden`); its
- * frames are stacked and cross-faded, so moving between rows never waits on a
- * React render.
+ * One list serves every breakpoint, so each destination has exactly one link in
+ * the accessibility tree. The sticky photograph is decorative (`aria-hidden`);
+ * its frames are stacked and cross-faded, so switching never waits on a render.
  */
 
-const HOVER =
-  "(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
-
-const FOLLOWER = { width: 280, height: 350, gap: 48 } as const;
+const HOVER = "(min-width: 1024px) and (hover: hover) and (pointer: fine)";
+const WIDE = "(min-width: 1024px)";
 
 export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[] }) {
   const t = useTranslations("home");
@@ -39,8 +39,9 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
       if (el === null) return;
       const q = gsap.utils.selector(el);
       const rows = q("[data-hood-row]");
-      const [follower] = q("[data-hood-follower]");
       const frames = q("[data-hood-frame]");
+      const [panel] = q("[data-hood-panel]");
+      const [lean] = q("[data-hood-lean]");
       const mm = gsap.matchMedia();
 
       mm.add(MOTION_QUERIES.desktop, (_context, contextSafe) => {
@@ -74,84 +75,105 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
         });
       });
 
-      mm.add(HOVER, (_context, contextSafe) => {
-        if (follower === undefined) return;
-        const xTo = gsap.quickTo(follower, "x", { duration: 0.55, ease: "power3" });
-        const yTo = gsap.quickTo(follower, "y", { duration: 0.55, ease: "power3" });
-        let active: string | null = null;
+      // The sticky photograph: the row at the middle of the viewport, unless
+      // the pointer is on a row.
+      mm.add(
+        { wide: WIDE, hover: HOVER, reduced: MOTION_QUERIES.reduced },
+        (context, contextSafe) => {
+          const { wide, hover, reduced } = context.conditions ?? {};
+          if (wide !== true || panel === undefined || frames.length === 0) return;
 
-        gsap.set(follower, { opacity: 0, scale: 0.94 });
+          let shown: string | null = null;
+          let scrolled: string | null = null;
+          let hovered: string | null = null;
 
-        const show = contextSafeFn(contextSafe, (id: string) => {
-          if (id === active) return;
-          active = id;
-          for (const frame of frames) {
-            gsap.to(frame, {
-              opacity: frame.dataset.for === id ? 1 : 0,
-              duration: 0.35,
-              ease: "power2.out",
-              overwrite: true,
+          const show = contextSafeFn(contextSafe, (id: string | null) => {
+            if (id === null || id === shown || !frames.some((frame) => frame.dataset.for === id)) return;
+            shown = id;
+            for (const frame of frames) {
+              const visible = frame.dataset.for === id ? 1 : 0;
+              if (reduced === true) gsap.set(frame, { opacity: visible });
+              else gsap.to(frame, { opacity: visible, duration: 0.45, ease: "power2.out", overwrite: true });
+            }
+          });
+
+          gsap.set(frames, { opacity: 0 });
+          show(frames[0]?.dataset.for ?? null);
+
+          for (const row of rows) {
+            ScrollTrigger.create({
+              trigger: row,
+              start: "top center",
+              end: "bottom center",
+              onToggle: (self) => {
+                if (!self.isActive) return;
+                scrolled = row.dataset.id ?? null;
+                if (hovered === null) show(scrolled);
+              },
             });
           }
-          gsap.to(follower, { opacity: 1, scale: 1, duration: 0.45, ease: "estate", overwrite: "auto" });
-        });
 
-        const hide = contextSafeFn(contextSafe, () => {
-          active = null;
-          gsap.to(follower, { opacity: 0, scale: 0.94, duration: 0.3, ease: "power3.out", overwrite: "auto" });
-        });
+          if (hover !== true) return;
 
-        const onMove = (event: PointerEvent) => {
-          const box = el.getBoundingClientRect();
-          const x = event.clientX - box.left + FOLLOWER.gap;
-          const y = event.clientY - box.top - FOLLOWER.height / 2;
-          xTo(Math.min(x, box.width - FOLLOWER.width));
-          yTo(Math.min(Math.max(y, -FOLLOWER.height / 3), box.height - FOLLOWER.height / 1.5));
-        };
+          const list = el.querySelector("[data-hood-list]");
+          const xTo = lean !== undefined && reduced !== true ? gsap.quickTo(lean, "x", { duration: 0.6, ease: "power3" }) : null;
+          const yTo = lean !== undefined && reduced !== true ? gsap.quickTo(lean, "y", { duration: 0.6, ease: "power3" }) : null;
 
-        const onOver = (event: PointerEvent) => {
-          const target = event.target instanceof Element ? event.target : null;
-          const row = target?.closest<HTMLElement>("[data-hood-row]");
-          const id = row?.dataset.id;
-          if (id === undefined || !frames.some((frame) => frame.dataset.for === id)) {
-            hide();
-            return;
-          }
-          show(id);
-        };
+          const onOver = (event: Event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const id = target?.closest<HTMLElement>("[data-hood-row]")?.dataset.id ?? null;
+            if (id === null) return;
+            hovered = id;
+            show(id);
+          };
+          const onMove = (event: PointerEvent) => {
+            if (xTo === null || yTo === null) return;
+            const box = el.getBoundingClientRect();
+            xTo(gsap.utils.clamp(-1, 1, (event.clientX - box.left) / box.width - 0.5) * 16);
+            yTo(gsap.utils.clamp(-1, 1, (event.clientY - box.top) / box.height - 0.5) * 16);
+          };
+          const onLeave = () => {
+            hovered = null;
+            show(scrolled);
+            xTo?.(0);
+            yTo?.(0);
+          };
 
-        // A stationary pointer fires no `pointermove` while the page scrolls
-        // under it, so the photograph would stay parked over the wrong row.
-        const onScroll = () => {
-          if (active !== null) hide();
-        };
-
-        el.addEventListener("pointermove", onMove);
-        el.addEventListener("pointerover", onOver);
-        el.addEventListener("pointerleave", hide);
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => {
-          el.removeEventListener("pointermove", onMove);
-          el.removeEventListener("pointerover", onOver);
-          el.removeEventListener("pointerleave", hide);
-          window.removeEventListener("scroll", onScroll);
-        };
-      });
+          list?.addEventListener("pointerover", onOver);
+          list?.addEventListener("pointermove", onMove as EventListener);
+          list?.addEventListener("pointerleave", onLeave);
+          return () => {
+            list?.removeEventListener("pointerover", onOver);
+            list?.removeEventListener("pointermove", onMove as EventListener);
+            list?.removeEventListener("pointerleave", onLeave);
+          };
+        },
+      );
 
       return () => mm.revert();
     },
     { scope: root, dependencies: [items] },
   );
 
+  const pictured = items.filter((item) => item.image !== undefined);
+
   return (
-    <div ref={root} className="relative">
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6 lg:block lg:border-t lg:border-hairline-dark">
+    <div ref={root} className="lg:grid lg:grid-cols-12 lg:gap-x-6">
+      <ul
+        data-hood-list=""
+        className={cn(
+          "grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6",
+          // A phone gets six places at most, and an odd last card spans the row.
+          "max-lg:[&>li:nth-child(n+7)]:hidden max-md:[&>li:last-child:nth-child(odd)]:col-span-2",
+          "lg:col-span-8 lg:block lg:border-t lg:border-hairline-dark",
+        )}
+      >
         {items.map((item) => (
           <li key={item.id} data-hood-row="" data-id={item.id} className="relative">
             <Link
               href={{ pathname: "/locations/[slug]", params: { slug: item.slug } }}
               prefetch={false}
-              className="group/row block lg:grid lg:grid-cols-12 lg:items-baseline lg:gap-6 lg:py-7"
+              className="group/row block lg:grid lg:grid-cols-8 lg:items-baseline lg:gap-6 lg:py-5"
             >
               {item.image !== undefined ? (
                 <span className="relative mb-4 block aspect-[4/5] overflow-hidden bg-ink-2 lg:hidden">
@@ -160,33 +182,33 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                     alt=""
                     fill
                     sizes="(min-width: 768px) 30vw, 46vw"
-                    className="object-cover"
+                    className="photo-grade object-cover"
                   />
                 </span>
               ) : null}
               <span
                 data-hood-label=""
                 lang={item.lang}
-                className={[
-                  "block font-display text-h3 font-normal text-ivory lg:col-span-7",
-                  "lg:text-[clamp(2.25rem,3.4vw,3.25rem)] lg:leading-[1.05]",
+                className={cn(
+                  "block font-display text-h3 font-normal text-ivory lg:col-span-5",
+                  "lg:text-[clamp(3rem,5.2vw,5.5rem)] lg:leading-[0.95]",
                   "transition-[color,translate] duration-300 ease-out",
                   "pointer-fine:group-hover/row:translate-x-3 pointer-fine:group-hover/row:text-bronze",
                   "group-focus-visible/row:text-bronze",
-                ].join(" ")}
+                )}
               >
                 {item.name}
               </span>
               {item.context !== undefined ? (
-                <span className="mt-1.5 block font-mono text-label uppercase text-mist lg:col-span-3 lg:mt-0">
+                <span className="mt-1.5 block font-mono text-label uppercase text-mist lg:col-span-2 lg:mt-0">
                   {item.context}
                 </span>
               ) : (
-                <span aria-hidden="true" className="hidden lg:col-span-3 lg:block" />
+                <span aria-hidden="true" className="hidden lg:col-span-2 lg:block" />
               )}
               <span
                 data-numeric=""
-                className="mt-1 block font-mono text-label uppercase text-mist lg:col-span-2 lg:mt-0 lg:text-right"
+                className="mt-1 block font-mono text-label uppercase text-mist lg:col-span-1 lg:mt-0 lg:text-right"
               >
                 {t("neighborhoodsCount", { count: item.count })}
               </span>
@@ -200,20 +222,31 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
         ))}
       </ul>
 
-      <div
-        data-hood-follower=""
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 z-10 hidden overflow-hidden bg-ink-2 opacity-0 lg:block"
-        style={{ width: FOLLOWER.width, height: FOLLOWER.height }}
-      >
-        {items.map((item) =>
-          item.image !== undefined ? (
-            <div key={item.id} data-hood-frame="" data-for={item.id} className="absolute inset-0 opacity-0">
-              <Image src={item.image} alt="" fill sizes={`${FOLLOWER.width}px`} className="object-cover" />
+      {pictured.length > 0 ? (
+        <div aria-hidden="true" className="hidden lg:col-span-4 lg:col-start-9 lg:block">
+          <div data-hood-panel="" className="sticky top-28 aspect-[4/5] overflow-hidden bg-ink-2">
+            {/* Slightly larger than the frame, so the lean never shows an edge. */}
+            <div data-hood-lean="" className="absolute -inset-4">
+              {pictured.map((item, index) => (
+                <div
+                  key={item.id}
+                  data-hood-frame=""
+                  data-for={item.id}
+                  className={cn("absolute inset-0", index === 0 ? "opacity-100" : "opacity-0")}
+                >
+                  <Image
+                    src={item.image ?? ""}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1440px) 460px, 32vw"
+                    className="photo-grade object-cover"
+                  />
+                </div>
+              ))}
             </div>
-          ) : null,
-        )}
-      </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

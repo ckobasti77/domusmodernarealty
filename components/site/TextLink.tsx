@@ -15,6 +15,8 @@ export function textLinkClasses(tone: "light" | "dark" = "light", className?: st
     // by colour alone) and only gains weight on hover, instead of growing from
     // nothing.
     "relative inline-block transition-colors duration-200 ease-out",
+    // A 44px target on touch screens without moving the text or its rule.
+    "pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:-inset-y-3",
     "after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left",
     "after:opacity-40 after:transition-opacity after:duration-300 after:ease-out",
     "pointer-fine:hover:after:opacity-100 focus-visible:after:opacity-100",

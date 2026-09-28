@@ -3,7 +3,7 @@ import { preload } from "react-dom";
 import { Container } from "@/components/site/Container";
 import { Eyebrow } from "@/components/site/Eyebrow";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans, fixWidows } from "@/lib/format";
+import { fixTypography, fixWidows } from "@/lib/format";
 import {
   mediaImage,
   mediaVideo,
@@ -11,6 +11,7 @@ import {
   responsiveImage,
   type ResponsiveImage,
 } from "@/lib/media";
+import { LANDSCAPE, PORTRAIT } from "./art-direction";
 import { HeroSearch } from "./HeroSearch";
 import { HeroStage } from "./HeroStage";
 import type { LocationOption } from "./types";
@@ -30,8 +31,6 @@ import type { LocationOption } from "./types";
 /** "Belgrade Waterfront towers and an arched bridge reflected in the Sava at night". */
 const FALLBACK_POSTER = "https://images.unsplash.com/photo-1711970908551-6bb1f39377b5";
 
-const PHONE = "(max-width: 767px)";
-const NOT_PHONE = "(min-width: 768px)";
 
 function heroMedia(): { poster: ResponsiveImage; posterMobile: ResponsiveImage | null } {
   const desktop = mediaImage("hero-desktop");
@@ -63,7 +62,7 @@ function preloadPoster(poster: ResponsiveImage, posterMobile: ResponsiveImage | 
     imageSizes: "100vw",
     imageSrcSet: desktop?.srcSet ?? poster.srcSet,
     ...(desktop !== undefined ? { type: desktop.type } : {}),
-    ...(posterMobile !== null ? { media: NOT_PHONE } : {}),
+    ...(posterMobile !== null ? { media: LANDSCAPE } : {}),
   });
 
   if (posterMobile !== null) {
@@ -74,7 +73,7 @@ function preloadPoster(poster: ResponsiveImage, posterMobile: ResponsiveImage | 
       imageSizes: "100vw",
       imageSrcSet: mobile?.srcSet ?? posterMobile.srcSet,
       ...(mobile !== undefined ? { type: mobile.type } : {}),
-      media: PHONE,
+      media: PORTRAIT,
     });
   }
 }
@@ -94,7 +93,9 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
             On a first visit the banner overlays the bottom of the hero instead. */}
         <Container className="pb-10 pt-36 lg:pb-14">
           <div data-hero-reveal="eyebrow">
-            <Eyebrow tone="accentDark">{t("heroEyebrow")}</Eyebrow>
+            {/* Mist, not bronze: a 12px label over a lit photograph needs the
+                lighter tone to stay legible. */}
+            <Eyebrow tone="dark">{t("heroEyebrow")}</Eyebrow>
           </div>
 
           <div className="mt-6 grid grid-cols-4 items-end gap-x-6 gap-y-8 lg:mt-8 lg:grid-cols-12">
@@ -109,14 +110,17 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
             </h1>
             <p
               data-hero-reveal="lede"
-              className="col-span-4 max-w-[40ch] text-body-l text-ivory/85 lg:col-span-4 lg:pb-3"
+              className="col-span-4 max-w-[40ch] text-pretty text-body-l text-ivory/85 lg:col-span-4 lg:pb-3"
             >
-              {fixOrphans(t("heroLede"))}
+              {fixTypography(t("heroLede"))}
             </p>
           </div>
 
-          <div className="mt-10 flex items-end gap-10 lg:mt-14">
-            <div data-hero-reveal="search" className="min-w-0 flex-1 lg:max-w-[64rem]">
+          {/* On the 12-column grid: the bar spans the columns under the headline
+              and stops one gutter short of the lede's column; the scroll cue
+              sits on the container's right edge. */}
+          <div className="mt-10 flex items-end gap-10 lg:mt-14 lg:grid lg:grid-cols-12 lg:gap-x-6">
+            <div data-hero-reveal="search" className="min-w-0 flex-1 lg:col-span-10 xl:col-span-8">
               <HeroSearch locations={locations} />
             </div>
 
@@ -124,7 +128,7 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
             <div
               data-hero-reveal="cue"
               aria-hidden="true"
-              className="hidden shrink-0 flex-col items-center gap-3 lg:flex"
+              className="hidden shrink-0 flex-col items-center gap-3 lg:col-start-12 lg:flex lg:justify-self-end"
             >
               <span className="font-mono text-label uppercase text-mist [writing-mode:vertical-rl]">
                 {t("scrollCue")}

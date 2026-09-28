@@ -100,21 +100,28 @@ export function formatRooms(value: number, locale: Locale): string {
 const ORPHANS =
   /(^|[\s\u00A0])([aiouskAIOUSK\u0430\u0438\u043E\u0443\u0441\u043A\u0432\u044F\u0410\u0418\u041E\u0423\u0421\u041A\u0412\u042F])\s+/g;
 
+/**
+ * Multi-word conjunctions that read as one unit and must not break across a
+ * line ("… pre nego / što dođete"). Kept short on purpose: every entry is a
+ * chunk that still has to fit a phone's measure at display sizes.
+ */
+const UNITS = /(^|[\s\u00A0])([Pp]re) nego što(?=[\s\u00A0.,;:!?]|$)/g;
+
 export function fixOrphans(text: string): string {
-  return text.replace(ORPHANS, "$1$2\u00A0");
+  return text.replace(ORPHANS, "$1$2\u00A0").replace(UNITS, "$1$2\u00A0nego\u00A0što");
 }
 
 /**
  * `fixOrphans` for display headlines, plus no lone last word: in a headline of
- * four or more words the last two are joined with a non-breaking space when
- * together they stay short ("Koliko vredi / Va\u0161 stan?" instead of "Koliko
- * vredi Va\u0161 / stan?"). `maxChars` caps the joined pair so it can never be wider
- * than a phone's measure at the size it is set in \u2014 lower it for larger type.
+ * three or more words the last two are joined with a non-breaking space when
+ * together they stay short ("Koliko vredi / Vaš stan?" instead of "Koliko
+ * vredi Vaš / stan?"). `maxChars` caps the joined pair so it can never be wider
+ * than a phone's measure at the size it is set in; lower it for larger type.
  */
 export function fixWidows(text: string, maxChars = 16): string {
   const fixed = fixOrphans(text);
   const words = fixed.split(" ");
-  if (words.length < 4) return fixed;
+  if (words.length < 3) return fixed;
   const last = words.at(-1) ?? "";
   const before = words.at(-2) ?? "";
   if (before.length + 1 + last.length > maxChars) return fixed;

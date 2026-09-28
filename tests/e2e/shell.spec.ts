@@ -223,7 +223,25 @@ test.describe("reduced motion", () => {
     await page.goto("/sr");
     await acceptCookies(page);
 
-    await expect(page.locator("h1")).toBeVisible();
-    await expect(page.locator('h1 > span > span[aria-hidden="true"]').first()).toHaveCSS("opacity", "1");
+    // The preloader's gate script skips the curtain under reduced motion, so it
+    // is never displayed, not even for a first visit.
+    await expect(page.locator("html")).toHaveAttribute("data-intro", "skip");
+    await expect(page.locator("[data-preloader]")).toBeHidden();
+
+    // The hero headline is plain text; HeroStage only splits it when motion is allowed.
+    const title = page.locator("h1#hero-title");
+    await expect(title).toBeVisible();
+    await expect(title).toHaveText("Dom koji se pamti.");
+    await expect(title.locator(".split-line")).toHaveCount(0);
+
+    // globals.css starts `[data-hero-reveal]` at opacity 0 only under
+    // `prefers-reduced-motion: no-preference`, so every copy block (eyebrow,
+    // headline, lede, search, scroll cue) is opaque from the first paint.
+    const reveals = page.locator("[data-hero-reveal]");
+    const count = await reveals.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i += 1) {
+      await expect(reveals.nth(i)).toHaveCSS("opacity", "1");
+    }
   });
 });

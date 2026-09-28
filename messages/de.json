@@ -258,7 +258,7 @@
       "r35": "3,5-Zimmer",
       "r4": "4-Zimmer",
       "r45": "4,5-Zimmer",
-      "r5": "5 Zimmer und mehr"
+      "r5": "5-Zimmer"
     },
     "structureApartment": {
       "r05": "Studio",
@@ -457,7 +457,7 @@
       "loadMap": "Karte anzeigen",
       "poiHeading": "In der Nähe",
       "neighborhoodCta": "Lernen Sie {name} kennen",
-      "attribution": "Karte: OpenFreeMap, Daten © OpenStreetMap"
+      "attribution": "Karte: OpenFreeMap, Daten © OpenStreetMap-Mitwirkende"
     },
     "poi": {
       "school": "Schule",
@@ -531,7 +531,27 @@
     },
     "seoTitle": "{structure} in {place} – {price}",
     "seoDescription": "{title}. {area}, {floor}. Preis {price} ({perM2}). Objektnummer {ref}.",
-    "ogAlt": "{title} – {price}"
+    "ogAlt": "{title} – {price}",
+    "financeHeading": "Finanzierung und Kosten",
+    "rail": {
+      "prev": "Vorherige Immobilien",
+      "next": "Nächste Immobilien"
+    },
+    "lightbox": {
+      "label": "Fotogalerie",
+      "carousel": "Galerie",
+      "slide": "Foto",
+      "prev": "Vorheriges Foto",
+      "next": "Nächstes Foto",
+      "close": "Galerie schließen",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "showCaptions": "Bildtexte einblenden",
+      "hideCaptions": "Bildtexte ausblenden",
+      "showThumbnails": "Miniaturen einblenden",
+      "hideThumbnails": "Miniaturen ausblenden",
+      "position": "{index} von {total}"
+    }
   },
   "card": {
     "exclusive": "Exklusiv",

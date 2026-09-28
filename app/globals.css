@@ -249,6 +249,14 @@
     padding-bottom: 0;
   }
 
+  /* The listing page adds a fixed action bar on phones (PRD A5). Its height is
+     reserved the same way as the consent banner so the footer stays reachable. */
+  @media (width < 48rem) {
+    body:has([data-testid="mobile-action-bar"]) {
+      padding-bottom: calc(var(--consent-h, 0px) + 3.5rem + env(safe-area-inset-bottom));
+    }
+  }
+
   /* The admin root layout puts `class="admin"` on <body>. */
   body.admin {
     @apply bg-background text-foreground;

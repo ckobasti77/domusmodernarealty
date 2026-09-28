@@ -44,6 +44,7 @@ import type * as pages from "../pages.js";
 import type * as pagesAdmin from "../pagesAdmin.js";
 import type * as posts from "../posts.js";
 import type * as postsAdmin from "../postsAdmin.js";
+import type * as qa from "../qa.js";
 import type * as seed from "../seed.js";
 import type * as seed_agents from "../seed/agents.js";
 import type * as seed_content_listings1 from "../seed/content/listings1.js";
@@ -111,6 +112,7 @@ declare const fullApi: ApiFromModules<{
   pagesAdmin: typeof pagesAdmin;
   posts: typeof posts;
   postsAdmin: typeof postsAdmin;
+  qa: typeof qa;
   seed: typeof seed;
   "seed/agents": typeof seed_agents;
   "seed/content/listings1": typeof seed_content_listings1;

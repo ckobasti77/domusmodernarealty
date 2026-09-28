@@ -22,12 +22,17 @@ export type SiteTab = {
 export function Tabs({
   tabs,
   defaultValue,
+  value,
+  onValueChange,
   tone = "light",
   ariaLabel,
   className,
 }: {
   tabs: readonly SiteTab[];
   defaultValue?: string;
+  /** Controlled mode: pass both, e.g. when a URL hash selects the tab. */
+  value?: string;
+  onValueChange?: (value: string) => void;
   tone?: "light" | "dark";
   /** Names the tab strip; required when the tabs are not preceded by a heading. */
   ariaLabel?: string;
@@ -37,7 +42,10 @@ export function Tabs({
   if (first === undefined) return null;
 
   return (
-    <TabsPrimitive.Root defaultValue={first} className={cn("w-full", className)}>
+    <TabsPrimitive.Root
+      {...(value !== undefined ? { value, onValueChange } : { defaultValue: first })}
+      className={cn("w-full", className)}
+    >
       <TabsPrimitive.List
         aria-label={ariaLabel}
         className={cn(

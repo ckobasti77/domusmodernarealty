@@ -35,6 +35,13 @@ export const pathnames = {
     ru: "/nedvizhimost/[slug]",
     de: "/immobilien/[slug]",
   },
+  // The per-listing share image (a Route Handler, see its file for why).
+  "/properties/[slug]/opengraph-image": {
+    "sr-Latn": "/nekretnine/[slug]/opengraph-image",
+    en: "/properties/[slug]/opengraph-image",
+    ru: "/nedvizhimost/[slug]/opengraph-image",
+    de: "/immobilien/[slug]/opengraph-image",
+  },
   "/locations": {
     "sr-Latn": "/lokacije",
     en: "/locations",

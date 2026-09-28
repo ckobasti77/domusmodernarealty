@@ -369,7 +369,7 @@
       "r35": "Troiposoban",
       "r4": "Četvorosoban",
       "r45": "Četvoroiposoban",
-      "r5": "Petosoban i veći"
+      "r5": "Petosoban"
     },
     "structureApartment": {
       "r05": "Garsonjera",
@@ -474,9 +474,9 @@
       "under_construction": "U izgradnji"
     },
     "furnishingValue": {
-      "furnished": "Namešten",
-      "semi": "Polunamešten",
-      "unfurnished": "Prazan"
+      "furnished": "Namešteno",
+      "semi": "Polunamešteno",
+      "unfurnished": "Nenamešteno"
     },
     "heatingValue": {
       "CG": "Centralno (CG)",
@@ -547,7 +547,7 @@
       "noEncumbrance": "Bez upisanog tereta",
       "ownershipShare": "Udeo u vlasništvu",
       "commission": "Provizija",
-      "verifiedNote": "Naš agent je proverio vlasničku dokumentaciju, u skladu sa članom 16 Zakona o posredovanju u prometu i zakupu nepokretnosti.",
+      "verifiedNote": "Naš agent je proverio vlasničku dokumentaciju, u skladu sa članom 16. Zakona o posredovanju u prometu i zakupu nepokretnosti.",
       "unverifiedNote": "Dokumentaciju proveravamo pre potpisivanja ugovora. Uvid možete zatražiti od agenta.",
       "termsLink": "Uslovi poslovanja"
     },
@@ -568,7 +568,7 @@
       "loadMap": "Prikaži mapu",
       "poiHeading": "U blizini",
       "neighborhoodCta": "Upoznajte kraj {name}",
-      "attribution": "Mapa: OpenFreeMap, podaci © OpenStreetMap"
+      "attribution": "Mapa: OpenFreeMap, podaci © OpenStreetMap saradnici"
     },
     "poi": {
       "school": "Škola",
@@ -590,7 +590,7 @@
       "loan": "Iznos kredita",
       "downPayment": "Učešće",
       "totalInterest": "Ukupna kamata",
-      "term": "{years} god. · {months} rata",
+      "term": "{years} god. · {months, plural, one {# rata} few {# rate} other {# rata}}",
       "youngNote": "Mladi do 35 godina koji kupuju prvi stan mogu da koriste državni program stambenih kredita sa nižim učešćem. Uslove proverite u banci.",
       "disclaimer": "Informativni obračun po anuitetskom modelu. Efektivna kamatna stopa (EKS) i konačni uslovi zavise od banke, osiguranja i Vaše kreditne sposobnosti."
     },
@@ -642,7 +642,27 @@
     },
     "seoTitle": "{structure}, {place} — {price}",
     "seoDescription": "{title}. {area}, {floor}. Cena {price} ({perM2}). Šifra {ref}.",
-    "ogAlt": "{title} — {price}"
+    "ogAlt": "{title} — {price}",
+    "financeHeading": "Finansiranje i troškovi",
+    "rail": {
+      "prev": "Prethodne nekretnine",
+      "next": "Sledeće nekretnine"
+    },
+    "lightbox": {
+      "label": "Galerija fotografija",
+      "carousel": "galerija",
+      "slide": "fotografija",
+      "prev": "Prethodna fotografija",
+      "next": "Sledeća fotografija",
+      "close": "Zatvori galeriju",
+      "zoomIn": "Uvećaj",
+      "zoomOut": "Umanji",
+      "showCaptions": "Prikaži opise",
+      "hideCaptions": "Sakrij opise",
+      "showThumbnails": "Prikaži sličice",
+      "hideThumbnails": "Sakrij sličice",
+      "position": "{index} od {total}"
+    }
   },
   "locations": {
     "avgPriceRent": "Prosečno izdavanje",

@@ -109,3 +109,13 @@ export function priceDeltaPct(previous: number, current: number): number {
   if (previous <= 0) return 0;
   return Math.round(((current - previous) / previous) * 100);
 }
+
+/** `50.396.000 RSD` — the informative dinar figure behind the price toggle. */
+export function formatRsd(eur: number, rate: number, locale: Locale): string {
+  return new Intl.NumberFormat(INTL_LOCALE[locale], {
+    style: "currency",
+    currency: "RSD",
+    currencyDisplay: "code",
+    maximumFractionDigits: 0,
+  }).format(Math.round((eur * rate) / 1000) * 1000);
+}

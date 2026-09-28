@@ -421,6 +421,13 @@ export const featured = query({
   },
 });
 
+/**
+ * PRD A5: same municipality and type, price within ±25%. A thin market (or a
+ * listing without a municipality) would often leave that empty, and a sold
+ * listing relies on this rail to keep the visitor, so the search widens in
+ * bounded steps: municipality ±25% → city ±25% → city ±50%. Same property type
+ * always ranks first.
+ */
 export const similar = query({
   args: { id: v.id("listings"), limit: v.optional(v.number()) },
   returns: v.array(listingCardV),
@@ -430,44 +437,45 @@ export const similar = query({
     if (listing === null || !isPublicScope(listing.scope)) return [];
 
     const scope = listedScope(listing.transaction);
-    const min = Math.round(listing.price * 0.75);
-    const max = Math.round(listing.price * 1.25);
+    const range = (pct: number) => ({
+      min: Math.round(listing.price * (1 - pct)),
+      max: Math.round(listing.price * (1 + pct)),
+    });
 
-    const candidates =
-      listing.municipalityId !== undefined
-        ? await ctx.db
-            .query("listings")
-            .withIndex("by_scope_and_municipalityId_and_price", (q) =>
-              q
-                .eq("scope", scope)
-                .eq("municipalityId", listing.municipalityId)
-                .gte("price", min)
-                .lte("price", max),
-            )
-            .take(24)
-        : await ctx.db
-            .query("listings")
-            .withIndex("by_scope_and_cityId_and_price", (q) =>
-              q
-                .eq("scope", scope)
-                .eq("cityId", listing.cityId)
-                .gte("price", min)
-                .lte("price", max),
-            )
-            .take(24);
+    const seen = new Set<string>([listing._id]);
+    const sameType: Doc<"listings">[] = [];
+    const others: Doc<"listings">[] = [];
+    const collect = (docs: Doc<"listings">[]) => {
+      for (const doc of docs) {
+        if (seen.has(doc._id) || doc.visibility !== "public") continue;
+        seen.add(doc._id);
+        (doc.propertyType === listing.propertyType ? sameType : others).push(doc);
+      }
+    };
 
-    const sameType = candidates.filter(
-      (doc) =>
-        doc._id !== listing._id &&
-        doc.visibility === "public" &&
-        doc.propertyType === listing.propertyType,
-    );
-    const others = candidates.filter(
-      (doc) =>
-        doc._id !== listing._id &&
-        doc.visibility === "public" &&
-        doc.propertyType !== listing.propertyType,
-    );
+    if (listing.municipalityId !== undefined) {
+      const { min, max } = range(0.25);
+      collect(
+        await ctx.db
+          .query("listings")
+          .withIndex("by_scope_and_municipalityId_and_price", (q) =>
+            q.eq("scope", scope).eq("municipalityId", listing.municipalityId).gte("price", min).lte("price", max),
+          )
+          .take(24),
+      );
+    }
+    for (const pct of [0.25, 0.5]) {
+      if (sameType.length >= limit) break;
+      const { min, max } = range(pct);
+      collect(
+        await ctx.db
+          .query("listings")
+          .withIndex("by_scope_and_cityId_and_price", (q) =>
+            q.eq("scope", scope).eq("cityId", listing.cityId).gte("price", min).lte("price", max),
+          )
+          .take(24),
+      );
+    }
 
     const cards: ListingCard[] = [];
     for (const doc of [...sameType, ...others].slice(0, limit)) {

@@ -234,7 +234,7 @@
     "verifiedDocs": "Documents verified",
     "verifiedDocsHint": "The agent checked the ownership documents on {date}.",
     "refCode": "Ref. {ref}",
-    "compliance": "{company} · Register of Brokers no. {registryNo}",
+    "compliance": "{company} · Register of Real Estate Brokers no. {registryNo}",
     "propertyType": {
       "apartment": "Apartment",
       "house": "House",
@@ -258,7 +258,7 @@
       "r35": "3.5-room",
       "r4": "4-room",
       "r45": "4.5-room",
-      "r5": "5+ rooms"
+      "r5": "5-room"
     },
     "structureApartment": {
       "r05": "Studio",
@@ -531,7 +531,27 @@
     },
     "seoTitle": "{structure}, {place} — {price}",
     "seoDescription": "{title}. {area}, {floor}. Price {price} ({perM2}). Ref. {ref}.",
-    "ogAlt": "{title} — {price}"
+    "ogAlt": "{title} — {price}",
+    "financeHeading": "Financing and costs",
+    "rail": {
+      "prev": "Previous properties",
+      "next": "Next properties"
+    },
+    "lightbox": {
+      "label": "Photo gallery",
+      "carousel": "gallery",
+      "slide": "photo",
+      "prev": "Previous photo",
+      "next": "Next photo",
+      "close": "Close gallery",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "showCaptions": "Show captions",
+      "hideCaptions": "Hide captions",
+      "showThumbnails": "Show thumbnails",
+      "hideThumbnails": "Hide thumbnails",
+      "position": "{index} of {total}"
+    }
   },
   "card": {
     "exclusive": "Exclusive",

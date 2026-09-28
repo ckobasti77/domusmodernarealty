@@ -307,7 +307,9 @@ export default async function ListingPage({ params }: { params: Params }) {
                 </div>
               </div>
               <div className="shrink-0 xl:w-[320px]">
+                {/* The header sits on ivory here, not in an ink band. */}
                 <PriceBlock
+                  tone="light"
                   price={listing.price}
                   pricePerM2={listing.pricePerM2}
                   {...(listing.previousPrice !== undefined ? { previousPrice: listing.previousPrice } : {})}

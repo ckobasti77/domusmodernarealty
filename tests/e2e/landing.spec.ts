@@ -140,7 +140,7 @@ async function scrollToY(page: Page, y: number) {
 test.describe("landing content", () => {
   test("renders every section from Convex data, one h1, no testimonials and a clean console @public", async ({
     page,
-  }) => {
+  }, testInfo) => {
     const errors = watchConsole(page);
     await visit(page);
 
@@ -183,9 +183,15 @@ test.describe("landing content", () => {
     await expect(rows.first()).toBeAttached();
     const rowCount = await rows.count();
     expect(rowCount).toBeGreaterThan(0);
+    expect(rowCount).toBeLessThanOrEqual(8);
     for (let i = 0; i < rowCount; i += 1) {
-      await expect(rows.nth(i).getByRole("link")).toHaveAttribute("href", /^\/sr\/lokacije\/[a-z0-9-]+$/);
+      // `locator("a")`, not the link role: below 1024px places 7+ are hidden
+      // by design (a phone shows six), which removes them from the a11y tree.
+      await expect(rows.nth(i).locator("a")).toHaveAttribute("href", /^\/sr\/lokacije\/[a-z0-9-]+$/);
       await expect(rows.nth(i)).toContainText(/\d+ nekretnin[ae]/);
+    }
+    if (testInfo.project.name === "mobile") {
+      await expect(rows.filter({ visible: true })).toHaveCount(Math.min(rowCount, 6));
     }
 
     // Services: the six numbered services.

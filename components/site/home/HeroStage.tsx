@@ -248,12 +248,14 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
 
   return (
     <div ref={root} className="relative isolate flex min-h-svh flex-col justify-end overflow-clip">
-      <div data-hero-parallax="" className="absolute inset-0 -z-10">
-        {/* One pixel short of the hero's bottom edge (where the scrim is solid
-            ink anyway). Chrome drops an image that covers the entire viewport as
-            an LCP candidate ("probably a background"), which left the late,
-            animated headline as the LCP at ~2 s; this poster is the content. */}
-        <div data-hero-frame="" className="absolute inset-x-0 bottom-px top-0">
+      {/* The media layer is clipped one pixel short of the hero's bottom edge
+          (where the scrim is solid ink anyway). Chrome drops an image whose
+          visible rect covers the entire viewport as an LCP candidate ("probably
+          a background"), which left the late, animated headline as the LCP at
+          ~2 s. The clip sits on this layer, not on the image, so the poster
+          still qualifies when it paints after the entrance has scaled it up. */}
+      <div data-hero-parallax="" className="absolute inset-x-0 bottom-px top-0 -z-10 overflow-clip">
+        <div data-hero-frame="" className="absolute inset-0">
           <picture>
             {posterMobile !== null
               ? posterMobile.sources.map((source) => (

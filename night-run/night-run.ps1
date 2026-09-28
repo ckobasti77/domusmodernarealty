@@ -23,6 +23,9 @@
   powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -Only 05b -Redo
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -DryRun
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -Fresh
+  (forget unfinished steps' sessions/attempts and model fallbacks, then start them clean)
 #>
 [CmdletBinding()]
 param(
@@ -31,6 +34,7 @@ param(
     [switch]$Redo,
     [switch]$DryRun,
     [switch]$SkipPreflight,
+    [switch]$Fresh,
     [string]$ClaudePath
 )
 
@@ -150,6 +154,15 @@ function Stop-DevServers {
     }
 }
 
+function Stop-LeftoverClaude {
+    # Claude processes started by an earlier (interrupted) run carry '--name mihajlo-night-XX' in their command line.
+    if (-not $script:IsWin) { return }
+    try {
+        $procs = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -and $_.CommandLine -match 'mihajlo-night-' -and $_.ProcessId -ne $PID })
+        foreach ($p in $procs) { Write-Log "Stopping leftover Claude process from a previous run (pid $($p.ProcessId))" 'WARN'; Stop-ProcessTree ([int]$p.ProcessId) }
+    } catch { }
+}
+
 # Keep the PC awake (display may sleep, system may not)
 $script:Power = $null
 try {
@@ -175,7 +188,16 @@ $script:SupportsPromptsNone = $true
 $script:SupportsUltracode = $true
 $script:SupportsGoal = $true
 $script:ClaudeExe = $null
+$script:ActiveProc = $null
 $script:State = Load-State
+if ($Fresh) {
+    $script:State.modelMap = @{}
+    foreach ($k in @($script:State.steps.Keys)) {
+        $st0 = $script:State.steps[$k]
+        if ($st0 -and $st0.status -ne 'done') { $script:State.steps[$k] = @{ status = 'pending'; attempts = 0; sessionId = $null; costUsd = 0.0; model = $null; notes = '' } }
+    }
+}
+function Get-PrimaryModel { $l = @($Cfg.ModelLadder); if ($l.Count -gt 0) { return (Resolve-Model ([string]$l[0])) }; return (Resolve-Model ([string]$Steps[0].Model)) }
 $script:RunStarted = Get-Date
 $script:Current = ''
 $Npm = 'npm'; $Npx = 'npx'
@@ -326,6 +348,7 @@ function Invoke-ClaudeRun {
     $proc = New-Object System.Diagnostics.Process
     $proc.StartInfo = $psi
     [void]$proc.Start()
+    $script:ActiveProc = $proc
     try { $proc.StandardInput.Close() } catch { }
     $errTask = $proc.StandardError.ReadToEndAsync()
     $writer = New-Object System.IO.StreamWriter($LogFile, $true, $Utf8NoBom)
@@ -351,6 +374,7 @@ function Invoke-ClaudeRun {
     try { if ($errTask.Wait(15000)) { $R.stderr = [string]$errTask.Result } } catch { }
     try { $R.exitCode = $proc.ExitCode } catch { $R.exitCode = -1 }
     if ($R.stderr) { Write-Utf8File ($LogFile -replace '\.jsonl$', '.stderr.log') $R.stderr }
+    $script:ActiveProc = $null
     return $R
 }
 
@@ -565,6 +589,7 @@ function Write-SkillsInventory {
 
 function Invoke-Preflight {
     Write-Log '=== Preflight ===' 'STEP'
+    Stop-LeftoverClaude
     foreach ($tool in @('node', 'git')) {
         $r = Invoke-Native $tool @('--version')
         if ($r.code -ne 0) { throw "$tool is not available on PATH" }
@@ -639,7 +664,7 @@ function Invoke-Preflight {
         if ($next) { $script:State.modelMap[$m] = $next; Save-State }
     }
     if ($script:PermMode -eq 'auto') {
-        $pm = Resolve-Model 'fable'
+        $pm = Get-PrimaryModel
         $log = Join-Path $LogDir 'probe-auto-mode.jsonl'
         $a = @('-p', 'Reply with exactly one word: READY', '--model', $pm, '--effort', 'low', '--permission-mode', 'auto', '--output-format', 'stream-json', '--verbose', '--no-session-persistence')
         if ($script:SupportsPromptsNone) { $a += @('--permission-prompts', 'none') }
@@ -654,7 +679,7 @@ function Invoke-Preflight {
     }
     if (@($Steps | Where-Object { $_.Effort -eq 'ultracode' }).Count -gt 0 -and $script:SupportsUltracode) {
         $log = Join-Path $LogDir 'probe-ultracode.jsonl'
-        $r = Invoke-ClaudeRun -ArgList @('-p', 'Reply with exactly one word: READY', '--model', (Resolve-Model 'fable'), '--effort', 'ultracode', '--permission-mode', 'dontAsk', '--output-format', 'stream-json', '--verbose', '--no-session-persistence') -LogFile $log -TimeoutMin 8 -Label 'probe ultracode'
+        $r = Invoke-ClaudeRun -ArgList @('-p', 'Reply with exactly one word: READY', '--model', (Get-PrimaryModel), '--effort', 'ultracode', '--permission-mode', 'dontAsk', '--output-format', 'stream-json', '--verbose', '--no-session-persistence') -LogFile $log -TimeoutMin 8 -Label 'probe ultracode'
         if ((Get-Outcome $r) -ne 'success') { $script:SupportsUltracode = $false; Write-Log 'ultracode effort not accepted - those steps will use xhigh' 'WARN' } else { Write-Log 'ultracode OK' 'OK' }
     }
     Save-State
@@ -878,6 +903,7 @@ try {
     $script:Current = "STOPPED: $_"
     Update-Status
 } finally {
+    if ($script:ActiveProc) { try { if (-not $script:ActiveProc.HasExited) { Write-Log 'Stopping the running Claude process...' 'WARN'; Stop-ProcessTree $script:ActiveProc.Id } } catch { } }
     Set-KeepAwake $false
     Save-State
 }

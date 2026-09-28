@@ -26,9 +26,11 @@ Pre pokretanja:
    - postavlja Convex Auth ključeve na DEV deployment
    - generiše admin nalog u `night-run/state/admin.json`
    - pravi popis skillova
-   - probno pinguje modele (fable/opus), auto mode i ultracode
+   - probno pinguje model (Opus 5.5), auto mode i ultracode
+   - gasi zaostale Claude procese iz prekinutog prethodnog runa
 2. **16 koraka** iz `steps.psd1`. Svaki korak ima:
-   - **Model:** `fable` (Claude Fable 5.1, najjači) ili `opus` (Opus 5.5 za nezavisni code review)
+   - **Model:** `claude-opus-5-5` (Opus 5.5) za sve korake. Koristi se eksplicitni ID jer alias `opus` na ovom nalogu vodi na Opus 5.
+     - Ako Opus 5.5 udari dugačak limit, runner prelazi na `opus` (Opus 5), pa na `sonnet`.
    - **Effort:** `max` za plan, dizajn i landing; `xhigh` za veliku implementaciju; `ultracode` za QA
      - `ultracode` = xhigh + automatski workflow sa više paralelnih agenata.
      - `max` nije svuda jer Anthropic za njega kaže da je "sklon overthinkingu". Tamo gde je posao dugačak i mehanički, `xhigh` daje isti kvalitet brže.
@@ -41,7 +43,7 @@ Pre pokretanja:
    - `npm run verify` (Convex push + typegen + typecheck + lint + build)
    - ako padne, ista sesija dobija grešku i popravlja (do 2 puta)
    - zatim git commit + tag `night-run/step-XX`
-4. **Usage limit:** runner pročita vreme reseta, čeka i nastavi **istu sesiju**. Ako je limit nedeljni, prelazi na sledeći model (fable → opus → sonnet).
+4. **Usage limit:** runner pročita vreme reseta, čeka i nastavi **istu sesiju**. Ako je limit nedeljni, prelazi na sledeći model (Opus 5.5 → Opus 5 → Sonnet).
 5. **Timeout koraka:** proces se gasi i sesija se nastavlja (`--resume`).
 
 ## Kako pratiš
@@ -65,10 +67,12 @@ powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1
 powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -From 06
 # ponovi samo jedan korak
 powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -Only 05b -Redo
+# čist restart: zaboravi nedovršene sesije i fallback modele (posle prekida ili promene modela)
+powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -Fresh
 # samo prikaži komande, bez pokretanja
 powershell -ExecutionPolicy Bypass -File .\night-run\night-run.ps1 -DryRun
 ```
-Sve sesije se zovu `mihajlo-night-XX`. Bilo koju možeš otvoriti interaktivno sa `claude --resume mihajlo-night-05`.
+Prekid: Ctrl+C u PowerShell prozoru. Runner tada ugasi i Claude proces koji je u toku. Sve sesije se zovu `mihajlo-night-XX`. Bilo koju možeš otvoriti interaktivno sa `claude --resume mihajlo-night-05`.
 
 ## Menjanje podešavanja
 Sve je u `night-run\steps.psd1`: model, effort, session i mode po koraku.

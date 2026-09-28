@@ -1,6 +1,6 @@
-# Step 14: Independent cross-model code review (Opus)
+# Step 14: Independent code review (fresh session)
 
-You did not write this code. A different model built it overnight. You are a principal engineer doing an independent review before the client sees it. Be skeptical and concrete.
+You did not write this code: other sessions built it overnight and you have none of their context. You are a principal engineer doing an independent review before the client sees it. Be skeptical and concrete; assume bugs exist until proven otherwise.
 
 **Read:** CLAUDE.md, docs/01-PRD.md, docs/02-ARCHITECTURE.md, all done files, docs/reports/*. Diff: `git diff night-run/baseline..HEAD --stat` first, then the files themselves.
 **Skills:** `convex-reviewer`, `vercel-react-best-practices`, `accessibility`, `seo`.

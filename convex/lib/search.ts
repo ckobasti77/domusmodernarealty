@@ -13,8 +13,15 @@
  */
 import type { Doc } from "../_generated/dataModel";
 import { foldDiacritics } from "./slug";
-import type { Features, SearchFilters, Sort } from "./validators";
-import { FEATURE_KEYS, PUBLIC_STATUSES } from "./validators";
+import type {
+  Features,
+  ListingStatus,
+  SearchFilters,
+  Sort,
+  Transaction,
+  Visibility,
+} from "./validators";
+import { FEATURE_KEYS } from "./validators";
 
 /** Batches of continuation reads inside one `listings.search` call. */
 export const MAX_BATCHES = 8;
@@ -53,26 +60,35 @@ export function buildSearchText(parts: readonly (string | undefined)[]): string 
 
 /* --------------------------------------------------------------- scope keys */
 
-export function scopeKey(status: string, transaction: string): string {
-  return `${status}:${transaction}`;
+/**
+ * Three buckets, so every public query needs exactly ONE index range and the
+ * pagination cursor stays a single Convex cursor (no k-way merge):
+ *  - `listed`  — on the market and in search results (published, reserved)
+ *  - `closed`  — reachable by URL with a Prodato/Izdato ribbon (sold, rented)
+ *  - `hidden`  — never public (draft, review, withdrawn, archived, or a
+ *                non-public `visibility`)
+ */
+export type ScopeBucket = "listed" | "closed" | "hidden";
+
+export function bucketOf(status: ListingStatus, visibility: Visibility): ScopeBucket {
+  if (visibility !== "public") return "hidden";
+  if (status === "published" || status === "reserved") return "listed";
+  if (status === "sold" || status === "rented") return "closed";
+  return "hidden";
 }
 
-/**
- * The scopes a public search reads. `includeInactive` adds reserved/sold/rented
- * so a shared link to a sold listing still resolves from a filtered list.
- */
-export function publicScopes(filters: SearchFilters): string[] {
-  const transactions =
-    filters.transaction !== undefined ? [filters.transaction] : ["sale", "rent"];
-  const statuses =
-    filters.includeInactive === true ? [...PUBLIC_STATUSES] : ["published"];
-  const scopes: string[] = [];
-  for (const status of statuses) {
-    for (const transaction of transactions) {
-      scopes.push(scopeKey(status, transaction));
-    }
-  }
-  return scopes;
+export function scopeKey(bucket: ScopeBucket, transaction: Transaction): string {
+  return `${bucket}:${transaction}`;
+}
+
+/** The single scope every public search, count and map query reads. */
+export function listedScope(transaction: Transaction): string {
+  return scopeKey("listed", transaction);
+}
+
+/** `bySlug` accepts both public buckets. */
+export function isPublicScope(scope: string): boolean {
+  return scope.startsWith("listed:") || scope.startsWith("closed:");
 }
 
 /* ------------------------------------------------------------ driver choice */
@@ -210,13 +226,7 @@ function isFeatureKey(key: string): key is keyof Features {
  */
 export function matches(listing: Doc<"listings">, filters: SearchFilters): boolean {
   if (listing.visibility !== "public") return false;
-
-  if (
-    filters.transaction !== undefined &&
-    listing.transaction !== filters.transaction
-  ) {
-    return false;
-  }
+  if (listing.transaction !== filters.transaction) return false;
   if (!includesAny(filters.propertyType, listing.propertyType)) return false;
   if (
     filters.subtype !== undefined &&

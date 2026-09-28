@@ -134,6 +134,7 @@ export const visibilityV = v.union(
   v.literal("unlisted"),
   v.literal("private"),
 );
+export type Visibility = Infer<typeof visibilityV>;
 
 export const transactionV = v.union(v.literal("sale"), v.literal("rent"));
 export type Transaction = Infer<typeof transactionV>;
@@ -589,7 +590,11 @@ export const floorBandV = v.union(
 /** Everything the public search accepts. All optional; absent = no constraint. */
 export const searchFiltersV = v.object({
   q: v.optional(v.string()),
-  transaction: v.optional(transactionV),
+  /**
+   * Required: it is half of the `scope` driver key, so every search resolves to
+   * exactly one index range (see lib/search.ts). The UI always has one selected.
+   */
+  transaction: transactionV,
   propertyType: v.optional(v.array(propertyTypeV)),
   subtype: v.optional(v.array(subtypeV)),
   cityId: v.optional(v.array(v.id("locations"))),
@@ -621,8 +626,6 @@ export const searchFiltersV = v.object({
   agentId: v.optional(v.id("agents")),
   /** Absolute epoch ms, computed on the client from "added in last N days". */
   publishedAfter: v.optional(v.number()),
-  /** Include reserved/sold/rented alongside published. Defaults to false. */
-  includeInactive: v.optional(v.boolean()),
 });
 export type SearchFilters = Infer<typeof searchFiltersV>;
 

@@ -60,10 +60,13 @@ export function listingSlug(titleSrLatn: string, ref: string): string {
   return `${slugify(titleSrLatn)}-${slugify(ref)}`;
 }
 
-/** `ME-1042` from a running number. */
+/** `ME-1042` from the absolute reference number. */
 export function formatRef(n: number): string {
-  return `ME-${1000 + n}`;
+  return `ME-${n}`;
 }
+
+/** The first reference number the agency uses. */
+export const FIRST_REF_NUMBER = 1042;
 
 /** Parses the numeric part back out of a ref; returns 0 when unparseable. */
 export function refNumber(ref: string): number {

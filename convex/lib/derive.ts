@@ -6,8 +6,8 @@
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { floorToNumber } from "./money";
-import { buildSearchText, scopeKey } from "./search";
-import { DEFAULT_L10N_KEY, L10N_KEYS, LOCALE_FIELD } from "./validators";
+import { bucketOf, buildSearchText, scopeKey } from "./search";
+import { L10N_KEYS, LOCALE_FIELD } from "./validators";
 import type { L10n, Locale } from "./validators";
 
 export type ListingDoc = Doc<"listings">;
@@ -28,9 +28,7 @@ export function l10nValues(value: L10n | undefined): string[] {
 /** Localized read with the mandated fallback to sr-Latn. */
 export function pickLocale(value: L10n, locale: Locale): string {
   const candidate = value[LOCALE_FIELD[locale]];
-  return candidate !== undefined && candidate.length > 0
-    ? candidate
-    : value[DEFAULT_L10N_KEY];
+  return candidate !== undefined && candidate.length > 0 ? candidate : value.sr;
 }
 
 export type DerivedFields = Pick<
@@ -56,7 +54,7 @@ export function applyDerived(
     hasTourScenes;
 
   return {
-    scope: scopeKey(listing.status, listing.transaction),
+    scope: scopeKey(bucketOf(listing.status, listing.visibility), listing.transaction),
     pricePerM2,
     floorNum: floorToNumber(listing.floor, listing.totalFloors),
     hasTour,

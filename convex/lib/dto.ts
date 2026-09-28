@@ -371,12 +371,6 @@ export async function toCard(
     listing.location.lng,
     listing.location.addressVisibility,
   );
-  const lastChange = await ctx.db
-    .query("priceChanges")
-    .withIndex("by_listingId_and_at", (q) => q.eq("listingId", listing._id))
-    .order("desc")
-    .first();
-
   return {
     _id: listing._id,
     slug: listing.slug,
@@ -391,8 +385,8 @@ export async function toCard(
     ...(listing.priceOnRequest !== undefined
       ? { priceOnRequest: listing.priceOnRequest }
       : {}),
-    ...(lastChange !== null && lastChange.from > lastChange.to
-      ? { previousPrice: lastChange.from }
+    ...(listing.previousPrice !== undefined && listing.previousPrice > listing.price
+      ? { previousPrice: listing.previousPrice }
       : {}),
     areaM2: listing.areaM2,
     rooms: listing.rooms,

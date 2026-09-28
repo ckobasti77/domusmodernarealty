@@ -164,6 +164,8 @@ export default defineSchema({
     /** derived: price / areaM2 (monthly rent per m² for rentals). */
     pricePerM2: v.number(),
     priceOnRequest: v.optional(v.boolean()),
+    /** Last higher asking price, denormalized for the "price reduced" badge. */
+    previousPrice: v.optional(v.number()),
     vatIncluded: v.optional(v.boolean()),
     vatRefundEligible: v.optional(v.boolean()),
     mortgageEligible: v.optional(v.boolean()),

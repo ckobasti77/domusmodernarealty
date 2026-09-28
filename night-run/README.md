@@ -26,11 +26,12 @@ Pre pokretanja:
    - postavlja Convex Auth ključeve na DEV deployment
    - generiše admin nalog u `night-run/state/admin.json`
    - pravi popis skillova
-   - probno pinguje model (Opus 5.5), auto mode i ultracode
+   - probno pinguje model (Opus), auto mode i ultracode
    - gasi zaostale Claude procese iz prekinutog prethodnog runa
 2. **16 koraka** iz `steps.psd1`. Svaki korak ima:
-   - **Model:** `claude-opus-5-5` (Opus 5.5) za sve korake. Koristi se eksplicitni ID jer alias `opus` na ovom nalogu vodi na Opus 5.
-     - Ako Opus 5.5 udari dugačak limit, runner prelazi na `opus` (Opus 5), pa na `sonnet`.
+   - **Model:** `opus` za sve korake.
+     - Opus 5.5 traži Claude Code 2.1.280 ili noviji. Na starijem CLI-ju alias `opus` vodi na Opus 5, pa preflight sam radi `claude update`.
+     - Ako Opus udari dugačak limit, runner prelazi na `sonnet`.
    - **Effort:** `max` za plan, dizajn i landing; `xhigh` za veliku implementaciju; `ultracode` za QA
      - `ultracode` = xhigh + automatski workflow sa više paralelnih agenata.
      - `max` nije svuda jer Anthropic za njega kaže da je "sklon overthinkingu". Tamo gde je posao dugačak i mehanički, `xhigh` daje isti kvalitet brže.
@@ -43,7 +44,7 @@ Pre pokretanja:
    - `npm run verify` (Convex push + typegen + typecheck + lint + build)
    - ako padne, ista sesija dobija grešku i popravlja (do 2 puta)
    - zatim git commit + tag `night-run/step-XX`
-4. **Usage limit:** runner pročita vreme reseta, čeka i nastavi **istu sesiju**. Ako je limit nedeljni, prelazi na sledeći model (Opus 5.5 → Opus 5 → Sonnet).
+4. **Usage limit:** runner pročita vreme reseta, čeka i nastavi **istu sesiju**. Ako je limit nedeljni, prelazi na sledeći model (Opus → Sonnet).
 5. **Timeout koraka:** proces se gasi i sesija se nastavlja (`--resume`).
 
 ## Kako pratiš

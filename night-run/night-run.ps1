@@ -158,6 +158,10 @@ function Stop-LeftoverClaude {
     # Claude processes started by an earlier (interrupted) run carry '--name mihajlo-night-XX' in their command line.
     if (-not $script:IsWin) { return }
     try {
+        # 1) another night-run.ps1 runner still alive (e.g. started in another window) -> stop it with its whole tree
+        $runners = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -and $_.CommandLine -match 'night-run\.ps1' -and $_.Name -match '^(powershell|pwsh)' })
+        foreach ($p in $runners) { Write-Log "Stopping an older night-run.ps1 runner (pid $($p.ProcessId))" 'WARN'; Stop-ProcessTree ([int]$p.ProcessId) }
+        # 2) orphaned Claude processes of an earlier run
         $procs = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -and $_.CommandLine -match 'mihajlo-night-' -and $_.ProcessId -ne $PID })
         foreach ($p in $procs) { Write-Log "Stopping leftover Claude process from a previous run (pid $($p.ProcessId))" 'WARN'; Stop-ProcessTree ([int]$p.ProcessId) }
     } catch { }
@@ -601,8 +605,8 @@ function Invoke-Preflight {
     # Claude CLI
     $v = Get-ClaudeVersion
     Write-Log "Claude Code: $script:ClaudeExe ($v)" 'INFO'
-    if ($v -and $v -lt [version]'2.1.259') {
-        Write-Log 'Claude Code is older than 2.1.259 - running `claude update`...' 'WARN'
+    if ($v -and $v -lt [version]'2.1.280') {
+        Write-Log 'Claude Code is older than 2.1.280 (needed for Opus 5.5) - running `claude update`...' 'WARN'
         $u = Invoke-Native $script:ClaudeExe @('update'); Write-Log (Get-ShortText $u.out 300) 'INFO'
         $v = Get-ClaudeVersion
         Write-Log "Claude Code now: $v" 'INFO'

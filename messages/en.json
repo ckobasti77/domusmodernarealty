@@ -213,7 +213,7 @@
     "marketing": "Marketing",
     "marketingHelp": "Tailored offers and advertising.",
     "save": "Save choices",
-    "privacyRequired": "I agree to the {link}.",
+    "privacyRequired": "I agree to the <link>privacy policy</link>.",
     "privacyLinkText": "privacy policy",
     "marketingOptIn": "I would like to receive property updates by email."
   },

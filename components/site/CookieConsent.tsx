@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
+import { fixOrphans } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
 import {
   ALL_CATEGORIES,
@@ -59,7 +60,9 @@ export function CookieConsent() {
       className={cn(
         // Capped at 38svh on a phone: at 85svh the bar ate 40% of the screen
         // and buried the hero's CTAs and scroll cue.
-        "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[34svh] overflow-y-auto md:max-h-[70svh]",
+        "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[42svh] overflow-y-auto md:max-h-[70svh]",
+        // Without this the last control sits under an iPhone's home indicator.
+        "pb-[env(safe-area-inset-bottom)]",
         "border-t border-hairline-dark bg-ink text-ivory",
       )}
     >
@@ -75,7 +78,7 @@ export function CookieConsent() {
             {t("bannerHeading")}
           </h2>
           <p className="mt-1.5 max-w-[64ch] text-small text-mist md:mt-3">
-            {t("bannerBody")}{" "}
+            {fixOrphans(t("bannerBody"))}{" "}
             <Link
               href="/privacy"
               prefetch={false}

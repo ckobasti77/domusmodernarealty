@@ -213,7 +213,7 @@
     "marketing": "Marketing",
     "marketingHelp": "Auf Sie abgestimmte Angebote und Anzeigen.",
     "save": "Auswahl speichern",
-    "privacyRequired": "Ich stimme der {link} zu.",
+    "privacyRequired": "Ich stimme der <link>Datenschutzerklärung</link> zu.",
     "privacyLinkText": "Datenschutzerklärung",
     "marketingOptIn": "Ich möchte Immobilienangebote per E-Mail erhalten."
   },

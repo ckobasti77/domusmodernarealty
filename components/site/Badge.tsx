@@ -20,8 +20,8 @@ export type BadgeProps = {
 };
 
 const TONE: Record<NonNullable<BadgeProps["tone"]>, string> = {
-  light: "border-hairline-light text-ink",
-  dark: "border-hairline-dark text-ivory",
+  light: "border-ink/30 text-ink", // 12% is 1.29:1 on ivory; 30% clears 3:1
+  dark: "border-ivory/40 text-ivory",
   accent: "border-bronze-text text-bronze-text",
   status: "border-ink bg-ink text-ivory",
 };

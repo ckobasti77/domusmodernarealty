@@ -29,7 +29,8 @@ import { Price } from "@/components/site/Price";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { Tabs } from "@/components/site/Tabs";
-import { TextLink } from "@/components/site/TextLink";
+import { TextLink, textLinkClasses } from "@/components/site/TextLink";
+import { Link } from "@/i18n/navigation";
 
 /**
  * The internal design-system page. It exists so a human (or the design-critic
@@ -268,13 +269,7 @@ export default async function StyleguidePage({
                   <span>{step.token}</span>
                   <span className="normal-case tracking-normal">{step.spec}</span>
                 </dt>
-                <dd
-                  className={`mt-3 font-display font-normal ${step.cls} ${
-                    step.token === "display-xl" ? "leading-[1.0] lg:leading-[0.92]" : ""
-                  }`}
-                >
-                  {step.text}
-                </dd>
+                <dd className={`mt-3 font-display font-normal ${step.cls}`}>{step.text}</dd>
               </div>
             ))}
             <div className="hairline-b pb-6">
@@ -440,11 +435,17 @@ export default async function StyleguidePage({
                 ]}
               />
               <CheckboxField label={tFilters("withTour")} name="sg-tour" defaultChecked />
-              <CheckboxField
-                label={tConsent("privacyRequired")}
-                name="sg-privacy"
-                error={tForms("requiredField")}
-              />
+              {/* `privacyRequired` is rich text: it MUST go through `t.rich`,
+                  or the raw `<link>` tag ships on a legal-consent control. */}
+              <CheckboxField name="sg-privacy" error={tForms("requiredField")}>
+                {tConsent.rich("privacyRequired", {
+                  link: (chunks) => (
+                    <Link href="/privacy" prefetch={false} className={textLinkClasses("light")}>
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </CheckboxField>
               <Button variant="primary">{tForms("submit")}</Button>
             </div>
           </Grid>

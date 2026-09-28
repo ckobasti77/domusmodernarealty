@@ -48,10 +48,15 @@ export function Header() {
 
   useGSAP(
     () => {
+      // `onUpdate` over the whole document, NOT `onToggle` over [80, max]: a
+      // trigger is inactive at exactly `scroll === maxScroll`, so the toggle
+      // version dropped the header back to transparent at the bottom of every
+      // page and the footer's text showed through the bar.
       const trigger = ScrollTrigger.create({
-        start: 80,
+        start: 0,
         end: "max",
-        onToggle: (self) => setSolid(self.isActive),
+        onUpdate: (self) => setSolid(self.scroll() > 80),
+        onRefresh: (self) => setSolid(self.scroll() > 80),
       });
       return () => trigger.kill();
     },

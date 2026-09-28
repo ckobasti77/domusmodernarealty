@@ -4,6 +4,7 @@ import { cache } from "react";
 import { api } from "@/convex/_generated/api";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
+import { fixOrphans } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { Container } from "./Container";
 import { ConsentSettingsButton } from "./CookieConsent";
@@ -26,6 +27,7 @@ const EXPLORE = [
   { href: "/valuation", key: "valuation" },
   { href: "/sell", key: "sell" },
   { href: "/agents", key: "agents" },
+  { href: "/about", key: "about" },
   { href: "/journal", key: "journal" },
 ] as const;
 
@@ -76,7 +78,7 @@ export async function Footer() {
           {/* Legal identity — Art. 18 + e-commerce law. */}
           <div className="lg:col-span-4">
             <Logo tone="dark" className="w-[230px]" title="" />
-            <p className="mt-6 max-w-[34ch] text-small text-mist">{tCommon("tagline")}</p>
+            <p className="mt-6 max-w-[34ch] text-small text-mist">{fixOrphans(tCommon("tagline"))}</p>
 
             {settings !== null ? (
               <dl className="mt-8 space-y-1 text-small text-mist">
@@ -99,10 +101,12 @@ export async function Footer() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="sr-only">{t("companyId")}</dt>
+                  <dt className="sr-only">{t("legalHeading")}</dt>
                   <dd data-numeric>{t("companyId", { pib: settings.pib, mb: settings.mb })}</dd>
                 </div>
-                {settings.insurance !== undefined ? (
+                {/* Only when a real policy number is on file. The seeded value
+                    is an instruction to the owner and must never be public. */}
+                {settings.insurance !== undefined && /\d/.test(settings.insurance) ? (
                   <div>
                     <dt className="sr-only">{t("legalHeading")}</dt>
                     <dd>{settings.insurance}</dd>
@@ -115,10 +119,10 @@ export async function Footer() {
               </p>
             )}
 
+            {/* Plain muted text, not a bronze box: a "registry number not
+                entered" notice must not be the loudest thing in the footer. */}
             {settings?.isDemo === true ? (
-              <p className="mt-4 border border-warning px-3 py-2 text-small text-warning">
-                {t("demoDataWarning")}
-              </p>
+              <p className="mt-4 max-w-[38ch] text-small text-stone">{fixOrphans(t("demoDataWarning"))}</p>
             ) : null}
           </div>
 
@@ -210,16 +214,15 @@ export async function Footer() {
 
             {settings !== null ? (
               <p className="mt-6 max-w-[34ch] text-small text-mist">
-                {pickL10n(settings.commissionText, locale).text}
+                {fixOrphans(pickL10n(settings.commissionText, locale).text)}
               </p>
             ) : null}
           </div>
         </div>
 
         <div className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-hairline-dark pt-6 text-small text-stone">
-          <p>
-            © {year} {settings?.companyName ?? tCommon("brand")}. {t("rights")}
-          </p>
+          {/* `rights` is "© {year} {brand}. …" — it owns the whole line. */}
+          <p>{t("rights", { year, brand: settings?.companyName ?? tCommon("brand") })}</p>
           <p>{t("madeIn")}</p>
         </div>
       </Container>

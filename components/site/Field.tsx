@@ -184,9 +184,13 @@ export function SelectField({ label, hint, error, className, children, ...rest }
   );
 }
 
-export type CheckboxFieldProps = Shared &
+export type CheckboxFieldProps = Omit<Shared, "label"> &
   Omit<InputHTMLAttributes<HTMLInputElement>, "className" | "id" | "type"> & {
-    /** Allows a privacy label to contain a link. Falls back to `label`. */
+    /**
+     * Plain-text label. Omit it and pass `children` instead when the label has
+     * to contain a link (the privacy consent), which a string cannot express.
+     */
+    label?: string;
     children?: ReactNode;
   };
 

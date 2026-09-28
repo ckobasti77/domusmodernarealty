@@ -213,7 +213,7 @@
     "marketing": "Marketing",
     "marketingHelp": "Prilagođene ponude i oglasi.",
     "save": "Sačuvaj izbor",
-    "privacyRequired": "Slažem se sa {link}.",
+    "privacyRequired": "Slažem se sa <link>politikom privatnosti</link>.",
     "privacyLinkText": "politikom privatnosti",
     "marketingOptIn": "Želim da primam ponude nekretnina e-poštom."
   },

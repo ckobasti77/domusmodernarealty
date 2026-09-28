@@ -44,8 +44,10 @@ export const buttonClasses = cva(
         outline:
           "border border-current bg-transparent pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze-text disabled:text-stone-text",
         /** Outline for dark surfaces, where bronze is the AA-safe accent. */
+        // `border-hairline-dark` is ivory at 12% = 1.32:1 on ink, which WCAG
+        // 1.4.11 rejects for a control boundary. 40% lands at 3.47:1.
         outlineDark:
-          "border border-hairline-dark bg-transparent text-ivory pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze",
+          "border border-ivory/40 bg-transparent text-ivory pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze",
         /** No chrome at all; used inside toolbars and cards. */
         ghost: "bg-transparent pointer-fine:hover:text-bronze-text disabled:text-stone-text",
       },

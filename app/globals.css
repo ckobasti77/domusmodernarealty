@@ -40,7 +40,7 @@
 
   /* Fluid type scale */
   --text-display-xl: clamp(3.5rem, 9vw, 9.5rem);
-  --text-display-xl--line-height: 0.92; /* 0.92 is right at 130px+; see `leading-*` on the hero for the mobile floor */
+  --text-display-xl--line-height: 0.92; /* see the mobile floor below */
   --text-display-xl--letter-spacing: -0.02em;
   --text-display-l: clamp(2.75rem, 6vw, 6rem);
   --text-display-l--line-height: 0.95;
@@ -208,6 +208,20 @@
   --sidebar-accent-foreground: #f4efe6;
   --sidebar-border: color-mix(in oklab, #f4efe6 12%, transparent);
   --sidebar-ring: #b08d57;
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile leading floor. The display tracking is drawn for 130px type; at the
+   clamp's small-screen floor (56 / 44 / 36px) the same ratios leave literally
+   no ink-free row between two lines, so descenders and accented caps
+   interleave. These are the only breakpoint-dependent token values.
+--------------------------------------------------------------------------- */
+@media (width < 768px) {
+  :root {
+    --text-display-xl--line-height: 1.02;
+    --text-display-l--line-height: 1.06;
+    --text-display-m--line-height: 1.14;
+  }
 }
 
 @layer base {

@@ -67,7 +67,7 @@ export function SectionHeading({
           )}
         >
           <SplitReveal as="span" className="block">
-            {title}
+            {typeof title === "string" ? fixOrphans(title) : title}
           </SplitReveal>
         </Heading>
         {action !== undefined ? <div className="shrink-0 pb-1">{action}</div> : null}

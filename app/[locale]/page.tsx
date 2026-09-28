@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { fixOrphans } from "@/lib/format";
 import { Counter } from "@/components/motion/Counter";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { ImageReveal } from "@/components/motion/ImageReveal";
@@ -38,15 +39,13 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <Container>
           <Eyebrow tone="accentDark">{t("heroEyebrow")}</Eyebrow>
 
-          {/* 0.92 is the right leading at 130px, not at the 56px mobile floor,
-              where the descender of "koji" would collide with the next line. */}
-          <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-normal leading-[1.0] text-ivory lg:leading-[0.92]">
+          <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-normal text-ivory">
             <SplitReveal as="span" className="block">
               {t("heroHeadline")}
             </SplitReveal>
           </h1>
 
-          <p className="mt-8 max-w-[52ch] text-body-l text-mist lg:mt-10">{t("heroLede")}</p>
+          <p className="mt-8 max-w-[52ch] text-body-l text-mist lg:mt-10">{fixOrphans(t("heroLede"))}</p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4 lg:mt-12">
             <Link href="/properties" prefetch={false} className={buttonClasses({ variant: "inverse" })}>

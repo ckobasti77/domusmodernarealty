@@ -177,7 +177,13 @@ export default async function StyleguidePage({
 
           <h3 className="mt-16 font-display text-h3">{t("contrast")}</h3>
           <p className="mt-2 max-w-[60ch] text-small text-stone-text">{t("contrastPass")}</p>
-          <div className="mt-6 overflow-x-auto">
+          {/* Focusable so a keyboard user can scroll it at 390px (WCAG 2.1.1). */}
+          <div
+            className="mt-6 overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label={t("contrast")}
+          >
             <table className="w-full min-w-[34rem] border-collapse text-small">
               <caption className="sr-only">{t("contrast")}</caption>
               <thead>

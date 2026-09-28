@@ -29,7 +29,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     <>
       <Section tone="ink" className="flex min-h-svh flex-col justify-end pb-16 pt-40 lg:pb-24">
         <Container>
-          <Eyebrow>{t("heroEyebrow")}</Eyebrow>
+          <Eyebrow tone="accentDark">{t("heroEyebrow")}</Eyebrow>
 
           <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-light text-ivory">
             <SplitReveal as="span" className="block">

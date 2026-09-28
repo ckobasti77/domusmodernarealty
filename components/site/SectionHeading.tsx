@@ -51,7 +51,7 @@ export function SectionHeading({
   return (
     <div className={cn("flex flex-col gap-6", className)}>
       {eyebrow !== undefined ? (
-        <Eyebrow index={eyebrowIndex} tone={tone === "dark" ? "bronze" : "light"}>
+        <Eyebrow index={eyebrowIndex} tone={tone === "dark" ? "accentDark" : "accent"}>
           {eyebrow}
         </Eyebrow>
       ) : null}

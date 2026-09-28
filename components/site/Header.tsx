@@ -65,7 +65,13 @@ export function Header() {
       ref={header}
       data-solid={solid ? "true" : "false"}
       className={cn(
-        "fixed inset-x-0 top-0 z-(--z-header) transition-[background-color,border-color] duration-300 ease-out",
+        "fixed inset-x-0 top-0 transition-[background-color,border-color] duration-300 ease-out",
+        // The overlay menu is a CHILD of this element, so it is trapped in the
+        // header's stacking context — at z-header (30) the cookie banner
+        // (z-overlay, 40) painted over it and swallowed every click. Lifting the
+        // whole header to z-menu while the overlay is open is the fix; the bar
+        // itself never overlaps the banner, so nothing else changes.
+        menuOpen ? "z-(--z-menu)" : "z-(--z-header)",
         solid ? "border-b border-hairline-dark bg-ink/95" : "border-b border-transparent bg-transparent",
       )}
     >

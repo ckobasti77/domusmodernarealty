@@ -15,8 +15,13 @@ import { DURATION, gsap, MOTION_QUERIES, SplitText, STAGGER, useGSAP } from "./g
  *    inside `onSplit` and returned from it — that is what lets SplitText revert
  *    and re-sync it;
  *  - `mask: "lines"` supplies the clip wrapper, so no extra markup is needed;
- *  - `aria: "auto"` leaves one readable label and hides the shards, and the
- *    element must never carry `text-wrap: balance` (CLAUDE.md hard rule).
+ *  - the element must never carry `text-wrap: balance` (CLAUDE.md hard rule).
+ *
+ * Accessibility: SplitText's own `aria: "auto"` writes `aria-label` onto the
+ * split element, and `aria-label` is prohibited on a roleless `<span>` (axe
+ * flags it as a serious violation). So aria is left alone (`aria: "none"`), the
+ * animated copy is `aria-hidden`, and a visually hidden twin carries the text —
+ * the pattern the GSAP docs recommend when the split element has no role.
  */
 
 export type SplitRevealProps = {
@@ -35,7 +40,7 @@ export function SplitReveal({
   stagger = STAGGER.lines,
   delay = 0,
 }: SplitRevealProps) {
-  const root = useRef<HTMLElement>(null);
+  const root = useRef<HTMLSpanElement>(null);
 
   useGSAP(
     () => {
@@ -57,7 +62,7 @@ export function SplitReveal({
           split = SplitText.create(el, {
             type: "lines",
             mask: "lines",
-            aria: "auto",
+            aria: "none",
             autoSplit: true,
             linesClass: "split-line",
             onSplit(self) {
@@ -92,11 +97,15 @@ export function SplitReveal({
     { scope: root, dependencies: [stagger, delay] },
   );
 
-  // The element starts invisible so the un-split text never flashes before the
-  // fonts resolve; every matchMedia branch (including reduced) sets it to 1.
   return (
-    <Tag ref={root} className={cn("opacity-0", className)}>
-      {children}
+    <Tag className={cn("relative", className)}>
+      {/* The accessible copy. Never split, never animated. */}
+      <span className="sr-only">{children}</span>
+      {/* The animated copy starts invisible so the un-split text never flashes
+          before the fonts resolve; every matchMedia branch sets it to 1. */}
+      <span ref={root} aria-hidden="true" className="block opacity-0">
+        {children}
+      </span>
     </Tag>
   );
 }

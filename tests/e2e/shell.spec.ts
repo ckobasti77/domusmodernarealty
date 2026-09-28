@@ -194,9 +194,10 @@ test.describe("reduced motion", () => {
     // No preloader curtain and no page-transition panel are mounted at all.
     await expect(page.locator(".lenis")).toHaveCount(0);
 
-    // Every SplitReveal heading is fully opaque (the class starts at opacity 0,
-    // so this only passes if the reduced branch ran).
-    const headings = page.locator("h1 > span, h2 > span");
+    // Every SplitReveal heading is fully opaque. The animated copy ships with
+    // `opacity-0` in its class list, so this only passes if the reduced branch
+    // ran and wrote an inline opacity of 1.
+    const headings = page.locator('h1 > span > span[aria-hidden="true"], h2 > span > span[aria-hidden="true"]');
     const count = await headings.count();
     expect(count).toBeGreaterThan(3);
     for (let i = 0; i < Math.min(count, 6); i += 1) {
@@ -220,6 +221,6 @@ test.describe("reduced motion", () => {
     await acceptCookies(page);
 
     await expect(page.locator("h1")).toBeVisible();
-    await expect(page.locator("h1 > span").first()).toHaveCSS("opacity", "1");
+    await expect(page.locator('h1 > span > span[aria-hidden="true"]').first()).toHaveCSS("opacity", "1");
   });
 });

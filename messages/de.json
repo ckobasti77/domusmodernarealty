@@ -232,7 +232,6 @@
     "soon": "Demnächst",
     "breadcrumbLabel": "Navigationspfad",
     "verifiedDocs": "Unterlagen geprüft",
-    "verifiedDocsHint": "Unser Makler hat die Eigentumsunterlagen am {date} geprüft.",
     "refCode": "Objektnummer {ref}",
     "compliance": "{company} · Maklerregister Nr. {registryNo}",
     "propertyType": {
@@ -436,7 +435,7 @@
       "noEncumbrance": "Keine Belastungen eingetragen",
       "ownershipShare": "Eigentumsanteil",
       "commission": "Maklerprovision",
-      "verifiedNote": "Unser Makler hat die Eigentumsunterlagen gemäß Artikel 16 des serbischen Gesetzes über die Vermittlung beim Verkauf und bei der Vermietung von Immobilien geprüft.",
+      "verifiedNote": "Unser Makler hat die Eigentumsunterlagen am {date} gemäß Artikel 16 des serbischen Gesetzes über die Vermittlung beim Verkauf und bei der Vermietung von Immobilien geprüft.",
       "unverifiedNote": "Wir prüfen die Unterlagen vor der Vertragsunterzeichnung. Einsicht erhalten Sie auf Anfrage bei Ihrem Ansprechpartner.",
       "termsLink": "Allgemeine Geschäftsbedingungen"
     },
@@ -510,7 +509,7 @@
     "actionBar": {
       "label": "Schnellaktionen",
       "call": "Anrufen",
-      "book": "Termin buchen"
+      "book": "Termin"
     },
     "share": {
       "heading": "Teilen",

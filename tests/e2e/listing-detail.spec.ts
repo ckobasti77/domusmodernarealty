@@ -220,6 +220,34 @@ test.describe("lead flows (end to end)", () => {
   });
 });
 
+test.describe("rate limiting", () => {
+  test("a fourth inquiry in one session gets the friendly rate-limit message", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "one proof is enough; it writes three leads");
+    const email = e2eEmail(testInfo, "ratelimit");
+    try {
+      await quietVisit(page, `/sr/nekretnine/${LISTING}`);
+      const send = async () => {
+        const form = page.getByTestId("inquiry-form");
+        await form.getByLabel("Ime i prezime").fill("E2E Test Limit");
+        await form.getByLabel("E-pošta").fill(email);
+        await form.getByLabel(/Saglasan\/na sam/).check();
+        await form.getByRole("button", { name: "Pošaljite" }).click();
+      };
+      // The per-session bucket holds three (convex/lib/rateLimit.ts).
+      for (let i = 0; i < 3; i += 1) {
+        await send();
+        await expect(page.getByTestId("form-success")).toBeVisible();
+        await page.getByRole("button", { name: "Pošaljite novi upit" }).click();
+      }
+      await send();
+      await expect(page.getByRole("alert").filter({ hasText: "Poslali ste previše zahteva" })).toBeVisible();
+      expect(convexRun<QaLead[]>("qa:leadsByEmail", { email })).toHaveLength(3);
+    } finally {
+      convexRun("qa:purgeByEmail", { email });
+    }
+  });
+});
+
 test.describe("closed listings", () => {
   test("a sold listing shows the ribbon and similar listings, and no form", async ({ page }) => {
     await quietVisit(page, `/sr/nekretnine/${SOLD}`);

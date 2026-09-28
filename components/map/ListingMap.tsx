@@ -2,7 +2,7 @@
 
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Layer, Map, Marker, NavigationControl, Source } from "@vis.gl/react-maplibre";
+import { Layer, Map, Marker, NavigationControl, Source, type MapEvent } from "@vis.gl/react-maplibre";
 import type { Feature, Polygon } from "geojson";
 
 /**
@@ -36,9 +36,31 @@ export type ListingMapProps = {
   lat: number;
   lng: number;
   precision: "exact" | "street" | "area";
+  locale: string;
 };
 
-export default function ListingMap({ lat, lng, precision }: ListingMapProps) {
+/**
+ * Positron prints every label twice ("Patrijarha Varnave Патријарха Варнаве").
+ * One script per page: Latin everywhere, Serbian Cyrillic for Russian readers.
+ * The land is tinted to the site ivory so the map does not read as a cold grey
+ * card on a warm page (design-critic, step 07).
+ */
+function applyHouseStyle(map: maplibregl.Map, locale: string) {
+  const label: maplibregl.ExpressionSpecification =
+    locale === "ru"
+      ? ["coalesce", ["get", "name:nonlatin"], ["get", "name"]]
+      : ["coalesce", ["get", "name:latin"], ["get", "name"]];
+  for (const layer of map.getStyle().layers) {
+    if (layer.type === "symbol" && layer.layout?.["text-field"] !== undefined) {
+      map.setLayoutProperty(layer.id, "text-field", label);
+    }
+    if (layer.type === "background") {
+      map.setPaintProperty(layer.id, "background-color", "#EAE3D6");
+    }
+  }
+}
+
+export default function ListingMap({ lat, lng, precision, locale }: ListingMapProps) {
   const exact = precision === "exact";
   return (
     <Map
@@ -51,6 +73,7 @@ export default function ListingMap({ lat, lng, precision }: ListingMapProps) {
       touchPitch={false}
       cooperativeGestures
       attributionControl={{ compact: true }}
+      onLoad={(event: MapEvent) => applyHouseStyle(event.target, locale)}
     >
       <NavigationControl position="top-right" showCompass={false} />
       {exact ? (

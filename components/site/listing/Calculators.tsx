@@ -9,7 +9,7 @@ import {
   type ConstructionType,
   type CostPropertyType,
 } from "@/lib/costs";
-import { formatPrice } from "@/lib/format";
+import { formatInputNumber, formatPrice, parseLocaleNumber } from "@/lib/format";
 import { computeMortgage, DOWN_PAYMENT_PRESETS, MORTGAGE_LIMITS } from "@/lib/mortgage";
 import { cn } from "@/lib/utils";
 import { TextField } from "../Field";
@@ -23,16 +23,16 @@ import { TextField } from "../Field";
  * results carry `aria-live` so a screen reader hears the new monthly payment.
  */
 
-function toNumber(value: string, fallback: number): number {
-  const parsed = Number(value.replace(",", ".").replace(/\s/g, ""));
-  return Number.isFinite(parsed) && value.trim().length > 0 ? parsed : fallback;
+/** Reads "430.000" / "5,4" in the page's own notation; falls back while a field is empty. */
+function toNumber(value: string, fallback: number, locale: Locale): number {
+  return parseLocaleNumber(value, locale) ?? fallback;
 }
 
 function Row({ label, value, strong = false, note }: { label: string; value: string; strong?: boolean; note?: string }) {
   return (
-    <div className="hairline-t flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-3">
+    <div className="hairline-t grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 py-3">
       <dt className={cn("text-small", strong ? "font-medium text-ink" : "text-stone-text")}>{label}</dt>
-      <dd data-numeric className={cn(strong ? "text-body-l font-medium text-ink" : "text-body text-ink")}>
+      <dd data-numeric className={cn("text-right", strong ? "text-body-l font-medium text-ink" : "text-body text-ink")}>
         {value}
         {note !== undefined ? <span className="ml-2 text-small text-stone-text">{note}</span> : null}
       </dd>
@@ -49,22 +49,22 @@ export function MortgageCalculator({
 }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("listing.mortgage");
-  const [priceInput, setPriceInput] = useState(String(price));
-  const [downInput, setDownInput] = useState(String(defaults.downPct));
-  const [yearsInput, setYearsInput] = useState(String(defaults.years));
-  const [rateInput, setRateInput] = useState(String(defaults.rate));
+  const [priceInput, setPriceInput] = useState(() => formatInputNumber(price, locale));
+  const [downInput, setDownInput] = useState(() => formatInputNumber(defaults.downPct, locale));
+  const [yearsInput, setYearsInput] = useState(() => formatInputNumber(defaults.years, locale));
+  const [rateInput, setRateInput] = useState(() => formatInputNumber(defaults.rate, locale));
 
-  const downPct = toNumber(downInput, defaults.downPct);
+  const downPct = toNumber(downInput, defaults.downPct, locale);
   const result = computeMortgage({
-    price: toNumber(priceInput, price),
+    price: toNumber(priceInput, price, locale),
     downPct,
-    years: toNumber(yearsInput, defaults.years),
-    ratePct: toNumber(rateInput, defaults.rate),
+    years: toNumber(yearsInput, defaults.years, locale),
+    ratePct: toNumber(rateInput, defaults.rate, locale),
   });
 
   return (
     <section aria-labelledby="mortgage-heading" className="flex flex-col gap-6" data-testid="mortgage-calculator">
-      <h3 id="mortgage-heading" className="font-serif text-h3">
+      <h3 id="mortgage-heading" className="font-display text-h3">
         {t("heading")}
       </h3>
       <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -86,7 +86,7 @@ export function MortgageCalculator({
             key={pct}
             type="button"
             aria-pressed={downPct === pct}
-            onClick={() => setDownInput(String(pct))}
+            onClick={() => setDownInput(formatInputNumber(pct, locale))}
             className={cn(
               "inline-flex min-h-11 items-center border px-4 font-sans text-label font-medium uppercase tracking-[0.12em] transition-colors duration-200",
               downPct === pct ? "border-ink bg-ink text-ivory" : "border-ink/30 text-ink pointer-fine:hover:border-bronze",
@@ -99,7 +99,7 @@ export function MortgageCalculator({
 
       <div aria-live="polite">
         <p className="eyebrow text-stone-text">{t("monthly")}</p>
-        <p data-numeric data-testid="mortgage-monthly" className="mt-1 font-serif text-[2.5rem] leading-none">
+        <p data-numeric data-testid="mortgage-monthly" className="mt-1 font-display text-[2.5rem] leading-none">
           {formatPrice(result.monthlyPayment, locale)}
         </p>
         <p className="mt-2 text-small text-stone-text">
@@ -131,14 +131,14 @@ export function CostCalculator({
   const locale = useLocale() as Locale;
   const t = useTranslations("listing.costs");
   const format = useFormatter();
-  const [feeInput, setFeeInput] = useState(String(DEFAULT_AGENCY_FEE_PCT));
+  const [feeInput, setFeeInput] = useState(() => formatInputNumber(DEFAULT_AGENCY_FEE_PCT, locale));
 
   const result = computePurchaseCosts({
     price,
     propertyType,
     constructionType,
     ...(vatIncluded !== undefined ? { vatIncluded } : {}),
-    agencyFeePct: toNumber(feeInput, 0),
+    agencyFeePct: toNumber(feeInput, 0, locale),
   });
 
   const labelOf = (key: string, rate?: number) => {
@@ -158,7 +158,7 @@ export function CostCalculator({
 
   return (
     <section aria-labelledby="costs-heading" className="flex flex-col gap-6" data-testid="cost-calculator">
-      <h3 id="costs-heading" className="font-serif text-h3">
+      <h3 id="costs-heading" className="font-display text-h3">
         {t("heading")}
       </h3>
       <TextField
@@ -167,7 +167,6 @@ export function CostCalculator({
         inputMode="decimal"
         value={feeInput}
         onChange={(e) => setFeeInput(e.target.value)}
-        className="max-w-xs"
       />
       <dl aria-live="polite">
         {result.lines.map((line) => (

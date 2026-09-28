@@ -37,6 +37,9 @@
   --font-display: var(--font-display-family), "EB Garamond", Garamond, serif;
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-family), ui-monospace, monospace;
+  /* Safety net: Tailwind ships `font-serif` as ui-serif/Georgia. It must never
+     render a second serif next to the display face (design-critic, step 07). */
+  --font-serif: var(--font-display);
 
   /* Fluid type scale */
   --text-display-xl: clamp(3.5rem, 9vw, 9.5rem);
@@ -247,6 +250,17 @@
 
   body.admin {
     padding-bottom: 0;
+  }
+
+  /* MapLibre controls in the house style: sharp, hairline, no shadow. */
+  .maplibregl-ctrl-group:not(:empty) {
+    border-radius: 0;
+    box-shadow: none;
+    border: 1px solid color-mix(in oklab, var(--color-ink) 30%, transparent);
+    background: var(--color-paper);
+  }
+  .maplibregl-ctrl-attrib.maplibregl-compact {
+    border-radius: 0;
   }
 
   /* The listing page adds a fixed action bar on phones (PRD A5). Its height is

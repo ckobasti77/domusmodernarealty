@@ -286,7 +286,7 @@ export default async function ListingPage({ params }: { params: Params }) {
             <header className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
               <div className="min-w-0 max-w-2xl">
                 <Eyebrow>{eyebrow}</Eyebrow>
-                <h1 lang={title.lang} className="mt-4 font-serif text-display-m">
+                <h1 lang={title.lang} className="mt-4 font-display text-display-m">
                   {fixOrphans(title.text)}
                 </h1>
                 <p className="mt-4 text-body-l text-ink">{placeLine(listing, locale)}</p>
@@ -329,7 +329,7 @@ export default async function ListingPage({ params }: { params: Params }) {
             <KeyFacts listing={listing} locale={locale} />
 
             <section aria-labelledby="description-heading">
-              <h2 id="description-heading" className="font-serif text-h2">
+              <h2 id="description-heading" className="font-display text-h2">
                 {t("description")}
               </h2>
               {highlights.items.length > 0 ? (
@@ -362,7 +362,7 @@ export default async function ListingPage({ params }: { params: Params }) {
 
             {showFinance ? (
               <section aria-labelledby="finance-heading">
-                <h2 id="finance-heading" className="font-serif text-h2">
+                <h2 id="finance-heading" className="font-display text-h2">
                   {t("financeHeading")}
                 </h2>
                 <div className="mt-8 grid gap-12 xl:grid-cols-2">
@@ -429,7 +429,7 @@ async function SimilarListings({ id, heading }: { id: Id<"listings">; heading: s
   return (
     <section aria-labelledby="similar-heading" className="hairline-t bg-ivory">
       <Container className="py-16 lg:py-24">
-        <h2 id="similar-heading" className="font-serif text-h2">
+        <h2 id="similar-heading" className="font-display text-h2">
           {heading}
         </h2>
         <div className="mt-10">

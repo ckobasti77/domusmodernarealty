@@ -8,9 +8,13 @@ import { formatPrice, formatPricePerM2, formatRsd, priceDeltaPct } from "@/lib/f
 import { cn } from "@/lib/utils";
 
 /**
- * The detail page's price block (PRD A5): price and €/m² together, the
+ * The detail page's price block (PRD A5): price and €/m² on one baseline, the
  * price-drop badge with a disclosable history, an informative RSD figure at the
  * rate from settings, and the Art. 18 compliance line directly under the price.
+ *
+ * It sits in the ink header band, so `tone="dark"` is the default. A sold or
+ * rented listing keeps its last price for reference but demotes it: no drop
+ * badge, no history, no currency toggle — nothing that invites an offer.
  *
  * The history is a disclosure (`aria-expanded` + `aria-controls`), not a modal
  * popover: it holds a short list the visitor reads in place, and a disclosure
@@ -28,6 +32,9 @@ export type PriceBlockProps = {
   vatIncluded?: boolean;
   deposit?: number;
   company: { name: string; registryNo: string } | null;
+  /** "Prodato" / "Izdato" when the listing is closed. */
+  closedLabel?: string;
+  tone?: "dark" | "light";
 };
 
 export function PriceBlock({
@@ -41,6 +48,8 @@ export function PriceBlock({
   vatIncluded,
   deposit,
   company,
+  closedLabel,
+  tone = "dark",
 }: PriceBlockProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("listing");
@@ -50,55 +59,84 @@ export function PriceBlock({
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyId = useId();
 
-  const reduced = previousPrice !== undefined && previousPrice > price;
-  const showRsd = rsd && eurRsd !== undefined;
+  const dark = tone === "dark";
+  const strong = dark ? "text-ivory" : "text-ink";
+  const muted = dark ? "text-mist" : "text-stone-text";
+  const link = cn(
+    "inline-flex min-h-11 items-center gap-1.5 text-small underline underline-offset-4 transition-colors duration-200 pointer-fine:hover:decoration-bronze",
+    dark ? "text-ivory decoration-ivory/40" : "text-ink decoration-ink/30",
+  );
+
+  const closed = closedLabel !== undefined;
+  const reduced = !closed && previousPrice !== undefined && previousPrice > price;
+  const showRsd = !closed && rsd && eurRsd !== undefined;
+  const showHistory = !closed && history.length > 0;
   const date = (at: number) => format.dateTime(new Date(at), { dateStyle: "medium" });
 
   return (
     <div className="flex flex-col gap-3">
+      {closed ? <p className={cn("eyebrow", dark ? "text-bronze" : "text-bronze-text")}>{closedLabel}</p> : null}
+
       {priceOnRequest ? (
-        <p className="font-sans text-[2rem] font-medium leading-tight">{t("priceOnRequest")}</p>
+        <p className={cn("font-sans text-[2rem] font-medium leading-tight", strong)}>{t("priceOnRequest")}</p>
       ) : (
         <>
-          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span data-numeric data-testid="listing-price" className="font-sans text-[2rem] font-medium leading-tight md:text-[2.5rem]">
+          <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span
+              data-numeric
+              data-testid="listing-price"
+              className={cn(
+                "font-sans font-medium leading-tight",
+                closed ? cn("text-h3", muted) : cn("text-[2rem] md:text-[2.5rem]", strong),
+              )}
+            >
               {showRsd ? `≈ ${formatRsd(price, eurRsd, locale)}` : formatPrice(price, locale)}
             </span>
-            {transaction === "rent" ? (
-              <span className="text-body text-stone-text">{tUnits("perMonth")}</span>
+            {transaction === "rent" ? <span className={cn("text-body", muted)}>{tUnits("perMonth")}</span> : null}
+            {transaction === "sale" && pricePerM2 > 0 && !showRsd ? (
+              <span data-numeric className={cn("text-body", muted)}>
+                {formatPricePerM2(pricePerM2, locale, tUnits("m2"))}
+              </span>
             ) : null}
           </p>
-          <p data-numeric className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body text-stone-text">
-            {transaction === "sale" && pricePerM2 > 0 ? (
-              <span>{formatPricePerM2(pricePerM2, locale, tUnits("m2"))}</span>
-            ) : null}
-            {showRsd ? <span>{formatPrice(price, locale)}</span> : null}
-            {deposit !== undefined ? <span>{t("price.deposit", { amount: formatPrice(deposit, locale) })}</span> : null}
-          </p>
+          {showRsd || deposit !== undefined ? (
+            <p data-numeric className={cn("flex flex-wrap gap-x-4 text-small", muted)}>
+              {showRsd ? <span>{formatPrice(price, locale)}</span> : null}
+              {showRsd && transaction === "sale" && pricePerM2 > 0 ? (
+                <span>{formatPricePerM2(pricePerM2, locale, tUnits("m2"))}</span>
+              ) : null}
+              {deposit !== undefined ? <span>{t("price.deposit", { amount: formatPrice(deposit, locale) })}</span> : null}
+            </p>
+          ) : null}
           {showRsd ? (
-            <p className="text-small text-stone-text">
+            <p className={cn("text-small", muted)}>
               {t("price.rsdNote", { rate: format.number(eurRsd, { maximumFractionDigits: 2 }) })}
             </p>
           ) : null}
-          {vatIncluded === true ? <p className="text-small text-stone-text">{t("price.vatIncluded")}</p> : null}
+          {vatIncluded === true && !closed ? <p className={cn("text-small", muted)}>{t("price.vatIncluded")}</p> : null}
         </>
       )}
 
-      {!priceOnRequest && (reduced || history.length > 0 || eurRsd !== undefined) ? (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      {!priceOnRequest && !closed && (reduced || showHistory || eurRsd !== undefined) ? (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           {reduced ? (
-            <span className="inline-flex items-center gap-1.5 border border-bronze-text px-2.5 py-1 font-sans text-label font-medium uppercase tracking-[0.12em] text-bronze-text">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 border px-2.5 py-1 font-sans text-label font-medium uppercase tracking-[0.12em]",
+                dark ? "border-bronze text-bronze" : "border-bronze-text text-bronze-text",
+              )}
+            >
               <TrendingDown aria-hidden="true" strokeWidth={1.5} className="size-3.5" />
               {t("price.dropBy", { pct: Math.abs(priceDeltaPct(previousPrice, price)) })}
             </span>
           ) : null}
-          {history.length > 0 ? (
+          {showHistory ? (
             <button
               type="button"
               aria-expanded={historyOpen}
               aria-controls={historyId}
               onClick={() => setHistoryOpen((value) => !value)}
-              className="inline-flex min-h-11 items-center gap-1.5 text-small text-ink underline decoration-ink/30 underline-offset-4 transition-colors duration-200 pointer-fine:hover:decoration-bronze"
+              className={link}
             >
               {t("priceHistory")}
               <ChevronDown
@@ -109,33 +147,30 @@ export function PriceBlock({
             </button>
           ) : null}
           {eurRsd !== undefined ? (
-            <button
-              type="button"
-              aria-pressed={rsd}
-              onClick={() => setRsd((value) => !value)}
-              className="inline-flex min-h-11 items-center text-small text-ink underline decoration-ink/30 underline-offset-4 transition-colors duration-200 pointer-fine:hover:decoration-bronze"
-            >
+            <button type="button" aria-pressed={rsd} onClick={() => setRsd((value) => !value)} className={link}>
               {rsd ? t("price.showEur") : t("price.showRsd")}
             </button>
           ) : null}
         </div>
       ) : null}
 
-      {history.length > 0 ? (
-        <div id={historyId} hidden={!historyOpen} className="border-l border-bronze-text pl-4">
+      {showHistory ? (
+        <div id={historyId} hidden={!historyOpen} className={cn("border-l pl-4", dark ? "border-bronze" : "border-bronze-text")}>
           <ol className="flex flex-col gap-2 text-small">
             <li className="flex flex-wrap justify-between gap-x-6">
-              <span className="text-stone-text">{t("price.historyInitial")}</span>
-              <span data-numeric>{formatPrice(history[0].from, locale)}</span>
+              <span className={muted}>{t("price.historyInitial")}</span>
+              <span data-numeric className={strong}>
+                {formatPrice(history[0].from, locale)}
+              </span>
             </li>
             {history.map((entry) => (
               <li key={entry.at} className="flex flex-wrap justify-between gap-x-6">
-                <span className="text-stone-text">
+                <span className={muted}>
                   {t("price.historyChange")} · <time dateTime={new Date(entry.at).toISOString()}>{date(entry.at)}</time>
                 </span>
-                <span data-numeric>
+                <span data-numeric className={strong}>
                   {formatPrice(entry.price, locale)}{" "}
-                  <span className="text-stone-text">
+                  <span className={muted}>
                     ({priceDeltaPct(entry.from, entry.price) > 0 ? "+" : ""}
                     {priceDeltaPct(entry.from, entry.price)}%)
                   </span>
@@ -147,8 +182,12 @@ export function PriceBlock({
       ) : null}
 
       {company !== null ? (
-        <p data-testid="listing-compliance" className="hairline-t pt-3 text-small text-stone-text">
-          {t("compliance", { company: company.name, registryNo: company.registryNo })}
+        <p
+          data-testid="listing-compliance"
+          className={cn("pt-3 text-small", dark ? "hairline-t-dark text-mist" : "hairline-t text-stone-text")}
+        >
+          {/* The registry number never wraps away from "br." */}
+          {t("compliance", { company: company.name, registryNo: company.registryNo }).replace(/ (\S+)$/, "\u00A0$1")}
         </p>
       ) : null}
     </div>

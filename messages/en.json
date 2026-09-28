@@ -232,7 +232,6 @@
     "soon": "Coming soon",
     "breadcrumbLabel": "Breadcrumb",
     "verifiedDocs": "Documents verified",
-    "verifiedDocsHint": "The agent checked the ownership documents on {date}.",
     "refCode": "Ref. {ref}",
     "compliance": "{company} · Register of Real Estate Brokers no. {registryNo}",
     "propertyType": {
@@ -436,7 +435,7 @@
       "noEncumbrance": "No registered encumbrances",
       "ownershipShare": "Ownership share",
       "commission": "Commission",
-      "verifiedNote": "Our agent has checked the ownership documents, in accordance with Article 16 of the Law on Brokerage in Real Estate Transactions and Leases.",
+      "verifiedNote": "Our agent checked the ownership documents on {date}, in accordance with Article 16 of the Law on Brokerage in Real Estate Transactions and Leases.",
       "unverifiedNote": "We check the documents before any contract is signed. You can ask the agent to see them.",
       "termsLink": "Terms of business"
     },
@@ -510,7 +509,7 @@
     "actionBar": {
       "label": "Quick actions",
       "call": "Call",
-      "book": "Book a viewing"
+      "book": "Viewing"
     },
     "share": {
       "heading": "Share",

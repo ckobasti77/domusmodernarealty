@@ -101,7 +101,7 @@ const ORPHANS =
   /(^|[\s\u00A0])([aiouskAIOUSK\u0430\u0438\u043E\u0443\u0441\u043A\u0432\u044F\u0410\u0418\u041E\u0423\u0421\u041A\u0412\u042F])\s+/g;
 
 export function fixOrphans(text: string): string {
-  return text.replace(ORPHANS, "$1$2 ");
+  return text.replace(ORPHANS, "$1$2\u00A0");
 }
 
 /** Percentage change between two prices, negative when the price was reduced. */
@@ -118,4 +118,43 @@ export function formatRsd(eur: number, rate: number, locale: Locale): string {
     currencyDisplay: "code",
     maximumFractionDigits: 0,
   }).format(Math.round((eur * rate) / 1000) * 1000);
+}
+
+/**
+ * `fixOrphans` plus two rules for running prose (listing descriptions, notices):
+ * a number never parts from its unit ("9 m²", "120 metara", "25 god."), and the
+ * common two-letter prepositions stay with the next word (sa, na, od, za, do,
+ * iz, uz, po, ka; ru на, по, за, от, до, из, со, во). Kept separate from
+ * `fixOrphans` so the landing's measured headlines do not re-wrap.
+ */
+const NUMBER_UNIT =
+  /(\d)\s+(?=(?:m²|м²|m2|m|м|km|км|€|EUR|RSD|min|мин|god\.|godina|metara|минут|metres|meters|Meter)(?![\p{L}\d]))/gu;
+const TWO_LETTER =
+  /(^|[\s\u00A0])(sa|na|od|za|do|iz|uz|po|ka|Sa|Na|Od|Za|Do|Iz|Uz|Po|Ka|на|по|за|от|до|из|со|во|На|По|За|От|До|Из|Со|Во)\s+/g;
+
+export function fixTypography(text: string): string {
+  return fixOrphans(text).replace(NUMBER_UNIT, "$1\u00A0").replace(TWO_LETTER, "$1$2\u00A0");
+}
+
+/** Grouped figure for an input's initial value ("430.000", "5,4"). */
+export function formatInputNumber(value: number, locale: Locale): string {
+  return new Intl.NumberFormat(INTL_LOCALE[locale], { maximumFractionDigits: 2 }).format(value);
+}
+
+/**
+ * Parses what a visitor typed in the locale's own notation: "430.000" and
+ * "5,4" in sr/de, "430 000" in ru, "430,000" and "5.4" in en. A bare "5.4" in
+ * a comma-decimal locale is still read as 5.4 — nobody types a group separator
+ * followed by only one digit.
+ */
+export function parseLocaleNumber(input: string, locale: Locale): number | null {
+  const parts = new Intl.NumberFormat(INTL_LOCALE[locale]).formatToParts(12345.6);
+  const group = parts.find((part) => part.type === "group")?.value ?? ",";
+  const decimal = parts.find((part) => part.type === "decimal")?.value ?? ".";
+  let text = input.trim().replace(/[\s\u00A0\u202F]/g, "");
+  if (text.length === 0) return null;
+  if (decimal === "," && /^\d+\.\d{1,2}$/.test(text)) text = text.replace(".", ",");
+  text = text.split(group).join("").replace(decimal, ".");
+  const value = Number(text);
+  return Number.isFinite(value) ? value : null;
 }

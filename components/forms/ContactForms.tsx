@@ -48,7 +48,7 @@ export function ContactForms({
   return (
     <section id="kontakt" aria-labelledby="contact-heading" className="scroll-mt-28">
       <span id="razgledanje" className="block scroll-mt-28" aria-hidden="true" />
-      <h2 id="contact-heading" className="font-serif text-h2">
+      <h2 id="contact-heading" className="font-display text-h2">
         {t("contactHeading")}
       </h2>
       <Tabs

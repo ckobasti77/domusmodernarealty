@@ -101,7 +101,7 @@ export function SuccessPanel({
   return (
     <div role="status" data-testid="form-success" className="flex flex-col items-start gap-4 bg-ivory-2 p-6 md:p-8">
       <CheckCircle2 aria-hidden="true" strokeWidth={1.25} className="size-8 text-success-text" />
-      <h3 className="font-serif text-h3">{heading}</h3>
+      <h3 className="font-display text-h3">{heading}</h3>
       <p className="text-body text-ink">{body}</p>
       {detail !== undefined ? <p className="text-small text-stone-text">{detail}</p> : null}
       {action}

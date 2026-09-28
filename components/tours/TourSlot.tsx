@@ -66,7 +66,7 @@ async function SoonPanel({
         <Badge tone="dark" className="self-start">
           {t("soon")}
         </Badge>
-        <h3 className="font-serif text-h2 text-ivory">{heading}</h3>
+        <h3 className="font-display text-h2 text-ivory">{heading}</h3>
         {detail !== undefined ? (
           <p className="font-mono text-label uppercase tracking-[0.08em] text-mist">{detail}</p>
         ) : null}

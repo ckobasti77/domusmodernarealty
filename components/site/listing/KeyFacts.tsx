@@ -82,7 +82,7 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
 
   return (
     <section aria-labelledby="facts-heading">
-      <h2 id="facts-heading" className="font-serif text-h2">
+      <h2 id="facts-heading" className="font-display text-h2">
         {t("facts.heading")}
       </h2>
       <dl className="mt-8 grid grid-cols-2 gap-x-6 sm:grid-cols-3">

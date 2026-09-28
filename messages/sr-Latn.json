@@ -343,7 +343,6 @@
     "yearBuilt": "Godina izgradnje",
     "breadcrumbLabel": "Putanja",
     "verifiedDocs": "Verifikovana dokumentacija",
-    "verifiedDocsHint": "Agent je proverio vlasničku dokumentaciju {date}.",
     "refCode": "Šifra {ref}",
     "compliance": "{company} · Registar posrednika br. {registryNo}",
     "propertyType": {
@@ -547,7 +546,7 @@
       "noEncumbrance": "Bez upisanog tereta",
       "ownershipShare": "Udeo u vlasništvu",
       "commission": "Provizija",
-      "verifiedNote": "Naš agent je proverio vlasničku dokumentaciju, u skladu sa članom 16. Zakona o posredovanju u prometu i zakupu nepokretnosti.",
+      "verifiedNote": "Naš agent je {date} proverio vlasničku dokumentaciju, u skladu sa članom 16. Zakona o posredovanju u prometu i zakupu nepokretnosti.",
       "unverifiedNote": "Dokumentaciju proveravamo pre potpisivanja ugovora. Uvid možete zatražiti od agenta.",
       "termsLink": "Uslovi poslovanja"
     },

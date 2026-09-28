@@ -26,7 +26,7 @@ export async function LocationBlock({ listing, locale }: { listing: ListingDetai
 
   return (
     <section aria-labelledby="location-heading">
-      <h2 id="location-heading" className="font-serif text-h2">
+      <h2 id="location-heading" className="font-display text-h2">
         {t("location")}
       </h2>
       <p className="mt-3 text-body-l text-ink">
@@ -38,8 +38,7 @@ export async function LocationBlock({ listing, locale }: { listing: ListingDetai
       </p>
 
       <div className="mt-6">
-        <ListingMapLoader lat={listing.lat} lng={listing.lng} precision={listing.coordPrecision} />
-        <p className="mt-2 text-label text-stone-text">{t("locationBlock.attribution")}</p>
+        <ListingMapLoader lat={listing.lat} lng={listing.lng} precision={listing.coordPrecision} locale={locale} />
       </div>
 
       {poi.length > 0 ? (
@@ -54,7 +53,10 @@ export async function LocationBlock({ listing, locale }: { listing: ListingDetai
                   <span className="block font-sans text-label uppercase tracking-[0.12em] text-stone-text">
                     {t(`poi.${item.kind}`)}
                   </span>
-                  <span className="text-body text-ink">{item.name}</span>
+                  {/* POI names are proper names in Serbian Latin whatever the page language. */}
+                  <span lang="sr-Latn" className="text-body text-ink">
+                    {item.name}
+                  </span>
                 </span>
                 <span data-numeric className="shrink-0 text-right text-small text-stone-text">
                   {tUnits("distanceM", { meters: formatCount(item.distanceM, locale) })}
@@ -71,9 +73,9 @@ export async function LocationBlock({ listing, locale }: { listing: ListingDetai
         <Link
           href={{ pathname: "/locations/[slug]", params: { slug: area.slug } }}
           prefetch={false}
-          className="group/teaser mt-8 flex items-center justify-between gap-6 bg-ink p-6 text-ivory md:p-8"
+          className="group/teaser hairline-t hairline-b mt-10 flex items-center justify-between gap-6 py-6 text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text"
         >
-          <span className="font-serif text-h3">
+          <span className="font-display text-h3">
             {t("locationBlock.neighborhoodCta", { name: pickL10n(area.name, locale).text })}
           </span>
           <ArrowRight

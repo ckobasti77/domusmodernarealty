@@ -1,4 +1,4 @@
-import { Mail, MessageCircle, Phone } from "lucide-react";
+import { Mail, MessageCircle, MessagesSquare, Phone } from "lucide-react";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { AgentPublic } from "@/convex/lib/dto";
@@ -54,13 +54,13 @@ export async function AgentCard({
         ) : (
           <span
             aria-hidden="true"
-            className="flex size-[72px] shrink-0 items-center justify-center rounded-full bg-ink font-serif text-[1.625rem] tracking-[0.06em] text-ivory"
+            className="flex size-[72px] shrink-0 items-center justify-center rounded-full bg-ink font-display text-[1.625rem] tracking-[0.06em] text-ivory"
           >
             {agent.monogram}
           </span>
         )}
         <div className="min-w-0">
-          <h2 id="agent-heading" className="font-serif text-h3 leading-tight">
+          <h2 id="agent-heading" className="font-display text-h3 leading-tight">
             {agent.name}
           </h2>
           <p lang={role.lang} className="text-small text-stone-text">
@@ -81,7 +81,10 @@ export async function AgentCard({
             <a href={telHref(agent.phone)} className={CHANNEL}>
               <Phone aria-hidden="true" strokeWidth={1.25} className="size-4" />
               <span>
-                {t("agentCard.call")} <span data-numeric className="text-stone-text">{agent.phone}</span>
+                <span className="text-stone-text">{t("agentCard.call")}</span>{" "}
+                <span data-numeric className="whitespace-nowrap">
+                  {agent.phone}
+                </span>
               </span>
             </a>
           </li>
@@ -89,7 +92,7 @@ export async function AgentCard({
         {agent.viber !== undefined ? (
           <li>
             <a href={viberHref(agent.viber)} className={CHANNEL}>
-              <MessageCircle aria-hidden="true" strokeWidth={1.25} className="size-4" />
+              <MessagesSquare aria-hidden="true" strokeWidth={1.25} className="size-4" />
               {tCommon("viber")}
             </a>
           </li>
@@ -107,15 +110,18 @@ export async function AgentCard({
             <a href={mailHref(agent.email, t("refCode", { ref: refCode }))} className={CHANNEL}>
               <Mail aria-hidden="true" strokeWidth={1.25} className="size-4" />
               <span>
-                {t("agentCard.email")} <span className="break-all text-stone-text">{agent.email}</span>
+                <span className="text-stone-text">{t("agentCard.email")}</span>{" "}
+                <span className="break-all">{agent.email}</span>
               </span>
             </a>
           </li>
         ) : null}
       </ul>
 
+      {/* Phones get these actions from the fixed bar; here they would only point
+          at the form directly above the card. */}
       {closed ? null : (
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-6 hidden flex-col gap-3 lg:flex">
           <a href="#kontakt" data-contact-tab="inquiry" className={buttonClasses({ variant: "primary" })}>
             {t("askQuestion")}
           </a>

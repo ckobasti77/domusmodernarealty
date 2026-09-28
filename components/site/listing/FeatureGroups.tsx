@@ -1,11 +1,12 @@
 import { getTranslations } from "next-intl/server";
 import type { ListingDetail } from "@/convex/lib/dto";
-import { Badge } from "../Badge";
 
 /**
- * Feature chips grouped Interior / Building / Outdoor / Legal (PRD A5). Only
- * features the listing actually has are shown — a wall of crossed-out "no"
- * chips says nothing a buyer needs.
+ * Features grouped Interior / Building / Outdoor / Financing (PRD A5), as quiet
+ * sentence-case lists with the bronze dash the highlights use — boxed uppercase
+ * tags stay reserved for status (design-critic, step 07). Only features the
+ * listing actually has are shown. Registration and the occupancy permit are
+ * NOT repeated here: the legal block states them with their exact status.
  */
 type Group = "interior" | "building" | "outdoor" | "legal";
 
@@ -34,8 +35,6 @@ export async function FeatureGroups({ listing }: { listing: ListingDetail }) {
   add("outdoor", f.frenchBalcony, "frenchBalcony");
   add("outdoor", f.garden, "garden");
   add("outdoor", f.pool, "pool");
-  add("legal", listing.legal.registration === "registered", "registered");
-  add("legal", listing.legal.occupancyPermit, "occupancyPermit");
   add("legal", listing.vatRefundEligible, "vatRefund");
   add("legal", listing.mortgageEligible, "mortgage");
   add("legal", listing.developerInstallments, "installments");
@@ -46,19 +45,20 @@ export async function FeatureGroups({ listing }: { listing: ListingDetail }) {
 
   return (
     <section aria-labelledby="features-heading">
-      <h2 id="features-heading" className="font-serif text-h2">
+      <h2 id="features-heading" className="font-display text-h2">
         {t("features")}
       </h2>
-      <div className="mt-8 grid gap-8 sm:grid-cols-2">
+      <div className="mt-8 grid gap-x-8 gap-y-10 sm:grid-cols-2 xl:grid-cols-4">
         {present.map((group) => (
           <div key={group}>
             <h3 className="font-sans text-label font-medium uppercase tracking-[0.12em] text-stone-text">
               {t(`featureGroups.${group}`)}
             </h3>
-            <ul className="mt-3 flex flex-wrap gap-2">
+            <ul className="mt-4 flex flex-col gap-2.5">
               {groups[group].map((label) => (
-                <li key={label}>
-                  <Badge>{label}</Badge>
+                <li key={label} className="flex gap-3 text-body text-ink">
+                  <span aria-hidden="true" className="mt-3 h-px w-4 shrink-0 bg-bronze-text" />
+                  {label}
                 </li>
               ))}
             </ul>

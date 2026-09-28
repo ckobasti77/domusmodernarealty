@@ -3,7 +3,10 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import type { ListingDetail } from "@/convex/lib/dto";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
+import { fixTypography } from "@/lib/format";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
+
+const NBSP = "\u00A0";
 
 /**
  * Legal status (PRD A5, CONTENT "Compliance"): registration, legalization,
@@ -47,7 +50,7 @@ export async function LegalBlock({
 
   return (
     <section aria-labelledby="legal-heading">
-      <h2 id="legal-heading" className="font-serif text-h2">
+      <h2 id="legal-heading" className="font-display text-h2">
         {t("legal")}
       </h2>
 
@@ -58,10 +61,16 @@ export async function LegalBlock({
         <p className="text-small text-ink">
           {verified ? (
             <>
-              <strong className="font-medium">{t("verifiedDocs")}.</strong> {t("legalBlock.verifiedNote")}{" "}
-              {t("verifiedDocsHint", {
-                date: format.dateTime(new Date(legal.docsVerifiedAt!), { dateStyle: "medium" }),
-              })}
+              <strong className="font-medium">{t("verifiedDocs")}.</strong>{" "}
+              {fixTypography(
+                t("legalBlock.verifiedNote", {
+                  // The date sits mid-sentence, so its own spaces must not break
+                  // ("8. / septembar"), and no trailing full stop is doubled.
+                  date: format
+                    .dateTime(new Date(legal.docsVerifiedAt!), { day: "numeric", month: "long", year: "numeric" })
+                    .replace(/\s+/g, NBSP),
+                }),
+              )}
             </>
           ) : (
             t("legalBlock.unverifiedNote")
@@ -83,8 +92,8 @@ export async function LegalBlock({
           <h3 className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">
             {t("legalBlock.commission")}
           </h3>
-          <p lang={commissionText.lang} className="mt-2 max-w-prose text-small text-ink">
-            {commissionText.text}{" "}
+          <p lang={commissionText.lang} className="mt-2 max-w-[65ch] text-small text-ink">
+            {fixTypography(commissionText.text)}{" "}
             <Link href="/terms" prefetch={false} className="underline decoration-bronze underline-offset-4">
               {t("legalBlock.termsLink")}
             </Link>

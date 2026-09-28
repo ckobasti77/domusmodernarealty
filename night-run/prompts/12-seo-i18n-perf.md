@@ -20,6 +20,7 @@
    - date/number/currency formatting per locale.
    - `npm run i18n:check` must pass.
 6. **Performance:**
+   - Step 04 added a temporary `prefetch={false}` to internal links whose routes did not exist yet (DECISIONS [04]). Every route exists now: remove it wherever the target route exists, so navigation prefetches normally.
    - Production build analysis (first-load JS per route; list the heaviest chunks).
    - Remove unneeded client JS (move to server components), lazy-load heavy modules, set correct `sizes`, use AVIF/WebP, preconnect to tiles/unsplash as needed, fonts `display: swap` with adjusted fallbacks.
    - Run Lighthouse (use `npx lighthouse` with `CHROME_PATH` pointing to Playwright's chromium, or Playwright + web-vitals) for `/sr`, `/sr/nekretnine` and one listing, on desktop + mobile emulation.

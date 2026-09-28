@@ -31,7 +31,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         <Container>
           <Eyebrow tone="accentDark">{t("heroEyebrow")}</Eyebrow>
 
-          <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-light text-ivory">
+          <h1 className="mt-6 max-w-[16ch] font-display text-display-xl font-normal text-ivory">
             <SplitReveal as="span" className="block">
               {t("heroHeadline")}
             </SplitReveal>
@@ -48,7 +48,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             </Link>
           </div>
 
-          <p className="mt-16 font-mono text-label uppercase text-stone">{t("scrollCue")}</p>
+          <div className="mt-16 flex items-center gap-4">
+            {/* The thin line of DESIGN 6.2; `mist` is the muted-on-ink token,
+                `stone` is documented as decorative only. */}
+            <span aria-hidden="true" className="block h-12 w-px bg-linear-to-b from-bronze to-transparent" />
+            <p className="font-mono text-label uppercase text-mist">{t("scrollCue")}</p>
+          </div>
         </Container>
       </Section>
 
@@ -71,12 +76,12 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
           {/* Glyph specimen: both families, all three scripts. */}
           <Grid className="mt-16">
             <div className="col-span-4 lg:col-span-6">
-              <p className="font-mono text-label uppercase text-stone-text">Cormorant Garamond</p>
-              <p className="mt-3 font-display text-h2 font-light">Čačak Ćuprija Šabac Žabalj Đakovica</p>
-              <p lang="ru" className="font-display text-h2 font-light">
+              <p className="font-mono text-label uppercase text-stone-text">EB Garamond</p>
+              <p className="mt-3 font-display text-h2 font-normal">Čačak Ćuprija Šabac Žabalj Đakovica</p>
+              <p lang="ru" className="font-display text-h2 font-normal">
                 Привет Београд Москва
               </p>
-              <p lang="de" className="font-display text-h2 font-light">
+              <p lang="de" className="font-display text-h2 font-normal">
                 Grüße Österreich Zürich
               </p>
             </div>
@@ -103,16 +108,21 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
                 title={t("numbersHeading")}
                 size="h2"
               />
-              <dl className="mt-10 grid grid-cols-2 gap-8">
+              {/* DESIGN 9 asks for four. The values are placeholders until step 09
+                  reads them from `settings.stats`, where each one carries its own
+                  `isDemo` flag. */}
+              <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-10">
                 {[
-                  { value: 248, label: t("featuredHeading") },
-                  { value: 1460, label: t("neighborhoodsHeading") },
+                  { value: 12, label: t("numbersYears") },
+                  { value: 248, label: t("numbersSold") },
+                  { value: 410, label: t("numbersClients") },
+                  { value: 47, label: t("numbersDaysToSell") },
                 ].map((item) => (
                   <div key={item.label}>
-                    <dd className="font-display text-display-m font-light">
+                    <dd className="font-display text-display-m font-normal">
                       <Counter value={item.value} />
                     </dd>
-                    <dt className="mt-2 max-w-[18ch] font-mono text-label uppercase text-stone-text">
+                    <dt className="mt-2 max-w-[16ch] font-mono text-label uppercase text-stone-text">
                       {item.label}
                     </dt>
                   </div>

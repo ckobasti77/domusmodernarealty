@@ -62,7 +62,7 @@ export function Price({
       <p data-numeric className={cn("font-sans font-medium", SIZE[size])}>
         {formatPrice(price, locale)}
         {transaction === "rent" ? (
-          <span className={cn("ml-1 font-normal", muted)}>{tUnits("perMonth")}</span>
+          <span className={cn("ml-1 text-small font-normal", muted)}>{tUnits("perMonth")}</span>
         ) : null}
       </p>
 
@@ -76,7 +76,7 @@ export function Price({
 
       {pricePerM2 !== undefined && pricePerM2 > 0 ? (
         <p data-numeric className={cn("text-small", muted)}>
-          {formatPricePerM2(pricePerM2, locale)}
+          {formatPricePerM2(pricePerM2, locale, tUnits("m2"))}
         </p>
       ) : null}
     </div>

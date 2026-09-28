@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { CheckboxField } from "./Field";
+import { textLinkClasses } from "./TextLink";
 
 /**
  * Cookie banner. Opt-in, per category, and it never appears for a visitor who
@@ -53,16 +54,24 @@ export function CookieConsent() {
       // The settings list can overflow on a short phone; Lenis must not take it.
       data-lenis-prevent
       className={cn(
-        "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[85svh] overflow-y-auto",
+        // Capped at 38svh on a phone: at 85svh the bar ate 40% of the screen
+        // and buried the hero's CTAs and scroll cue.
+        "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[38svh] overflow-y-auto md:max-h-[70svh]",
         "border-t border-hairline-dark bg-ink text-ivory",
       )}
     >
       <div className="mx-auto flex max-w-content flex-col gap-6 px-gutter py-6 md:px-gutter-md lg:flex-row lg:items-start lg:gap-12 lg:px-gutter-lg lg:py-8">
         <div className="flex-1">
-          <h2 id={headingId} className="font-display text-h3 font-normal text-ivory">
+          {/* The serif title is a luxury flourish on a compliance notice; at
+              390px it costs a line the body needs. Kept as the accessible name
+              at every size, shown from md up. */}
+          <h2
+            id={headingId}
+            className="eyebrow text-bronze md:font-display md:text-h3 md:font-normal md:normal-case md:tracking-normal md:text-ivory"
+          >
             {t("bannerHeading")}
           </h2>
-          <p className="mt-3 max-w-[64ch] text-small text-mist">
+          <p className="mt-2 max-w-[64ch] text-small text-mist md:mt-3">
             {t("bannerBody")}{" "}
             <Link
               href="/privacy"
@@ -102,25 +111,40 @@ export function CookieConsent() {
           ) : null}
         </div>
 
-        <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
-          <Button variant="inverse" size="compact" onClick={() => save(ALL_CATEGORIES)}>
+        {/* Both choices get identical weight. An emphasised "accept all" beside
+            a quiet "necessary only" is a dark pattern under EDPB guidance, and a
+            quiet-luxury site should not be shouting either way. */}
+        <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:w-[260px] lg:flex-col">
+          <Button
+            variant="outlineDark"
+            onClick={() => save(ALL_CATEGORIES)}
+            className="w-full justify-center"
+          >
             {t("acceptAll")}
           </Button>
-          <Button variant="outlineDark" size="compact" onClick={() => save(NECESSARY_ONLY)}>
+          <Button
+            variant="outlineDark"
+            onClick={() => save(NECESSARY_ONLY)}
+            className="w-full justify-center"
+          >
             {t("necessaryOnly")}
           </Button>
           {showSettings ? (
             <Button
               variant="outlineDark"
-              size="compact"
               onClick={() => save({ necessary: true, analytics, marketing })}
+              className="w-full justify-center"
             >
               {t("save")}
             </Button>
           ) : (
-            <Button variant="ghost" size="compact" onClick={() => setShowSettings(true)}>
-              <span className="text-ivory">{t("settings")}</span>
-            </Button>
+            <button
+              type="button"
+              onClick={() => setShowSettings(true)}
+              className={textLinkClasses("dark", "self-center py-2 text-small")}
+            >
+              {t("settings")}
+            </button>
           )}
         </div>
       </div>

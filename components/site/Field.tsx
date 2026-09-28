@@ -24,7 +24,10 @@ import { cn } from "@/lib/utils";
 const CONTROL = [
   "peer w-full min-h-11 border-0 border-b bg-transparent px-0 pb-2 pt-6",
   "font-sans text-body text-ink placeholder:text-transparent",
-  "border-hairline-light transition-colors duration-200 ease-out",
+  // `border-stone-text`, not the 12% hairline: an input's underline is a UI
+  // component boundary, and WCAG 1.4.11 wants 3:1 against the surface. The
+  // hairline is ~1.2:1 and effectively invisible on ivory-2.
+  "border-stone-text transition-colors duration-200 ease-out",
   "focus:border-bronze focus:outline-none",
   "aria-[invalid=true]:border-danger",
   "disabled:opacity-50",
@@ -162,9 +165,12 @@ export function SelectField({ label, hint, error, className, children, ...rest }
         >
           {children}
         </select>
+        {/* A select always has a value, so its label is permanently in the
+            floated position — same size, same place, same case as every other
+            label in the form. Two label systems in one form is a tell. */}
         <label
           htmlFor={id}
-          className="pointer-events-none absolute left-0 top-1 font-sans text-label uppercase tracking-[0.08em] text-stone-text"
+          className="pointer-events-none absolute left-0 top-1 origin-left scale-[0.78] font-sans text-body text-stone-text"
         >
           {label}
         </label>
@@ -199,7 +205,7 @@ export function CheckboxField({ label, hint, error, className, children, ...rest
           aria-invalid={error !== undefined}
           aria-describedby={describedBy}
           className={cn(
-            "mt-0.5 size-5 shrink-0 appearance-none border border-hairline-light bg-paper",
+            "mt-0.5 size-5 shrink-0 appearance-none border border-stone-text bg-paper",
             "transition-colors duration-150 ease-out",
             "checked:border-bronze-text checked:bg-bronze-text",
             "aria-[invalid=true]:border-danger",
@@ -237,7 +243,7 @@ export function RadioField({
   const { messageId, describedBy } = useFieldIds(error, hint);
   return (
     <fieldset className={cn("w-full", className)} aria-describedby={describedBy}>
-      <legend className="font-sans text-label uppercase tracking-[0.08em] text-stone-text">
+      <legend className="origin-left scale-[0.78] font-sans text-body text-stone-text">
         {label}
       </legend>
       <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
@@ -249,7 +255,7 @@ export function RadioField({
               value={option.value}
               defaultChecked={option.value === defaultValue}
               className={cn(
-                "size-5 shrink-0 appearance-none rounded-full border border-hairline-light bg-paper",
+                "size-5 shrink-0 appearance-none rounded-full border border-stone-text bg-paper",
                 "transition-colors duration-150 ease-out",
                 "checked:border-[6px] checked:border-bronze-text",
                 // `aria-invalid` is not valid on role=radio, so the invalid

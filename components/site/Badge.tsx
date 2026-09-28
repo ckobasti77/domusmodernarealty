@@ -9,17 +9,21 @@ import { cn } from "@/lib/utils";
 
 export type BadgeProps = {
   children: ReactNode;
-  /** `accent` is bronze; the status tones are for sold/reserved ribbons. */
-  tone?: "light" | "dark" | "accent" | "reserved" | "closed";
+  /**
+   * Three tones, deliberately. Five hairline boxes in four near-identical
+   * values read as one badge glitching (design-critic, step 04). `accent` is
+   * reserved for Ekskluzivno; `status` is the filled ribbon PRD A5 requires for
+   * Rezervisano / Prodato / Izdato, which must survive on top of a photograph.
+   */
+  tone?: "light" | "dark" | "accent" | "status";
   className?: string;
 };
 
 const TONE: Record<NonNullable<BadgeProps["tone"]>, string> = {
   light: "border-hairline-light text-ink",
   dark: "border-hairline-dark text-ivory",
-  accent: "border-bronze text-bronze-text",
-  reserved: "border-warning text-warning-text",
-  closed: "border-danger text-danger",
+  accent: "border-bronze-text text-bronze-text",
+  status: "border-ink bg-ink text-ivory",
 };
 
 export function Badge({ children, tone = "light", className }: BadgeProps) {

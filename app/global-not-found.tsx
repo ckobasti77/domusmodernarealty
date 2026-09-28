@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cormorant, manrope } from "@/app/fonts";
+import { displaySerif, manrope } from "@/app/fonts";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
@@ -19,10 +19,10 @@ export const metadata: Metadata = {
  */
 export default function GlobalNotFound() {
   return (
-    <html lang="sr-Latn" className={`${cormorant.variable} ${manrope.variable}`}>
+    <html lang="sr-Latn" className={`${displaySerif.variable} ${manrope.variable}`}>
       <body className="flex min-h-svh flex-col items-center justify-center bg-ink px-6 text-center text-ivory">
         <p className="font-sans text-eyebrow uppercase text-bronze">404</p>
-        <h1 className="mt-6 font-display text-display-m font-light">Stranica nije nađena</h1>
+        <h1 className="mt-6 font-display text-display-m font-normal">Stranica nije nađena</h1>
         <p className="mt-5 max-w-[46ch] font-sans text-body text-mist">
           Adresa ne postoji ili je sadržaj uklonjen.
           <br />

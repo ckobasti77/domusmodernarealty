@@ -98,20 +98,28 @@ export function PropertyCard({
           alt={title.text}
         />
 
+        {/* DESIGN 5 scrims the bottom 40% of dark-section media, but the badges
+            and the favorite sit at the TOP — over whatever the photograph happens
+            to be there. This is their scrim. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-ink/60 to-transparent"
+        />
+
         {/* Status and feature badges. Text, not colour, carries the meaning. */}
-        <div className="pointer-events-none absolute left-4 top-4 flex flex-wrap gap-2">
+        <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2">
           {listing.status === "reserved" ? (
-            <Badge tone="reserved">{tListing("statusReserved")}</Badge>
+            <Badge tone="status">{tListing("statusReserved")}</Badge>
           ) : null}
-          {listing.status === "sold" ? <Badge tone="closed">{tListing("statusSold")}</Badge> : null}
+          {listing.status === "sold" ? <Badge tone="status">{tListing("statusSold")}</Badge> : null}
           {listing.status === "rented" ? (
-            <Badge tone="closed">{tListing("statusRented")}</Badge>
+            <Badge tone="status">{tListing("statusRented")}</Badge>
           ) : null}
           {listing.isExclusive ? <Badge tone="dark">{t("exclusive")}</Badge> : null}
           {listing.hasTour ? <Badge tone="dark">{t("hasTour")}</Badge> : null}
         </div>
 
-        <div className="absolute right-2 top-2 z-20">
+        <div className="absolute right-4 top-4 z-20">
           <FavoriteButton listingId={listing._id} title={title.text} tone="dark" />
         </div>
       </div>
@@ -142,23 +150,21 @@ export function PropertyCard({
         />
 
         {/* Meta row, hairline-separated. `divide-x` gives one rule per boundary. */}
-        <dl className="mt-1 flex flex-wrap items-center gap-y-2 divide-x divide-hairline-light text-small text-stone-text">
+        {/* DESIGN 4: "meta row with hairline dividers". `divide-x` needs a
+            non-wrapping flex row to draw them, so the row scrolls rather than
+            wraps on a narrow card. */}
+        <dl className="mt-1 flex items-center divide-x divide-hairline-light text-small text-stone-text">
           <MetaItem label={tListing("area")} className="pr-4">
-            {formatArea(listing.areaM2, locale)}
+            {formatArea(listing.areaM2, locale, tUnits("m2"))}
           </MetaItem>
           <MetaItem label={tListing("rooms")} className="px-4">
             {t("rooms", { rooms: listing.rooms })}
           </MetaItem>
-          <MetaItem label={tListing("floor")} className="px-4">
+          <MetaItem label={tListing("floor")} className="pl-4">
             {listing.totalFloors !== undefined
               ? t("floorOf", { floor: String(listing.floor), total: listing.totalFloors })
               : String(listing.floor)}
           </MetaItem>
-          {listing.photoCount > 1 ? (
-            <MetaItem label={tUnits("m2")} className="px-4" srLabel={false}>
-              <span data-numeric>{listing.photoCount}</span>
-            </MetaItem>
-          ) : null}
         </dl>
 
         <p className="font-mono text-label uppercase text-stone-text">

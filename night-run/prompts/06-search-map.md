@@ -4,6 +4,10 @@
 **Skills:** `vercel-react-best-practices`, `core-web-vitals`, `accessibility`, `convex` (search/pagination).
 
 ## Tasks
+0. **Demo photo pool refresh (do this first, before any UI work).** Overnight, 94 more verified Unsplash photos were added in `docs/assets/demo-media-additions.json` (same shape as `demo-media.json`; each one was opened on its own Unsplash page, license-checked and visually checked for people/logos). The current pool (90 photos for ~220 gallery slots) makes galleries repeat across listings.
+   - Merge the additions into the `unsplash` array of `docs/assets/demo-media.json` (skip any URL already present), then delete `demo-media-additions.json` and append an "Additions (2026-09-28)" note with the new per-category counts to `docs/assets/DEMO-MEDIA.md`.
+   - Run `node scripts/verify-demo-media.mjs` (HEAD-checks every URL and regenerates `convex/seed/media.generated.ts`), `npx convex dev --once`, then `npx convex run seed:all '{"force":true}'` (wipes and rebuilds `isDemo` rows only).
+   - Report in your done file: covers distinct (yes/no) and gallery reuse before vs after (max times one photo is used). If the seed's photo plan needs a small tweak to spread the bigger pool well, make it.
 1. **Route and state.**
    - Localized route `/[locale]/properties` (`/sr/nekretnine` …).
    - A `lib/search-params.ts` schema (zod) parses/serializes every filter from PRD A3. It is the single source of truth, shared by the UI, server fetch and Convex args.
@@ -36,6 +40,7 @@
    - no console errors
 
 ## Definition of done
+- [ ] Demo photo pool refreshed (Task 0): additions merged, `verify-demo-media` passed, re-seeded; reuse before/after reported.
 - [ ] Every PRD A3 filter works, sort works, the URL is shareable, and the back button works.
 - [ ] Map pins/clusters are in sync with the list; hover highlight works; the move-to-search toggle works.
 - [ ] Mobile layout is verified in screenshots (390): sheet, list/map toggle.

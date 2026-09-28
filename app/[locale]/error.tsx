@@ -12,7 +12,7 @@ export default function LocaleError({ retry }: { error: Error; retry: () => void
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-ink px-gutter text-center text-ivory">
       <p className="font-mono text-label uppercase text-bronze">500</p>
-      <h1 className="mt-6 font-display text-display-m font-light">{t("genericHeading")}</h1>
+      <h1 className="mt-6 font-display text-display-m font-normal">{t("genericHeading")}</h1>
       <p className="mt-5 max-w-[44ch] text-body text-mist">{t("genericBody")}</p>
       <button
         type="button"

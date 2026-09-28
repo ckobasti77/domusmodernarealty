@@ -11,7 +11,7 @@ export default async function LocaleNotFound() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-ink px-gutter text-center text-ivory">
       <p className="font-mono text-label uppercase text-bronze">404</p>
-      <h1 className="mt-6 font-display text-display-m font-light">{t("notFoundHeading")}</h1>
+      <h1 className="mt-6 font-display text-display-m font-normal">{t("notFoundHeading")}</h1>
       <p className="mt-5 max-w-[44ch] text-body text-mist">{t("notFoundBody")}</p>
       <Link
         href="/"

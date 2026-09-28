@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, type ElementType, type ReactNode } from "react";
+import { fixOrphans } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DURATION, gsap, MOTION_QUERIES, SplitText, STAGGER, useGSAP } from "./gsap";
 
@@ -97,6 +98,10 @@ export function SplitReveal({
     { scope: root, dependencies: [stagger, delay] },
   );
 
+  // Serbian never strands a one-letter preposition at a line end, and the
+  // usual remedy (`text-wrap: balance`) is forbidden on a split element.
+  const content = typeof children === "string" ? fixOrphans(children) : children;
+
   return (
     <Tag className={cn("relative", className)}>
       {/* The accessible copy. Never split, never animated. */}
@@ -104,7 +109,7 @@ export function SplitReveal({
       {/* The animated copy starts invisible so the un-split text never flashes
           before the fonts resolve; every matchMedia branch sets it to 1. */}
       <span ref={root} aria-hidden="true" className="block opacity-0">
-        {children}
+        {content}
       </span>
     </Tag>
   );

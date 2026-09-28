@@ -45,7 +45,16 @@ export function Grid({
   className?: string;
 }) {
   return (
-    <Tag className={cn("grid grid-cols-4 gap-x-gutter gap-y-10 lg:grid-cols-12 lg:gap-x-gutter-lg", className)}>
+    <Tag
+      className={cn(
+        // The COLUMN gutter is deliberately narrower than the page gutter: at
+        // 48px on a 1440 canvas the 12 columns are only 68px wide, so any span
+        // under 4 columns is unusable and every band collapses into a
+        // half-page block. 24px gives ~92px columns and real composition.
+        "grid grid-cols-4 gap-x-6 gap-y-10 lg:grid-cols-12",
+        className,
+      )}
+    >
       {children}
     </Tag>
   );

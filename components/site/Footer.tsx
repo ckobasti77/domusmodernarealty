@@ -88,17 +88,19 @@ export async function Footer() {
                   <dt className="sr-only">{tCommon("brand")}</dt>
                   <dd>{settings.address}</dd>
                 </div>
-                <div className="flex gap-2">
-                  <dt>{t("registryNumber")}:</dt>
+                {/* Art. 18: the registry number must appear in full. The strings
+                    carry ICU placeholders, so they MUST be interpolated — printing
+                    the raw key leaves `{number}` on the legal line, and the ru/de
+                    word order differs. */}
+                <div>
+                  <dt className="sr-only">{t("legalHeading")}</dt>
                   <dd data-numeric className="text-ivory">
-                    {settings.registryNo}
+                    {t("registryNumber", { number: settings.registryNo })}
                   </dd>
                 </div>
-                <div className="flex gap-2">
-                  <dt>{t("companyId")}:</dt>
-                  <dd data-numeric>
-                    PIB {settings.pib} · MB {settings.mb}
-                  </dd>
+                <div>
+                  <dt className="sr-only">{t("companyId")}</dt>
+                  <dd data-numeric>{t("companyId", { pib: settings.pib, mb: settings.mb })}</dd>
                 </div>
                 {settings.insurance !== undefined ? (
                   <div>

@@ -72,7 +72,7 @@ export function Header() {
         // whole header to z-menu while the overlay is open is the fix; the bar
         // itself never overlaps the banner, so nothing else changes.
         menuOpen ? "z-(--z-menu)" : "z-(--z-header)",
-        solid ? "border-b border-hairline-dark bg-ink/95" : "border-b border-transparent bg-transparent",
+        solid ? "border-b border-hairline-dark bg-ink" : "border-b border-transparent bg-transparent",
       )}
     >
       <div className="mx-auto flex max-w-bleed items-center justify-between gap-6 px-gutter py-5 md:px-gutter-md lg:px-gutter-lg">
@@ -129,7 +129,7 @@ export function Header() {
             ) : null}
           </Link>
 
-          <LocaleSwitcher className="hidden md:block" />
+          <LocaleSwitcher className="hidden lg:block" />
 
           <button
             type="button"
@@ -278,7 +278,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
                 href={item.href}
                 prefetch={false}
                 onClick={onClose}
-                className="flex min-h-14 items-center py-3 font-display text-display-m font-light text-ivory"
+                className="flex min-h-14 items-center py-3 font-display text-display-m font-normal text-ivory"
               >
                 {t(item.key)}
               </Link>
@@ -289,15 +289,17 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
               href="/favorites"
               prefetch={false}
               onClick={onClose}
-              className="flex min-h-14 items-center py-3 font-display text-display-m font-light text-ivory"
+              className="flex min-h-14 items-center py-3 font-display text-display-m font-normal text-ivory"
             >
               {t("favorites")}
             </Link>
           </li>
         </ul>
 
+        {/* Full-width serif rows, not four 15x11px codes jammed beside the
+            hamburger. Each row clears the 44px target comfortably. */}
         <div data-menu-item className="mt-10">
-          <LocaleSwitcher />
+          <LocaleSwitcher variant="stacked" />
         </div>
       </nav>
     </div>

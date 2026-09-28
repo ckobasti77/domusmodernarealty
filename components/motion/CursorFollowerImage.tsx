@@ -97,7 +97,7 @@ export function CursorFollowerImage({ items, className }: CursorFollowerImagePro
         {items.map((item) => (
           <li key={item.id} data-row-id={item.id} className="hairline-b-dark">
             <Row href={item.href}>
-              <span className="font-display text-h2 font-light">{item.label}</span>
+              <span className="font-display text-h2 font-normal">{item.label}</span>
               {item.meta !== undefined ? (
                 <span data-numeric className="font-mono text-label uppercase text-mist">
                   {item.meta}

@@ -89,7 +89,52 @@ test("both font families expose their CSS variables", async ({ page }) => {
   expect(fonts.display).not.toBe("");
   expect(fonts.sans).not.toBe("");
   expect(fonts.mono).not.toBe("");
-  expect(fonts.h1Family).toContain("Cormorant");
+  expect(fonts.h1Family).toContain("EB Garamond");
+});
+
+/**
+ * Regression guard for the defect that forced the display face to change in
+ * step 04: Google's Cormorant Garamond latin-ext subset ships precomposed
+ * UPPERCASE Č Ć Š Ž but no precomposed lowercase č š ž, so Chrome composed them
+ * from U+030C and parked the caron at cap height — the mark floated detached
+ * above the letter at every size.
+ *
+ * The tell is measurable: with a real designed glyph the lowercase caron sits
+ * well below the uppercase one. With a fallback combining mark the two ascents
+ * are the same. Anything under a 10% gap means the glyph is being synthesised.
+ */
+test("the display face has designed lowercase Serbian diacritics", async ({ page }) => {
+  await page.goto("/sr");
+  await dismissConsent(page);
+  await page.evaluate(() => document.fonts.ready);
+
+  const metrics = await page.evaluate(() => {
+    const context = document.createElement("canvas").getContext("2d");
+    if (context === null) return null;
+    const family = getComputedStyle(document.documentElement)
+      .getPropertyValue("--font-display-family")
+      .trim();
+    context.font = `400 200px ${family}`;
+    const ascent = (text: string) => context.measureText(text).actualBoundingBoxAscent;
+    return {
+      base: { c: ascent("c"), s: ascent("s"), z: ascent("z") },
+      lower: { c: ascent("č"), s: ascent("š"), z: ascent("ž") },
+      upper: { c: ascent("Č"), s: ascent("Š"), z: ascent("Ž") },
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  if (metrics === null) return;
+
+  for (const key of ["c", "s", "z"] as const) {
+    // The mark exists at all...
+    expect(metrics.lower[key], `${key}: caron adds no height`).toBeGreaterThan(metrics.base[key] + 10);
+    // ...and it is the lowercase one, not a cap-height fallback.
+    expect(
+      metrics.lower[key],
+      `${key}: lowercase caron sits at cap height - the precomposed glyph is missing`,
+    ).toBeLessThan(metrics.upper[key] * 0.9);
+  }
 });
 
 test("/admin/login renders inside the admin root layout", async ({ page }) => {

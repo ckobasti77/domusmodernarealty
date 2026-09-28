@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { SplitReveal } from "@/components/motion/SplitReveal";
+import { fixOrphans } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Eyebrow } from "./Eyebrow";
 
@@ -49,7 +50,7 @@ export function SectionHeading({
   const Heading = `h${level}` as "h1" | "h2" | "h3";
 
   return (
-    <div className={cn("flex flex-col gap-6", className)}>
+    <div className={cn("flex flex-col gap-4", className)}>
       {eyebrow !== undefined ? (
         <Eyebrow index={eyebrowIndex} tone={tone === "dark" ? "accentDark" : "accent"}>
           {eyebrow}
@@ -60,7 +61,7 @@ export function SectionHeading({
         <Heading
           id={id}
           className={cn(
-            "max-w-[22ch] font-display font-light",
+            "max-w-[22ch] font-display font-normal",
             SIZE[size],
             tone === "dark" ? "text-ivory" : "text-ink",
           )}
@@ -75,11 +76,11 @@ export function SectionHeading({
       {lede !== undefined ? (
         <p
           className={cn(
-            "max-w-[56ch] text-body-l",
+            "mt-4 max-w-[56ch] text-body-l lg:mt-6",
             tone === "dark" ? "text-mist" : "text-stone-text",
           )}
         >
-          {lede}
+          {typeof lede === "string" ? fixOrphans(lede) : lede}
         </p>
       ) : null}
     </div>

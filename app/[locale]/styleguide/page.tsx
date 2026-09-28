@@ -90,12 +90,43 @@ const SWATCHES = [
   { name: "warning", value: "#B7852F" },
 ] as const;
 
+/**
+ * Every specimen line carries Č Ć Š Ž Đ. The old one used a diacritic-free
+ * string, which is precisely why the display face's broken lowercase carons
+ * survived a full review pass. The token values are printed beside each step so
+ * a regression in `app/globals.css` is visible here.
+ */
 const SCALE = [
-  { token: "display-xl", cls: "text-display-xl" },
-  { token: "display-l", cls: "text-display-l" },
-  { token: "display-m", cls: "text-display-m" },
-  { token: "h2", cls: "text-h2" },
-  { token: "h3", cls: "text-h3" },
+  {
+    token: "display-xl",
+    cls: "text-display-xl",
+    spec: "clamp(3.5rem, 9vw, 9.5rem) / 0.92-1.02 / -0.02em",
+    text: "Vračar, Dedinje, Niš",
+  },
+  {
+    token: "display-l",
+    cls: "text-display-l",
+    spec: "clamp(2.75rem, 6vw, 6rem) / 0.95 / -0.015em",
+    text: "Čačak Ćuprija Šabac Žabalj Đakovica",
+  },
+  {
+    token: "display-m",
+    cls: "text-display-m",
+    spec: "clamp(2.25rem, 4.2vw, 4rem) / 1.0 / -0.01em",
+    text: "Kruševac, Kragujevac, Užice, Šid",
+  },
+  {
+    token: "h2",
+    cls: "text-h2",
+    spec: "clamp(1.75rem, 2.6vw, 2.5rem) / 1.1",
+    text: "Stan u Đušinoj, pogled na Košutnjak",
+  },
+  {
+    token: "h3",
+    cls: "text-h3",
+    spec: "1.5rem / 1.25",
+    text: "Đorđa Vajferta 14, Vračar - 78,5 m²",
+  },
 ] as const;
 
 /** One line per script so a missing glyph subset is visible immediately. */
@@ -137,6 +168,7 @@ export default async function StyleguidePage({
   const tFilters = await getTranslations({ locale, namespace: "filters" });
   const tCommon = await getTranslations({ locale, namespace: "common" });
   const tHome = await getTranslations({ locale, namespace: "home" });
+  const tConsent = await getTranslations({ locale, namespace: "consent" });
 
   const { cards, galleries } = await loadCards();
 
@@ -146,7 +178,7 @@ export default async function StyleguidePage({
       <Section tone="ink" className="pt-40 lg:pt-56">
         <Container>
           <SectionHeading
-            eyebrow={t("noindexNote")}
+            eyebrow={t("noindexShort")}
             title={t("title")}
             lede={t("lede")}
             level={1}
@@ -157,7 +189,7 @@ export default async function StyleguidePage({
       </Section>
 
       {/* ------------------------------------------------------------ palette */}
-      <Section tone="ivory" aria-labelledby="sg-palette">
+      <Section tone="ivory" aria-labelledby="sg-palette" className="hairline-t">
         <Container>
           <SectionHeading id="sg-palette" eyebrow={t("tokens")} title={t("palette")} size="display-m" />
           <ul className="mt-12 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
@@ -184,7 +216,7 @@ export default async function StyleguidePage({
             role="region"
             aria-label={t("contrast")}
           >
-            <table className="w-full min-w-[34rem] border-collapse text-small">
+            <table className="w-full min-w-[30rem] border-collapse text-small">
               <caption className="sr-only">{t("contrast")}</caption>
               <thead>
                 <tr className="hairline-b">
@@ -208,9 +240,9 @@ export default async function StyleguidePage({
                     <td data-numeric className="py-2 pr-4">
                       {row.ratio}:1 · AA
                     </td>
-                    <td className="py-2">
+                    <td className="py-2 text-right">
                       <span
-                        className="inline-block px-3 py-1"
+                        className="inline-block min-w-24 px-3 py-1 text-center"
                         style={{ backgroundColor: row.on, color: row.hex }}
                       >
                         {row.use}
@@ -225,15 +257,18 @@ export default async function StyleguidePage({
       </Section>
 
       {/* -------------------------------------------------------- typography */}
-      <Section tone="ivory-2" aria-labelledby="sg-type">
+      <Section tone="ivory-2" aria-labelledby="sg-type" className="hairline-t">
         <Container>
           <SectionHeading id="sg-type" eyebrow={t("tokens")} title={t("typography")} size="display-m" />
 
           <dl className="mt-12 space-y-8">
             {SCALE.map((step) => (
               <div key={step.token} className="hairline-b pb-6">
-                <dt className="font-mono text-label uppercase text-stone-text">{step.token}</dt>
-                <dd className={`mt-3 font-display font-light ${step.cls}`}>{tHome("heroHeadline")}</dd>
+                <dt className="flex flex-wrap items-baseline gap-x-4 font-mono text-label uppercase text-stone-text">
+                  <span>{step.token}</span>
+                  <span className="normal-case tracking-normal">{step.spec}</span>
+                </dt>
+                <dd className={`mt-3 font-display font-normal ${step.cls}`}>{step.text}</dd>
               </div>
             ))}
             <div className="hairline-b pb-6">
@@ -253,9 +288,9 @@ export default async function StyleguidePage({
           <h3 className="mt-16 font-display text-h3">{t("specimen")}</h3>
           <div className="mt-6 grid gap-10 lg:grid-cols-2">
             <div>
-              <p className="font-mono text-label uppercase text-stone-text">Cormorant Garamond</p>
+              <p className="font-mono text-label uppercase text-stone-text">EB Garamond</p>
               {SPECIMENS.map((specimen) => (
-                <p key={specimen.lang} lang={specimen.lang} className="mt-3 font-display text-h3 font-light">
+                <p key={specimen.lang} lang={specimen.lang} className="mt-3 font-display text-h3 font-normal">
                   {specimen.text}
                 </p>
               ))}
@@ -276,7 +311,7 @@ export default async function StyleguidePage({
       </Section>
 
       {/* ----------------------------------------------------------- controls */}
-      <Section tone="ivory" aria-labelledby="sg-buttons">
+      <Section tone="ivory" aria-labelledby="sg-buttons" className="hairline-t">
         <Container>
           <SectionHeading id="sg-buttons" eyebrow={t("tokens")} title={t("buttons")} size="display-m" />
 
@@ -295,12 +330,18 @@ export default async function StyleguidePage({
             </MagneticButton>
           </div>
 
-          <div className="mt-8 bg-ink p-8">
-            <div className="flex flex-wrap items-center gap-4">
-              <Button variant="inverse">{tHome("heroCta")}</Button>
-              <Button variant="outlineDark">{tListing("bookViewing")}</Button>
+          <div className="mt-8 bg-ink px-gutter py-10 md:px-gutter-md">
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button variant="inverse" className="w-full sm:w-auto">
+                {tHome("heroCta")}
+              </Button>
+              <Button variant="outlineDark" className="w-full sm:w-auto">
+                {tListing("bookViewing")}
+              </Button>
             </div>
           </div>
+
+          <p className="mt-4 max-w-[62ch] text-small text-stone-text">{t("compactNote")}</p>
 
           <h3 className="mt-16 font-display text-h3">{t("links")}</h3>
           <p className="mt-4 max-w-[62ch] text-body">
@@ -313,8 +354,8 @@ export default async function StyleguidePage({
           <div className="mt-6 flex flex-wrap gap-3">
             <Badge>{tCard("new")}</Badge>
             <Badge tone="accent">{tCard("exclusive")}</Badge>
-            <Badge tone="reserved">{tListing("statusReserved")}</Badge>
-            <Badge tone="closed">{tListing("statusSold")}</Badge>
+            <Badge tone="status">{tListing("statusReserved")}</Badge>
+            <Badge tone="status">{tListing("statusSold")}</Badge>
             <span className="bg-ink p-2">
               <Badge tone="dark">{tCard("hasTour")}</Badge>
             </span>
@@ -352,7 +393,7 @@ export default async function StyleguidePage({
       </Section>
 
       {/* -------------------------------------------------------------- forms */}
-      <Section tone="ivory-2" aria-labelledby="sg-forms">
+      <Section tone="ivory-2" aria-labelledby="sg-forms" className="hairline-t">
         <Container>
           <SectionHeading id="sg-forms" eyebrow={t("tokens")} title={t("forms")} size="display-m" />
 
@@ -366,11 +407,13 @@ export default async function StyleguidePage({
                 defaultValue="pera.peric"
                 error={t("formError")}
               />
+              {/* "opciono" belongs in the label, not in the slot the error
+                  message occupies — otherwise the two are told apart by colour
+                  alone. */}
               <TextField
-                label={tForms("phone")}
+                label={`${tForms("phone")} (${tForms("optional")})`}
                 name="sg-phone"
                 type="tel"
-                hint={tForms("optional")}
               />
               <SelectField label={tFilters("propertyType")} name="sg-type" defaultValue="apartment">
                 <option value="apartment">{tFilters("propertyType")} 1</option>
@@ -390,10 +433,10 @@ export default async function StyleguidePage({
                   { value: "video", label: tForms("modeVideo") },
                 ]}
               />
-              <CheckboxField label={tFilters("withTour")} name="sg-tour" />
+              <CheckboxField label={tFilters("withTour")} name="sg-tour" defaultChecked />
               <CheckboxField
-                label={tFilters("withTour")}
-                name="sg-tour-error"
+                label={tConsent("privacyRequired")}
+                name="sg-privacy"
                 error={tForms("requiredField")}
               />
               <Button variant="primary">{tForms("submit")}</Button>
@@ -403,7 +446,7 @@ export default async function StyleguidePage({
       </Section>
 
       {/* -------------------------------------------------------------- cards */}
-      <Section tone="ivory" aria-labelledby="sg-cards">
+      <Section tone="ivory" aria-labelledby="sg-cards" className="hairline-t">
         <Container>
           <SectionHeading id="sg-cards" eyebrow={t("tokens")} title={t("cards")} size="display-m" />
 
@@ -434,7 +477,7 @@ export default async function StyleguidePage({
       </Section>
 
       {/* --------------------------------------------- accordion, tabs, count */}
-      <Section tone="ivory-2" aria-labelledby="sg-accordion">
+      <Section tone="ivory-2" aria-labelledby="sg-accordion" className="hairline-t">
         <Container>
           <SectionHeading id="sg-accordion" eyebrow={t("tokens")} title={t("accordion")} size="display-m" />
           <div className="mt-10 max-w-[70ch]">
@@ -474,16 +517,18 @@ export default async function StyleguidePage({
           <h3 className="mt-16 font-display text-h3">{t("counter")}</h3>
           <dl className="mt-6 grid grid-cols-2 gap-8 lg:grid-cols-4">
             {[
-              { value: 248, label: tCard("featured") },
-              { value: 1460, label: tListing("area"), suffix: " m²" },
-              { value: 12, label: tListing("floor") },
-              { value: 96, label: tListing("rooms") },
+              { value: 12, label: tHome("numbersYears") },
+              { value: 248, label: tHome("numbersSold") },
+              { value: 410, label: tHome("numbersClients") },
+              { value: 47, label: tHome("numbersDaysToSell") },
             ].map((item) => (
               <div key={item.label}>
-                <dd className="font-display text-display-m font-light">
-                  <Counter value={item.value} suffix={item.suffix} />
+                <dd className="font-display text-display-m font-normal">
+                  <Counter value={item.value} />
                 </dd>
-                <dt className="mt-2 font-mono text-label uppercase text-stone-text">{item.label}</dt>
+                <dt className="mt-2 max-w-[16ch] font-mono text-label uppercase text-stone-text">
+                  {item.label}
+                </dt>
               </div>
             ))}
           </dl>
@@ -535,7 +580,7 @@ export default async function StyleguidePage({
             <p className="font-mono text-label uppercase text-mist">{t("marquee")}</p>
             <Marquee className="mt-4 border-y border-hairline-dark py-6">
               {["Beograd", "Novi Sad", "Zlatibor", "Kopaonik", "Subotica", "Niš"].map((city) => (
-                <span key={city} className="px-8 font-display text-display-m font-light text-ivory">
+                <span key={city} className="px-8 font-display text-display-m font-normal text-ivory">
                   {city}
                   <span aria-hidden="true" className="ml-8 text-bronze">
                     ·

@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { useParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import { locales, type Locale } from "@/i18n/routing";
 
 type RouteHref = Parameters<ReturnType<typeof useRouter>["replace"]>[0];
@@ -24,8 +25,21 @@ const FULL_NAMES: Record<Locale, string> = {
 /**
  * Switches locale while staying on the same route — next-intl resolves the
  * localized pathname for the target locale (`/sr/nekretnine` -> `/de/immobilien`).
+ *
+ * Two presentations, because one does not fit both places:
+ *  - `inline` is the four tracked codes in the desktop header (fine pointer,
+ *    plenty of room, and the 44px rule is met by the row's own height);
+ *  - `stacked` is what the mobile overlay menu uses — full-width serif rows
+ *    with the language's own name, each one a comfortable touch target. Four
+ *    15×11px codes beside a hamburger fail WCAG 2.5.8 and read as clutter.
  */
-export function LocaleSwitcher({ className }: { className?: string }) {
+export function LocaleSwitcher({
+  className,
+  variant = "inline",
+}: {
+  className?: string;
+  variant?: "inline" | "stacked";
+}) {
   const active = useLocale() as Locale;
   const pathname = usePathname();
   const params = useParams();
@@ -37,27 +51,41 @@ export function LocaleSwitcher({ className }: { className?: string }) {
   // asserted to the href type — the values themselves come straight from Next.
   const target = { pathname, params } as RouteHref;
 
+  const stacked = variant === "stacked";
+
   return (
     <nav aria-label={FULL_NAMES[active]} className={className}>
-      <ul className="flex items-center gap-4">
+      <ul className={cn(stacked ? "flex flex-col" : "flex items-center gap-4")}>
         {locales.map((locale) => {
           const isActive = locale === active;
           return (
-            <li key={locale}>
+            <li key={locale} className={stacked ? "hairline-b-dark" : undefined}>
               <button
                 type="button"
                 lang={locale}
                 aria-current={isActive ? "true" : undefined}
                 onClick={() => router.replace(target, { locale })}
-                className={
-                  "font-mono text-label uppercase transition-colors duration-200 " +
-                  (isActive
-                    ? "text-bronze"
-                    : "text-mist hover:text-ivory focus-visible:text-ivory")
-                }
+                className={cn(
+                  "transition-colors duration-200",
+                  stacked
+                    ? "flex min-h-12 w-full items-baseline justify-between gap-4 py-2 font-display text-h3 font-normal"
+                    : "font-mono text-label uppercase",
+                  isActive ? "text-bronze" : "text-mist pointer-fine:hover:text-ivory focus-visible:text-ivory",
+                )}
               >
-                <span className="sr-only">{FULL_NAMES[locale]}</span>
-                <span aria-hidden="true">{LABELS[locale]}</span>
+                {stacked ? (
+                  <>
+                    <span>{FULL_NAMES[locale]}</span>
+                    <span aria-hidden="true" className="font-mono text-label uppercase">
+                      {LABELS[locale]}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="sr-only">{FULL_NAMES[locale]}</span>
+                    <span aria-hidden="true">{LABELS[locale]}</span>
+                  </>
+                )}
               </button>
             </li>
           );

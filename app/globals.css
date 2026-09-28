@@ -34,13 +34,13 @@
   --color-hairline-light: color-mix(in oklab, var(--color-ink) 12%, transparent);
 
   /* Faces (values come from next/font in app/fonts.ts) */
-  --font-display: var(--font-display-family), "Cormorant Garamond", serif;
+  --font-display: var(--font-display-family), "EB Garamond", Garamond, serif;
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-family), ui-monospace, monospace;
 
   /* Fluid type scale */
   --text-display-xl: clamp(3.5rem, 9vw, 9.5rem);
-  --text-display-xl--line-height: 0.92;
+  --text-display-xl--line-height: clamp(0.92, 0.72 + 0.55vw, 1.02);
   --text-display-xl--letter-spacing: -0.02em;
   --text-display-l: clamp(2.75rem, 6vw, 6rem);
   --text-display-l--line-height: 0.95;

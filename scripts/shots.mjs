@@ -12,6 +12,10 @@
 //   --delays        extra captures of the first viewport at these ms after load (intro animations)
 //   --full          also capture a full-page screenshot per route/width
 //   --reduced       emulate prefers-reduced-motion: reduce
+// Before every capture the script waits for the network to go idle, for
+// document.fonts.ready and for every <img> to decode, so a screenshot never
+// shows an LQIP placeholder or a fallback face (which made a warm photograph
+// look like a grey smear and hid a broken display font in step 04).
 // Output: PNG files + report.json (console errors, failed requests, page errors) in the out dir.
 // Requires a running server (npm run dev or npm run start). Exit code 0 even with console errors;
 // read report.json for problems.
@@ -84,6 +88,17 @@ try {
           files.push(f);
         }
         await page.waitForLoadState("networkidle", { timeout: 15000 }).catch(() => {});
+        // Fonts and images must be resolved before the first capture, or the
+        // shot shows a fallback face and an LQIP placeholder rather than the
+        // thing under review.
+        await page
+          .evaluate(async () => {
+            await document.fonts.ready;
+            await Promise.all(
+              [...document.images].map((img) => (img.complete ? null : img.decode().catch(() => {}))),
+            );
+          })
+          .catch(() => {});
         await sleep(2200);
         const first = path.join(outDir, `${name}_00.png`);
         await page.screenshot({ path: first });
@@ -92,6 +107,13 @@ try {
           await page.mouse.move(width / 2, heightFor(width) / 2);
           await page.mouse.wheel(0, Math.round(heightFor(width) * 0.9));
           await sleep(1400);
+          await page
+            .evaluate(() =>
+              Promise.all(
+                [...document.images].map((img) => (img.complete ? null : img.decode().catch(() => {}))),
+              ),
+            )
+            .catch(() => {});
           const f = path.join(outDir, `${name}_${String(i).padStart(2, "0")}.png`);
           await page.screenshot({ path: f });
           files.push(f);

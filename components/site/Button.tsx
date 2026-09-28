@@ -18,8 +18,14 @@ export const buttonClasses = cva(
     "group/btn relative inline-flex select-none items-center justify-center gap-3",
     "font-sans font-medium uppercase tracking-[0.12em]",
     "rounded-none transition-[transform,background-color,color,border-color] duration-200 ease-out",
-    "focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-[0.98]",
-    "disabled:pointer-events-none disabled:opacity-45",
+    // The global ring is `currentColor`, which is invisible on a filled
+    // variant (ivory ring on an ivory page behind an ink button). Bronze is
+    // >= 3:1 against ink, ivory, ivory-2 and paper alike.
+    "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze active:scale-[0.98]",
+    // Disabled is a distinct treatment per variant, not a blanket opacity —
+    // 45% of ink-on-ivory is a muddy grey block, which reads as a rendering
+    // bug rather than a state.
+    "disabled:pointer-events-none disabled:after:scale-x-0",
     // The bronze rule. It is a pseudo-element so no extra DOM is needed.
     "after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0",
     "after:bg-bronze after:transition-transform after:duration-300 after:ease-out",
@@ -29,17 +35,19 @@ export const buttonClasses = cva(
     variants: {
       variant: {
         /** Ink block on a light surface. */
-        primary: "bg-ink text-ivory pointer-fine:hover:bg-ink-2",
+        primary:
+          "bg-ink text-ivory pointer-fine:hover:bg-ink-2 disabled:border disabled:border-hairline-light disabled:bg-transparent disabled:text-stone-text",
         /** Ivory block on a dark surface. */
-        inverse: "bg-ivory text-ink pointer-fine:hover:bg-paper",
+        inverse:
+          "bg-ivory text-ink pointer-fine:hover:bg-paper disabled:border disabled:border-hairline-dark disabled:bg-transparent disabled:text-mist",
         /** Hairline outline; inherits the surface's text colour. */
         outline:
-          "border border-current bg-transparent pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze-text",
+          "border border-current bg-transparent pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze-text disabled:text-stone-text",
         /** Outline for dark surfaces, where bronze is the AA-safe accent. */
         outlineDark:
           "border border-hairline-dark bg-transparent text-ivory pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze",
         /** No chrome at all; used inside toolbars and cards. */
-        ghost: "bg-transparent pointer-fine:hover:text-bronze-text",
+        ghost: "bg-transparent pointer-fine:hover:text-bronze-text disabled:text-stone-text",
       },
       size: {
         /** DESIGN §4: 52px. */

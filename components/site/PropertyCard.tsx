@@ -9,7 +9,7 @@ import type { PublicImage } from "@/convex/lib/dto";
 import type { Floor } from "@/convex/lib/validators";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { formatArea } from "@/lib/format";
+import { fixOrphans, formatArea } from "@/lib/format";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
@@ -132,7 +132,7 @@ export function PropertyCard({
             lang={title.lang === locale ? undefined : title.lang}
             className="after:absolute after:inset-0 after:z-10 after:content-[''] pointer-fine:group-hover/card:text-bronze-text transition-colors duration-200"
           >
-            {title.text}
+            {fixOrphans(title.text)}
           </Link>
         </h3>
 

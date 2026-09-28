@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
+import { fixOrphans } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,7 +62,9 @@ export function Accordion({
                     : "text-ink pointer-fine:hover:text-bronze-text",
                 )}
               >
-                <span>{item.question}</span>
+                <span>
+                  {typeof item.question === "string" ? fixOrphans(item.question) : item.question}
+                </span>
                 <Plus
                   aria-hidden="true"
                   strokeWidth={1.25}

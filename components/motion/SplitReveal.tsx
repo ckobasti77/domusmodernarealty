@@ -66,6 +66,10 @@ export function SplitReveal({
             aria: "none",
             autoSplit: true,
             linesClass: "split-line",
+            // Without this SplitText normalises the non-breaking spaces that
+            // `fixOrphans` inserted back into ordinary spaces BEFORE it decides
+            // where the lines break, so a break still lands on "... mesta u".
+            reduceWhiteSpace: false,
             onSplit(self) {
               return gsap.from(self.lines, {
                 yPercent: 110,

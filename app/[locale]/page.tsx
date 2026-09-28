@@ -47,7 +47,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 
           <p className="mt-8 max-w-[52ch] text-body-l text-mist lg:mt-10">{fixOrphans(t("heroLede"))}</p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4 lg:mt-12">
+          <div className="mt-8 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center lg:mt-12">
             <Link href="/properties" prefetch={false} className={buttonClasses({ variant: "inverse" })}>
               <span>{t("heroCta")}</span>
             </Link>

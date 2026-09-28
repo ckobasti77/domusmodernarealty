@@ -71,15 +71,24 @@ export function CursorFollowerImage({ items, className }: CursorFollowerImagePro
           gsap.to(follower, { autoAlpha: 0, scale: 0.94, duration: 0.3, ease: "power3.out" });
         };
 
+        // A stationary cursor fires no pointermove while the page scrolls
+        // under it, so the image used to stay parked over the rows after a
+        // wheel scroll. Scrolling dismisses it; the next move brings it back.
+        // Unconditional: `setActiveId(null)` on an already-null state is a
+        // no-op for React, and the tween is already at autoAlpha 0.
+        const onScroll = () => onLeave();
+
         gsap.set(follower, { autoAlpha: 0, scale: 0.94 });
         el.addEventListener("pointermove", onMove);
         el.addEventListener("pointerover", onEnter);
         el.addEventListener("pointerleave", onLeave);
+        window.addEventListener("scroll", onScroll, { passive: true });
 
         return () => {
           el.removeEventListener("pointermove", onMove);
           el.removeEventListener("pointerover", onEnter);
           el.removeEventListener("pointerleave", onLeave);
+          window.removeEventListener("scroll", onScroll);
           setActiveId(null);
         };
       });

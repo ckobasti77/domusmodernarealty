@@ -147,7 +147,7 @@ export function CookieConsent() {
             <button
               type="button"
               onClick={() => setShowSettings(true)}
-              className={textLinkClasses("dark", "self-center py-2 text-small")}
+              className={textLinkClasses("dark", "inline-flex min-h-11 items-center justify-center self-center text-small")}
             >
               {t("settings")}
             </button>

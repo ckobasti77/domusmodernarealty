@@ -239,7 +239,14 @@
 
   body {
     overflow-x: clip;
+    /* The consent banner is fixed to the bottom of the viewport and publishes
+       its own height; without this the last rows of the footer are unreachable. */
+    padding-bottom: var(--consent-h, 0px);
     @apply bg-ivory text-ink antialiased;
+  }
+
+  body.admin {
+    padding-bottom: 0;
   }
 
   /* The admin root layout puts `class="admin"` on <body>. */

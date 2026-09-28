@@ -218,8 +218,11 @@ export function CheckboxField({ label, hint, error, className, children, ...rest
           )}
           {...rest}
         />
-        {/* A 44px tall label keeps the touch target comfortable. */}
-        <label htmlFor={id} className="flex min-h-11 items-center text-small text-ink">
+        {/* `block`, NOT `flex`: rich-text children arrive as separate nodes
+            ("Slazem se sa ", <a>, "."), and a flex container turns each one into
+            a flex item, which drops the whitespace between them. `py` rather
+            than a fixed height keeps the 44px target when the label wraps. */}
+        <label htmlFor={id} className="block min-h-11 py-2.5 text-small text-ink">
           {children ?? label}
         </label>
       </div>

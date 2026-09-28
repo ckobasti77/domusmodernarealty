@@ -97,7 +97,8 @@ export function formatRooms(value: number, locale: Locale): string {
  * instead. Safe for en/ru/de too — those single letters are rare there and a
  * NBSP after them is never wrong.
  */
-const ORPHANS = /(^|[\s ])([aiouskAIOUSK])\s+/g;
+const ORPHANS =
+  /(^|[\s\u00A0])([aiouskAIOUSK\u0430\u0438\u043E\u0443\u0441\u043A\u0432\u044F\u0410\u0418\u041E\u0423\u0421\u041A\u0412\u042F])\s+/g;
 
 export function fixOrphans(text: string): string {
   return text.replace(ORPHANS, "$1$2 ");

@@ -25,7 +25,7 @@ const DZ = (s: string): Int32Array => {
     }
     return out
 }
-const GROUP_COUNT = 190
+const GROUP_COUNT = 191
 const customValidatorNames: string[] = []
 const edgeStart = PS(U("D0400004014000002150000002120003010004000021200120001300022001072010020000003020010601000002200301400001200521020020002002003010203002001000"))
 const labelStart = PS(U(":11114111511111119114658<131156864411111125234957233332311114411111352631311111171161634711111191132451111112341135135222441134312152455117"))
@@ -48,7 +48,7 @@ const edgeTarget = (() => {
     }
     return out
 })()
-const nodeGroup = U("020000007009009;0<0>?ABD0000000000K000000000000000000000000000000b0000000000000m000000000000y00|0}~00000000000000000000000000000©000", 1)
+const nodeGroup = U("020000007009009;0<0>?ABD0000000000K000000000000000000000000000000b0000000000000m000000000000y00|0}~00000000000000000000000000000ª000", 1)
 // vlists = op-pattern pool + per-list refs; the engine indexes these directly
 const vlistPat = PS(U("1233373634333535136"))
 const vlistOps = U("932423325832D>F@0326325B:0325B:4325032532542H<C=153;8432588GA8B:032")
@@ -62,7 +62,7 @@ const nodeVlist = (() => {
     for (let i = 0; i < A.length; i++) out[A[i]!] = V[i]!
     return out
 })()
-const SETS = " block contents flow-root hidden inline inline-block inline-flex inline-grid inline-table list-item table table-caption table-cell table-column table-column-group table-footer-group table-header-group table-row table-row-group| not-sr-only sr-only|isolat e ion-auto|object- contain cover fill none scale-down|overflow- auto clip hidden scroll visible|overflow-x- auto clip hidden scroll visible|overflow-y- auto clip hidden scroll visible| absolute fixed relative static sticky| collapse invisible visible|justify- around baseline between center center-safe end end-safe evenly normal start stretch|justify-self- auto center center-safe end end-safe start stretch|items- baseline baseline-last center center-safe end end-safe start stretch|self- auto baseline baseline-last center center-safe end end-safe start stretch|place-content- around baseline between center center-safe end end-safe evenly start stretch|place-items- baseline center center-safe end end-safe start stretch| proportional-nums tabular-nums| no-underline overline| capitalize lowercase normal-case uppercase|whitespace- break-spaces normal nowrap pre pre-line pre-wrap|wrap- anywhere break-word normal|mix-blend- color color-burn color-dodge darken difference exclusion hard-light hue lighten luminosity multiply normal overlay plus-darker plus-lighter saturation screen soft-light|caption- bottom top|appearance- auto none|field-sizing- content fixed|pointer-events- auto none|resize  -none -x -y|touch- auto manipulation none|select- all auto none text| normal size| baseline bottom middle sub super text-bottom text-top top| bounce none ping pulse spin| auto square video| auto fr gutter gutter-lg gutter-md max min px section section-lg|none |clip- border content padding text| bottom bottom-left bottom-right center left left-bottom left-top right right-bottom right-top top top-left top-right| no-repeat repeat repeat-round repeat-space repeat-x repeat-y| gradient-to-b gradient-to-bl gradient-to-br gradient-to-l gradient-to-r gradient-to-t gradient-to-tl gradient-to-tr none|blend- color color-burn color-dodge darken difference exclusion hard-light hue lighten luminosity multiply normal overlay saturation screen soft-light|to- b bl br l r t tl tr| collapse separate| auto full gutter gutter-lg gutter-md px section section-lg|auto |full | alias all-scroll auto cell col-resize context-menu copy crosshair default e-resize ew-resize grab grabbing help move n-resize ne-resize nesw-resize no-drop none not-allowed ns-resize nw-resize nwse-resize pointer progress row-resize s-resize se-resize sw-resize text vertical-text w-resize wait zoom-in zoom-out|initial | curtain estate expo-out in in-out initial linear out| col col-reverse row row-reverse| nowrap wrap wrap-reverse| auto initial none| black bold extrabold extralight light medium normal semibold thin| gutter gutter-lg gutter-md px section section-lg| none subgrid| auto dvh dvw fit full gutter gutter-lg gutter-md lh lvh lvw max min px screen section section-lg svh svw| gutter gutter-lg gutter-md loose none normal px relaxed section section-lg snug tight|through | auto gutter gutter-lg gutter-md px section section-lg| auto dvh dvw fit full gutter gutter-lg gutter-md lh lvh lvw max min none px screen section section-lg svh svw| auto bleed content dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min none prose px section section-lg svh svw|2xl | auto bleed content dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min none px screen section section-lg svh svw| first last none| dashed dotted double hidden none solid| 2xl 3xl 4xl full hairline lg md none sm xl| inner none| auto dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min px section section-lg svh svw| base body body-l display-l display-m display-xl eyebrow h2 h3 label small| center end justify left right start| balance nowrap pretty wrap| normal tight tighter wide wider widest| cpu gpu none| all colors none opacity shadow transform| full gutter gutter-lg gutter-md px section section-lg| auto bleed content dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min px screen section section-lg svh svw".split('|').map((s) => {
+const SETS = "container | block contents flow-root hidden inline inline-block inline-flex inline-grid inline-table list-item table table-caption table-cell table-column table-column-group table-footer-group table-header-group table-row table-row-group| not-sr-only sr-only|isolat e ion-auto|object- contain cover fill none scale-down|overflow- auto clip hidden scroll visible|overflow-x- auto clip hidden scroll visible|overflow-y- auto clip hidden scroll visible| absolute fixed relative static sticky| collapse invisible visible|justify- around baseline between center center-safe end end-safe evenly normal start stretch|justify-self- auto center center-safe end end-safe start stretch|items- baseline baseline-last center center-safe end end-safe start stretch|self- auto baseline baseline-last center center-safe end end-safe start stretch|place-content- around baseline between center center-safe end end-safe evenly start stretch|place-items- baseline center center-safe end end-safe start stretch| proportional-nums tabular-nums| no-underline overline| capitalize lowercase normal-case uppercase|whitespace- break-spaces normal nowrap pre pre-line pre-wrap|wrap- anywhere break-word normal|mix-blend- color color-burn color-dodge darken difference exclusion hard-light hue lighten luminosity multiply normal overlay plus-darker plus-lighter saturation screen soft-light|caption- bottom top|appearance- auto none|field-sizing- content fixed|pointer-events- auto none|resize  -none -x -y|touch- auto manipulation none|select- all auto none text| normal size| baseline bottom middle sub super text-bottom text-top top| bounce none ping pulse spin| auto square video| auto fr gutter gutter-lg gutter-md max min px section section-lg|none |clip- border content padding text| bottom bottom-left bottom-right center left left-bottom left-top right right-bottom right-top top top-left top-right| no-repeat repeat repeat-round repeat-space repeat-x repeat-y| gradient-to-b gradient-to-bl gradient-to-br gradient-to-l gradient-to-r gradient-to-t gradient-to-tl gradient-to-tr none|blend- color color-burn color-dodge darken difference exclusion hard-light hue lighten luminosity multiply normal overlay saturation screen soft-light|to- b bl br l r t tl tr| collapse separate| auto full gutter gutter-lg gutter-md px section section-lg|auto |full | alias all-scroll auto cell col-resize context-menu copy crosshair default e-resize ew-resize grab grabbing help move n-resize ne-resize nesw-resize no-drop none not-allowed ns-resize nw-resize nwse-resize pointer progress row-resize s-resize se-resize sw-resize text vertical-text w-resize wait zoom-in zoom-out|initial | curtain estate expo-out in in-out initial linear out| col col-reverse row row-reverse| nowrap wrap wrap-reverse| auto initial none| black bold extrabold extralight light medium normal semibold thin| gutter gutter-lg gutter-md px section section-lg| none subgrid| auto dvh dvw fit full gutter gutter-lg gutter-md lh lvh lvw max min px screen section section-lg svh svw| gutter gutter-lg gutter-md loose none normal px relaxed section section-lg snug tight|through | auto gutter gutter-lg gutter-md px section section-lg| auto dvh dvw fit full gutter gutter-lg gutter-md lh lvh lvw max min none px screen section section-lg svh svw| auto bleed content dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min none prose px section section-lg svh svw|2xl | auto bleed content dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min none px screen section section-lg svh svw| first last none| dashed dotted double hidden none solid| 2xl 3xl 4xl full hairline lg md none sm xl| inner none| auto dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min px section section-lg svh svw| base body body-l display-l display-m display-xl eyebrow h2 h3 label small| center end justify left right start| balance nowrap pretty wrap| normal tight tighter wide wider widest| cpu gpu none| all colors none opacity shadow transform| full gutter gutter-lg gutter-md px section section-lg| auto bleed content dvh dvw fit full gutter gutter-lg gutter-md lvh lvw max min px screen section section-lg svh svw".split('|').map((s) => {
     const tails = s.split(' ')
     const prefix = tails.shift()!
     for (let i = 0; i < tails.length; i++) {
@@ -70,14 +70,14 @@ const SETS = " block contents flow-root hidden inline inline-block inline-flex i
     }
     return tails
 })
-const AA = DZ("000000000000000000000000000024222420000664>4422:2420026426222422622224222422222822422422266242222426242444242400444242422")
-const AG = DZ("Ā222222222222222222222222222ĳ22222ĬĩĬĩĬī4Īĕ2022822Ć2ą2622222222222ÆÃ2220222222242ÎÅ2242222622222202222224222222222222")
-const AS = DZ("0222222222222222222222222222222222222222;>2221422IL222200202G000JIL[^2225267000:cfE000000C?l0000Y21A0T0J2K0C?r22eh2220knm")
-const litAnchor = new Int32Array(801)
-const litGroup = new Int32Array(801)
-const litPool = new Int32Array(801)
+const AA = DZ("0000000000000000000000000000024222420000664>4422:2420026426222422622224222422222822422422266242222426242444242400444242422")
+const AG = DZ("Ā2222222222222222222222222222ĵ22222ĮīĮīĮĭ4Ĭė2022822Ĉ2ć2622222222222ÈÅ2220222222242ÐÇ2242222622222202222224222222222222")
+const AS = DZ("02222222222222222222222222222222222222222;>2221422IL222200202G000JIL[^2225267000:cfE000000C?l0000Y21A0T0J2K0C?r22eh2220knm")
+const litAnchor = new Int32Array(802)
+const litGroup = new Int32Array(802)
+const litPool = new Int32Array(802)
 let poolText = ''
-const poolOffsets = new Int32Array(712)
+const poolOffsets = new Int32Array(714)
 {
     const tailRef = new Map()
     let nextRef = 0
@@ -100,9 +100,9 @@ const poolOffsets = new Int32Array(712)
     }
 }
 // conflict adjacency (engine builds claim bitmask CSR at init)
-const adjGid = DZ("0F2>F8<4262@2><2:2222:268PFF")
+const adjGid = DZ("0F2>F8<4262@2><2:2222:268RFF")
 const adjStart = PS(U("1::432:442:44:44>22224421213"))
-const adjTgt = DZ("2źŕŘ222š152Ū22222ūŮ2ŵŤ2š7Ķ2£2<2ô2ùü_b7ü¿cð2ÅØ82ì222õøÿ6ò26ùö2õ7V2È222Ñ152Ò2Ï3Ö2Ñ7è2Ë132Ò222222212563232P2222222×­:²2p22")
+const adjTgt = DZ("2żŗŚ222ţ152Ŭ22222ŭŰ2ŷŦ2ţ7ĸ2¥2<2ö2ûþ_b7þÁcò2ÅÚ82î222÷úā6ô26ûø2÷7V2Ê222Ó152Ô2Ñ3Ø2Ó7ê2Í132Ô222222212563232P2222222Ù­:´2p22")
 const patGid = U("")
 const patTgt = U("\\")
 const postfixLookupGroups = U("1")

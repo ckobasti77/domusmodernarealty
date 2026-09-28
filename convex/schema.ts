@@ -70,6 +70,11 @@ export default defineSchema({
     status: userStatusV,
     agentId: v.optional(v.id("agents")),
     lastSeenAt: v.optional(v.number()),
+    /**
+     * Transient: the Password provider's `profile()` puts the invite token here
+     * so `createOrUpdateUser` can verify it. It is NEVER written to a row.
+     */
+    pendingInviteToken: v.optional(v.string()),
   })
     .index("by_email", { fields: ["email"] })
     .index("by_role", { fields: ["role"] }),
@@ -325,7 +330,9 @@ export default defineSchema({
     leads: v.number(),
     viewings: v.number(),
     lastViewedAt: v.optional(v.number()),
-  }).index("by_listingId", { fields: ["listingId"] }),
+  })
+    .index("by_listingId", { fields: ["listingId"] })
+    .index("by_views", { fields: ["views"] }),
 
   /** One row per (listing, browser session): makes trackView idempotent. */
   listingViews: defineTable({
@@ -427,6 +434,9 @@ export default defineSchema({
     .index("by_slug", { fields: ["slug"] })
     .index("by_status_and_publishedAt", { fields: ["status", "publishedAt"] })
     .index("by_category_and_publishedAt", { fields: ["category", "publishedAt"] })
+    .index("by_status_and_category_and_publishedAt", {
+      fields: ["status", "category", "publishedAt"],
+    })
     .index("by_isDemo", { fields: ["isDemo"] }),
 
   pages: defineTable({

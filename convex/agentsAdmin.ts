@@ -28,8 +28,12 @@ const agentAdminRowV = v.object({
   availability: v.array(availabilitySlotV),
   userId: v.optional(v.id("users")),
   listingCount: v.number(),
+  listingCountCapped: v.boolean(),
   isDemo: v.boolean(),
 });
+
+/** The Team page shows "50+" rather than reading every listing per agent. */
+const LISTING_COUNT_CAP = 50;
 
 export const list = query({
   args: {},
@@ -47,10 +51,12 @@ export const list = query({
           : doc.photo.kind === "url"
             ? doc.photo.url
             : await ctx.storage.getUrl(doc.photo.storageId);
+      // Deliberately capped: this is a "has work assigned" badge, not a metric.
+      // Reading 300 listings per agent turned the Team page into an 11 MB query.
       const listings = await ctx.db
         .query("listings")
         .withIndex("by_agentId", (q) => q.eq("agentId", doc._id))
-        .take(300);
+        .take(LISTING_COUNT_CAP + 1);
       out.push({
         _id: doc._id,
         slug: doc.slug,
@@ -69,7 +75,8 @@ export const list = query({
         order: doc.order,
         availability: doc.availability,
         ...(doc.userId !== undefined ? { userId: doc.userId } : {}),
-        listingCount: listings.length,
+        listingCount: Math.min(listings.length, LISTING_COUNT_CAP),
+        listingCountCapped: listings.length > LISTING_COUNT_CAP,
         isDemo: doc.isDemo,
       });
     }

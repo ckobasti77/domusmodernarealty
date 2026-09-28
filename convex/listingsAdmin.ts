@@ -19,6 +19,7 @@ import {
   slugify,
 } from "./lib/slug";
 import { normalizeText } from "./lib/search";
+import { randomToken } from "./lib/tokens";
 import {
   addressVisibilityV,
   conditionV,
@@ -212,6 +213,17 @@ async function toAdminRow(ctx: QueryCtx, doc: Doc<"listings">) {
   };
 }
 
+/** Managers can read the activity log, so no secret may enter a diff. */
+function forDiff(doc: Doc<"listings">): Record<string, unknown> {
+  const {
+    previewToken: _token,
+    previewExpiresAt: _expires,
+    searchText: _searchText,
+    ...rest
+  } = doc;
+  return rest as unknown as Record<string, unknown>;
+}
+
 /** Agents see only their own rows; everyone else sees all. */
 function visibleToViewer(viewer: Viewer, doc: Doc<"listings">): boolean {
   if (viewer.role === "agent") {
@@ -234,7 +246,7 @@ export const list = query({
     continueCursor: v.string(),
   }),
   handler: async (ctx, args) => {
-    const viewer = await requireRole(ctx, [...EDITORS, "editor"]);
+    const viewer = await requireRole(ctx, EDITORS);
 
     const result =
       args.status !== undefined
@@ -267,7 +279,7 @@ export const counts = query({
   args: {},
   returns: v.array(v.object({ status: listingStatusV, count: v.number() })),
   handler: async (ctx) => {
-    await requireRole(ctx, [...EDITORS, "editor"]);
+    await requireRole(ctx, EDITORS);
     const statuses = [
       "draft",
       "review",
@@ -290,8 +302,9 @@ export const counts = query({
   },
 });
 
+/** `now` is an argument so the checklist stays pure (queries never read a clock). */
 export const get = query({
-  args: { id: v.id("listings") },
+  args: { id: v.id("listings"), now: v.number() },
   returns: v.union(
     v.object({
       listing: schema.doc("listings"),
@@ -332,7 +345,7 @@ export const get = query({
 
     return {
       listing: doc,
-      checklist: publishChecklist(doc, Date.now()),
+      checklist: publishChecklist(doc, args.now),
       agentName: agent?.name ?? "—",
       mediaUrls,
       priceHistory: changes.map((change) => ({
@@ -369,15 +382,6 @@ async function ensureUniqueSlug(
     suffix += 1;
     if (suffix > 40) return `${candidate}-${Date.now()}`;
   }
-}
-
-function randomToken(): string {
-  let out = "";
-  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i += 1) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return out;
 }
 
 export const create = mutation({
@@ -509,6 +513,14 @@ export const update = mutation({
     const now = Date.now();
     const merged = { ...before, ...args.patch };
 
+    // Flipping `visibility` to public is a second route onto the market: a
+    // reserved listing with `visibility: "private"` sits in the `hidden` bucket
+    // until this patch moves it. It has to clear the same Art. 18 checklist as
+    // `publish`, or a price-0, photo-less, mandate-less listing goes live.
+    if (args.patch.visibility === "public" && before.visibility !== "public") {
+      assertPublishable(merged, now);
+    }
+
     // Slug: explicit rename keeps a redirect from the old value.
     let slug = before.slug;
     if (args.patch.slug !== undefined) {
@@ -553,7 +565,17 @@ export const update = mutation({
       updatedAt: now,
     };
     const derived = applyDerived(next, names, sceneCount.length > 0);
-    const patch = { ...args.patch, slug, updatedAt: now, ...derived };
+    const patch = {
+      ...args.patch,
+      slug,
+      updatedAt: now,
+      ...derived,
+      // `applyDerived` does not carry `previousPrice`, so write it explicitly.
+      // `undefined` is the right value on a price increase: it clears the badge.
+      ...(args.patch.price !== undefined && args.patch.price !== before.price
+        ? { previousPrice }
+        : {}),
+    };
 
     await ctx.db.patch("listings", before._id, patch);
     const after = await ctx.db.get("listings", before._id);
@@ -565,10 +587,7 @@ export const update = mutation({
       entityId: before._id,
       action: "listing.updated",
       summary: before.ref,
-      diff: diffFields(
-        before as unknown as Record<string, unknown>,
-        after as unknown as Record<string, unknown>,
-      ),
+      diff: diffFields(forDiff(before), forDiff(after)),
       by: viewer._id,
     });
 
@@ -782,6 +801,47 @@ export const remove = mutation({
       .unique();
     if (stats !== null) await ctx.db.delete("listingStats", stats._id);
 
+    const splats = await ctx.db
+      .query("splatAssets")
+      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
+      .take(20);
+    for (const splat of splats) await ctx.db.delete("splatAssets", splat._id);
+
+    const changes = await ctx.db
+      .query("priceChanges")
+      .withIndex("by_listingId_and_at", (q) => q.eq("listingId", doc._id))
+      .take(60);
+    for (const change of changes) await ctx.db.delete("priceChanges", change._id);
+
+    const redirects = await ctx.db
+      .query("slugRedirects")
+      .withIndex("by_from", (q) => q.eq("from", doc.slug))
+      .take(20);
+    for (const row of redirects) await ctx.db.delete("slugRedirects", row._id);
+
+    const views = await ctx.db
+      .query("listingViews")
+      .withIndex("by_listingId_and_sessionKey", (q) => q.eq("listingId", doc._id))
+      .take(500);
+    for (const row of views) await ctx.db.delete("listingViews", row._id);
+
+    // Leads and viewings are business records: keep them, but drop the pointer so
+    // the admin UI stops rendering a reference to a document that is gone.
+    const viewings = await ctx.db
+      .query("viewings")
+      .withIndex("by_listingId_and_start", (q) => q.eq("listingId", doc._id))
+      .take(100);
+    for (const viewing of viewings) {
+      await ctx.db.patch("viewings", viewing._id, { status: "cancelled" });
+    }
+    const leads = await ctx.db
+      .query("leads")
+      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
+      .take(200);
+    for (const lead of leads) {
+      await ctx.db.patch("leads", lead._id, { listingId: undefined });
+    }
+
     await ctx.db.delete("listings", doc._id);
     await logActivity(ctx, {
       entity: "listing",
@@ -831,6 +891,9 @@ export const bulk = mutation({
       }
       if (args.action === "assign") {
         if (args.agentId === undefined) invalidInput("Izaberite agenta.");
+        // A stale id would orphan the listing: `toDetail` returns null and the
+        // public page 404s.
+        if ((await ctx.db.get("agents", args.agentId)) === null) notFound("Agent");
         await ctx.db.patch("listings", id, { agentId: args.agentId, updatedAt: now });
         done += 1;
         continue;
@@ -864,6 +927,14 @@ export const bulk = mutation({
       });
       const after = await ctx.db.get("listings", id);
       await applyCountDelta(ctx, before, after);
+      // Per listing, so `activity.list({entityId})` shows the change (PRD B13).
+      await logActivity(ctx, {
+        entity: "listing",
+        entityId: id,
+        action: `listing.status.${status}`,
+        summary: `${before.ref}: ${before.status} → ${status} (grupno)`,
+        by: viewer._id,
+      });
       done += 1;
     }
 
@@ -923,6 +994,13 @@ export const rotatePreviewToken = mutation({
       previewToken: token,
       previewExpiresAt: Date.now() + 14 * 86_400_000,
     });
+    await logActivity(ctx, {
+      entity: "listing",
+      entityId: doc._id,
+      action: "listing.previewRotated",
+      summary: doc.ref,
+      by: viewer._id,
+    });
     return { token };
   },
 });
@@ -937,7 +1015,7 @@ export const todos = query({
     mandateExpiring: v.array(v.object({ id: v.id("listings"), ref: v.string(), end: v.number() })),
   }),
   handler: async (ctx, args) => {
-    const viewer = await requireRole(ctx, [...EDITORS, "editor"]);
+    const viewer = await requireRole(ctx, EDITORS);
     const docs = await ctx.db
       .query("listings")
       .withIndex("by_status_and_updatedAt", (q) => q.eq("status", "published"))

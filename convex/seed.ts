@@ -16,6 +16,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { hashToken, randomToken } from "./lib/tokens";
 import { roleV } from "./lib/validators";
 import type { Role } from "./lib/validators";
 
@@ -160,15 +161,36 @@ export const createAdmin = internalAction({
     }
 
     const role: Role = args.role ?? "admin";
-    await ctx.runMutation(internal.seedStages.bootstrapInvite, { email, role });
 
-    const { user } = await createAccount(ctx, {
-      provider: "password",
-      account: { id: email, secret: args.password },
-      profile: { email, name: args.name ?? "Administrator", role, status: "active" },
+    // `createOrUpdateUser` verifies the invite TOKEN, so the bootstrap mints one
+    // and hands it over the same way the acceptance page will. If `createAccount`
+    // throws, the invite is revoked instead of sitting open.
+    const token = randomToken();
+    const inviteId = await ctx.runMutation(internal.seedStages.bootstrapInvite, {
+      email,
+      role,
+      tokenHash: await hashToken(token),
     });
 
-    const userId = user._id as Id<"users">;
+    let userId: Id<"users">;
+    try {
+      const { user } = await createAccount(ctx, {
+        provider: "password",
+        account: { id: email, secret: args.password },
+        profile: {
+          email,
+          name: args.name ?? "Administrator",
+          role,
+          status: "active",
+          pendingInviteToken: token,
+        },
+      });
+      userId = user._id as Id<"users">;
+    } catch (error) {
+      await ctx.runMutation(internal.seedStages.revokeInvite, { id: inviteId });
+      throw error;
+    }
+
     return { created: true, userId, message: `created ${role} ${email}` };
   },
 });

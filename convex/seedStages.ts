@@ -105,20 +105,48 @@ export const userByEmail = internalQuery({
   },
 });
 
-/** The bootstrap invite `auth.ts::createOrUpdateUser` consumes. */
+/**
+ * The bootstrap invite `auth.ts::createOrUpdateUser` consumes. The caller mints
+ * the token and passes only its hash, so the raw token never crosses a boundary
+ * it does not need to. Short-lived on purpose: if `createAccount` then fails, a
+ * usable admin invite is open for minutes, not days.
+ */
 export const bootstrapInvite = internalMutation({
-  args: { email: v.string(), role: roleV },
+  args: { email: v.string(), role: roleV, tokenHash: v.string() },
   returns: v.id("invites"),
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // Supersede any open invite for the address, exactly like `invites.create`.
+    const open = await ctx.db
+      .query("invites")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .take(10);
+    for (const invite of open) {
+      if (invite.acceptedAt === undefined && invite.revokedAt === undefined) {
+        await ctx.db.patch("invites", invite._id, { revokedAt: now });
+      }
+    }
+
     return await ctx.db.insert("invites", {
       email: args.email,
       name: "Administrator",
       role: args.role,
-      tokenHash: `bootstrap:${args.email}`,
-      expiresAt: now + DAY,
-      acceptedAt: undefined,
+      tokenHash: args.tokenHash,
+      expiresAt: now + 10 * 60_000,
     });
+  },
+});
+
+/** Revokes a bootstrap invite that was never consumed (e.g. sign-up failed). */
+export const revokeInvite = internalMutation({
+  args: { id: v.id("invites") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const invite = await ctx.db.get("invites", args.id);
+    if (invite === null || invite.acceptedAt !== undefined) return null;
+    await ctx.db.patch("invites", invite._id, { revokedAt: Date.now() });
+    return null;
   },
 });
 
@@ -202,9 +230,10 @@ export const seedLocations = internalMutation({
   handler: async (ctx) => {
     const bySlug = new Map<string, Id<"locations">>();
     let created = 0;
-    let order = 0;
 
-    for (const item of SEED_LOCATIONS) {
+    for (const [order, item] of SEED_LOCATIONS.entries()) {
+      // `order` comes from the spec index, not a mutable counter: a partial
+      // re-seed would otherwise give two locations the same `order`.
       const existing = await ctx.db
         .query("locations")
         .withIndex("by_slug", (q) => q.eq("slug", item.slug))
@@ -231,7 +260,6 @@ export const seedLocations = internalMutation({
       });
       bySlug.set(item.slug, id);
       created += 1;
-      order += 1;
     }
 
     return { created, total: SEED_LOCATIONS.length };
@@ -443,9 +471,22 @@ export const seedListings = internalMutation({
           ? undefined
           : now - (index + 2) * 2 * DAY;
 
+      // The ref is unique, so `slug-ref` cannot collide with another seeded
+      // listing — but it could collide with a real one, and `listings.bySlug`
+      // uses `.unique()`, which THROWS on a duplicate.
+      let slug = listingSlug(copy.title.sr, ref);
+      for (let attempt = 2; attempt <= 5; attempt += 1) {
+        const clash = await ctx.db
+          .query("listings")
+          .withIndex("by_slug", (q) => q.eq("slug", slug))
+          .unique();
+        if (clash === null) break;
+        slug = `${listingSlug(copy.title.sr, ref)}-${attempt}`;
+      }
+
       const base = {
         ref,
-        slug: listingSlug(copy.title.sr, ref),
+        slug,
         status: spec.status,
         visibility: "public" as const,
         transaction: spec.transaction,

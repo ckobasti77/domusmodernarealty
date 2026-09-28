@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
@@ -139,6 +140,43 @@ export const purge = mutation({
   },
 });
 
+/**
+ * True when any listing still points at this location through any of its three
+ * foreign keys, in either transaction and either public bucket.
+ */
+export async function locationIsReferenced(
+  ctx: MutationCtx | QueryCtx,
+  locationId: Id<"locations">,
+): Promise<boolean> {
+  for (const bucket of ["listed", "closed", "hidden"] as const) {
+    for (const transaction of ["sale", "rent"] as const) {
+      const scope = `${bucket}:${transaction}`;
+      const byCity = await ctx.db
+        .query("listings")
+        .withIndex("by_scope_and_cityId_and_price", (q) =>
+          q.eq("scope", scope).eq("cityId", locationId),
+        )
+        .take(1);
+      if (byCity.length > 0) return true;
+      const byMunicipality = await ctx.db
+        .query("listings")
+        .withIndex("by_scope_and_municipalityId_and_price", (q) =>
+          q.eq("scope", scope).eq("municipalityId", locationId),
+        )
+        .take(1);
+      if (byMunicipality.length > 0) return true;
+      const byNeighborhood = await ctx.db
+        .query("listings")
+        .withIndex("by_scope_and_neighborhoodId_and_publishedAt", (q) =>
+          q.eq("scope", scope).eq("neighborhoodId", locationId),
+        )
+        .take(1);
+      if (byNeighborhood.length > 0) return true;
+    }
+  }
+  return false;
+}
+
 /** Removes a demo listing and everything that hangs off it. */
 async function deleteDemoListings(ctx: MutationCtx, limit: number): Promise<number> {
   const docs = await ctx.db
@@ -264,9 +302,21 @@ export async function purgeDemoTable(
     }
 
     case "agents": {
-      const docs = (await ctx.db.query("agents").take(200))
-        .filter((doc) => doc.isDemo)
-        .slice(0, limit);
+      const all = (await ctx.db.query("agents").take(200)).filter(
+        (doc) => doc.isDemo,
+      );
+      // Keep any demo agent a listing still points at: deleting it would make
+      // `toDetail` return null and 404 that listing publicly.
+      const docs = [];
+      for (const doc of all) {
+        const used = await ctx.db
+          .query("listings")
+          .withIndex("by_agentId", (q) => q.eq("agentId", doc._id))
+          .take(1);
+        if (used.length > 0) continue;
+        docs.push(doc);
+        if (docs.length >= limit) break;
+      }
       for (const doc of docs) {
         if (doc.photo?.kind === "storage") {
           await ctx.storage.delete(doc.photo.storageId);
@@ -280,9 +330,26 @@ export async function purgeDemoTable(
     }
 
     case "locations": {
-      const docs = (await ctx.db.query("locations").take(600))
-        .filter((doc) => doc.isDemo)
-        .slice(0, limit);
+      const all = (await ctx.db.query("locations").take(600)).filter(
+        (doc) => doc.isDemo,
+      );
+      // Same rule, plus: never orphan a child location.
+      const docs = [];
+      for (const doc of all) {
+        const counts = await ctx.db
+          .query("locationCounts")
+          .withIndex("by_locationId", (q) => q.eq("locationId", doc._id))
+          .unique();
+        if (counts !== null && counts.sale + counts.rent > 0) continue;
+        const children = await ctx.db
+          .query("locations")
+          .withIndex("by_parentId_and_order", (q) => q.eq("parentId", doc._id))
+          .take(1);
+        if (children.length > 0) continue;
+        if (await locationIsReferenced(ctx, doc._id)) continue;
+        docs.push(doc);
+        if (docs.length >= limit) break;
+      }
       for (const doc of docs) {
         const counts = await ctx.db
           .query("locationCounts")

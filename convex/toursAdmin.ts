@@ -6,6 +6,7 @@ import { logActivity } from "./lib/activity";
 import { assertCanEditListing, requireRole } from "./lib/auth";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { notFound } from "./lib/errors";
+import { assertUploadOk } from "./media";
 import { assetV, imageV, l10nV, tour360V, walk3dV } from "./lib/validators";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
@@ -104,6 +105,13 @@ export const upsertScene = mutation({
   returns: v.object({ id: v.id("tourScenes") }),
   handler: async (ctx, args) => {
     const { viewer, listing } = await loadEditable(ctx, args.listingId);
+
+    // ARCHITECTURE 7: panoramas are capped at 40 MB and must be an image.
+    for (const image of [args.pano, args.panoMobile, args.thumb]) {
+      if (image?.kind === "storage") {
+        await assertUploadOk(ctx, image.storageId, "panorama");
+      }
+    }
 
     if (args.sceneId !== undefined) {
       const existing = await ctx.db.get("tourScenes", args.sceneId);
@@ -283,6 +291,21 @@ export const setWalk3d = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const { viewer, listing } = await loadEditable(ctx, args.listingId);
+
+    // ARCHITECTURE 7: splats are capped at 200 MB.
+    for (const asset of [
+      args.walk3d?.desktop,
+      args.walk3d?.mobile,
+      args.walk3d?.collision,
+    ]) {
+      if (asset?.source.kind === "storage") {
+        await assertUploadOk(ctx, asset.source.storageId, "splat");
+      }
+    }
+    if (args.walk3d?.poster?.kind === "storage") {
+      await assertUploadOk(ctx, args.walk3d.poster.storageId, "image");
+    }
+
     await ctx.db.patch("listings", listing._id, {
       walk3d: args.walk3d,
       updatedAt: Date.now(),
@@ -299,4 +322,3 @@ export const setWalk3d = mutation({
   },
 });
 
-export { assetV };

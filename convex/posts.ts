@@ -60,8 +60,8 @@ export const list = query({
       args.category !== undefined
         ? await ctx.db
             .query("posts")
-            .withIndex("by_category_and_publishedAt", (q) =>
-              q.eq("category", args.category!),
+            .withIndex("by_status_and_category_and_publishedAt", (q) =>
+              q.eq("status", "published").eq("category", args.category!),
             )
             .order("desc")
             .paginate(args.paginationOpts)

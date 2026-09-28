@@ -4,6 +4,7 @@ import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
 import { invalidInput, notFound } from "./lib/errors";
 import { slugify } from "./lib/slug";
+import { locationIsReferenced } from "./demo";
 import { imageV, l10nListV, l10nV, locationKindV } from "./lib/validators";
 
 const CONTENT = ["admin", "manager", "editor"] as const;
@@ -242,14 +243,12 @@ export const remove = mutation({
       invalidInput("Lokacija ima podređene lokacije. Prvo ih obrišite ili premestite.");
     }
 
-    const used = await ctx.db
-      .query("listings")
-      .withIndex("by_scope_and_cityId_and_price", (q) =>
-        q.eq("scope", "listed:sale").eq("cityId", args.id),
-      )
-      .take(1);
-    if (used.length > 0) {
-      invalidInput("Lokacija se koristi na objavljenim nekretninama.");
+    // The old check looked only at `listed:sale` + `cityId`, so a location used
+    // as the neighborhood of 30 rentals was deletable and left them dangling.
+    if (await locationIsReferenced(ctx, args.id)) {
+      invalidInput(
+        "Lokacija se koristi na nekretninama. Prvo ih prebacite na drugu lokaciju.",
+      );
     }
 
     const counts = await ctx.db

@@ -148,5 +148,121 @@ try {
   }
 }
 
+console.log("\n6. an invite is only usable by whoever holds its token");
+const invitedEmail = `invite-probe-${Date.now()}@mihajlo-estate.local`;
+const invite = await authed.mutation(api.invites.create, {
+  email: invitedEmail,
+  name: "Invite Probe",
+  role: "editor",
+});
+ok("invites.create as admin", `token ${invite.token.length} chars`);
+
+// Knowing the invited ADDRESS must not be enough.
+try {
+  await new ConvexHttpClient(url).action(api.auth.signIn, {
+    provider: "password",
+    params: {
+      email: invitedEmail,
+      password: "a-very-long-password-1234",
+      flow: "signUp",
+    },
+  });
+  fail("the invited address alone let an account through", "signUp succeeded");
+} catch {
+  ok("signUp with the invited address but NO token rejected");
+}
+
+// A wrong token for a real invite must not work either.
+try {
+  await new ConvexHttpClient(url).action(api.auth.signIn, {
+    provider: "password",
+    params: {
+      email: invitedEmail,
+      password: "a-very-long-password-1234",
+      flow: "signUp",
+      inviteToken: "x".repeat(64),
+    },
+  });
+  fail("a wrong invite token was accepted", "signUp succeeded");
+} catch {
+  ok("signUp with a wrong token rejected");
+}
+
+// The real token works, and the role comes from the invite, not the form.
+const accepted = await new ConvexHttpClient(url).action(api.auth.signIn, {
+  provider: "password",
+  params: {
+    email: invitedEmail,
+    password: "a-very-long-password-1234",
+    flow: "signUp",
+    inviteToken: invite.token,
+  },
+});
+const invitedJwt = accepted?.tokens?.token;
+if (typeof invitedJwt !== "string") {
+  fail("signUp with a valid token failed", JSON.stringify(accepted).slice(0, 200));
+} else {
+  const invitedClient = new ConvexHttpClient(url);
+  invitedClient.setAuth(invitedJwt);
+  const invitedMe = await invitedClient.query(api.users.getMe, {});
+  if (invitedMe?.role === "editor") {
+    ok(
+      "signUp with the real token created the INVITED role",
+      `${invitedMe.email} · ${invitedMe.role}`,
+    );
+  } else {
+    fail("the invited user got the wrong role", JSON.stringify(invitedMe));
+  }
+  try {
+    await invitedClient.query(api.users.list, {});
+    fail("the new editor reached the users list", "query returned");
+  } catch {
+    ok("the new editor cannot reach admin-only functions");
+  }
+
+  // Leave the dev deployment tidy: the probe account is disabled again.
+  if (invitedMe !== null) {
+    await authed.mutation(api.users.setStatus, {
+      id: invitedMe._id,
+      status: "disabled",
+    });
+    ok("probe account disabled again");
+  }
+}
+
+// The token is single use.
+try {
+  await new ConvexHttpClient(url).action(api.auth.signIn, {
+    provider: "password",
+    params: {
+      email: `second-${invitedEmail}`,
+      password: "a-very-long-password-1234",
+      flow: "signUp",
+      inviteToken: invite.token,
+    },
+  });
+  fail("an accepted invite token was reusable", "signUp succeeded");
+} catch {
+  ok("an accepted invite token cannot be reused");
+}
+
+console.log("\n7. area coordinates are snapped, not offset");
+const areaCard = search.page.find((card) => card.coordPrecision === "area");
+if (areaCard === undefined) {
+  ok("no area-precision listing in this page (nothing to check)");
+} else {
+  const onGrid =
+    Math.abs(areaCard.lat / 0.005 - Math.round(areaCard.lat / 0.005)) < 1e-9 &&
+    Math.abs(areaCard.lng / 0.005 - Math.round(areaCard.lng / 0.005)) < 1e-9;
+  if (onGrid) {
+    ok(
+      "area coordinates sit on the 0.005 grid (not recoverable from the id)",
+      `${areaCard.lat}, ${areaCard.lng}`,
+    );
+  } else {
+    fail("area coordinates are not on the grid", `${areaCard.lat}, ${areaCard.lng}`);
+  }
+}
+
 console.log(`\n${failures === 0 ? "ALL CHECKS PASSED" : `${failures} CHECK(S) FAILED`}`);
 process.exit(failures === 0 ? 0 : 1);

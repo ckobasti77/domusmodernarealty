@@ -32,6 +32,7 @@ import type * as lib_money from "../lib/money.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_search from "../lib/search.js";
 import type * as lib_slug from "../lib/slug.js";
+import type * as lib_tokens from "../lib/tokens.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as listings from "../listings.js";
 import type * as listingsAdmin from "../listingsAdmin.js";
@@ -98,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/search": typeof lib_search;
   "lib/slug": typeof lib_slug;
+  "lib/tokens": typeof lib_tokens;
   "lib/validators": typeof lib_validators;
   listings: typeof listings;
   listingsAdmin: typeof listingsAdmin;

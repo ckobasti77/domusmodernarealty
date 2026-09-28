@@ -122,24 +122,39 @@ export const bySlug = query({
     const children = [];
     for (const child of childDocs) children.push(await toNode(ctx, child));
 
+    // Query by the location's OWN index. Scanning the 80 newest listings and
+    // filtering in JS emptied a neighborhood page as soon as 80 newer listings
+    // were published anywhere else in Serbia.
     const listingLimit = Math.min(Math.max(args.listingLimit ?? 9, 1), 24);
     const cards: ListingCard[] = [];
     for (const transaction of ["sale", "rent"] as const) {
       if (cards.length >= listingLimit) break;
-      const found = await ctx.db
-        .query("listings")
-        .withIndex("by_scope_and_publishedAt", (q) =>
-          q.eq("scope", listedScope(transaction)),
-        )
-        .order("desc")
-        .take(80);
+      const scope = listedScope(transaction);
+      const found =
+        doc.kind === "neighborhood"
+          ? await ctx.db
+              .query("listings")
+              .withIndex("by_scope_and_neighborhoodId_and_publishedAt", (q) =>
+                q.eq("scope", scope).eq("neighborhoodId", doc._id),
+              )
+              .order("desc")
+              .take(listingLimit * 2)
+          : doc.kind === "municipality"
+            ? await ctx.db
+                .query("listings")
+                .withIndex("by_scope_and_municipalityId_and_price", (q) =>
+                  q.eq("scope", scope).eq("municipalityId", doc._id),
+                )
+                .take(listingLimit * 2)
+            : await ctx.db
+                .query("listings")
+                .withIndex("by_scope_and_cityId_and_price", (q) =>
+                  q.eq("scope", scope).eq("cityId", doc._id),
+                )
+                .take(listingLimit * 2);
+
       for (const listing of found) {
         if (cards.length >= listingLimit) break;
-        const inArea =
-          listing.neighborhoodId === doc._id ||
-          listing.municipalityId === doc._id ||
-          listing.cityId === doc._id;
-        if (!inArea) continue;
         if (!matches(listing, { transaction })) continue;
         cards.push(await toCard(ctx, listing));
       }

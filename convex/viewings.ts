@@ -12,6 +12,7 @@ import {
 } from "./lib/rateLimit";
 import { isPublicScope } from "./lib/search";
 import { localeV, viewingModeV } from "./lib/validators";
+import { clampOffset } from "./agents";
 import { CONSENT_TEXT_VERSION } from "./leads";
 
 const MAX_SLOT_MS = 3 * 60 * 60 * 1000;
@@ -29,6 +30,8 @@ export const request = mutation({
     start: v.number(),
     end: v.number(),
     mode: viewingModeV,
+    /** Visitor offset from UTC in minutes; agent hours are local wall-clock. */
+    tzOffsetMinutes: v.number(),
     contact: v.object({
       name: v.string(),
       email: v.string(),
@@ -53,8 +56,9 @@ export const request = mutation({
       invalidInput("Termin je predug.");
     }
     if (args.start < now) invalidInput("Izabrani termin je u prošlosti.");
-    if (args.start > now + 60 * 86_400_000) {
-      invalidInput("Termin se može zakazati najviše 60 dana unaprijed.");
+    // PRD A5: the widget offers the next 14 days.
+    if (args.start > now + 14 * 86_400_000) {
+      invalidInput("Termin se može zakazati najviše 14 dana unaprijed.");
     }
 
     const listing = await ctx.db.get("listings", args.listingId);
@@ -64,31 +68,37 @@ export const request = mutation({
     const agent = await ctx.db.get("agents", listing.agentId);
     if (agent === null) appError("NOT_FOUND", "Agent nije pronađen.");
 
-    // 1) the slot must sit inside the agent's weekly availability
-    const startDate = new Date(args.start);
-    const weekday = startDate.getUTCDay();
-    const dayStart = Date.UTC(
-      startDate.getUTCFullYear(),
-      startDate.getUTCMonth(),
-      startDate.getUTCDate(),
-    );
+    // 1) the slot must sit inside the agent's weekly availability, compared in
+    //    LOCAL space because the agent entered local wall-clock hours.
+    const tzMs = clampOffset(args.tzOffsetMinutes) * 60_000;
+    const localStart = args.start + tzMs;
+    const localEnd = args.end + tzMs;
+    const weekday = new Date(localStart).getUTCDay();
+    const localDayStart = localStart - (localStart % 86_400_000);
     const withinAvailability = agent.availability.some((slot) => {
       if (slot.weekday !== weekday) return false;
       const from = parseHm(slot.from);
       const to = parseHm(slot.to);
       if (from === null || to === null) return false;
-      return args.start >= dayStart + from && args.end <= dayStart + to;
+      return (
+        localStart >= localDayStart + from && localEnd <= localDayStart + to
+      );
     });
     if (!withinAvailability) {
       appError("SLOT_TAKEN", "Izabrani termin nije u radnom vremenu agenta.");
     }
 
-    // 2) the slot must not overlap a requested or confirmed viewing
-    const dayEnd = dayStart + 86_400_000;
+    // 2) the slot must not overlap a requested or confirmed viewing. The window
+    //    is widened by the longest allowed slot so an evening viewing that runs
+    //    past midnight still counts.
+    const windowStart = args.start - (args.start % 86_400_000) - MAX_SLOT_MS;
     const sameDay = await ctx.db
       .query("viewings")
       .withIndex("by_agentId_and_start", (q) =>
-        q.eq("agentId", agent._id).gte("start", dayStart).lt("start", dayEnd),
+        q
+          .eq("agentId", agent._id)
+          .gte("start", windowStart)
+          .lt("start", windowStart + 86_400_000 + 2 * MAX_SLOT_MS),
       )
       .take(100);
     const clash = sameDay.some(
@@ -122,9 +132,9 @@ export const request = mutation({
 
     let contactId;
     if (existing !== null && existing.anonymizedAt === undefined) {
+      // Public path: fill gaps only, never replace an existing identifier.
       await ctx.db.patch("contacts", existing._id, {
-        name,
-        ...(phone !== undefined ? { phone } : {}),
+        ...(existing.phone === undefined && phone !== undefined ? { phone } : {}),
         locale: args.locale,
         consents: [...existing.consents.slice(-19), consent],
       });

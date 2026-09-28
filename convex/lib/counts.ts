@@ -55,6 +55,20 @@ export async function applyCountDelta(
   before: CountableListing | null,
   after: CountableListing | null,
 ): Promise<void> {
+  // Autosave calls this on every patch. Without this guard two agents editing
+  // listings in the same city contend on one `locationCounts` row for nothing.
+  if (
+    before !== null &&
+    after !== null &&
+    before.scope === after.scope &&
+    before.transaction === after.transaction &&
+    before.cityId === after.cityId &&
+    before.municipalityId === after.municipalityId &&
+    before.neighborhoodId === after.neighborhoodId
+  ) {
+    return;
+  }
+
   if (before !== null && isCounted(before)) {
     for (const id of locationIdsOf(before)) {
       await adjust(ctx, id, before.transaction, -1);

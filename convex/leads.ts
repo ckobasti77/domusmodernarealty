@@ -85,10 +85,12 @@ async function upsertContact(
   }
 
   if (existing !== null && existing.anonymizedAt === undefined) {
+    // Never overwrite an identifier from a public form: anyone who knows a
+    // client's email could otherwise replace their phone number with their own
+    // and have the agent call them about the client's property. Only fill gaps;
+    // changing an existing value is an admin action (`contacts.merge`).
     await ctx.db.patch("contacts", existing._id, {
-      name,
-      email,
-      ...(phone !== undefined ? { phone } : {}),
+      ...(existing.phone === undefined && phone !== undefined ? { phone } : {}),
       locale,
       consents: [...existing.consents.slice(-19), consent],
     });
@@ -245,10 +247,11 @@ export const createValuation = mutation({
     assertPrivacyConsent(args.privacy);
     await consumeLimit(ctx, "valuationPerSession", args.sessionKey);
 
-    if (args.areaM2 < 8 || args.areaM2 > 2000) {
+    // NaN and Infinity satisfy both comparisons, so test finiteness first.
+    if (!Number.isFinite(args.areaM2) || args.areaM2 < 8 || args.areaM2 > 2000) {
       invalidInput("Kvadratura mora biti između 8 i 2000 m².");
     }
-    if (args.rooms < 0 || args.rooms > 20) {
+    if (!Number.isFinite(args.rooms) || args.rooms < 0 || args.rooms > 20) {
       invalidInput("Broj soba mora biti između 0 i 20.");
     }
 
@@ -345,8 +348,22 @@ export const createSeller = mutation({
     assertPrivacyConsent(args.privacy);
     await consumeLimit(ctx, "leadPerSession", args.sessionKey);
 
-    if (args.areaM2 < 8 || args.areaM2 > 20000) {
+    if (!Number.isFinite(args.areaM2) || args.areaM2 < 8 || args.areaM2 > 20000) {
       invalidInput("Kvadratura mora biti između 8 i 20000 m².");
+    }
+    if (
+      args.rooms !== undefined &&
+      (!Number.isFinite(args.rooms) || args.rooms < 0 || args.rooms > 30)
+    ) {
+      invalidInput("Broj soba mora biti između 0 i 30.");
+    }
+    if (
+      args.expectedPrice !== undefined &&
+      (!Number.isFinite(args.expectedPrice) ||
+        args.expectedPrice < 0 ||
+        args.expectedPrice > 100_000_000)
+    ) {
+      invalidInput("Očekivana cena nije realna.");
     }
 
     const answers: Record<string, string | number | boolean> = {

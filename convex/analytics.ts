@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { requireRole } from "./lib/auth";
+import { assertCanEditListing, requireRole } from "./lib/auth";
 import { leadSourceV, leadTypeV } from "./lib/validators";
 
 const MANAGERS = ["admin", "manager"] as const;
@@ -93,11 +93,16 @@ export const topListings = query({
   handler: async (ctx, args) => {
     await requireRole(ctx, MANAGERS);
     const limit = Math.min(Math.max(args.limit ?? 10, 1), 50);
-    const stats = await ctx.db.query("listingStats").take(500);
-    stats.sort((a, b) => b.views - a.views);
+    // Indexed by views: taking 500 rows and sorting them in JS returned the
+    // busiest of the OLDEST 500 listings, which is a different chart.
+    const stats = await ctx.db
+      .query("listingStats")
+      .withIndex("by_views")
+      .order("desc")
+      .take(limit);
 
     const out = [];
-    for (const row of stats.slice(0, limit)) {
+    for (const row of stats) {
       const listing = await ctx.db.get("listings", row.listingId);
       if (listing === null) continue;
       out.push({
@@ -127,7 +132,11 @@ export const listingFunnel = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    await requireRole(ctx, ["admin", "manager", "agent"]);
+    const viewer = await requireRole(ctx, ["admin", "manager", "agent"]);
+    const listing = await ctx.db.get("listings", args.listingId);
+    if (listing === null) return null;
+    assertCanEditListing(viewer, listing);
+
     const row = await ctx.db
       .query("listingStats")
       .withIndex("by_listingId", (q) => q.eq("listingId", args.listingId))

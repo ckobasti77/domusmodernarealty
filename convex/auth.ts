@@ -3,17 +3,30 @@ import { convexAuth } from "@convex-dev/auth/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { appError } from "./lib/errors";
+import { MIN_TOKEN_LENGTH, hashToken } from "./lib/tokens";
 import type { Role } from "./lib/validators";
 
-type PasswordProfile = { email: string; name?: string };
+type PasswordProfile = {
+  email: string;
+  name?: string;
+  pendingInviteToken?: string;
+};
+
+const INVITE_ONLY =
+  "Registracija je moguća samo preko važeće pozivnice. Obratite se administratoru.";
 
 /**
  * Invite-only Password auth.
  *
- * `createOrUpdateUser` is the single gate: a brand-new account is accepted only
- * when a pending, non-expired, unrevoked invite exists for that email. The
- * bootstrap path (`seed:createAdmin`) creates such an invite first, so there is
- * exactly one code path and no "first user is free" hole.
+ * `createOrUpdateUser` is the single gate. A brand-new account is accepted only
+ * when the caller presents the INVITE TOKEN itself — matching on the invited
+ * email alone would let anyone who knows a colleague's address claim their
+ * account (and their role) before they read the mail.
+ *
+ * The token travels as an extra `signIn` param, through `profile()`, on the
+ * transient `users.pendingInviteToken` field; it is never written to the row.
+ * The bootstrap (`seed:createAdmin`) mints a real invite and passes its token the
+ * same way, so there is exactly one code path.
  */
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
@@ -22,14 +35,22 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         const email = String(params.email ?? "").trim().toLowerCase();
         const rawName = params.name;
         const name = typeof rawName === "string" ? rawName.trim() : undefined;
+        const rawToken = params.inviteToken;
+        const inviteToken =
+          typeof rawToken === "string" ? rawToken.trim() : undefined;
+
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           appError("INVALID_INPUT", "Unesite ispravnu email adresu.");
         }
         return {
           email,
           ...(name !== undefined && name.length > 0 ? { name } : {}),
+          // Overridden from the invite in `createOrUpdateUser`; never trusted.
           role: "agent" as Role,
           status: "active" as const,
+          ...(inviteToken !== undefined && inviteToken.length > 0
+            ? { pendingInviteToken: inviteToken }
+            : {}),
         };
       },
     }),
@@ -50,27 +71,31 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         appError("INVALID_INPUT", "Email adresa je obavezna.");
       }
 
+      const token = profile.pendingInviteToken;
+      if (token === undefined || token.length < MIN_TOKEN_LENGTH) {
+        appError("FORBIDDEN", INVITE_ONLY);
+      }
+
+      const tokenHash = await hashToken(token);
       const invite = await ctx.db
         .query("invites")
-        .withIndex("by_email", (q) => q.eq("email", email))
-        .order("desc")
-        .first();
+        .withIndex("by_tokenHash", (q) => q.eq("tokenHash", tokenHash))
+        .unique();
 
       if (
         invite === null ||
+        invite.email !== email ||
         invite.acceptedAt !== undefined ||
         invite.revokedAt !== undefined ||
         invite.expiresAt < Date.now()
       ) {
-        appError(
-          "FORBIDDEN",
-          "Registracija je moguća samo po pozivnici. Obratite se administratoru.",
-        );
+        appError("FORBIDDEN", INVITE_ONLY);
       }
 
       const userId: Id<"users"> = await ctx.db.insert("users", {
         email,
         name: profile.name ?? invite.name,
+        // The role comes from the invite, never from the sign-up form.
         role: invite.role,
         status: "active",
         ...(invite.agentId !== undefined ? { agentId: invite.agentId } : {}),

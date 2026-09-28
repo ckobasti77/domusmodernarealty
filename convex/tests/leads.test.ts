@@ -192,6 +192,7 @@ describe("viewing requests", () => {
     const { viewingId, leadId } = await t.mutation(api.viewings.request, {
       sessionKey: session("v1"),
       locale: "sr-Latn",
+      tzOffsetMinutes: 0,
       listingId: ids.listing,
       start,
       end: start + 3_600_000,
@@ -216,6 +217,7 @@ describe("viewing requests", () => {
       t.mutation(api.viewings.request, {
         sessionKey: session("v2"),
         locale: "sr-Latn",
+        tzOffsetMinutes: 0,
         listingId: ids.listing,
         start,
         end: start + 3_600_000,
@@ -232,6 +234,7 @@ describe("viewing requests", () => {
     const start = nextMonday10Utc();
     const args = {
       locale: "sr-Latn" as const,
+      tzOffsetMinutes: 0,
       listingId: ids.listing,
       start,
       end: start + 3_600_000,

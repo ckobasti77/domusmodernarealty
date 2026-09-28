@@ -15,4 +15,13 @@ crons.cron(
 // dashboard charts, so no query ever has to aggregate at read time.
 crons.cron("roll up daily stats", "5 3 * * *", internal.stats.rollupDaily, {});
 
+// 03:20 UTC — drop view-dedupe rows older than 30 days so `listingViews` does
+// not grow without bound.
+crons.cron(
+  "prune listing view dedupe rows",
+  "20 3 * * *",
+  internal.stats.pruneListingViews,
+  {},
+);
+
 export default crons;

@@ -15,18 +15,27 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   viewingGlobal: { kind: "fixed window", rate: 120, period: HOUR },
   valuationPerSession: { kind: "token bucket", rate: 4, period: HOUR, capacity: 2 },
   trackViewPerSession: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 30 },
+  trackViewGlobal: { kind: "fixed window", rate: 5000, period: HOUR },
+  favoritePerSession: { kind: "token bucket", rate: 30, period: HOUR, capacity: 15 },
 });
 
 export type PublicFormLimit =
   | "leadPerSession"
   | "viewingPerSession"
   | "valuationPerSession"
-  | "trackViewPerSession";
+  | "trackViewPerSession"
+  | "favoritePerSession";
 
-const GLOBAL_FOR: Partial<Record<PublicFormLimit, "leadGlobal" | "viewingGlobal">> = {
+type GlobalLimit = "leadGlobal" | "viewingGlobal" | "trackViewGlobal";
+
+const GLOBAL_FOR: Partial<Record<PublicFormLimit, GlobalLimit>> = {
   leadPerSession: "leadGlobal",
   valuationPerSession: "leadGlobal",
   viewingPerSession: "viewingGlobal",
+  // A script can mint a fresh sessionKey per request, so the per-session bucket
+  // alone cannot bound view inflation.
+  trackViewPerSession: "trackViewGlobal",
+  favoritePerSession: "trackViewGlobal",
 };
 
 /** Session keys come from the browser; keep them short and opaque. */

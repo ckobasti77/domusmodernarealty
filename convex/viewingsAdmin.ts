@@ -184,14 +184,24 @@ export const create = mutation({
     const agent = await ctx.db.get("agents", args.agentId);
     if (agent === null) notFound("Agent");
 
-    const dayStart = args.start - (args.start % 86_400_000);
+    // Without this an agent could attach a lead belonging to someone else and
+    // then read that lead contact name and phone back through `range` / `list`.
+    if (args.leadId !== undefined) {
+      const lead = await ctx.db.get("leads", args.leadId);
+      if (lead === null) notFound("Upit");
+      assertCanEditAssignment(viewer, lead);
+    }
+
+    // Widen the window backwards by the longest allowed slot, so a viewing that
+    // started the previous evening still counts as a clash.
+    const dayStart = args.start - (args.start % 86_400_000) - 3 * 3_600_000;
     const clashes = await ctx.db
       .query("viewings")
       .withIndex("by_agentId_and_start", (q) =>
         q
           .eq("agentId", args.agentId)
           .gte("start", dayStart)
-          .lt("start", dayStart + 86_400_000),
+          .lt("start", dayStart + 86_400_000 + 6 * 3_600_000),
       )
       .take(100);
     if (

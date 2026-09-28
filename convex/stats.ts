@@ -59,13 +59,24 @@ export const trackView = mutation({
   },
 });
 
-/** Favorite counter, best-effort: the source of truth is the visitor's browser. */
+/**
+ * Favorite counter, best-effort: the source of truth is the visitor's browser.
+ * It still needs a session key and a rate limit — it is a public write that feeds
+ * the admin funnel and `analytics.topListings`, so an unlimited version lets
+ * anyone inflate or zero a listing.
+ */
 export const trackFavorite = mutation({
-  args: { listingId: v.id("listings"), delta: v.union(v.literal(1), v.literal(-1)) },
+  args: {
+    listingId: v.id("listings"),
+    sessionKey: v.string(),
+    delta: v.union(v.literal(1), v.literal(-1)),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
+    assertSessionKey(args.sessionKey);
     const listing = await ctx.db.get("listings", args.listingId);
     if (listing === null || !isPublicScope(listing.scope)) return null;
+    await consumeLimit(ctx, "favoritePerSession", args.sessionKey);
 
     const stats = await ctx.db
       .query("listingStats")
@@ -85,6 +96,26 @@ export const trackFavorite = mutation({
       favorites: Math.max(stats.favorites + args.delta, 0),
     });
     return null;
+  },
+});
+
+/**
+ * `listingViews` exists only to make `trackView` idempotent per session. It is
+ * append-only and would otherwise grow forever, so a nightly cron drops rows
+ * older than the retention window in bounded batches.
+ */
+export const pruneListingViews = internalMutation({
+  args: { olderThanDays: v.optional(v.number()) },
+  returns: v.object({ deleted: v.number(), more: v.boolean() }),
+  handler: async (ctx, args) => {
+    const days = Math.min(Math.max(args.olderThanDays ?? 30, 1), 365);
+    const cutoff = Date.now() - days * 86_400_000;
+    const stale = await ctx.db
+      .query("listingViews")
+      .withIndex("by_creation_time", (q) => q.lt("_creationTime", cutoff))
+      .take(500);
+    for (const row of stale) await ctx.db.delete("listingViews", row._id);
+    return { deleted: stale.length, more: stale.length === 500 };
   },
 });
 
@@ -128,10 +159,24 @@ export const rollupDaily = internalMutation({
       )
       .take(2000);
 
+    // Count by `publishedAt`, not `updatedAt`: any edit to a live listing would
+    // otherwise show up as a new publication.
     const published = await ctx.db
       .query("listings")
-      .withIndex("by_status_and_updatedAt", (q) =>
-        q.eq("status", "published").gte("updatedAt", dayStart).lt("updatedAt", todayStart),
+      .withIndex("by_scope_and_publishedAt", (q) =>
+        q
+          .eq("scope", "listed:sale")
+          .gte("publishedAt", dayStart)
+          .lt("publishedAt", todayStart),
+      )
+      .take(2000);
+    const publishedRent = await ctx.db
+      .query("listings")
+      .withIndex("by_scope_and_publishedAt", (q) =>
+        q
+          .eq("scope", "listed:rent")
+          .gte("publishedAt", dayStart)
+          .lt("publishedAt", todayStart),
       )
       .take(2000);
 
@@ -140,7 +185,7 @@ export const rollupDaily = internalMutation({
       views: views.length,
       leads: leads.length,
       viewings: viewings.length,
-      published: published.length,
+      published: published.length + publishedRent.length,
     };
 
     const existing = await ctx.db

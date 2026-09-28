@@ -58,14 +58,19 @@ export const bySlug = query({
 /**
  * Free viewing slots for the public booking widget.
  *
- * `fromDay` is an absolute epoch ms for midnight of the first day — the client
- * supplies it, so this query never reads the wall clock.
+ * `fromDay` is an absolute epoch ms for LOCAL midnight of the first day and
+ * `tzOffsetMinutes` is the visitor's offset from UTC (Belgrade: 60 in winter, 120
+ * in summer). Agent availability is entered as local wall-clock time in
+ * `agentsAdmin.setAvailability`, so both sides have to work in local space —
+ * treating "09:00" as 09:00 UTC shifted the whole booking window by 1-2 hours and
+ * moved it again at every DST change.
  */
 export const slots = query({
   args: {
     agentId: v.id("agents"),
     fromDay: v.number(),
     days: v.number(),
+    tzOffsetMinutes: v.number(),
     slotMinutes: v.optional(v.number()),
   },
   returns: v.array(
@@ -82,6 +87,7 @@ export const slots = query({
     const days = Math.min(Math.max(Math.round(args.days), 1), 21);
     const slotMs = Math.min(Math.max(args.slotMinutes ?? 60, 30), 180) * 60_000;
     const dayMs = 86_400_000;
+    const tzMs = clampOffset(args.tzOffsetMinutes) * 60_000;
     const windowEnd = args.fromDay + days * dayMs;
 
     const booked = await ctx.db
@@ -97,7 +103,8 @@ export const slots = query({
     const out: { start: number; end: number; taken: boolean }[] = [];
     for (let day = 0; day < days; day += 1) {
       const dayStart = args.fromDay + day * dayMs;
-      const weekday = new Date(dayStart).getUTCDay();
+      // Read the weekday in the visitor's local space, not in UTC.
+      const weekday = new Date(dayStart + tzMs).getUTCDay();
       for (const slot of agent.availability) {
         if (slot.weekday !== weekday) continue;
         const from = parseHm(slot.from);
@@ -115,6 +122,12 @@ export const slots = query({
     return out;
   },
 });
+
+/** Rejects nonsense offsets; real ones live in [-12 h, +14 h]. */
+export function clampOffset(minutes: number): number {
+  if (!Number.isFinite(minutes)) return 0;
+  return Math.min(Math.max(Math.round(minutes), -720), 840);
+}
 
 function parseHm(value: string): number | null {
   const match = /^(\d{1,2}):(\d{2})$/.exec(value);

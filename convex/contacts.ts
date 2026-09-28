@@ -174,7 +174,13 @@ export const merge = mutation({
     const leads = await ctx.db
       .query("leads")
       .withIndex("by_contactId", (q) => q.eq("contactId", from._id))
-      .take(200);
+      .take(201);
+    // Deleting `from` while lead 201+ still pointed at it orphaned those leads.
+    if (leads.length > 200) {
+      invalidInput(
+        "Kontakt ima previše upita za jedno spajanje. Spojite ga u više koraka.",
+      );
+    }
     for (const lead of leads) {
       await ctx.db.patch("leads", lead._id, { contactId: into._id });
     }
@@ -219,12 +225,29 @@ export const anonymize = mutation({
       anonymizedAt: now,
     });
 
+    // `answers` holds the valuation/seller `addressNote` (the subject's own
+    // address) and `leadNotes` holds whatever staff typed, so ZZPL erasure has to
+    // reach both — clearing `message` alone left the address behind.
     const leads = await ctx.db
       .query("leads")
       .withIndex("by_contactId", (q) => q.eq("contactId", doc._id))
-      .take(200);
+      .take(201);
+    if (leads.length > 200) {
+      invalidInput(
+        "Kontakt ima previše upita za jednu operaciju. Pokrenite anonimizaciju ponovo.",
+      );
+    }
     for (const lead of leads) {
-      await ctx.db.patch("leads", lead._id, { message: undefined });
+      await ctx.db.patch("leads", lead._id, {
+        message: undefined,
+        answers: undefined,
+        valuation: undefined,
+      });
+      const notes = await ctx.db
+        .query("leadNotes")
+        .withIndex("by_leadId_and_at", (q) => q.eq("leadId", lead._id))
+        .take(50);
+      for (const note of notes) await ctx.db.delete("leadNotes", note._id);
     }
 
     await logActivity(ctx, {
@@ -240,7 +263,10 @@ export const anonymize = mutation({
 
 function csvCell(value: string | number | undefined): string {
   if (value === undefined) return "";
-  const text = String(value);
+  let text = String(value);
+  // A contact name arrives from a public form. A leading =, +, - or @ makes Excel
+  // and LibreOffice treat the cell as a formula, so prefix it to neutralise it.
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return /[",\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

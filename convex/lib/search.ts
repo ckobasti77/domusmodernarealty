@@ -117,7 +117,9 @@ const PPM2_SORTS: readonly Sort[] = ["ppm2_asc", "ppm2_desc"];
  * indexed field, so a price/area range outranks the requested sort order.
  */
 export function pickDriver(filters: SearchFilters, sort: Sort): DriverPlan {
-  if (filters.q !== undefined && filters.q.trim().length > 0) {
+  // `normalizeText("###")` is empty, and an empty search string is not a valid
+  // search-index query — fall through to the normal drivers.
+  if (filters.q !== undefined && normalizeText(filters.q).length > 0) {
     return { driver: "text", orderedInWindow: sort !== "relevance" };
   }
 

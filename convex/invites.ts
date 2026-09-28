@@ -4,25 +4,11 @@ import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
 import { invalidInput, notFound } from "./lib/errors";
 import { requireEmail } from "./lib/rateLimit";
+import { MIN_TOKEN_LENGTH, hashToken, randomToken } from "./lib/tokens";
 import { roleV } from "./lib/validators";
 
 const ADMINS = ["admin"] as const;
 const INVITE_TTL_MS = 7 * 86_400_000;
-
-/** base64url of the SHA-256 digest — only the hash is ever stored. */
-export async function hashToken(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token),
-  );
-  let binary = "";
-  for (const byte of new Uint8Array(digest)) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function newToken(): string {
-  return `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(/-/g, "");
-}
 
 export const list = query({
   args: {},
@@ -99,7 +85,7 @@ export const create = mutation({
       }
     }
 
-    const token = newToken();
+    const token = randomToken();
     const id = await ctx.db.insert("invites", {
       email,
       ...(args.name !== undefined ? { name: args.name.trim().slice(0, 120) } : {}),
@@ -147,16 +133,20 @@ export const revoke = mutation({
 /**
  * Public: the acceptance page checks the token before showing the form, so a bad
  * link fails fast instead of failing inside the sign-up call. Returns the email
- * only — never the role or who invited.
+ * only — never the role, nor who invited.
+ *
+ * `now` is an argument because a query must not read the wall clock: a cached
+ * result would keep claiming a lapsed invite is still valid. The authoritative
+ * expiry check is in `auth.ts::createOrUpdateUser`, which runs in a mutation.
  */
 export const checkToken = query({
-  args: { token: v.string() },
+  args: { token: v.string(), now: v.number() },
   returns: v.union(
     v.object({ valid: v.literal(true), email: v.string(), name: v.optional(v.string()) }),
     v.object({ valid: v.literal(false), reason: v.string() }),
   ),
   handler: async (ctx, args) => {
-    if (args.token.length < 32) {
+    if (args.token.length < MIN_TOKEN_LENGTH) {
       return { valid: false as const, reason: "Pozivnica nije ispravna." };
     }
     const tokenHash = await hashToken(args.token);
@@ -174,7 +164,7 @@ export const checkToken = query({
     if (invite.acceptedAt !== undefined) {
       return { valid: false as const, reason: "Pozivnica je već iskorišćena." };
     }
-    if (invite.expiresAt < Date.now()) {
+    if (invite.expiresAt < args.now) {
       return { valid: false as const, reason: "Pozivnica je istekla." };
     }
     return {

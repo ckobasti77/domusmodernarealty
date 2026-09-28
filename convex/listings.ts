@@ -371,18 +371,26 @@ export const bySlug = query({
   },
 });
 
-/** Staff-only preview of an unpublished listing, gated by a per-listing token. */
+/**
+ * Staff-only preview of an unpublished listing, gated by a per-listing token.
+ * `now` is an argument (queries must not read the clock) and the link expires:
+ * otherwise a preview URL shared once grants permanent access to an unpublished
+ * listing detail, including the exact street.
+ */
 export const previewBySlug = query({
-  args: { slug: v.string(), token: v.string() },
+  args: { slug: v.string(), token: v.string(), now: v.number() },
   returns: v.union(listingDetailV, v.null()),
   handler: async (ctx, args) => {
-    if (args.token.length < 16) return null;
+    if (args.token.length < 32) return null;
     const listing = await ctx.db
       .query("listings")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .unique();
     if (listing === null) return null;
     if (listing.previewToken === undefined || listing.previewToken !== args.token) {
+      return null;
+    }
+    if (listing.previewExpiresAt === undefined || listing.previewExpiresAt < args.now) {
       return null;
     }
     return await toDetail(ctx, listing);
@@ -419,7 +427,7 @@ export const similar = query({
   handler: async (ctx, args) => {
     const limit = Math.min(Math.max(args.limit ?? 4, 1), 12);
     const listing = await ctx.db.get("listings", args.id);
-    if (listing === null) return [];
+    if (listing === null || !isPublicScope(listing.scope)) return [];
 
     const scope = listedScope(listing.transaction);
     const min = Math.round(listing.price * 0.75);

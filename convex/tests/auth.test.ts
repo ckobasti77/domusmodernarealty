@@ -143,6 +143,46 @@ describe("admin authorization", () => {
     ).rejects.toThrow(/FORBIDDEN|dozvolu/);
   });
 
+  test("an invite is only usable by whoever holds its token", async () => {
+    const { t, ids } = await setup();
+    const asAdmin = t.withIdentity({ subject: ids.admin });
+
+    const invite = await asAdmin.mutation(api.invites.create, {
+      email: "novi.agent@mihajlo-estate.local",
+      role: "manager",
+      name: "Novi Agent",
+    });
+    expect(invite.token.length).toBeGreaterThanOrEqual(32);
+
+    const now = Date.now();
+    const good = await t.query(api.invites.checkToken, {
+      token: invite.token,
+      now,
+    });
+    expect(good).toMatchObject({ valid: true, email: "novi.agent@mihajlo-estate.local" });
+
+    // Knowing the invited ADDRESS must not be enough, and a wrong token must not
+    // resolve to it either.
+    const guessed = await t.query(api.invites.checkToken, {
+      token: "x".repeat(64),
+      now,
+    });
+    expect(guessed).toMatchObject({ valid: false });
+
+    await asAdmin.mutation(api.invites.revoke, { id: invite.id });
+    const revoked = await t.query(api.invites.checkToken, {
+      token: invite.token,
+      now,
+    });
+    expect(revoked).toMatchObject({ valid: false });
+
+    const expired = await t.query(api.invites.checkToken, {
+      token: invite.token,
+      now: now + 8 * 86_400_000,
+    });
+    expect(expired).toMatchObject({ valid: false });
+  });
+
   test("the last active admin cannot demote themselves", async () => {
     const { t, ids } = await setup();
     const asAdmin = t.withIdentity({ subject: ids.admin });

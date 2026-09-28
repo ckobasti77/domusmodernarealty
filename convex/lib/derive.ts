@@ -62,7 +62,11 @@ export function applyDerived(
     searchText: buildSearchText([
       ...l10nValues(listing.title),
       ...locationNames,
-      listing.location.street,
+      // Only index the street when the listing actually shows it: otherwise a
+      // text search for the street name would confirm a hidden address.
+      listing.location.addressVisibility === "exact"
+        ? listing.location.street
+        : undefined,
       listing.ref,
       listing.propertyType,
       listing.subtype,

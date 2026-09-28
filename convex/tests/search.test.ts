@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { describe, expect, test } from "vitest";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { testApp } from "../../tests/unit/convex-harness";
 import { makeAgent, makeListing, makeLocation } from "./fixtures";
 import { normalizeText } from "../lib/search";
@@ -431,5 +431,47 @@ describe("pure search helpers", () => {
     expect(lux.mid).toBeGreaterThan(poor.mid);
     expect(lux.low).toBeLessThan(lux.mid);
     expect(lux.high).toBeGreaterThan(lux.mid);
+  });
+});
+
+describe("mandate expiry cron", () => {
+  test("withdraws expired mandates and ignores listings that have none", async () => {
+    const { t, ids } = await fixture();
+
+    const expired = await t.run(async (ctx) => {
+      const id = await makeListing(ctx, 20, ids.city, ids.agent, {
+        mandateEndsInDays: -3,
+        titleSr: "Stan sa istekim ugovorom o posredovanju",
+      });
+      // A published listing with NO mandate at all: `undefined` sorts below every
+      // number in the index, so a naive `lt(now)` range would swallow the batch.
+      const noMandate = await makeListing(ctx, 21, ids.city, ids.agent, {
+        titleSr: "Stan bez ugovora o posredovanju",
+      });
+      await ctx.db.patch("listings", noMandate, {
+        mandate: undefined,
+        mandateEnd: undefined,
+      });
+      return { id, noMandate };
+    });
+
+    const result = await t.mutation(internal.listingsInternal.expireMandates, {});
+    expect(result.withdrawn).toBe(1);
+
+    const after = await t.run(async (ctx) => ({
+      expired: await ctx.db.get("listings", expired.id),
+      noMandate: await ctx.db.get("listings", expired.noMandate),
+    }));
+    expect(after.expired?.status).toBe("withdrawn");
+    expect(after.expired?.scope).toBe("hidden:sale");
+    expect(after.noMandate?.status).toBe("published");
+
+    const logged = await t.run(async (ctx) =>
+      ctx.db
+        .query("activity")
+        .withIndex("by_entityId_and_at", (q) => q.eq("entityId", expired.id))
+        .take(5),
+    );
+    expect(logged.some((row) => row.action === "listing.mandateExpired")).toBe(true);
   });
 });

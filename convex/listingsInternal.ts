@@ -14,16 +14,19 @@ export const expireMandates = internalMutation({
   returns: v.object({ withdrawn: v.number() }),
   handler: async (ctx) => {
     const now = Date.now();
+    // `undefined` sorts BELOW every number in a Convex index, so a bare
+    // `lt("mandateEnd", now)` would fill the batch with listings that have no
+    // mandate at all and never reach the genuinely expired ones. The `gte(0)`
+    // lower bound excludes them from the range instead of filtering afterwards.
     const expired = await ctx.db
       .query("listings")
       .withIndex("by_status_and_mandateEnd", (q) =>
-        q.eq("status", "published").lt("mandateEnd", now),
+        q.eq("status", "published").gte("mandateEnd", 0).lt("mandateEnd", now),
       )
       .take(100);
 
     let withdrawn = 0;
     for (const listing of expired) {
-      // `mandateEnd: undefined` also sorts below `now`; skip those.
       if (listing.mandateEnd === undefined) continue;
 
       const next = {

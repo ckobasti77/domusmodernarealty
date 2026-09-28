@@ -123,3 +123,35 @@ export const purgeByEmail = internalMutation({
     return { contacts: contacts.length, leads, viewings };
   },
 });
+
+/** Old-slug fixtures for the redirect test; only `e2e-…` slugs are accepted. */
+const E2E_SLUG = /^e2e-[a-z0-9-]{4,64}$/;
+
+export const addSlugRedirect = internalMutation({
+  args: { from: v.string(), toSlug: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!E2E_SLUG.test(args.from)) throw new Error(`Not an e2e slug: ${args.from}`);
+    const target = await ctx.db
+      .query("listings")
+      .withIndex("by_slug", (q) => q.eq("slug", args.toSlug))
+      .unique();
+    if (target === null) throw new Error(`No listing ${args.toSlug}`);
+    await ctx.db.insert("slugRedirects", { from: args.from, listingId: target._id, at: Date.now() });
+    return null;
+  },
+});
+
+export const removeSlugRedirect = internalMutation({
+  args: { from: v.string() },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    if (!E2E_SLUG.test(args.from)) throw new Error(`Not an e2e slug: ${args.from}`);
+    const rows = await ctx.db
+      .query("slugRedirects")
+      .withIndex("by_from", (q) => q.eq("from", args.from))
+      .take(10);
+    for (const row of rows) await ctx.db.delete("slugRedirects", row._id);
+    return rows.length;
+  },
+});

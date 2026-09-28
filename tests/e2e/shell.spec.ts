@@ -100,6 +100,9 @@ test.describe("cookie consent", () => {
 
 test.describe("header and mobile menu", () => {
   test("turns solid after scrolling past the hero", async ({ page }) => {
+    // The first-visit preloader (step 05) holds the scroll for up to 1.8 s by
+    // design; this test is about the header, so it starts as a repeat visitor.
+    await page.addInitScript(() => window.sessionStorage.setItem("me.preloaded.v1", "1"));
     await page.goto("/sr");
     await acceptCookies(page);
 

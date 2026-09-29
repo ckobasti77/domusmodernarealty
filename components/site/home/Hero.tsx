@@ -92,7 +92,10 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
             already in the first frame. (Padding by the banner's own measured
             height, known only after hydration, lifted the whole hero copy by
             240-300px at ~400ms: CLS 0.15-0.35.) */}
-        <Container className="pb-[calc(2.5rem+var(--consent-reserve,0px))] pt-36 lg:pb-[calc(3.5rem+var(--consent-reserve,0px))]">
+        {/* Short screens (a 360x740 phone, a 1280x800 laptop) tighten the top
+            padding, the gaps and, on a laptop, the headline, so a three-line
+            German or Russian headline still clears the banner. */}
+        <Container className="pb-[calc(2.5rem+var(--consent-reserve,0px))] pt-28 max-lg:[@media(max-height:47rem)]:pt-24 lg:pb-[calc(3.5rem+var(--consent-reserve,0px))] lg:pt-36 lg:[@media(max-height:51rem)]:pt-28">
           <div data-hero-reveal="eyebrow" className="[text-shadow:0_0_1.5rem_rgb(14_13_11/0.7)]">
             {/* Mist, not bronze: a 12px label over a lit photograph needs the
                 lighter tone to stay legible. */}
@@ -104,7 +107,7 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
               id="hero-title"
               data-hero-title=""
               data-hero-reveal="title"
-              className="col-span-4 max-w-[11ch] font-display text-display-xl font-normal text-ivory lg:col-span-8"
+              className="col-span-4 max-w-[14ch] font-display text-display-xl font-normal text-ivory max-lg:[@media(max-height:47rem)]:text-[3rem] lg:col-span-8 lg:[@media(max-height:51rem)]:text-[min(9vw,12svh)]"
             >
               {/* Display-xl: only a pair this short may be joined, or it would not fit a phone. */}
               {fixWidows(t("heroHeadline"), 10)}
@@ -120,7 +123,7 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
           {/* On the 12-column grid: the bar spans the columns under the headline
               and stops one gutter short of the lede's column; the scroll cue
               sits on the container's right edge. */}
-          <div className="mt-10 flex items-end gap-10 lg:mt-14 lg:grid lg:grid-cols-12 lg:gap-x-6">
+          <div className="mt-10 flex items-end gap-10 max-lg:[@media(max-height:47rem)]:mt-6 lg:mt-14 lg:grid lg:grid-cols-12 lg:gap-x-6 lg:[@media(max-height:51rem)]:mt-10">
             <div data-hero-reveal="search" className="min-w-0 flex-1 lg:col-span-10 xl:col-span-8">
               <HeroSearch locations={locations} />
             </div>

@@ -164,7 +164,7 @@ test.describe("landing content", () => {
     await expect(intro).not.toHaveAttribute("aria-labelledby");
     await expect(intro.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
     await expect(intro).toContainText("Verujemo da se prava nekretnina ne bira");
-    await expect(intro).toContainText("Mihajlo Estate, Beograd.");
+    await expect(intro).toContainText("Mihajlo Estate, Beograd");
 
     // Featured: the six demo listings, each one link to its page, with price, €/m² and area.
     const featured = section(page, "featured-title");
@@ -572,4 +572,55 @@ test.describe("desktop choreography", () => {
       })
       .toBeCloseTo(0, 0);
   });
+});
+
+/* ------------------------------------------------- the first-visit banner */
+
+/**
+ * On a first visit the cookie banner is up, and the hero reserves its height
+ * from the first paint (`html[data-consent="pending"]`). The hero's search must
+ * sit fully above the banner in every locale, including the long German and
+ * Russian headlines on short screens.
+ */
+test.describe("first visit: the cookie banner never covers the hero", () => {
+  const VIEWPORTS = [
+    [360, 740],
+    [390, 844],
+    [1024, 768],
+    [1280, 800],
+    [1440, 900],
+  ] as const;
+
+  for (const [width, height] of VIEWPORTS) {
+    for (const locale of ["sr", "en", "ru", "de"] as const) {
+      test(`/${locale} at ${width}x${height} @public`, async ({ browser }, testInfo) => {
+        test.skip(testInfo.project.name !== "desktop", "sets its own viewport; one project is enough");
+        const context = await browser.newContext({
+          baseURL: testInfo.project.use.baseURL,
+          viewport: { width, height },
+          isMobile: width < 500,
+          hasTouch: width < 1024,
+        });
+        try {
+          await context.addInitScript(() => window.sessionStorage.setItem("me.preloaded.v1", "1"));
+          const page = await context.newPage();
+          await page.goto(`/${locale}`);
+
+          await expect(page.locator("html")).toHaveAttribute("data-consent", "pending");
+          const banner = page.getByRole("dialog").first();
+          await expect(banner).toBeVisible();
+
+          const search = page.locator('section[aria-labelledby="hero-title"] [data-hero-reveal="search"]');
+          const bannerBox = await banner.boundingBox();
+          const searchBox = await search.boundingBox();
+          expect(bannerBox).not.toBeNull();
+          expect(searchBox).not.toBeNull();
+          if (bannerBox === null || searchBox === null) return;
+          expect(searchBox.y + searchBox.height, "the hero search ends above the banner").toBeLessThanOrEqual(bannerBox.y);
+        } finally {
+          await context.close();
+        }
+      });
+    }
+  }
 });

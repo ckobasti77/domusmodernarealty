@@ -450,7 +450,7 @@ html[data-consent="pending"] {
 
 @media (width >= 40rem) {
   html[data-consent="pending"] {
-    --consent-reserve: 10rem;
+    --consent-reserve: 11rem;
   }
 }
 

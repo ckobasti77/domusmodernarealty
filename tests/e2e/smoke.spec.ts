@@ -8,8 +8,11 @@ import { expect, test, type ConsoleMessage, type Page } from "@playwright/test";
  */
 async function dismissConsent(page: Page) {
   const banner = page.getByRole("dialog").filter({ hasText: /kolačić|cookie|файл|Cookies/i });
+  // On a first visit the banner waits for the intro curtain (at most 1.8s).
+  await banner.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
   if (await banner.isVisible().catch(() => false)) {
-    await banner.getByRole("button").first().click();
+    // By name: the first button in the banner is the inline "settings" link.
+    await banner.getByRole("button", { name: /Prihvatam sve|Accept all|Принять все|Alle akzeptieren/i }).click();
     await expect(banner).toBeHidden();
   }
 }

@@ -91,11 +91,12 @@ export function CookieConsent() {
     >
       <div className="mx-auto flex max-w-content flex-col gap-3 px-gutter py-4 md:px-gutter-md lg:flex-row lg:items-center lg:gap-12 lg:px-gutter-lg lg:py-6">
         <div className="min-w-0 flex-1">
-          {/* The serif title is a luxury flourish on a compliance notice; below
-              1024px it costs a line the body needs. It stays the accessible name. */}
+          {/* The serif title is a luxury flourish on a compliance notice. Below
+              1024px it is a small label, and on a phone it is visually hidden:
+              there it costs a line the body needs. It stays the accessible name. */}
           <h2
             id={headingId}
-            className="eyebrow text-bronze lg:font-display lg:text-h3 lg:font-normal lg:normal-case lg:tracking-normal lg:text-ivory"
+            className="eyebrow text-bronze max-sm:sr-only lg:font-display lg:text-h3 lg:font-normal lg:normal-case lg:tracking-normal lg:text-ivory"
           >
             {t("bannerHeading")}
           </h2>

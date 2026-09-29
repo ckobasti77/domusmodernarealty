@@ -15,7 +15,8 @@
 // Idempotent: an output is rebuilt only when the source is newer or --force is
 // given. A no-op when media-src/ holds nothing but .gitkeep/README.md.
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import ffmpegPath from "ffmpeg-static";
@@ -157,6 +158,20 @@ async function probeDimensions(file) {
  */
 const POSTER_AT = { walkthrough: 5.5 };
 
+/**
+ * Owner renders withdrawn after review, keyed by the SHA-256 of the SOURCE
+ * file: a corrected re-render dropped in under the same name has a different
+ * hash and is picked up again with no code change. A withdrawn file gets no
+ * outputs (stale ones are deleted) and no manifest entry, so every consumer
+ * falls back to its still or its verified photo.
+ */
+const WITHDRAWN = {
+  "349a93d1a5d94f5f7038176ff77340e1d26f2bfb8f68504aa7b10bd6ef46b7be":
+    "hero.mp4 pans onto an invented Moscow-style tiered tower under the 'Beograd' eyebrow; its loop also hard-cuts",
+  "167ed4ab4e798a887f80dee0ade67c520652fc530469d354dfd1e8d3bbc38806":
+    "city.mp4 renders Budapest (the Chain Bridge, Buda Castle), not Belgrade",
+};
+
 async function optimizeVideo(file) {
   const key = path.basename(file, path.extname(file));
   const source = path.join(SRC_DIR, file);
@@ -265,6 +280,13 @@ async function main() {
 
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
+    const hash = createHash("sha256").update(readFileSync(path.join(SRC_DIR, file))).digest("hex");
+    const reason = WITHDRAWN[hash];
+    if (reason !== undefined) {
+      rmSync(path.join(OUT_DIR, path.basename(file, ext)), { recursive: true, force: true });
+      console.log(`  ${path.basename(file, ext).padEnd(16)} withdrawn: ${reason}`);
+      continue;
+    }
     const result = IMAGE_EXT.has(ext) ? await optimizeImage(file) : await optimizeVideo(file);
     items[result.entry.key] = result.entry;
     built += result.built;
@@ -278,7 +300,6 @@ async function main() {
   // Remove the temporary frame PNGs written by the video probe and the poster picks.
   for (const name of readdirSync(OUT_DIR)) {
     if (name.startsWith(".probe-") || name.startsWith(".poster-")) {
-      const { rmSync } = await import("node:fs");
       rmSync(path.join(OUT_DIR, name), { force: true });
     }
   }

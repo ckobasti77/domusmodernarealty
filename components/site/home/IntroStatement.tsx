@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/site/Container";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import { IntroWords } from "./IntroWords";
 
 /**
@@ -18,7 +18,7 @@ export async function IntroStatement({ locale }: { locale: Locale }) {
       <Container>
         <div className="grid grid-cols-4 gap-x-6 lg:grid-cols-12">
           <IntroWords
-            text={fixOrphans(t("introStatement"))}
+            text={fixTypography(t("introStatement"))}
             className="col-span-4 font-display text-[clamp(2.25rem,5.2vw,4rem)] font-normal leading-[1.14] tracking-[-0.01em] lg:col-span-10 lg:col-start-2"
           />
           <p className="col-span-4 mt-10 flex items-center gap-4 lg:col-span-10 lg:col-start-2 lg:mt-14">

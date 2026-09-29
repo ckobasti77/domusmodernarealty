@@ -125,7 +125,8 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
   return (
     <div
       ref={root}
-      className="relative isolate aspect-[4/5] overflow-clip bg-ink sm:aspect-video lg:aspect-auto lg:h-svh"
+      // One screen tall, less the cookie-banner reservation on a first visit.
+      className="relative isolate aspect-[4/5] overflow-clip bg-ink sm:aspect-video lg:aspect-auto lg:h-[calc(100svh-var(--consent-reserve,0px))]"
     >
       <div data-tours-backdrop="" className="absolute inset-0 -z-10">
         <Picture image={backdrop} alt={backdropAlt} sizes="100vw" className="absolute inset-0" />

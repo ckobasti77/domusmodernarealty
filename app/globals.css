@@ -327,7 +327,7 @@
 
 /* For the few verified photos shot in hard daylight (see art-direction.ts). */
 @utility photo-grade-strong {
-  filter: saturate(0.45) sepia(0.3) contrast(0.95) brightness(0.94);
+  filter: saturate(0.38) sepia(0.42) contrast(0.95) brightness(0.93);
 }
 
 @utility hairline-t {

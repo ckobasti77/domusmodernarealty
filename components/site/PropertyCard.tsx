@@ -9,7 +9,7 @@ import type { PublicImage } from "@/convex/lib/dto";
 import type { Floor } from "@/convex/lib/validators";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { fixOrphans, formatArea } from "@/lib/format";
+import { fixTypography, formatArea } from "@/lib/format";
 import { frameLoader } from "@/lib/image-loaders";
 import { clipTitle } from "@/lib/listing-text";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
@@ -143,11 +143,11 @@ export function PropertyCard({
             {shown.clipped ? (
               <>
                 {/* The clipped wording is for the eye; assistive technology gets the whole title. */}
-                <span aria-hidden="true">{fixOrphans(shown.text)}</span>
+                <span aria-hidden="true">{fixTypography(shown.text)}</span>
                 <span className="sr-only">{title.text}</span>
               </>
             ) : (
-              fixOrphans(shown.text)
+              fixTypography(shown.text)
             )}
           </Link>
         </h3>

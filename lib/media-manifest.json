@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-29T00:27:23.920Z",
+  "generatedAt": "2026-09-29T02:35:43.298Z",
   "items": {
     "about": {
       "key": "about",
@@ -40,25 +40,6 @@
           "src": "/media/about/about-1536.webp"
         }
       ]
-    },
-    "city": {
-      "key": "city",
-      "kind": "video",
-      "width": 1920,
-      "height": 1080,
-      "poster": "/media/city/city-poster.jpg",
-      "blurDataURL": "data:image/webp;base64,UklGRpgAAABXRUJQVlA4IIwAAAAwBACdASoYAA4APu1iqk2ppaQiMAgBMB2JQBOmUABsDV9hHgzJxhmBjwAA/sOKLftI5Tb90+YebS+flqilZAw618RIqyAyBqO9ysYYaEvaOmsy+ZSQWdTAsoLPDqOC20ksXqWYukpP6436YQHk2M9EkxraHBKfynuV5iY5jNLE9R1AXf5FZYUO4gAAAA==",
-      "sources": [
-        {
-          "type": "video/webm",
-          "src": "/media/city/city.webm"
-        },
-        {
-          "type": "video/mp4",
-          "src": "/media/city/city.mp4"
-        }
-      ],
-      "mobileSrc": "/media/city/city-720.mp4"
     },
     "hero-desktop": {
       "key": "hero-desktop",
@@ -129,25 +110,6 @@
           "src": "/media/hero-mobile/hero-mobile-941.webp"
         }
       ]
-    },
-    "hero": {
-      "key": "hero",
-      "kind": "video",
-      "width": 1920,
-      "height": 1080,
-      "poster": "/media/hero/hero-poster.jpg",
-      "blurDataURL": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAADwAwCdASoYAA4APu1mq04ppaQiMAgBMB2JZACdACHOjbK+RqxkA0UAAPqIkb9u6ohomfucLEuw59JPPCmll5/etMt0pH2Y5w5ZBSajU8PPIiqCnLLDel1fBagGmRG1HJJ4fdDlu3/FZM1KvfAtu2CnY4UFzIwtuJY/noDgAAA=",
-      "sources": [
-        {
-          "type": "video/webm",
-          "src": "/media/hero/hero.webm"
-        },
-        {
-          "type": "video/mp4",
-          "src": "/media/hero/hero.mp4"
-        }
-      ],
-      "mobileSrc": "/media/hero/hero-720.mp4"
     },
     "sell": {
       "key": "sell",

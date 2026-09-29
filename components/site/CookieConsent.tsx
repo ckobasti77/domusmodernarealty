@@ -163,7 +163,7 @@ export function CookieConsent() {
             variant="outlineDark"
             size="compact"
             onClick={() => save(ALL_CATEGORIES)}
-            className="w-full justify-center px-2 sm:px-5 lg:w-auto"
+            className="w-full justify-center px-2 max-sm:tracking-[0.06em] sm:px-5 lg:w-auto"
           >
             {t("acceptAll")}
           </Button>
@@ -171,7 +171,7 @@ export function CookieConsent() {
             variant="outlineDark"
             size="compact"
             onClick={() => save(NECESSARY_ONLY)}
-            className="w-full justify-center px-2 sm:px-5 lg:w-auto"
+            className="w-full justify-center px-2 max-sm:tracking-[0.06em] sm:px-5 lg:w-auto"
           >
             {t("necessaryOnly")}
           </Button>

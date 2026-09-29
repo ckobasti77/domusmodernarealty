@@ -126,11 +126,11 @@ export function Preloader() {
         className="fixed inset-0 z-(--z-preloader) flex-col items-center justify-center bg-ink"
       >
         <div className="w-[min(72vw,520px)] overflow-hidden">
-          <div data-preloader-mark="">
+          <div data-preloader-mark="" className="translate-x-[8.25%]">
             <Logo tone="dark" rule={false} title="" />
           </div>
         </div>
-        <div data-preloader-rule="" className="mt-6 h-px w-[min(72vw,520px)] origin-left bg-bronze" />
+        <div data-preloader-rule="" className="mt-6 h-px w-[calc(min(72vw,520px)*0.835)] origin-left bg-bronze" />
       </div>
     </>
   );

@@ -1,59 +1,55 @@
 import { ArrowRight } from "lucide-react";
-import Image from "next/image";
 import { getTranslations } from "next-intl/server";
-import { AmbientVideo } from "@/components/motion/AmbientVideo";
 import { ParallaxLayer } from "@/components/motion/ParallaxLayer";
 import { Container } from "@/components/site/Container";
+import { Picture } from "@/components/site/Picture";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { textLinkClasses } from "@/components/site/TextLink";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { mediaVideo } from "@/lib/media";
-import { cn } from "@/lib/utils";
+import { remoteResponsiveImage } from "@/lib/media";
 import { NeighborhoodIndex } from "./NeighborhoodIndex";
 import type { NeighborhoodItem } from "./types";
 
 /**
- * Neighborhoods (DESIGN §6.5), on ink. It opens on the owner's golden-hour
- * aerial (`city.mp4`) as a wide band under the heading, then the index.
+ * Neighborhoods (DESIGN §6.5), on ink. It opens on a wide band of Belgrade
+ * under the heading, then the index.
  *
- * The aerial is an AI-generated mood film of "a river city" — it is shown as
- * atmosphere under a heavy scrim and never captioned as a real place.
+ * The band is a verified photograph of the real city (the Sava, the Belgrade
+ * Waterfront towers and Kula Beograd), not the owner's AI aerial: that film
+ * renders Budapest's Chain Bridge and Buda Castle, and a Belgrade agency
+ * cannot put Budapest under "Poznajemo svaku ulicu". It is atmosphere behind
+ * the heading, so it carries no alt text.
  */
+
+/** "Sava river with Belgrade Waterfront residential towers and Belgrade Tower, Savski Venac". */
+const BELGRADE_AERIAL = "https://images.unsplash.com/photo-1708253832369-ce7e621df31a";
+
 export async function Neighborhoods({ locale, items }: { locale: Locale; items: readonly NeighborhoodItem[] }) {
   if (items.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "home" });
-  const film = mediaVideo("city");
 
   return (
     <section aria-labelledby="neighborhoods-title" className="bg-ink text-ivory">
-      <div className={cn("relative isolate overflow-clip", film !== null ? "min-h-[72svh] lg:min-h-[86svh]" : "")}>
-        {film !== null ? (
-          <ParallaxLayer amount={10} className="absolute inset-0 -z-10">
-            <Image
-              src={film.poster}
-              alt={t("cityFilmAlt")}
-              fill
-              sizes="100vw"
-              className="object-cover"
-            />
-            <AmbientVideo video={film} />
-          </ParallaxLayer>
-        ) : null}
-        {/* Heavy on purpose: the film is atmosphere behind the heading, and the
-            index below starts on flat ink without a seam. */}
+      <div className="relative isolate min-h-[72svh] overflow-clip lg:min-h-[86svh]">
+        <ParallaxLayer amount={10} className="absolute inset-0 -z-10">
+          <Picture
+            image={remoteResponsiveImage(BELGRADE_AERIAL, 1920, 1280)}
+            alt=""
+            sizes="100vw"
+            className="absolute inset-0"
+            imgClassName="photo-grade"
+          />
+        </ParallaxLayer>
+        {/* Weighted to the bottom, where the heading sits and the index begins
+            on flat ink; the sky above stays light. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/70 via-35% to-ink/55"
+          className="absolute inset-0 -z-10 bg-linear-to-t from-ink via-ink/55 via-35% to-ink/15"
         />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-ink/50 to-transparent to-60%" />
 
-        <Container
-          className={cn(
-            "flex flex-col justify-end pt-section lg:pt-section-lg",
-            film !== null ? "min-h-[72svh] pb-14 lg:min-h-[86svh] lg:pb-20" : "",
-          )}
-        >
+        <Container className="flex min-h-[72svh] flex-col justify-end pb-14 pt-section lg:min-h-[86svh] lg:pb-20 lg:pt-section-lg">
           <SectionHeading
             id="neighborhoods-title"
             eyebrowTone="dark"
@@ -87,4 +83,3 @@ export async function Neighborhoods({ locale, items }: { locale: Locale; items: 
     </section>
   );
 }
-

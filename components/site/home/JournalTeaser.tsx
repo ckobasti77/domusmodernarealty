@@ -9,6 +9,7 @@ import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
+import { photoGrade } from "./art-direction";
 import type { PostCard } from "./data";
 
 /**
@@ -42,11 +43,11 @@ async function Post({ post, size, locale }: { post: PostCard; size: Size; locale
           crop={lead ? 0.75 : 2 / 3}
           sizes={lead ? "(min-width: 1024px) 56vw, 92vw" : "(min-width: 1024px) 30vw, 92vw"}
           className="-z-10"
-          imageClassName="photo-grade transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]"
+          imageClassName={`${photoGrade(post.coverUrl)} transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]`}
         />
       ) : null}
 
-      <div className={plate ? "-mt-16 w-fit max-w-[88%] bg-ivory pr-8 pt-6 lg:-mt-20 lg:pr-12 lg:pt-8" : "mt-6"}>
+      <div className={plate ? "-mt-16 w-full bg-ivory pt-6 sm:w-fit sm:max-w-[88%] sm:pr-8 lg:-mt-20 lg:pr-12 lg:pt-8" : "mt-6"}>
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-label uppercase">
           <span className="text-bronze-text">{tJournal(`categories.${post.category}`)}</span>
           {post.readingMinutes !== undefined ? (

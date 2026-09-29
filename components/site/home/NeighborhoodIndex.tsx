@@ -7,6 +7,7 @@ import { contextSafeFn, gsap, MOTION_QUERIES, ScrollTrigger, useGSAP } from "@/c
 import { Link } from "@/i18n/navigation";
 import { frameLoader } from "@/lib/image-loaders";
 import { cn } from "@/lib/utils";
+import { photoGrade } from "./art-direction";
 import type { NeighborhoodItem } from "./types";
 
 /**
@@ -192,7 +193,7 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                     alt=""
                     fill
                     sizes="(min-width: 768px) 30vw, 46vw"
-                    className="photo-grade object-cover"
+                    className={cn(photoGrade(item.image), "object-cover")}
                   />
                 </span>
               ) : null}
@@ -251,7 +252,7 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                     fill
                     // The frame plus the 16px lean margin on each side.
                     sizes="(min-width: 1440px) 470px, 34vw"
-                    className="photo-grade object-cover"
+                    className={cn(photoGrade(item.image ?? ""), "object-cover")}
                   />
                 </div>
               ))}

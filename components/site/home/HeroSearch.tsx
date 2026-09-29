@@ -211,12 +211,14 @@ export function HeroSearch({ locations, className }: HeroSearchProps) {
       >
         {/* One row: the transaction toggle is the bar's first cell, so the
             search button is the only filled shape in the hero. */}
-        <div className="flex items-stretch divide-x divide-ivory/25">
+        <div className="flex items-stretch divide-x divide-ivory/25 md:max-lg:flex-wrap">
           <TransactionSwitch
             state={state}
             labels={labels}
             legend={t("searchLegend")}
-            className="shrink-0 items-center px-2"
+            // Below 1024px the switch takes its own row, so the selects keep
+            // room for their values ("Cela Srbija", "Bez ograničenja").
+            className="shrink-0 items-center px-2 md:max-lg:basis-full md:max-lg:justify-start md:max-lg:border-b md:max-lg:border-r-0 md:max-lg:border-ivory/25"
           />
           <Fields state={state} idPrefix={`${baseId}-bar`} />
           <div className="flex">

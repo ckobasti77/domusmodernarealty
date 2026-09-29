@@ -77,7 +77,7 @@ export async function Footer() {
 
   return (
     <footer className="bg-ink text-ivory">
-      <Container className="py-section lg:py-section-lg">
+      <Container className="pb-10 pt-section lg:pb-12 lg:pt-28">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-gutter-lg">
           {/* Legal identity — Art. 18 + e-commerce law. */}
           <div className="lg:col-span-4">

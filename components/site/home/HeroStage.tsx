@@ -335,6 +335,10 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
         aria-hidden="true"
         className="absolute inset-x-0 top-0 -z-10 h-[45%] bg-linear-to-b from-ink/55 via-ink/10 to-transparent"
       />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 hidden bg-[radial-gradient(16%_11%_at_43%_28%,rgb(14_13_11/0.55),transparent)] lg:block"
+      />
       <div data-hero-scrim="" aria-hidden="true" className="absolute inset-0 -z-10 bg-ink opacity-25" />
 
       <div data-hero-content="" className="relative">

@@ -44,7 +44,7 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
                     key={`${stat.value}-${index}`}
                     className="flex flex-col-reverse justify-end gap-3 border-b border-hairline-light py-8 odd:pr-6 even:border-l even:pl-6 lg:py-10 lg:even:pl-10"
                   >
-                    <dt lang={label.lang !== locale ? label.lang : undefined} className="min-h-[2lh] max-w-[14ch] font-mono text-label uppercase text-stone-text">
+                    <dt lang={label.lang !== locale ? label.lang : undefined} className="min-h-[2lh] max-w-[14ch] font-mono text-label uppercase text-stone-text lg:min-h-0 lg:max-w-none lg:whitespace-nowrap">
                       {label.text}
                     </dt>
                     <dd className="font-display text-display-xl font-normal leading-none">
@@ -68,7 +68,7 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
               one image on the page that breaks its band. */}
           <ClipReveal
             from="top"
-            className="relative z-10 col-span-4 aspect-video md:aspect-[16/10] lg:col-span-5 lg:col-start-8 lg:-mt-64 lg:aspect-[4/5]"
+            className="relative z-10 col-span-4 aspect-video md:aspect-[16/10] lg:col-span-5 lg:col-start-8 lg:-mt-64 lg:aspect-auto lg:min-h-[36rem] lg:self-stretch"
           >
             <Picture
               image={artImage("about", FALLBACK_IMAGE)}

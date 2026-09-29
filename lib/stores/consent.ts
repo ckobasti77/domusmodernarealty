@@ -9,7 +9,9 @@ import { useSyncExternalStore } from "react";
  * same as "refused everything".
  */
 
-const KEY = "me.consent.v1";
+/** Also read by the pre-paint gate in components/motion/Preloader.tsx. */
+export const CONSENT_KEY = "me.consent.v1";
+const KEY = CONSENT_KEY;
 
 export type ConsentCategories = {
   necessary: true;

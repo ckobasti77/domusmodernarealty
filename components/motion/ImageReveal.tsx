@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef } from "react";
+import { frameLoader } from "@/lib/image-loaders";
 import { cn } from "@/lib/utils";
 import { DURATION, gsap, MOTION_QUERIES, useGSAP } from "./gsap";
 
@@ -19,6 +20,8 @@ export type ImageRevealProps = {
   ratio?: string;
   sizes?: string;
   priority?: boolean;
+  /** Height / width of the frame; lets a demo photo arrive cropped to it. */
+  crop?: number;
   /** Which edge the reveal travels from. */
   from?: "bottom" | "top" | "left" | "right";
   className?: string;
@@ -38,6 +41,7 @@ export function ImageReveal({
   ratio = "aspect-[4/5]",
   sizes = "(min-width: 1024px) 40vw, 100vw",
   priority = false,
+  crop,
   from = "bottom",
   className,
   imageClassName,
@@ -89,6 +93,7 @@ export function ImageReveal({
       <Image
         data-reveal-image=""
         src={src}
+        loader={crop !== undefined ? frameLoader(src, crop) : undefined}
         alt={alt}
         fill
         sizes={sizes}

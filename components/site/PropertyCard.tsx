@@ -10,6 +10,7 @@ import type { Floor } from "@/convex/lib/validators";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { fixOrphans, formatArea } from "@/lib/format";
+import { frameLoader } from "@/lib/image-loaders";
 import { clipTitle } from "@/lib/listing-text";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
@@ -279,6 +280,9 @@ function Gallery({
                 <Image
                   data-card-image=""
                   src={frame.url}
+                  // Demo photos arrive already cropped to the frame, so a 3:2
+                  // source is not enlarged to fill a 4:5 card.
+                  loader={frameLoader(frame.url, ratio === "4/5" ? 1.25 : 2 / 3)}
                   alt={frameAlt.text}
                   fill
                   sizes={sizes}

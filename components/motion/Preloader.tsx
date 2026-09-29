@@ -3,7 +3,8 @@
 import { useLenis } from "lenis/react";
 import { useEffect, useRef } from "react";
 import { Logo } from "@/components/site/Logo";
-import { revealIntro } from "./intro";
+import { CONSENT_KEY } from "@/lib/stores/consent";
+import { finishIntro, revealIntro } from "./intro";
 
 /**
  * First-visit preloader (DESIGN §6.1): the wordmark's letters rise one by one
@@ -31,10 +32,15 @@ const LIFT_AT_MS = 1000;
 const DONE_AT_MS = 1800;
 
 /**
- * Runs during HTML parsing, before the curtain is painted. Reduced motion,
- * a repeat visit or blocked storage all mean "skip".
+ * Runs during HTML parsing, before the curtain is painted. It decides two
+ * things the first paint must already know:
+ *  - `data-consent`: "pending" while no cookie decision is stored, so the
+ *    hero can hold its copy above the banner from the very first frame (a
+ *    reservation made at hydration would shift the whole hero);
+ *  - `data-intro`: reduced motion, a repeat visit or blocked storage all mean
+ *    "skip".
  */
-const GATE_SCRIPT = `(function(){var d=document.documentElement;try{if(window.matchMedia("(prefers-reduced-motion: reduce)").matches||window.sessionStorage.getItem("${KEY}")!==null){d.setAttribute("data-intro","skip");return}window.sessionStorage.setItem("${KEY}","1");d.setAttribute("data-intro","play")}catch(e){d.setAttribute("data-intro","skip")}})();`;
+const GATE_SCRIPT = `(function(){var d=document.documentElement;try{d.setAttribute("data-consent",window.localStorage.getItem("${CONSENT_KEY}")===null?"pending":"decided")}catch(e){d.setAttribute("data-consent","pending")}try{if(window.matchMedia("(prefers-reduced-motion: reduce)").matches||window.sessionStorage.getItem("${KEY}")!==null){d.setAttribute("data-intro","skip");return}window.sessionStorage.setItem("${KEY}","1");d.setAttribute("data-intro","play")}catch(e){d.setAttribute("data-intro","skip")}})();`;
 
 /** Milliseconds since the curtain's keyframes started, from the CSS animation clock. */
 function curtainClock(curtain: HTMLElement): number | null {
@@ -58,18 +64,21 @@ export function Preloader() {
     const curtain = root.current;
     if (curtain === null || document.documentElement.dataset.intro !== "play") {
       revealIntro();
+      finishIntro();
       return;
     }
 
     const elapsed = curtainClock(curtain);
     if (elapsed === null || elapsed >= DONE_AT_MS) {
       revealIntro();
+      finishIntro();
       return;
     }
 
     const timers: number[] = [];
     if (elapsed >= LIFT_AT_MS) revealIntro();
     else timers.push(window.setTimeout(revealIntro, LIFT_AT_MS - elapsed));
+    timers.push(window.setTimeout(finishIntro, DONE_AT_MS - elapsed));
 
     // Hold the page still while the curtain is down, so a scroll during the
     // reveal does not land the visitor halfway down the hero.
@@ -87,6 +96,7 @@ export function Preloader() {
       for (const timer of timers) window.clearTimeout(timer);
       html.style.overflow = previous;
       revealIntro();
+      finishIntro();
     };
   }, []);
 

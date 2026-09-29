@@ -322,7 +322,7 @@
    not read as two photo worlds. Listing photographs are never graded: they
    must show the property as it is. */
 @utility photo-grade {
-  filter: saturate(0.8) sepia(0.1) contrast(1.03) brightness(0.97);
+  filter: saturate(0.62) sepia(0.2) contrast(0.97) brightness(0.94);
 }
 
 @utility hairline-t {
@@ -433,6 +433,30 @@ html[data-intro="play"] [data-preloader-rule] {
 @keyframes me-preloader-done {
   to {
     visibility: hidden;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Cookie-banner reservation. The pre-paint gate (components/motion/Preloader)
+   marks <html data-consent="pending"> while no decision is stored, and the
+   landing hero adds this much bottom padding so its copy sits above the
+   banner from the very first frame. Each value is a little taller than the
+   compact banner at that width in the longest locale, so the banner never
+   covers the copy and the hero never moves before the visitor clicks.
+--------------------------------------------------------------------------- */
+html[data-consent="pending"] {
+  --consent-reserve: 12.5rem;
+}
+
+@media (width >= 40rem) {
+  html[data-consent="pending"] {
+    --consent-reserve: 10rem;
+  }
+}
+
+@media (width >= 64rem) {
+  html[data-consent="pending"] {
+    --consent-reserve: 9rem;
   }
 }
 

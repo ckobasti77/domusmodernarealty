@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { contextSafeFn, gsap, MOTION_QUERIES, ScrollTrigger, useGSAP } from "@/components/motion/gsap";
 import { Link } from "@/i18n/navigation";
+import { frameLoader } from "@/lib/image-loaders";
 import { cn } from "@/lib/utils";
 import type { NeighborhoodItem } from "./types";
 
@@ -138,11 +139,18 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
             xTo?.(0);
             yTo?.(0);
           };
+          // A pointer resting on a row while the page scrolls under it fires no
+          // pointer event, so without this the picture stays on the old row.
+          const onScroll = () => {
+            if (hovered !== null) onLeave();
+          };
 
           list?.addEventListener("pointerover", onOver);
           list?.addEventListener("pointermove", onMove as EventListener);
           list?.addEventListener("pointerleave", onLeave);
+          window.addEventListener("scroll", onScroll, { passive: true });
           return () => {
+            window.removeEventListener("scroll", onScroll);
             list?.removeEventListener("pointerover", onOver);
             list?.removeEventListener("pointermove", onMove as EventListener);
             list?.removeEventListener("pointerleave", onLeave);
@@ -163,13 +171,14 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
         data-hood-list=""
         className={cn(
           "grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6",
-          // A phone gets six places at most, and an odd last card spans the row.
-          "max-lg:[&>li:nth-child(n+7)]:hidden max-md:[&>li:last-child:nth-child(odd)]:col-span-2",
+          // Below 1024px only the places marked for phones (six at most, the
+          // busiest ones) are shown.
+          "max-lg:[&>li[data-phone=false]]:hidden",
           "lg:col-span-8 lg:block lg:border-t lg:border-hairline-dark",
         )}
       >
         {items.map((item) => (
-          <li key={item.id} data-hood-row="" data-id={item.id} className="relative">
+          <li key={item.id} data-hood-row="" data-id={item.id} data-phone={item.onPhone} className="relative">
             <Link
               href={{ pathname: "/locations/[slug]", params: { slug: item.slug } }}
               prefetch={false}
@@ -179,6 +188,7 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                 <span className="relative mb-4 block aspect-[4/5] overflow-hidden bg-ink-2 lg:hidden">
                   <Image
                     src={item.image}
+                    loader={frameLoader(item.image, 1.25)}
                     alt=""
                     fill
                     sizes="(min-width: 768px) 30vw, 46vw"
@@ -236,9 +246,11 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                 >
                   <Image
                     src={item.image ?? ""}
+                    loader={frameLoader(item.image ?? "", 1.25)}
                     alt=""
                     fill
-                    sizes="(min-width: 1440px) 460px, 32vw"
+                    // The frame plus the 16px lean margin on each side.
+                    sizes="(min-width: 1440px) 470px, 34vw"
                     className="photo-grade object-cover"
                   />
                 </div>

@@ -149,6 +149,14 @@ async function probeDimensions(file) {
   return { width: meta.width ?? 0, height: meta.height ?? 0, frame: tmp };
 }
 
+/**
+ * Poster frame per video, in seconds. The default is the first frame, which is
+ * what the hero needs (its film was generated FROM the poster, so the hand-off
+ * is invisible). A film that opens mid-camera-move gets a settled frame instead:
+ * its poster is what phones, data-saver and reduced-motion visitors see.
+ */
+const POSTER_AT = { walkthrough: 5.5 };
+
 async function optimizeVideo(file) {
   const key = path.basename(file, path.extname(file));
   const source = path.join(SRC_DIR, file);
@@ -163,7 +171,13 @@ async function optimizeVideo(file) {
   let built = 0;
 
   // Portrait sources keep their orientation; `-2` lets ffmpeg pick an even side.
-  const { width, height, frame } = await probeDimensions(source);
+  const { width, height, frame: firstFrame } = await probeDimensions(source);
+  const posterAt = POSTER_AT[key];
+  let frame = firstFrame;
+  if (posterAt !== undefined) {
+    frame = path.join(OUT_DIR, `.poster-${key}.png`);
+    await ffmpeg(["-ss", String(posterAt), "-i", source, "-frames:v", "1", frame]);
+  }
   const portrait = height > width;
   const scale1080 = portrait ? "scale=-2:1080" : "scale=1920:-2";
   const scale720 = portrait ? "scale=-2:720" : "scale=1280:-2";
@@ -261,9 +275,9 @@ async function main() {
     );
   }
 
-  // Remove the temporary first-frame PNGs the video probe wrote.
+  // Remove the temporary frame PNGs written by the video probe and the poster picks.
   for (const name of readdirSync(OUT_DIR)) {
-    if (name.startsWith(".probe-")) {
+    if (name.startsWith(".probe-") || name.startsWith(".poster-")) {
       const { rmSync } = await import("node:fs");
       rmSync(path.join(OUT_DIR, name), { force: true });
     }

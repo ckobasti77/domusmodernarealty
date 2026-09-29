@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { ScrollTrigger } from "@/components/motion/gsap";
+import { isIntroDone, subscribeIntroDone } from "@/components/motion/intro";
 import { useHydrated } from "@/hooks/useHydrated";
 import { fixOrphans } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
@@ -16,7 +18,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { CheckboxField } from "./Field";
-import { textLinkClasses } from "./TextLink";
 
 /**
  * Cookie banner. Opt-in, per category, and it never appears for a visitor who
@@ -26,20 +27,42 @@ import { textLinkClasses } from "./TextLink";
  * the visitor read the privacy page before deciding, which is exactly what the
  * "freely given" requirement expects. Focus is therefore not trapped, and the
  * banner sits last in the DOM so it does not interrupt the page's tab order.
+ *
+ * Compact by design (one row from 1024px up, two equal buttons side by side on
+ * a phone), and its height is reserved in the landing hero from the first
+ * paint (`html[data-consent="pending"]` sets `--consent-reserve` in
+ * globals.css), so the hero copy is never covered and nothing shifts when it
+ * arrives. On a first visit it waits for the intro curtain, then slides in.
  */
 export function CookieConsent() {
   const t = useTranslations("consent");
   const tLegal = useTranslations("legal");
   const record = useConsentRecord();
   const hydrated = useHydrated();
+  const introDone = useSyncExternalStore(subscribeIntroDone, isIntroDone, () => false);
   const [showSettings, setShowSettings] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const headingId = useId();
   const panel = useRef<HTMLDivElement>(null);
 
-  const visible = hydrated && record === null;
+  const visible = hydrated && record === null && introDone;
   useConsentHeight(panel, visible);
+
+  // The pre-paint gate set this from storage; from here on the store owns it.
+  // A decision removes the hero's reservation, so the hero copy moves down
+  // right after the click: a shift caused by input, which CLS excludes.
+  useEffect(() => {
+    if (!hydrated) return;
+    const root = document.documentElement;
+    const next = record === null ? "pending" : "decided";
+    if (root.dataset.consent === next) return;
+    root.dataset.consent = next;
+    // On a short screen the reservation can change the hero's height, so the
+    // pinned sections below it measure again.
+    const frame = requestAnimationFrame(() => ScrollTrigger.refresh());
+    return () => cancelAnimationFrame(frame);
+  }, [hydrated, record]);
 
   // The server cannot know the stored choice, so the banner only appears once
   // the client has hydrated. Otherwise a visitor who already decided would see
@@ -58,26 +81,25 @@ export function CookieConsent() {
       // The settings list can overflow on a short phone; Lenis must not take it.
       data-lenis-prevent
       className={cn(
-        // Capped at 38svh on a phone: at 85svh the bar ate 40% of the screen
-        // and buried the hero's CTAs and scroll cue.
         "fixed inset-x-0 bottom-0 z-(--z-overlay) max-h-[42svh] overflow-y-auto md:max-h-[70svh]",
         // Without this the last control sits under an iPhone's home indicator.
         "pb-[env(safe-area-inset-bottom)]",
         "border-t border-hairline-dark bg-ink text-ivory",
+        // Rises from the bottom edge once; the global reduced-motion rule flattens it.
+        "transition-[translate] duration-300 ease-out starting:translate-y-full",
       )}
     >
-      <div className="mx-auto flex max-w-content flex-col gap-4 px-gutter py-4 md:px-gutter-md md:gap-6 md:py-6 lg:flex-row lg:items-start lg:gap-12 lg:px-gutter-lg lg:py-8">
-        <div className="flex-1">
-          {/* The serif title is a luxury flourish on a compliance notice; at
-              390px it costs a line the body needs. Kept as the accessible name
-              at every size, shown from md up. */}
+      <div className="mx-auto flex max-w-content flex-col gap-3 px-gutter py-4 md:px-gutter-md lg:flex-row lg:items-center lg:gap-12 lg:px-gutter-lg lg:py-6">
+        <div className="min-w-0 flex-1">
+          {/* The serif title is a luxury flourish on a compliance notice; below
+              1024px it costs a line the body needs. It stays the accessible name. */}
           <h2
             id={headingId}
-            className="eyebrow text-bronze md:font-display md:text-h3 md:font-normal md:normal-case md:tracking-normal md:text-ivory"
+            className="eyebrow text-bronze lg:font-display lg:text-h3 lg:font-normal lg:normal-case lg:tracking-normal lg:text-ivory"
           >
             {t("bannerHeading")}
           </h2>
-          <p className="mt-1.5 max-w-[64ch] text-small text-mist md:mt-3">
+          <p className="mt-1.5 max-w-[80ch] text-pretty text-small text-mist lg:mt-1">
             {fixOrphans(t("bannerBody"))}{" "}
             <Link
               href="/privacy"
@@ -86,10 +108,25 @@ export function CookieConsent() {
             >
               {tLegal("privacyHeading")}
             </Link>
+            {showSettings ? null : (
+              <>
+                {" "}
+                <span aria-hidden="true" className="text-mist/60">
+                  /
+                </span>{" "}
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(true)}
+                  className="text-ivory underline decoration-ivory/40 underline-offset-4 transition-colors duration-200 pointer-fine:hover:text-bronze"
+                >
+                  {t("settings")}
+                </button>
+              </>
+            )}
           </p>
 
           {showSettings ? (
-            <div className="mt-6 space-y-4 border-t border-hairline-dark pt-5">
+            <div className="mt-5 space-y-4 border-t border-hairline-dark pt-5">
               {/* Necessary is locked on: without it the site cannot function. */}
               <CheckboxField
                 label={t("necessary")}
@@ -120,38 +157,33 @@ export function CookieConsent() {
         {/* Both choices get identical weight. An emphasised "accept all" beside
             a quiet "necessary only" is a dark pattern under EDPB guidance, and a
             quiet-luxury site should not be shouting either way. */}
-        <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:gap-3 lg:w-[260px] lg:flex-col">
+        <div className="grid shrink-0 grid-cols-2 gap-2 lg:flex lg:gap-3">
           <Button
             variant="outlineDark"
+            size="compact"
             onClick={() => save(ALL_CATEGORIES)}
-            className="w-full justify-center"
+            className="w-full justify-center px-2 sm:px-5 lg:w-auto"
           >
             {t("acceptAll")}
           </Button>
           <Button
             variant="outlineDark"
+            size="compact"
             onClick={() => save(NECESSARY_ONLY)}
-            className="w-full justify-center"
+            className="w-full justify-center px-2 sm:px-5 lg:w-auto"
           >
             {t("necessaryOnly")}
           </Button>
           {showSettings ? (
             <Button
               variant="outlineDark"
+              size="compact"
               onClick={() => save({ necessary: true, analytics, marketing })}
-              className="w-full justify-center"
+              className="col-span-2 w-full justify-center px-2 sm:px-5 lg:w-auto"
             >
               {t("save")}
             </Button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowSettings(true)}
-              className={textLinkClasses("dark", "inline-flex min-h-11 items-center justify-center self-center text-small")}
-            >
-              {t("settings")}
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

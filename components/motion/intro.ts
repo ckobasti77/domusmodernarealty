@@ -37,3 +37,29 @@ export function onIntroReveal(listener: Listener): () => void {
     listeners.delete(listener);
   };
 }
+
+/*
+ * The end of the intro: the curtain is gone (or never played). Whatever should
+ * not be uncovered before the hero — the cookie banner — waits for this. Shaped
+ * for `useSyncExternalStore`.
+ */
+let finished = false;
+const doneListeners = new Set<Listener>();
+
+export function finishIntro(): void {
+  if (finished) return;
+  finished = true;
+  for (const listener of doneListeners) listener();
+  doneListeners.clear();
+}
+
+export function subscribeIntroDone(listener: Listener): () => void {
+  doneListeners.add(listener);
+  return () => {
+    doneListeners.delete(listener);
+  };
+}
+
+export function isIntroDone(): boolean {
+  return finished;
+}

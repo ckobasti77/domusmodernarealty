@@ -25,4 +25,6 @@ export type NeighborhoodItem = {
   context?: string;
   count: number;
   image?: string;
+  /** One of the places a phone shows (it shows fewer, and an even number). */
+  onPhone: boolean;
 };

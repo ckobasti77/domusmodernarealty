@@ -77,7 +77,7 @@ export function SplitReveal({
                 delay,
                 stagger: each,
                 ease: "expo.out",
-                scrollTrigger: { trigger: el, start: "top 85%", once: true },
+                scrollTrigger: { trigger: el, start: "top 94%", once: true },
               });
             },
           });

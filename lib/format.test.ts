@@ -64,3 +64,12 @@ describe("parseLocaleNumber", () => {
     expect(parseLocaleNumber("abc", "en")).toBeNull();
   });
 });
+
+describe("fixTypography prefixes", () => {
+  it("keeps a one-letter prefix with its word", () => {
+    const joiner = String.fromCharCode(0x2060);
+    expect(fixTypography("pišite na e-poštu")).toContain(`e-${joiner}poštu`);
+    expect(fixTypography("by e-mail")).toBe(`by e-${joiner}mail`);
+    expect(fixTypography("well-known")).toBe("well-known");
+  });
+});

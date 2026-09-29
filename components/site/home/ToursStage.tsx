@@ -158,7 +158,7 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
       {cta !== null ? (
         <div
           data-tours-end=""
-          className="invisible absolute inset-x-0 bottom-0 hidden bg-linear-to-t from-ink/70 to-transparent px-gutter-lg pb-14 pt-40 lg:block"
+          className="invisible absolute inset-x-0 bottom-0 hidden bg-linear-to-t from-ink/85 via-ink/40 to-transparent px-gutter-lg pb-14 pt-40 lg:block"
         >
           <div className="mx-auto max-w-content">
             <Link

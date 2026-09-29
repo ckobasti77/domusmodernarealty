@@ -156,8 +156,15 @@ const NUMBER_UNIT =
 const TWO_LETTER =
   /(^|[\s\u00A0])(sa|na|od|za|do|iz|uz|po|ka|Sa|Na|Od|Za|Do|Iz|Uz|Po|Ka|на|по|за|от|до|из|со|во|На|По|За|От|До|Из|Со|Во)\s+/g;
 
+/** A one-letter prefix and its hyphen ("e-mail", "e-pošta") never end a line. */
+const PREFIX_HYPHEN = /(^|[\s(])([eE])-(?=\S)/g;
+const WORD_JOINER = String.fromCharCode(0x2060);
+
 export function fixTypography(text: string): string {
-  return fixOrphans(text).replace(NUMBER_UNIT, "$1\u00A0").replace(TWO_LETTER, "$1$2\u00A0");
+  return fixOrphans(text)
+    .replace(NUMBER_UNIT, "$1\u00A0")
+    .replace(TWO_LETTER, "$1$2\u00A0")
+    .replace(PREFIX_HYPHEN, `$1$2-${WORD_JOINER}`);
 }
 
 /** Grouped figure for an input's initial value ("430.000", "5,4"). */

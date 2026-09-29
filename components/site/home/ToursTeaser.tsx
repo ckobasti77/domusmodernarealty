@@ -38,7 +38,9 @@ export async function ToursTeaser({ locale, listing }: { locale: Locale; listing
             title={t("toursHeading")}
             size="display-l"
             tone="dark"
-            className="col-span-4 lg:col-span-7"
+            // Narrow enough that the bound "pre nego što" moves to the second
+            // line with its verb, instead of leaving "dođete." alone there.
+            className="col-span-4 lg:col-span-7 lg:max-w-[min(45vw,44rem)]"
           />
           <div className="col-span-4 lg:col-span-4 lg:col-start-9 lg:pb-2">
             <p className="max-w-[40ch] text-pretty text-body-l text-mist">{fixTypography(t("toursLede"))}</p>

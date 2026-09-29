@@ -39,6 +39,7 @@ async function Post({ post, size, locale }: { post: PostCard; size: Size; locale
           src={post.coverUrl}
           alt=""
           ratio={lead ? "aspect-[4/3]" : "aspect-[3/2]"}
+          crop={lead ? 0.75 : 2 / 3}
           sizes={lead ? "(min-width: 1024px) 56vw, 92vw" : "(min-width: 1024px) 30vw, 92vw"}
           className="-z-10"
           imageClassName="photo-grade transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]"

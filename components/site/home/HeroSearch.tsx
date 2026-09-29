@@ -219,8 +219,8 @@ export function HeroSearch({ locations, className }: HeroSearchProps) {
             className="shrink-0 items-center px-2"
           />
           <Fields state={state} idPrefix={`${baseId}-bar`} />
-          <div className="flex items-center p-3">
-            <button type="submit" className={buttonClasses({ variant: "inverse" })}>
+          <div className="flex">
+            <button type="submit" className={cn(buttonClasses({ variant: "inverse" }), "h-auto min-h-[52px] px-10")}>
               <span className="flex items-center gap-2">
                 <Search aria-hidden="true" strokeWidth={1.5} className="size-4" />
                 {t("searchSubmit")}

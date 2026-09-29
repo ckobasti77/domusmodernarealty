@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { buttonClasses } from "@/components/site/Button";
 import { Container } from "@/components/site/Container";
@@ -83,7 +83,8 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
                     <PropertyCard
                       listing={listing}
                       ratio="4/5"
-                      sizes="(min-width: 1024px) 24vw, (min-width: 640px) 46vw, 78vw"
+                      // The rail draws each photo at 1.14x for its parallax.
+                      sizes="(min-width: 1024px) 28vw, (min-width: 640px) 46vw, 78vw"
                     />
                   </li>
                 ))}
@@ -115,10 +116,30 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
             <div className="h-px flex-1 bg-hairline-light">
               <div data-featured-progress="" className="h-px origin-left scale-x-0 bg-bronze-text" />
             </div>
+            {/* With reduced motion a wide screen gets a plain scroller instead of
+                the pin, so it needs its own way through the cards and its own
+                way out: step buttons, and the link the pinned rail keeps at its end. */}
+            <div className="hidden gap-2 lg:motion-reduce:flex">
+              {([-1, 1] as const).map((step) => (
+                <button
+                  key={step}
+                  type="button"
+                  data-featured-step={step}
+                  aria-label={t(step < 0 ? "featuredPrev" : "featuredNext")}
+                  className="inline-flex size-11 items-center justify-center border border-ink/30 text-ink transition-colors duration-200 pointer-fine:hover:border-bronze-text pointer-fine:hover:text-bronze-text"
+                >
+                  {step < 0 ? (
+                    <ArrowLeft aria-hidden="true" strokeWidth={1.25} className="size-4" />
+                  ) : (
+                    <ArrowRight aria-hidden="true" strokeWidth={1.25} className="size-4" />
+                  )}
+                </button>
+              ))}
+            </div>
             <Link
               href="/properties"
               prefetch={false}
-              className={textLinkClasses("light", "text-small uppercase tracking-[0.12em] lg:hidden")}
+              className={textLinkClasses("light", "text-small uppercase tracking-[0.12em] lg:motion-safe:hidden")}
             >
               {t("featuredAll")}
             </Link>

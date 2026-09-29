@@ -47,6 +47,7 @@ export function FeaturedRail({ total, children }: { total: number; children: Rea
       const [index] = q("[data-featured-index]");
       const [bar] = q("[data-featured-progress]");
       const cards = q("[data-featured-card]");
+      const steps = q("[data-featured-step]");
       if (pin === undefined || viewport === undefined || track === undefined || list === undefined) return;
 
       let shown = 1;
@@ -130,11 +131,22 @@ export function FeaturedRail({ total, children }: { total: number; children: Rea
           const room = scroller.scrollWidth - scroller.clientWidth;
           if (room > 0) report(scroller.scrollLeft / room);
         };
+        // The step buttons (shown only for reduced motion on a wide screen)
+        // move whichever element is the scroller by one card.
+        const onStep = (event: Event) => {
+          const direction = Number((event.currentTarget as HTMLElement).dataset.featuredStep);
+          const scroller = viewport.scrollWidth > viewport.clientWidth ? viewport : list;
+          const card = cards[0];
+          const distance = card !== undefined ? card.getBoundingClientRect().width + 32 : scroller.clientWidth * 0.8;
+          scroller.scrollBy({ left: direction * distance });
+        };
         list.addEventListener("scroll", onScroll, { passive: true });
         viewport.addEventListener("scroll", onScroll, { passive: true });
+        for (const button of steps) button.addEventListener("click", onStep);
         return () => {
           list.removeEventListener("scroll", onScroll);
           viewport.removeEventListener("scroll", onScroll);
+          for (const button of steps) button.removeEventListener("click", onStep);
         };
       });
 

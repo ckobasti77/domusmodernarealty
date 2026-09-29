@@ -110,7 +110,21 @@ export function neighborhoodItems(nodes: readonly LocationNode[], locale: Locale
   featured.sort((a, b) => rank(a) - rank(b) || a.order - b.order);
 
   // DESIGN §6.5 names eight places; more rows turn the index into a wall.
-  return featured.slice(0, 8).map((node) => {
+  const shown = featured.slice(0, 8);
+
+  // A phone gets the six with the most listings (an even count, so the card
+  // grid never ends on an orphan); on a tie a city wins, since it is the only
+  // proof of "all of Serbia", then the editorial order.
+  const phoneCount = shown.length >= 6 ? 6 : shown.length > 1 ? shown.length - (shown.length % 2) : shown.length;
+  const total = (node: LocationNode) => node.saleCount + node.rentCount;
+  const onPhone = new Set(
+    [...shown]
+      .sort((a, b) => total(b) - total(a) || rank(b) - rank(a) || a.order - b.order)
+      .slice(0, phoneCount)
+      .map((node) => node._id as string),
+  );
+
+  return shown.map((node) => {
     const name = pickL10n(node.name, locale);
     const parent = node.parentId !== undefined ? byId.get(node.parentId) : undefined;
     return {
@@ -119,8 +133,9 @@ export function neighborhoodItems(nodes: readonly LocationNode[], locale: Locale
       name: name.text,
       ...(name.lang !== locale ? { lang: name.lang } : {}),
       ...(parent !== undefined ? { context: pickL10n(parent.name, locale).text } : {}),
-      count: node.saleCount + node.rentCount,
+      count: total(node),
       ...(node.coverUrl !== undefined ? { image: node.coverUrl } : {}),
+      onPhone: onPhone.has(node._id),
     };
   });
 }

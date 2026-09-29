@@ -87,12 +87,13 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
     <section aria-labelledby="hero-title" className="bg-ink text-ivory">
       <HeroStage poster={poster} posterMobile={posterMobile} video={mediaVideo("hero")} alt={t("heroMediaAlt")}>
         {/* Bottom-aligned over the photograph; the top padding clears the fixed
-            header. The consent banner is deliberately NOT subtracted here: it can
-            only measure itself after hydration, and padding the hero by its height
-            then lifted the whole hero copy by 240-300px at ~400ms (CLS 0.15-0.35).
-            On a first visit the banner overlays the bottom of the hero instead. */}
-        <Container className="pb-10 pt-36 lg:pb-14">
-          <div data-hero-reveal="eyebrow">
+            header. The bottom padding holds the copy above the cookie banner on a
+            first visit: `--consent-reserve` is set by the pre-paint gate, so it is
+            already in the first frame. (Padding by the banner's own measured
+            height, known only after hydration, lifted the whole hero copy by
+            240-300px at ~400ms: CLS 0.15-0.35.) */}
+        <Container className="pb-[calc(2.5rem+var(--consent-reserve,0px))] pt-36 lg:pb-[calc(3.5rem+var(--consent-reserve,0px))]">
+          <div data-hero-reveal="eyebrow" className="[text-shadow:0_0_1.5rem_rgb(14_13_11/0.7)]">
             {/* Mist, not bronze: a 12px label over a lit photograph needs the
                 lighter tone to stay legible. */}
             <Eyebrow tone="dark">{t("heroEyebrow")}</Eyebrow>

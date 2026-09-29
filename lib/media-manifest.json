@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-28T08:34:23.446Z",
+  "generatedAt": "2026-09-29T00:27:23.920Z",
   "items": {
     "about": {
       "key": "about",
@@ -315,7 +315,7 @@
       "width": 1920,
       "height": 1080,
       "poster": "/media/walkthrough/walkthrough-poster.jpg",
-      "blurDataURL": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4IIoAAAAwBACdASoYAA4APu1iqU2ppaOiMAgBMB2JQBWAA3R5yvQ09QUCRIQnfUAA4m6TLWq5Qzq9nSDxhVfsR5kMJUjkBbJHaNLm5HOPeDAuY4sdti30GxGGxzXweDmlgS71+zSekhqOwo6LZqK6TUt7KPjA9ldjiqdmX/D1GhKpqxjpnlOA+6njCfhAAAA=",
+      "blurDataURL": "data:image/webp;base64,UklGRrgAAABXRUJQVlA4IKwAAABQBACdASoYAA4APu1iqU2ppaOiMAgBMB2JQBOmUAS4orVDfqsE/MsIjTlAAM4+0IPHbcnfW4xyG6Ig4nekFH7JuWozuaRggkCjFTGeMqGi3J6dpg0A8XYk6iIUDmY/gwmdLRqNFVzrxh6+YgYFW/zt6XSaaUWP/xqSzuJ+R13G4RXpCDodGenel/8H5pb+XJfHCA2dpP8c56G7ZPJrzeKpIA/nAAp3Mi10sPgA",
       "sources": [
         {
           "type": "video/webm",

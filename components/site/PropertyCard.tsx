@@ -333,7 +333,9 @@ function Hoverable({
     <article
       className={cn(
         className,
-        "outline-offset-8 transition-[outline-color] duration-200",
+        // Its own stacking context: the carousel controls (z-20) and the
+        // stretched link must not rise above sticky or fixed page chrome.
+        "isolate outline-offset-8 transition-[outline-color] duration-200",
         active ? "outline outline-1 outline-bronze" : "outline-transparent",
       )}
       aria-labelledby={`card-title-${id}`}
@@ -509,7 +511,9 @@ function Gallery({
                     alt={frameAlt.text}
                     fill
                     sizes={sizes}
-                    priority={priority && i === 0}
+                    // Next 16 deprecated `priority`; the first frame of a lead card is an LCP candidate.
+                    loading={priority && i === 0 ? "eager" : "lazy"}
+                    fetchPriority={priority && i === 0 ? "high" : "auto"}
                     placeholder={
                       frame.blurDataURL !== undefined ? "blur" : "empty"
                     }

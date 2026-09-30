@@ -239,6 +239,7 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
             busy={busy && cards.length > 0}
             count={count}
             onLoadMore={() => results.loadMore(PAGE_SIZE)}
+            loadMoreReady={results.status === "CanLoadMore"}
             state={state}
             onChange={change}
             placeName={placeName}
@@ -253,6 +254,8 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
           className={cn(
             "lg:sticky lg:top-[calc(var(--header-h,85px)+4.5rem)] lg:h-[calc(100svh-var(--header-h,85px)-4.5rem)] lg:w-[45%] lg:self-start",
             "h-[calc(100svh-var(--header-h,85px)-4rem)]",
+            // The floating List/Mapa switch covers the map's bottom on phones.
+            "[--map-inset-bottom:112px] lg:[--map-inset-bottom:0px]",
             mapHidden && "lg:hidden",
             view !== "map" && "max-lg:hidden",
           )}
@@ -271,7 +274,13 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
       {/* ------------------------------------------- phone list/map switch */}
       <div
         className="fixed inset-x-0 z-(--z-sticky) flex justify-center lg:hidden"
-        style={{ bottom: `calc(var(--consent-h, 0px) + ${compareOpen ? "5.5rem" : "1.25rem"})` }}
+        // Above the compare tray when it shows, and above the map's OSM credit line.
+        style={{
+          bottom: compareOpen ? "5.5rem" : view === "map" ? "2.75rem" : "1.25rem",
+          // A transform, not `bottom`: the cookie banner arrives after the intro,
+          // and moving a fixed box by layout would count as a layout shift.
+          translate: "0 calc(-1 * var(--consent-h, 0px))",
+        }}
       >
         <div role="group" aria-label={t("view.label")} className="flex border border-ink bg-ink p-0.5 text-ivory">
           {(["list", "map"] as const).map((option) => (

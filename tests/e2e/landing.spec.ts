@@ -323,7 +323,8 @@ test.describe("hero search", () => {
     await location.selectOption(slug ?? "");
     await sheet.getByRole("button", { name: "Pretražite", exact: true }).click();
 
-    await expect(page).toHaveURL(`/sr/nekretnine?transaction=sale&location=${slug}`);
+    // The default transaction (sale) is omitted from the URL (lib/search-params.ts).
+    await expect(page).toHaveURL(`/sr/nekretnine?location=${slug}`);
   });
 });
 

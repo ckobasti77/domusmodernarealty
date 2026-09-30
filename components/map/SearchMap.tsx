@@ -213,7 +213,10 @@ function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number) 
   // lower part can sit under the fold: frame the results in the part a
   // visitor can actually see (never more than half the panel).
   const hidden = Math.max(0, container.getBoundingClientRect().bottom - window.innerHeight);
-  const bottom = pad + Math.min(hidden, Math.floor(height / 2));
+  // Page chrome floating over the map's bottom edge (the phone List/Mapa
+  // switch) is declared by the host as `--map-inset-bottom` in px.
+  const inset = Number.parseFloat(getComputedStyle(container).getPropertyValue("--map-inset-bottom")) || 0;
+  const bottom = pad + inset + Math.min(hidden, Math.floor(height / 2));
   map.fitBounds(bounds, {
     padding: { top, right: pad, bottom, left: pad },
     maxZoom: FIT_MAX_ZOOM,

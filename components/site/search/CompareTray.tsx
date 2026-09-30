@@ -33,7 +33,8 @@ export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard>
       aria-label={t("trayLabel")}
       data-testid="compare-tray"
       className="fixed inset-x-0 z-(--z-sticky) border-t border-hairline-dark bg-ink text-ivory"
-      style={{ bottom: "var(--consent-h, 0px)" }}
+      // Lifted above the cookie banner by a transform, which is not a layout shift.
+      style={{ bottom: 0, translate: "0 calc(-1 * var(--consent-h, 0px))" }}
     >
       <div className="mx-auto flex max-w-bleed items-center gap-4 px-gutter py-3 md:px-gutter-md lg:px-gutter-lg">
         <p className="sr-only shrink-0 font-sans text-label uppercase tracking-[0.12em] text-mist sm:not-sr-only" aria-live="polite">

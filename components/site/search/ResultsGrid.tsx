@@ -27,6 +27,7 @@ export function ResultsGrid({
   busy,
   count,
   onLoadMore,
+  loadMoreReady,
   state,
   onChange,
   placeName,
@@ -39,6 +40,11 @@ export function ResultsGrid({
   busy: boolean;
   count: ResultCount | undefined;
   onLoadMore: () => void;
+  /**
+   * The live subscription can page. The first page on screen may still be the
+   * server render, whose cursor the client cannot continue from.
+   */
+  loadMoreReady: boolean;
   state: SearchState;
   onChange: (next: SearchState) => void;
   placeName: PlaceName;
@@ -106,8 +112,8 @@ export function ResultsGrid({
           <button
             type="button"
             onClick={onLoadMore}
-            disabled={status === "LoadingMore"}
-            aria-busy={status === "LoadingMore"}
+            disabled={status === "LoadingMore" || !loadMoreReady}
+            aria-busy={status === "LoadingMore" || !loadMoreReady}
             data-testid="load-more"
             className={buttonClasses({ variant: "outline", size: "default" })}
           >

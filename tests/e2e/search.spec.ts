@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -383,5 +384,35 @@ test.describe("search — compare and health", () => {
     await visit(page, "/de/immobilien?priceMax=5000");
     await page.waitForTimeout(1_500);
     expect(errors).toEqual([]);
+  });
+});
+
+test.describe("search — accessibility", () => {
+  async function seriousViolations(page: Page): Promise<string[]> {
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+      .analyze();
+    return results.violations
+      .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
+      .map((violation) => `${violation.impact} ${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(" | ")}`);
+  }
+
+  test("no serious or critical axe violations: results, an open filter panel, the empty state", async ({ page, isMobile }) => {
+    await visit(page, "/sr/nekretnine?type=apartment");
+    expect(await seriousViolations(page)).toEqual([]);
+
+    if (isMobile) {
+      await page.getByTestId("open-filter-sheet").click();
+      await expect(page.getByTestId("filter-sheet")).toBeVisible();
+    } else {
+      await page.getByTestId("bar-more").click();
+      await expect(page.getByTestId("filter-drawer")).toBeVisible();
+    }
+    expect(await seriousViolations(page)).toEqual([]);
+    await page.keyboard.press("Escape");
+
+    await visit(page, "/sr/nekretnine?priceMax=1000");
+    await expect(page.getByTestId("results-empty")).toBeVisible();
+    expect(await seriousViolations(page)).toEqual([]);
   });
 });

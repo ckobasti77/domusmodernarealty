@@ -48,3 +48,31 @@ Each night-run step appends a section:
 - Critique: design-critic pass 1 → 4 High / 10 Medium / 6 Low; pass 2 → 2 High / 7 Medium; pass 3 → 1 High / 3 Medium; pass 4 → 1 High / 3 Medium / 5 Low; final pass 5 → **0 High** (7.5/10). Every High was fixed and re-verified. Every Medium of passes 1–3 was fixed. Of pass 4's Mediums, the only one left is the banner overlaying the featured rail on a first visit; it is deliberate and documented. Pass 5's Mediums (card floor codes, hero resolution on 2× screens, demo cover/title fit) are follow-ups listed in the done file.
 - Known issues / follow-ups: see night-run/state/steps/05.done.md.
 - Verify: npm run verify -> OK (exit 0). e2e 101 passed / 29 skipped / 0 failed. vitest 76/76. i18n 679 keys x 4. axe WCAG 2.2 AA 0 violations (/sr 390+1440, /ru 1440, /de 768, first visit with banner). vitals on the final build: LCP = hero poster (308–528 ms) and CLS 0.0000 in sr/ru/de at 390/768/1440.
+
+## Step 05b - Landing critique and polish (2026-09-30 15:26)
+- Done:
+  - Before: 112 screenshots of /sr and /en (390/768/1280/1920, 10 scroll steps, hero at 300/1200/2500 ms), plus the first-visit banner at 390/1440.
+  - Three independent reviews (design-critic, motion, accessibility), merged and ranked.
+  - About 35 improvements implemented, 14 of them visible in the before/after pairs (list in the done file).
+  - First-visit cookie bar compacted on desktop: 85-104 px, was 125-146. It slides in after the hero settles; phone layout unchanged at 19-27% of the viewport, with equal-weight choices.
+  - WCAG fixes:
+    - the banner no longer hides focus;
+    - visible logo and button rings;
+    - the intro-word contrast was the only axe violation;
+    - moving content ends or pauses;
+    - label-in-name, landmark names, banner focus.
+  - Motion fixes:
+    - the hero rises in view in three beats after the curtain;
+    - no repeat-visit zoom pop, no Ken Burns edge;
+    - the card parallax no longer fights CSS;
+    - counters land together;
+    - intro words read word by word;
+    - no crossfade dip;
+    - reduced-motion start states in CSS.
+  - Localized card floors (Russian +1).
+  - A durable axe test in `tests/e2e/landing.spec.ts`.
+- Files: `components/site/{CookieConsent,Header,LocaleSwitcher,FavoriteButton,Button,PropertyCard,Logo}.tsx`, `components/site/home/{Hero,HeroStage,IntroStatement,IntroWords,FeaturedListings,FeaturedRail,Neighborhoods,NeighborhoodIndex,Services,ToursStage,Numbers}.tsx`, `components/motion/{Preloader,AmbientVideo,Counter,ImageReveal,SplitReveal,PageTransition,ScrollProgress}.tsx`, `app/globals.css`, `app/[locale]/layout.tsx`, `messages/*.json` (+5 keys), `tests/e2e/{landing,shell}.spec.ts`.
+- Decisions: compact banner timing and focus handling; WCAG 2.2.2 treatment of the Ken Burns, cue and film; intro-word opacity floor; card floor wording; reviewer suggestions deliberately not taken. Details in DECISIONS.md.
+- Critique: design 6.5/10 → its 3 Highs fixed; motion 5 Highs → 4 fixed (the scroll position lost when crossing 1024px is a known issue); accessibility 3 serious → all fixed. axe serious/critical: 23 (sr) / 36 (en) at 1440 before → 0 after.
+- Known issues / follow-ups: see night-run/state/steps/05b.done.md.
+- Verify: npm run verify -> OK (exit 0). e2e 103 passed / 29 skipped / 0 failed. vitest 76/76. i18n 684 keys x 4. vitals: LCP = hero poster (364-384 ms), CLS 0.0000 (/sr, /en at 390/1440).

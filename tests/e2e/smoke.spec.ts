@@ -148,7 +148,7 @@ test("/admin/login renders inside the admin root layout", async ({ page }) => {
 
   await expect(page.locator("html")).toHaveAttribute("lang", "sr-Latn");
   await expect(page.locator("body")).toHaveClass(/admin/);
-  await expect(page.getByRole("heading", { level: 1, name: "Administracija" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Mihajlo Estate · Admin" })).toBeVisible();
   await expect(page.getByLabel("E-pošta")).toBeVisible();
   await expect(page.getByLabel("Lozinka")).toBeVisible();
 

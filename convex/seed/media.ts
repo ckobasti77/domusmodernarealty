@@ -40,8 +40,8 @@ const ROOM_LABEL: Record<RoomTag, L10n> = {
  * villa photos did.
  *
  * Interior slots may still repeat across listings once a pool is exhausted: the
- * verified pool in `docs/assets/demo-media.json` is 90 photos for ~220 slots, and
- * inventing image URLs is forbidden.
+ * verified pool in `docs/assets/demo-media.json` is 184 photos for ~220 slots
+ * (no photo is used more than twice), and inventing image URLs is forbidden.
  */
 export function buildPhotoPlan(
   listings: readonly { photos: readonly PhotoCategory[] }[],

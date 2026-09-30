@@ -122,6 +122,7 @@ export function Segmented<T extends string>({
   options,
   onChange,
   tone = "light",
+  joined = false,
   className,
 }: {
   name: string;
@@ -129,10 +130,12 @@ export function Segmented<T extends string>({
   options: readonly { value: T; label: string }[];
   onChange: (value: T) => void;
   tone?: "light" | "dark";
+  /** One control with shared hairlines (a two-way switch), not separate chips. */
+  joined?: boolean;
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-wrap gap-2", className)}>
+    <div className={cn("flex flex-wrap", joined ? "[&>label+label]:-ml-px" : "gap-2", className)}>
       {options.map((option) => {
         const checked = option.value === value;
         return (

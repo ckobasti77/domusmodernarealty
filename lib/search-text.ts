@@ -126,8 +126,8 @@ export function chipLabel(
 
 /**
  * "Stanovi na prodaju — Vračar": the H1, the `<title>` and the breadcrumb leaf.
- * One property type names the listing kind, otherwise the generic phrase; the
- * first two places are named.
+ * One property type names the listing kind, otherwise the generic phrase; more
+ * places read "Vračar +1", as on the filter trigger, so the H1 keeps one line.
  */
 export function searchTitle(t: SearchTranslators, state: SearchState, placeName: PlaceName): string {
   const type = state.types.length === 1 ? state.types[0] : "all";
@@ -136,8 +136,13 @@ export function searchTitle(t: SearchTranslators, state: SearchState, placeName:
     .map((slug) => placeName(slug))
     .filter((name): name is string => name !== undefined);
   if (places.length === 0) return title;
-  const place = places.length > 2 ? `${places.slice(0, 2).join(", ")}…` : places.join(", ");
+  const place = places.length > 1 ? `${places[0]} +${places.length - 1}` : places[0];
   return t.search("titleWithPlace", { title, place });
+}
+
+/** The title names more than the transaction (a type or a place): worth a breadcrumb leaf. */
+export function titleIsSpecific(state: SearchState): boolean {
+  return state.types.length === 1 || state.locations.length > 0;
 }
 
 /** A plain-language summary of the search, used to prefill the contact form. */

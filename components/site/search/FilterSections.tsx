@@ -56,6 +56,7 @@ export function TransactionSection({ state, onChange, tone = "light" }: SectionP
     <FilterSection legend={t("transaction")}>
       <Segmented
         name="transaction"
+        joined
         tone={tone}
         value={state.transaction}
         options={[
@@ -75,7 +76,12 @@ export function TransactionSection({ state, onChange, tone = "light" }: SectionP
   );
 }
 
-export function LocationSection({ state, onChange, index }: SectionProps & { index: LocationIndex }) {
+export function LocationSection({
+  state,
+  onChange,
+  index,
+  collapsed = false,
+}: SectionProps & { index: LocationIndex; collapsed?: boolean }) {
   const t = useTranslations("filters");
   return (
     <FilterSection legend={t("location")}>
@@ -83,6 +89,7 @@ export function LocationSection({ state, onChange, index }: SectionProps & { ind
         index={index}
         transaction={state.transaction}
         selected={state.locations}
+        startCollapsed={collapsed}
         onChange={(locations) => onChange({ ...state, locations })}
       />
     </FilterSection>
@@ -167,7 +174,7 @@ export function RoomsSection({ state, onChange }: SectionProps) {
   const locale = useLocale() as Locale;
   return (
     <FilterSection legend={t("rooms")}>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-5 gap-2">
         {ROOM_OPTIONS.map((rooms) => (
           <ChipToggle
             key={rooms}
@@ -193,11 +200,14 @@ const SELECT = [
 
 function FloorSelect({
   label,
+  name,
   value,
   onChange,
   testId,
 }: {
   label: string;
+  /** Accessible name ("Sprat od"), fuller than the visible label ("Od"). */
+  name: string;
   value?: FloorValue;
   onChange: (value: FloorValue | undefined) => void;
   testId: string;
@@ -209,6 +219,7 @@ function FloorSelect({
     <label className="relative flex flex-col gap-1">
       <span className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{label}</span>
       <select
+        aria-label={name}
         value={value === undefined ? "" : String(value)}
         onChange={(event) => {
           const raw = event.target.value;
@@ -250,8 +261,10 @@ export function FloorSection({ state, onChange }: SectionProps) {
   return (
     <FilterSection legend={t("floor")}>
       <div className="grid grid-cols-2 gap-6">
-        <FloorSelect label={t("floorFrom")} value={state.floorMin} onChange={(value) => setFloor("floorMin", value)} testId="floor-min" />
-        <FloorSelect label={t("floorTo")} value={state.floorMax} onChange={(value) => setFloor("floorMax", value)} testId="floor-max" />
+        {/* The legend already says "Sprat"; the selects say "Od" / "Do", and
+            their accessible names say the whole thing. */}
+        <FloorSelect label={t("from")} name={t("floorFrom")} value={state.floorMin} onChange={(value) => setFloor("floorMin", value)} testId="floor-min" />
+        <FloorSelect label={t("to")} name={t("floorTo")} value={state.floorMax} onChange={(value) => setFloor("floorMax", value)} testId="floor-max" />
       </div>
       <div className="mt-3 grid gap-x-6 sm:grid-cols-2">
         <CheckRow

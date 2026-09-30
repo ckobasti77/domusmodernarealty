@@ -801,7 +801,9 @@
       "truncated": "Mapa prikazuje prvih {count} rezultata.",
       "viewListing": "Pogledajte nekretninu",
       "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu.",
-      "attribution": "Izvori podataka mape"
+      "attribution": "Izvori podataka mape",
+      "outsideBelgrade": "+{count} van Beograda",
+      "showAll": "Prikaži svih {count} rezultata na mapi"
     },
     "chips": {
       "label": "Aktivni filteri",

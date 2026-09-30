@@ -173,7 +173,7 @@
     "sortAreaDesc": "Floor area: largest first",
     "sortPricePerM2Asc": "€/m²: low to high",
     "sortRelevance": "Relevance",
-    "queryPlaceholder": "Neighbourhood, street or reference",
+    "queryPlaceholder": "Area, street or reference",
     "sortPricePerM2Desc": "€/m²: high to low",
     "title": {
       "all": "{transaction, select, rent {Properties to rent} other {Properties for sale}}",
@@ -214,7 +214,9 @@
       "truncated": "The map shows the first {count} results.",
       "viewListing": "View property",
       "emptyArea": "No results in this part of the map. Try moving the map or zooming out.",
-      "attribution": "Map data sources"
+      "attribution": "Map data sources",
+      "outsideBelgrade": "+{count} outside Belgrade",
+      "showAll": "Show all {count} results on the map"
     },
     "chips": {
       "label": "Active filters",

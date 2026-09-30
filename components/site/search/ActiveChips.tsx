@@ -42,7 +42,7 @@ export function ActiveChips({
             onClick={() => onChange(removeChip(state, chip))}
             aria-label={t("chips.remove", { label })}
             data-testid="active-chip"
-            className="inline-flex min-h-9 items-center gap-2 border border-ink/30 bg-paper py-1 pl-3 pr-2 font-sans text-small text-ink transition-colors duration-200 pointer-fine:hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text"
+            className="inline-flex min-h-11 items-center gap-2 border border-ink/30 bg-paper py-1 pl-3 pr-2 md:min-h-9 font-sans text-small text-ink transition-colors duration-200 pointer-fine:hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text"
           >
             <span data-numeric>{label}</span>
             <X aria-hidden="true" strokeWidth={1.5} className="size-3.5 text-stone-text" />
@@ -53,7 +53,7 @@ export function ActiveChips({
         type="button"
         onClick={() => onChange(clearFilters(state))}
         data-testid="chips-clear"
-        className="inline-flex min-h-9 items-center px-2 font-sans text-small uppercase tracking-[0.12em] text-bronze-text underline-offset-4 transition-colors duration-200 pointer-fine:hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text"
+        className="inline-flex min-h-11 items-center px-2 font-sans text-small uppercase md:min-h-9 tracking-[0.12em] text-bronze-text underline-offset-4 transition-colors duration-200 pointer-fine:hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text"
       >
         {t("chips.clearAll")}
       </button>

@@ -158,7 +158,7 @@ function Panel({
           {mode === "sheet" ? (
             <>
               <TransactionSection state={current} onChange={change} />
-              <LocationSection state={current} onChange={change} index={index} />
+              <LocationSection state={current} onChange={change} index={index} collapsed />
               <TypeSection state={current} onChange={change} />
               <PriceSection state={current} onChange={change} />
               <AreaSection state={current} onChange={change} />
@@ -180,7 +180,7 @@ function Panel({
         <button
           type="button"
           onClick={() => change(clearFilters(current))}
-          className={cn(buttonClasses({ variant: "ghost", size: "compact" }), "px-0")}
+          className="inline-flex min-h-11 shrink-0 items-center font-sans text-label uppercase tracking-[0.12em] text-stone-text transition-colors duration-200 pointer-fine:hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text"
           data-testid="filters-clear"
         >
           {t("clearAll")}
@@ -190,7 +190,8 @@ function Panel({
           onClick={() => (mode === "sheet" ? onApply(draft) : onClose())}
           aria-busy={pending}
           data-testid="filters-apply"
-          className={cn(buttonClasses({ variant: "primary", size: "default" }), "ml-auto flex-1 sm:flex-none")}
+          // One line whatever the count, so the button never changes height.
+          className={cn(buttonClasses({ variant: "primary", size: "default" }), "ml-auto flex-1 whitespace-nowrap px-5 tracking-[0.08em] sm:flex-none")}
         >
           <span data-numeric aria-live="polite">
             {showLabel}

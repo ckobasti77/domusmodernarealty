@@ -3,24 +3,32 @@
 import { ArrowRight, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useId, useState, type FormEvent } from "react";
-import { Container } from "@/components/site/Container";
 import { Link } from "@/i18n/navigation";
 import { fixOrphans } from "@/lib/format";
 import { LIMITS, type SearchState } from "@/lib/search-params";
+import { cn } from "@/lib/utils";
 
 /**
  * The ink band at the top of the search page: breadcrumb, the H1 (which tracks
  * the filters, e.g. "Stanovi na prodaju — Vračar") and the free-text search
  * for a street, a neighborhood or a listing reference.
+ *
+ * It is deliberately compact — the results are the page, so the first price
+ * shows on a 1440×900 screen and the first photo on a phone — and on desktop
+ * it shares the list/map split below it, so the search field starts on the
+ * map's left edge instead of on a second vertical axis.
  */
 export function SearchHeader({
   title,
-  filtered,
+  showLeaf,
+  mapHidden,
   state,
   onChange,
 }: {
   title: string;
-  filtered: boolean;
+  /** The breadcrumb names the search only when it says more than "Nekretnine". */
+  showLeaf: boolean;
+  mapHidden: boolean;
   state: SearchState;
   onChange: (next: SearchState) => void;
 }) {
@@ -32,55 +40,60 @@ export function SearchHeader({
 
   return (
     <div className="bg-ink text-ivory">
-      <Container width="bleed" className="pb-10 pt-28 md:pb-12 md:pt-32">
-        <nav aria-label={t("breadcrumbLabel")}>
-          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-label uppercase tracking-[0.12em] text-mist">
-            <li>
-              <Link href="/" className="transition-colors duration-200 pointer-fine:hover:text-ivory">
-                {tNav("home")}
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            {filtered ? (
-              <>
-                <li>
-                  <Link href="/properties" className="transition-colors duration-200 pointer-fine:hover:text-ivory">
-                    {tNav("properties")}
-                  </Link>
-                </li>
-                <li aria-hidden="true">/</li>
-                <li aria-current="page" className="text-ivory">
-                  {title}
-                </li>
-              </>
-            ) : (
-              <li aria-current="page" className="text-ivory">
-                {tNav("properties")}
+      <div
+        className={cn(
+          "grid gap-6 pb-6 pt-[calc(var(--header-h,85px)+1.25rem)] lg:items-end lg:gap-0 lg:pb-8",
+          mapHidden ? "lg:grid-cols-[7fr_5fr]" : "lg:grid-cols-[55fr_45fr]",
+        )}
+      >
+        <div className="min-w-0 px-gutter md:px-gutter-md lg:px-gutter-lg">
+          <nav aria-label={t("breadcrumbLabel")}>
+            <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-label uppercase tracking-[0.12em] text-mist">
+              <li>
+                <Link href="/" className="transition-colors duration-200 pointer-fine:hover:text-ivory">
+                  {tNav("home")}
+                </Link>
               </li>
-            )}
-          </ol>
-        </nav>
-
-        <div className="mt-8 grid gap-8 lg:grid-cols-12 lg:items-end">
-          <div className="lg:col-span-7">
-            <h1 className="font-display text-display-m font-normal" data-testid="search-title">
-              {fixOrphans(title)}
-            </h1>
-            <p className="mt-4 max-w-xl text-body-l text-mist">{tSeo("propertiesDescription")}</p>
-          </div>
-          <div className="lg:col-span-5">
-            <QueryForm
-              state={state}
-              onChange={onChange}
-              labels={{
-                field: tFilters("query"),
-                placeholder: t("queryPlaceholder"),
-                submit: tCommon("search"),
-              }}
-            />
-          </div>
+              <li aria-hidden="true">/</li>
+              {showLeaf ? (
+                <>
+                  <li>
+                    <Link href="/properties" className="transition-colors duration-200 pointer-fine:hover:text-ivory">
+                      {tNav("properties")}
+                    </Link>
+                  </li>
+                  <li aria-hidden="true">/</li>
+                  <li aria-current="page" className="text-ivory">
+                    {title}
+                  </li>
+                </>
+              ) : (
+                <li aria-current="page" className="text-ivory">
+                  {tNav("properties")}
+                </li>
+              )}
+            </ol>
+          </nav>
+          <h1
+            className="mt-4 font-display text-h2 font-normal lg:line-clamp-1 lg:text-[clamp(2.5rem,3.4vw,3.25rem)] lg:leading-[1.1]"
+            data-testid="search-title"
+          >
+            {fixOrphans(title)}
+          </h1>
+          <p className="mt-3 hidden max-w-xl text-body text-mist md:block">{tSeo("propertiesDescription")}</p>
         </div>
-      </Container>
+        <div className="min-w-0 px-gutter md:px-gutter-md lg:pl-0 lg:pr-gutter-lg">
+          <QueryForm
+            state={state}
+            onChange={onChange}
+            labels={{
+              field: tFilters("query"),
+              placeholder: t("queryPlaceholder"),
+              submit: tCommon("search"),
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -132,7 +145,7 @@ function QueryForm({
             placeholder={labels.placeholder}
             onChange={(event) => setText(event.target.value)}
             data-testid="search-query"
-            className="h-12 w-full border-0 border-b border-ivory/40 bg-transparent pl-7 font-sans text-body text-ivory placeholder:text-mist focus:border-ivory focus-visible:outline-none"
+            className="h-12 w-full text-ellipsis border-0 border-b border-ivory/40 bg-transparent pl-7 font-sans text-body text-ivory placeholder:text-mist focus:border-ivory focus-visible:outline-none"
           />
         </span>
       </label>

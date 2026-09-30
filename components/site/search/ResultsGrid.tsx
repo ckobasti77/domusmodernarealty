@@ -34,6 +34,7 @@ export function ResultsGrid({
   mortgage,
   now,
   wide,
+  hoverSync,
 }: {
   cards: readonly ListingCard[];
   status: ResultsStatus;
@@ -52,6 +53,8 @@ export function ResultsGrid({
   now: number;
   /** The map is hidden: three columns instead of two. */
   wide: boolean;
+  /** Cards report hover to the map (only when a map is beside them). */
+  hoverSync: boolean;
 }) {
   const t = useTranslations("search");
   const locale = useLocale() as Locale;
@@ -93,7 +96,7 @@ export function ResultsGrid({
               mortgage={mortgage}
               now={now}
               compare
-              hoverSync
+              hoverSync={hoverSync}
             />
           </li>
         ))}
@@ -160,7 +163,7 @@ function EmptyState({
   return (
     <div className="flex flex-col gap-12 border-t border-hairline-light pt-12" data-testid="results-empty">
       <div className="max-w-xl">
-        <h2 className="font-display text-h2 font-normal">{t("noResults")}</h2>
+        <h2 className="text-pretty font-display text-h2 font-normal">{t("noResults")}</h2>
         <p className="mt-4 text-body-l text-stone-text">{t("noResultsHelp")}</p>
         {chips.length > 0 ? (
           <div className="mt-8">

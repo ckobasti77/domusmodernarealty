@@ -15,7 +15,6 @@ import { getLocationTree } from "@/lib/search-data";
 import { effectiveSlugs, indexLocations, resolveLocations, type LocationIndex } from "@/lib/search-locations";
 import {
   PAGE_SIZE,
-  activeCount,
   canonicalState,
   effectiveSort,
   isCurated,
@@ -25,7 +24,7 @@ import {
   toQuery,
   type SearchState,
 } from "@/lib/search-params";
-import { searchTitle, type SearchTranslators } from "@/lib/search-text";
+import { searchTitle, titleIsSpecific, type SearchTranslators } from "@/lib/search-text";
 
 type Props = PageProps<"/[locale]/properties">;
 
@@ -112,7 +111,7 @@ export default async function PropertiesPage(props: Props) {
   const crumbs = [
     { name: tNav("home"), url: absoluteUrl(getPathname({ locale, href: "/" })) },
     { name: tNav("properties"), url: absoluteUrl(getPathname({ locale, href: "/properties" })) },
-    ...(activeCount(state) > 0
+    ...(titleIsSpecific(state)
       ? [{ name: title, url: absoluteUrl(getPathname({ locale, href: { pathname: "/properties", query: toQuery(state) } })) }]
       : []),
   ];

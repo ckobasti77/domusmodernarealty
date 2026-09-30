@@ -106,7 +106,10 @@ export function PropertyCard({
   const tUnits = useTranslations("units");
 
   const title = pickL10n(listing.title, locale);
-  const shown = clipTitle(title.text);
+  // The narrow 4:5 landing card clips at a word boundary (step 05); the wider
+  // 3:2 card shows the whole title and lets CSS end line two, since a
+  // character count cut there left a one-line title over an empty line.
+  const shown = ratio === "4/5" ? clipTitle(title.text) : { text: title.text, clipped: false };
   // Serbian portals write storeys as codes ("PR / 5"). Other locales get the
   // words the listing page uses, and Russian counts the ground floor as the first.
   const floor = displayFloor(listing.floor, locale);
@@ -159,7 +162,7 @@ export function PropertyCard({
             to be there. This is their scrim. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-ink/60 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-linear-to-b from-ink/40 to-transparent"
         />
 
         {/* At most two badges, most decisive first. Text, not colour, carries the meaning. */}
@@ -179,7 +182,7 @@ export function PropertyCard({
             meta rows and references on the same baselines. */}
         <h3
           id={`card-title-${listing._id}`}
-          className="line-clamp-2 min-h-[2lh] font-display text-h3 font-normal"
+          className="line-clamp-2 min-h-[2lh] text-pretty font-display text-h3 font-normal"
         >
           <Link
             href={{
@@ -341,8 +344,9 @@ function Hoverable({
       aria-labelledby={`card-title-${id}`}
       data-listing-id={id}
       data-hovered={enabled ? (active ? "true" : "false") : undefined}
-      onPointerEnter={enabled ? () => setHoveredListing(id, "list") : undefined}
-      onPointerLeave={enabled ? () => setHoveredListing(null, "list") : undefined}
+      // A mouse only: a tap is not a hover, and the map is not beside a phone list.
+      onPointerEnter={enabled ? (event) => event.pointerType === "mouse" && setHoveredListing(id, "list") : undefined}
+      onPointerLeave={enabled ? (event) => event.pointerType === "mouse" && setHoveredListing(null, "list") : undefined}
       onFocus={enabled ? () => setHoveredListing(id, "list") : undefined}
       onBlur={
         enabled
@@ -529,13 +533,16 @@ function Gallery({
 
       {single ? null : (
         <>
-          <div className="absolute inset-x-2 bottom-2 z-20 flex items-center justify-between">
+          {/* On a mouse the chrome appears with the pointer (or keyboard focus)
+              so a grid of cards is not a grid of arrows; touch keeps it. */}
+          <div className="absolute inset-x-2 bottom-2 z-20 flex items-center justify-between transition-opacity duration-200 pointer-fine:opacity-0 pointer-fine:group-hover/card:opacity-100 pointer-fine:focus-within:opacity-100">
             <button
               type="button"
               onClick={prev}
               aria-controls={groupId}
               aria-label={t("back")}
-              className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-fine:hover:bg-ink"
+              // Touch swipes the photos; the arrows would only add targets.
+              className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-coarse:invisible pointer-fine:hover:bg-ink"
             >
               <ChevronLeft
                 aria-hidden="true"
@@ -555,7 +562,8 @@ function Gallery({
               onClick={next}
               aria-controls={groupId}
               aria-label={t("more")}
-              className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-fine:hover:bg-ink"
+              // Touch swipes the photos; the arrows would only add targets.
+              className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-coarse:invisible pointer-fine:hover:bg-ink"
             >
               <ChevronRight
                 aria-hidden="true"

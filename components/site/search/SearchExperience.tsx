@@ -17,14 +17,13 @@ import { pickL10n } from "@/lib/l10n";
 import { indexLocations, resolveLocations, type LocationNode } from "@/lib/search-locations";
 import {
   PAGE_SIZE,
-  activeCount,
   effectiveSort,
   searchKey,
   toConvexFilters,
   type Bbox,
   type SearchState,
 } from "@/lib/search-params";
-import { searchTitle } from "@/lib/search-text";
+import { searchTitle, titleIsSpecific } from "@/lib/search-text";
 import { COMPARE_MIN, useCompareIds } from "@/lib/stores/compare";
 import { cn } from "@/lib/utils";
 import { ActiveChips } from "./ActiveChips";
@@ -127,6 +126,16 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
   const known = useMemo(() => new Map(cards.map((card) => [card._id, card])), [cards]);
 
   const [view, setView] = useState<"list" | "map">("list");
+
+  // The phone List/Mapa switch steps aside while the footer is on screen.
+  const [footerInView, setFooterInView] = useState(false);
+  useEffect(() => {
+    const footer = document.querySelector("#main ~ footer");
+    if (footer === null) return;
+    const observer = new IntersectionObserver(([entry]) => setFooterInView(entry?.isIntersecting ?? false));
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
   const [mapHidden, setMapHidden] = useState(false);
   const compareOpen = useCompareIds().length >= COMPARE_MIN;
 
@@ -190,18 +199,34 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
 
   return (
     <>
-      <SearchHeader title={title} filtered={activeCount(state) > 0} state={state} onChange={change} />
+      <SearchHeader
+        title={title}
+        showLeaf={titleIsSpecific(state)}
+        mapHidden={mapHidden}
+        state={state}
+        onChange={change}
+      />
 
       {/* ------------------------------------------------ sticky filter bar */}
       <div
         data-search-bar=""
         // Tests (and nothing else) wait for this before they interact.
         data-ready={hydrated ? "true" : "false"}
-        className="sticky top-(--header-h,85px) z-(--z-sticky) border-b border-hairline-light bg-paper/95 backdrop-blur-sm"
+        className="sticky top-(--header-h,85px) z-(--z-sticky) border-b border-hairline-light bg-paper"
       >
         <div className="mx-auto flex h-16 max-w-bleed items-center px-gutter md:px-gutter-md lg:h-18 lg:px-gutter-lg">
           <div className="min-w-0 flex-1">
-            <FilterBar state={state} onChange={change} index={index} now={now} />
+            <FilterBar
+              state={state}
+              onChange={change}
+              onSheetApply={(next) => {
+                change(next);
+                revealList(true);
+              }}
+              index={index}
+              now={now}
+              countText={countText}
+            />
           </div>
         </div>
       </div>
@@ -211,14 +236,22 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
         <section
           aria-label={t("heading")}
           className={cn(
-            "min-w-0 px-gutter pb-24 pt-8 md:px-gutter-md lg:px-gutter-lg",
+            // Phones keep room under the last card for the floating switch.
+            "min-w-0 px-gutter pb-32 pt-8 md:px-gutter-md lg:px-gutter-lg lg:pb-24",
             mapHidden ? "lg:w-full" : "lg:w-[55%]",
             view === "map" && "max-lg:hidden",
           )}
         >
           <div className="mb-8 flex flex-col gap-5">
             <div className="flex flex-wrap items-baseline justify-between gap-4">
-              <p data-numeric className="font-sans text-small text-ink" aria-live="polite" data-testid="results-count">
+              {/* On phones the visible count lives in the sticky bar; this one
+                  stays for screen readers (it is the live region). */}
+              <p
+                data-numeric
+                className="font-sans text-small text-ink max-lg:sr-only"
+                aria-live="polite"
+                data-testid="results-count"
+              >
                 {countText}
               </p>
               <button
@@ -230,7 +263,8 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
                 {mapHidden ? t("showMap") : t("hideMap")}
               </button>
             </div>
-            <ActiveChips state={state} onChange={change} placeName={placeName} />
+            {/* With no results the empty state offers the same chips as suggestions. */}
+            {count?.count === 0 ? null : <ActiveChips state={state} onChange={change} placeName={placeName} />}
           </div>
 
           <ResultsGrid
@@ -246,6 +280,7 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
             mortgage={mortgage}
             now={now}
             wide={mapHidden}
+            hoverSync={desktop && !mapHidden}
           />
         </section>
 
@@ -273,7 +308,8 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
 
       {/* ------------------------------------------- phone list/map switch */}
       <div
-        className="fixed inset-x-0 z-(--z-sticky) flex justify-center lg:hidden"
+        className="pointer-events-none fixed inset-x-0 z-(--z-sticky) flex justify-center lg:hidden"
+        inert={footerInView}
         // Above the compare tray when it shows, and above the map's OSM credit line.
         style={{
           bottom: compareOpen ? "5.5rem" : view === "map" ? "2.75rem" : "1.25rem",
@@ -282,7 +318,15 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
           translate: "0 calc(-1 * var(--consent-h, 0px))",
         }}
       >
-        <div role="group" aria-label={t("view.label")} className="flex border border-ink bg-ink p-0.5 text-ivory">
+        <div
+          role="group"
+          aria-label={t("view.label")}
+          className={cn(
+            "pointer-events-auto flex border border-ink/30 bg-paper p-0.5 text-ink transition-[opacity,translate] duration-200",
+            // Over the footer it would sit on ink links; it steps aside there.
+            footerInView && "pointer-events-none translate-y-[150%] opacity-0",
+          )}
+        >
           {(["list", "map"] as const).map((option) => (
             <button
               key={option}
@@ -295,8 +339,9 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
               data-testid={`view-${option}`}
               className={cn(
                 "inline-flex h-11 items-center gap-2 px-5 font-sans text-small uppercase tracking-[0.12em] transition-colors duration-200",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze",
-                view === option ? "bg-ivory text-ink" : "text-ivory",
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text",
+                // Pressed is ink, like the transaction switch and every chip.
+                view === option ? "bg-ink text-paper" : "text-ink",
               )}
             >
               {option === "list" ? (

@@ -15,7 +15,7 @@ import {
   type SearchState,
   type SortOption,
 } from "@/lib/search-params";
-import { SORT_LABEL_KEYS, areaText, priceText, roomsShort } from "@/lib/search-text";
+import { SORT_LABEL_KEYS, areaText, priceText, roomsLong } from "@/lib/search-text";
 import { cn } from "@/lib/utils";
 import { Segmented } from "./controls";
 import { FilterDialog } from "./FilterDialog";
@@ -28,16 +28,21 @@ import { useSearchTranslators } from "./useSearchTranslators";
  * Desktop: the transaction switch, one popover per main filter (each trigger
  * shows its current value), "Svi filteri" for the rest, and the sort. Every
  * change applies at once.
- * Phones: one "Filteri" button opening the full sheet, plus the sort.
+ * Phones: one "Filteri" button opening the full sheet, the live result count
+ * (PRD A3 "sticky result count"), the transaction switch from 640 px, and
+ * the sort.
  */
 export type FilterBarProps = {
   state: SearchState;
   onChange: (next: SearchState) => void;
+  /** The phone sheet's "Prikaži": applies, then brings the results into view. */
+  onSheetApply: (next: SearchState) => void;
   index: LocationIndex;
   now: number;
+  countText: string;
 };
 
-export function FilterBar({ state, onChange, index, now }: FilterBarProps) {
+export function FilterBar({ state, onChange, onSheetApply, index, now, countText }: FilterBarProps) {
   const t = useTranslations("filters");
   const tListing = useTranslations("listing");
   const translators = useSearchTranslators();
@@ -54,31 +59,42 @@ export function FilterBar({ state, onChange, index, now }: FilterBarProps) {
     const name = tListing(`propertyType.${state.types[0]}`);
     return state.types.length > 1 ? `${name} +${state.types.length - 1}` : name;
   };
-  const roomsLabel = () =>
-    state.rooms.length > 0 ? state.rooms.map((rooms) => roomsShort(rooms, locale)).join(", ") : undefined;
+  // "Dvosoban" / "Dvosoban +2": a bare "2" says nothing in the bar.
+  const roomsLabel = () => {
+    if (state.rooms.length === 0) return undefined;
+    const name = roomsLong(translators, state.rooms[0]);
+    return state.rooms.length > 1 ? `${name} +${state.rooms.length - 1}` : name;
+  };
 
   const more = moreFiltersCount(state);
   const total = activeCount(state);
+
+  const transactionSwitch = (name: string, className: string) => (
+    <Segmented
+      name={name}
+      joined
+      value={state.transaction}
+      options={[
+        { value: "sale", label: t("sale") },
+        { value: "rent", label: t("rent") },
+      ]}
+      // Rent and sale prices differ by three orders of magnitude, so a price
+      // range never survives the switch.
+      onChange={(transaction) => {
+        const next: SearchState = { ...state, transaction };
+        delete next.priceMin;
+        delete next.priceMax;
+        onChange(next);
+      }}
+      className={className}
+    />
+  );
 
   return (
     <div className="flex items-center gap-3">
       {/* ------------------------------------------------------ desktop bar */}
       <div className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
-        <Segmented
-          name="transaction-bar"
-          value={state.transaction}
-          options={[
-            { value: "sale", label: t("sale") },
-            { value: "rent", label: t("rent") },
-          ]}
-          onChange={(transaction) => {
-            const next: SearchState = { ...state, transaction };
-            delete next.priceMin;
-            delete next.priceMax;
-            onChange(next);
-          }}
-          className="mr-2 flex-nowrap"
-        />
+        {transactionSwitch("transaction-bar", "mr-2 flex-nowrap")}
         <FilterPopover label={t("location")} value={placeLabel()} testId="bar-location" wide>
           <LocationSection state={state} onChange={onChange} index={index} />
         </FilterPopover>
@@ -104,28 +120,32 @@ export function FilterBar({ state, onChange, index, now }: FilterBarProps) {
             <BarButton active={more > 0} data-testid="bar-more">
               <SlidersHorizontal aria-hidden="true" strokeWidth={1.25} className="size-4" />
               {t("more")}
-              {more > 0 ? <CountBadge>{more}</CountBadge> : null}
+              {more > 0 ? <CountBadge inverted>{more}</CountBadge> : null}
             </BarButton>
           }
         />
       </div>
 
       {/* ------------------------------------------------------- phone bar */}
-      <div className="flex min-w-0 flex-1 items-center lg:hidden">
+      <div className="flex min-w-0 flex-1 items-center gap-3 lg:hidden">
+        {transactionSwitch("transaction-phone-bar", "hidden flex-nowrap sm:flex")}
         <FilterDialog
           mode="sheet"
           state={state}
-          onApply={onChange}
+          onApply={onSheetApply}
           index={index}
           now={now}
           trigger={
             <BarButton active={total > 0} data-testid="open-filter-sheet">
               <SlidersHorizontal aria-hidden="true" strokeWidth={1.25} className="size-4" />
               {t("heading")}
-              {total > 0 ? <CountBadge>{total}</CountBadge> : null}
+              {total > 0 ? <CountBadge inverted>{total}</CountBadge> : null}
             </BarButton>
           }
         />
+        <p data-numeric aria-hidden="true" className="shrink-0 whitespace-nowrap font-sans text-small text-stone-text">
+          {countText}
+        </p>
       </div>
 
       <SortSelect state={state} onChange={onChange} />
@@ -133,9 +153,16 @@ export function FilterBar({ state, onChange, index, now }: FilterBarProps) {
   );
 }
 
-function CountBadge({ children }: { children: ReactNode }) {
+/** A count inside a trigger; `inverted` for the ink-filled (active) trigger it sits on. */
+function CountBadge({ children, inverted = false }: { children: ReactNode; inverted?: boolean }) {
   return (
-    <span data-numeric className="inline-flex h-5 min-w-5 items-center justify-center bg-ink px-1 font-mono text-label text-ivory">
+    <span
+      data-numeric
+      className={cn(
+        "inline-flex h-5 min-w-5 items-center justify-center px-1 font-mono text-label",
+        inverted ? "bg-paper text-ink" : "bg-ink text-ivory",
+      )}
+    >
       {children}
     </span>
   );
@@ -153,7 +180,8 @@ function BarButton({ active, className, children, ...rest }: BarButtonProps) {
         "transition-[background-color,color,border-color] duration-200 ease-out",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text",
         "data-[state=open]:border-ink",
-        active ? "border-ink text-ink" : "border-ink/30 text-ink pointer-fine:hover:border-ink",
+        // An applied filter is an ink block, the same "on" as every chip.
+        active ? "border-ink bg-ink text-paper" : "border-ink/30 text-ink pointer-fine:hover:border-ink",
         className,
       )}
       {...rest}
@@ -196,8 +224,11 @@ function FilterPopover({
           sideOffset={8}
           collisionPadding={16}
           data-testid={`${testId}-panel`}
+          data-lenis-prevent=""
           className={cn(
             "z-(--z-overlay) border border-hairline-light bg-paper p-6 text-ink shadow-[0_24px_48px_-24px_rgb(14_13_11/0.28)]",
+            // Never taller than the space under the sticky bar.
+            "max-h-[calc(100svh-var(--header-h,85px)-6rem)] overflow-y-auto overscroll-contain",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
             "duration-200 motion-reduce:duration-0",
             wide ? "w-[min(26rem,calc(100vw-2rem))]" : "w-[min(22rem,calc(100vw-2rem))]",
@@ -229,7 +260,8 @@ function SortSelect({ state, onChange }: { state: SearchState; onChange: (next: 
         aria-label={t("sortLabel")}
         data-testid="sort-select"
         onChange={(event) => onChange({ ...state, sort: event.target.value as SortOption })}
-        className="h-11 appearance-none border-0 border-b border-ink/30 bg-transparent pr-7 font-sans text-small text-ink focus:border-ink focus-visible:outline-none"
+        // Capped on phones so the sticky result count beside it stays whole.
+        className="h-11 max-w-[8.5rem] appearance-none truncate border-0 border-b border-ink/30 bg-transparent pr-7 font-sans text-small text-ink focus:border-ink focus-visible:outline-none sm:max-w-none"
       >
         {options.map((option) => (
           <option key={option} value={option}>

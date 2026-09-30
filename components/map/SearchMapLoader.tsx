@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin } from "lucide-react";
+import { Check, MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";
@@ -119,19 +119,15 @@ export function SearchMapLoader({
           onClick={toggleSearchAsMove}
           className="absolute left-3 top-3 z-[3] flex min-h-11 cursor-pointer items-center gap-3 border border-hairline-light bg-paper px-3.5 text-small text-ink transition-colors duration-150 hover:bg-ivory focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep"
         >
+          {/* The same square box as every other checkbox on the site. */}
           <span
             aria-hidden="true"
             className={cn(
-              "relative h-4 w-7 shrink-0 border transition-colors duration-150",
-              searchAsMove ? "border-ink bg-ink" : "border-stone-text bg-transparent",
+              "inline-flex size-[18px] shrink-0 items-center justify-center border transition-colors duration-150",
+              searchAsMove ? "border-ink bg-ink text-paper" : "border-ink/40 bg-paper",
             )}
           >
-            <span
-              className={cn(
-                "absolute left-0.5 top-1/2 size-2.5 -translate-y-1/2 transition-transform duration-150 motion-reduce:transition-none",
-                searchAsMove ? "translate-x-3 bg-paper" : "translate-x-0 bg-stone-text",
-              )}
-            />
+            {searchAsMove ? <Check strokeWidth={2} className="size-3.5" /> : null}
           </span>
           {t("searchAsMove")}
         </button>

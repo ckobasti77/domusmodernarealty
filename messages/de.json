@@ -214,7 +214,9 @@
       "truncated": "Die Karte zeigt die ersten {count} Ergebnisse.",
       "viewListing": "Immobilie ansehen",
       "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus.",
-      "attribution": "Quellen der Kartendaten"
+      "attribution": "Quellen der Kartendaten",
+      "outsideBelgrade": "+{count} außerhalb Belgrads",
+      "showAll": "Alle {count} Ergebnisse auf der Karte zeigen"
     },
     "chips": {
       "label": "Aktive Filter",

@@ -74,7 +74,7 @@ const INTERACTIVE_LAYERS = [POINTS_LAYER];
 /** Belgrade, where most of the stock is (brief), for a search with no results. */
 const DEFAULT_VIEW = { latitude: 44.8125, longitude: 20.4612, zoom: 11 };
 const FIT_MAX_ZOOM = 14;
-const CLUSTER_RADIUS = 48;
+const CLUSTER_RADIUS = 36;
 const CLUSTER_MAX_ZOOM = 15;
 const MAX_HTML_PINS = 150;
 const MOVE_DEBOUNCE_MS = 400;
@@ -193,35 +193,54 @@ function readBbox(map: MapLibreMap): Bbox | null {
   };
 }
 
-/** Frame the result set; one listing gets a street-level zoom instead of a degenerate box. */
+/**
+ * Belgrade's urban area. When most results are in it (Belgrade is the primary
+ * market, BRIEF), the map opens on the city instead of squeezing Belgrade into
+ * one cluster so a far-away cottage fits; a chip offers the rest.
+ */
+const BELGRADE = { west: 20.2, south: 44.66, east: 20.68, north: 44.96 };
+const BELGRADE_SHARE = 0.7;
+
+function belgradeFocus(points: readonly MapPoint[]): MapPoint[] | null {
+  const inside = points.filter(
+    (point) =>
+      point.lng >= BELGRADE.west &&
+      point.lng <= BELGRADE.east &&
+      point.lat >= BELGRADE.south &&
+      point.lat <= BELGRADE.north,
+  );
+  if (inside.length < 2 || inside.length === points.length) return null;
+  return inside.length / points.length >= BELGRADE_SHARE ? inside : null;
+}
+
+/**
+ * Frame points; one listing gets a street-level zoom instead of a degenerate
+ * box. The padding keeps every pin clear of the map's own chrome: the toggle
+ * top-left (a pin stands ABOVE its point), the zoom buttons top-right, and page
+ * chrome the host declares over the bottom edge as `--map-inset-bottom` (px),
+ * e.g. the phone List/Mapa switch.
+ */
 function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number) {
   const container = map.getContainer();
   const width = container.clientWidth;
   const height = container.clientHeight;
   if (points.length === 0 || width === 0 || height === 0) return;
+  // Scaled down on a small map, where full padding would leave no room.
+  const pad = Math.min(48, Math.floor(Math.min(width, height) / 8));
+  const inset = Number.parseFloat(getComputedStyle(container).getPropertyValue("--map-inset-bottom")) || 0;
+  const padding = {
+    top: Math.min(pad + 64, Math.floor(height / 4)),
+    right: pad + Math.min(24, Math.floor(width / 16)),
+    bottom: pad + inset,
+    left: pad,
+  };
   if (points.length === 1) {
-    map.easeTo({ center: [points[0].lng, points[0].lat], zoom: FIT_MAX_ZOOM, duration });
+    map.easeTo({ center: [points[0].lng, points[0].lat], zoom: FIT_MAX_ZOOM, padding, duration });
     return;
   }
   const bounds = new maplibregl.LngLatBounds();
   for (const point of points) bounds.extend([point.lng, point.lat]);
-  // Scaled down on a small map, where 48 px a side would leave no room to fit
-  // anything; the top also clears the toggle and the pins standing on the points.
-  const pad = Math.min(48, Math.floor(Math.min(width, height) / 8));
-  const top = pad + Math.min(56, Math.floor(height / 8));
-  // The sticky panel starts below the page header band, so on first paint its
-  // lower part can sit under the fold: frame the results in the part a
-  // visitor can actually see (never more than half the panel).
-  const hidden = Math.max(0, container.getBoundingClientRect().bottom - window.innerHeight);
-  // Page chrome floating over the map's bottom edge (the phone List/Mapa
-  // switch) is declared by the host as `--map-inset-bottom` in px.
-  const inset = Number.parseFloat(getComputedStyle(container).getPropertyValue("--map-inset-bottom")) || 0;
-  const bottom = pad + inset + Math.min(hidden, Math.floor(height / 2));
-  map.fitBounds(bounds, {
-    padding: { top, right: pad, bottom, left: pad },
-    maxZoom: FIT_MAX_ZOOM,
-    duration,
-  });
+  map.fitBounds(bounds, { padding, maxZoom: FIT_MAX_ZOOM, duration });
 }
 
 /**
@@ -390,20 +409,29 @@ export default function SearchMap({
     if (active && !wasShown) mapRef.current?.getMap().resize();
   }, [active]);
 
+  // Belgrade first: each new result set opens on the city when most of it is
+  // there; "+N van Beograda" widens the frame to everything.
+  const [scope, setScope] = useState({ key: filtersKey, all: false });
+  if (scope.key !== filtersKey) setScope({ key: filtersKey, all: false });
+  const focus = useMemo(() => (scope.all ? null : belgradeFocus(points)), [points, scope.all]);
+  const outside = focus !== null ? points.length - focus.length : 0;
+
   // Frame each new result set once. The first frame is instant (the map should
   // open already framed); later ones glide unless motion is reduced. Nothing is
   // framed while the visitor drives the search with the map, over a restored
   // URL viewport, or while the map is hidden (retried when it shows again).
   const fitted = useRef<string | null>(null);
+  const frameKey = `${filtersKey}|${scope.all ? "all" : "auto"}`;
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!loaded || !active || map === undefined || result === undefined) return;
-    if (fitted.current === filtersKey) return;
+    if (fitted.current === frameKey) return;
     const first = fitted.current === null;
-    fitted.current = filtersKey;
+    fitted.current = frameKey;
     if (searchAsMove || (first && restored)) return;
-    frame(map, result.points, first || reduced ? 0 : EASE_MS);
-  }, [active, filtersKey, loaded, reduced, restored, result, searchAsMove]);
+    const framed = scope.all ? null : belgradeFocus(result.points);
+    frame(map, framed ?? result.points, first || reduced ? 0 : EASE_MS);
+  }, [active, frameKey, loaded, reduced, restored, result, scope.all, searchAsMove]);
 
   function handleStyleData(event: MapStyleDataEvent) {
     applyHouseStyleOnce(event.target, locale);
@@ -414,6 +442,10 @@ export default function SearchMap({
     // No compass is shown, so nothing may leave north-up.
     map.touchZoomRotate.disableRotation();
     map.keyboard.disableRotation();
+    // The compact OSM credit opens unfolded until the first pan, right where
+    // the phone List/Mapa switch floats; start it folded behind its "i" button,
+    // the state MapLibre itself returns to after any interaction.
+    map.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
     setLoaded(true);
     refresh(map);
     onReady(() => {
@@ -575,6 +607,18 @@ export default function SearchMap({
         ) : null}
       </MapGL>
 
+      {outside > 0 && !searchAsMove ? (
+        <button
+          type="button"
+          onClick={() => setScope({ key: filtersKey, all: true })}
+          aria-label={t("showAll", { count: points.length })}
+          data-testid="map-show-all"
+          className="absolute left-3 top-[4.25rem] z-[3] inline-flex min-h-11 items-center border border-ink bg-ink px-3.5 font-sans text-small text-paper transition-colors duration-150 hover:bg-bronze-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep"
+        >
+          {t("outsideBelgrade", { count: outside })}
+        </button>
+      ) : null}
+
       {data?.truncated === true ? (
         <p
           role="status"
@@ -637,7 +681,7 @@ const ClusterMarker = memo(function ClusterMarker({
         aria-label={t("cluster", { count: cluster.count })}
         onClick={() => onExpand(cluster)}
         className={cn(
-          "flex cursor-pointer items-center justify-center bg-ink font-mono text-[12px] leading-none text-paper ring-1 ring-inset ring-bronze/70 transition-colors duration-150 hover:bg-bronze-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep",
+          "flex cursor-pointer items-center justify-center bg-ink font-sans text-[12px] font-medium leading-none tabular-nums text-paper ring-1 ring-inset ring-bronze/70 transition-colors duration-150 hover:bg-bronze-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep",
           size,
         )}
       >
@@ -696,7 +740,10 @@ const PinMarker = memo(function PinMarker({ point, stack, selected, onSelect }: 
         onBlur={() => setHoveredListing(null, "map")}
         onClick={() => onSelect(point._id)}
         className={cn(
-          "relative flex h-6 min-w-6 cursor-pointer items-center justify-center whitespace-nowrap px-2 font-mono text-[12px] leading-none text-paper transition-colors duration-150",
+          // Manrope with tabular figures, as every price on the site (DESIGN §2);
+          // the invisible ::before grows the tap target past the 24 px label.
+          "relative flex h-6 min-w-6 cursor-pointer items-center justify-center whitespace-nowrap px-2 font-sans text-[12px] font-medium leading-none tabular-nums text-paper transition-colors duration-150",
+          "before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-['']",
           "after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-[5px] after:border-t-[5px] after:border-x-transparent after:transition-colors after:duration-150 after:content-['']",
           "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep",
           lifted ? "bg-bronze-deep after:border-t-bronze-deep" : "bg-ink after:border-t-ink",

@@ -111,9 +111,11 @@ export function RangeField({ labels, min, max, stops, format, onCommit, unit, te
     "focus-visible:[&::-webkit-slider-thumb]:outline-2 focus-visible:[&::-webkit-slider-thumb]:outline-offset-2 focus-visible:[&::-webkit-slider-thumb]:outline-bronze-text",
     "focus-visible:[&::-moz-range-thumb]:outline-2 focus-visible:[&::-moz-range-thumb]:outline-offset-2 focus-visible:[&::-moz-range-thumb]:outline-bronze-text",
   );
+  // The underline belongs to the field (input + unit), so the unit sits inside it.
+  const field = "flex items-baseline gap-2 border-b border-stone-text focus-within:border-ink";
   const input = cn(
-    "h-11 w-full border-0 border-b border-stone-text bg-transparent px-0 font-sans text-body text-ink",
-    "placeholder:text-stone-text focus:border-ink focus-visible:outline-none",
+    "h-11 w-full min-w-0 border-0 bg-transparent px-0 font-sans text-body text-ink",
+    "placeholder:text-stone-text focus-visible:outline-none",
   );
 
   return (
@@ -121,7 +123,7 @@ export function RangeField({ labels, min, max, stops, format, onCommit, unit, te
       <div className="grid grid-cols-2 gap-6">
         <label className="flex flex-col gap-1" htmlFor={`${id}-min`}>
           <span className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{labels.from}</span>
-          <span className="flex items-baseline gap-2">
+          <span className={field}>
             <input
               id={`${id}-min`}
               inputMode="numeric"
@@ -142,7 +144,7 @@ export function RangeField({ labels, min, max, stops, format, onCommit, unit, te
         </label>
         <label className="flex flex-col gap-1" htmlFor={`${id}-max`}>
           <span className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{labels.to}</span>
-          <span className="flex items-baseline gap-2">
+          <span className={field}>
             <input
               id={`${id}-max`}
               inputMode="numeric"

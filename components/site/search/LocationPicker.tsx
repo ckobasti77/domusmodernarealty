@@ -32,6 +32,8 @@ export type LocationPickerProps = {
   transaction: "sale" | "rent";
   selected: readonly string[];
   onChange: (slugs: string[]) => void;
+  /** Start with every place folded (the phone sheet, where the tree would push the other filters away). */
+  startCollapsed?: boolean;
 };
 
 /** Case- and diacritic-insensitive haystack: current-locale name, Serbian name, slug. */
@@ -40,7 +42,7 @@ function haystack(node: LocationNode, locale: Locale): string {
   return foldDiacritics(`${local} ${node.name.sr} ${node.slug}`).toLowerCase();
 }
 
-export function LocationPicker({ index, transaction, selected, onChange }: LocationPickerProps) {
+export function LocationPicker({ index, transaction, selected, onChange, startCollapsed = false }: LocationPickerProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("filters");
   const searchId = useId();
@@ -48,7 +50,7 @@ export function LocationPicker({ index, transaction, selected, onChange }: Locat
   // Belgrade is the primary market (BRIEF), so its municipalities start open.
   const [open, setOpen] = useState<ReadonlySet<string>>(() => {
     const initial = new Set<string>();
-    for (const root of index.roots) if (root.slug === "beograd") initial.add(root._id);
+    if (!startCollapsed) for (const root of index.roots) if (root.slug === "beograd") initial.add(root._id);
     for (const slug of selected) {
       const node = index.bySlug.get(slug);
       if (node !== undefined) for (const parent of ancestorsOf(index, node)) initial.add(parent._id);
@@ -140,6 +142,9 @@ export function LocationPicker({ index, transaction, selected, onChange }: Locat
                 className={cn("size-4 transition-transform duration-200", expanded && "rotate-180")}
               />
             </button>
+          ) : !withPath ? (
+            // Keeps every count on one vertical line, with or without sub-areas.
+            <span aria-hidden="true" className="size-11 shrink-0" />
           ) : null}
         </div>
         {!withPath && expanded && children.length > 0 ? (

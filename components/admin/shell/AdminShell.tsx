@@ -6,6 +6,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AuthGate } from "./AuthGate";
 import { BreadcrumbLabelProvider } from "./breadcrumbs";
 import { CommandPalette } from "./CommandPalette";
+import { DemoDataBanner } from "./DemoDataBanner";
 import { Topbar } from "./Topbar";
 
 /** Sidebar + top bar + ⌘K around every signed-in admin screen. */
@@ -19,6 +20,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           {/* `min-w-0`: a wide table scrolls inside its card instead of widening the page. */}
           <SidebarInset className="min-w-0">
             <Topbar onOpenPalette={() => setPaletteOpen(true)} />
+            <DemoDataBanner />
             <div className="flex-1 px-4 py-6 md:px-8 md:py-8" id="admin-main">
               {children}
             </div>

@@ -11,6 +11,7 @@ import { z } from "zod";
 import { safeNext } from "@/components/admin/shell/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/admin/auth/PasswordInput";
 import { Label } from "@/components/ui/label";
 import { errorData } from "@/lib/admin/errors";
 
@@ -70,7 +71,7 @@ export function LoginForm() {
           id="admin-email"
           type="email"
           autoComplete="username"
-          placeholder="ime@mihajloestate.rs"
+          className="h-10"
           aria-invalid={errors.email !== undefined}
           aria-describedby={errors.email ? "admin-email-error" : undefined}
           {...form.register("email")}
@@ -84,10 +85,10 @@ export function LoginForm() {
 
       <div className="space-y-2">
         <Label htmlFor="admin-password">Lozinka</Label>
-        <Input
+        <PasswordInput
           id="admin-password"
-          type="password"
           autoComplete="current-password"
+          className="h-10"
           aria-invalid={errors.password !== undefined}
           aria-describedby={errors.password ? "admin-password-error" : undefined}
           {...form.register("password")}

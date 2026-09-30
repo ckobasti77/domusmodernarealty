@@ -24,7 +24,7 @@ export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
   return (
     <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-4">
       <SidebarTrigger aria-label="Prikaži ili sakrij meni" />
-      <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-5" />
+      <Separator orientation="vertical" className="mr-1 data-vertical:h-5 data-vertical:self-center" />
       <div className="min-w-0 flex-1">
         <AdminBreadcrumbs />
       </div>

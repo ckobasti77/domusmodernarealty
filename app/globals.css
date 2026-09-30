@@ -163,8 +163,10 @@
   --accent-foreground: #0e0d0b;
   --destructive: #a4473a;
   --border: color-mix(in oklab, #0e0d0b 14%, transparent);
-  --input: color-mix(in oklab, #0e0d0b 20%, transparent);
-  --ring: #b08d57;
+  /* 48% ink: form-control borders reach 3:1 on paper (WCAG 1.4.11). */
+  --input: color-mix(in oklab, #0e0d0b 48%, transparent);
+  /* bronze-deep: 4.6:1 on paper, so the focus ring is visible (bronze is 2.9:1). */
+  --ring: #8c6d3f;
   --chart-1: #b08d57;
   --chart-2: #8c6d3f;
   --chart-3: #8a8275;
@@ -178,7 +180,7 @@
   --sidebar-accent: #eae3d6;
   --sidebar-accent-foreground: #0e0d0b;
   --sidebar-border: color-mix(in oklab, #0e0d0b 12%, transparent);
-  --sidebar-ring: #b08d57;
+  --sidebar-ring: #8c6d3f;
 }
 
 .dark {
@@ -198,7 +200,7 @@
   --accent-foreground: #f4efe6;
   --destructive: #c4675a;
   --border: color-mix(in oklab, #f4efe6 14%, transparent);
-  --input: color-mix(in oklab, #f4efe6 22%, transparent);
+  --input: color-mix(in oklab, #f4efe6 42%, transparent);
   --ring: #b08d57;
   --chart-1: #b08d57;
   --chart-2: #8c6d3f;
@@ -550,4 +552,14 @@ html[data-consent="pending"] {
    way to stop it (WCAG 2.2.2), and by then the visitor has seen the hint. */
 .scroll-cue-line {
   animation: me-scroll-cue 2.4s cubic-bezier(0.65, 0, 0.35, 1) 2;
+}
+
+/* ---------------------------------------------------------------------------
+   Admin keyboard focus. shadcn draws a 50%-alpha halo (about 1.6:1 on paper);
+   a solid 2px ring in --ring (bronze-deep light, bronze dark) is >= 3:1 on every
+   admin surface. Unlayered on purpose: it must win over `outline-none`.
+--------------------------------------------------------------------------- */
+body.admin :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

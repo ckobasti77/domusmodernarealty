@@ -11,6 +11,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthCard } from "./AuthCard";
+import { PasswordInput } from "./PasswordInput";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
@@ -36,7 +38,10 @@ type Values = z.infer<typeof schema>;
  * `flow: "signUp"`, and `convex/auth.ts::createOrUpdateUser` accepts the new
  * account only when that token matches an open invite for this address.
  */
-export function InviteAcceptForm({ token }: { token: string }) {
+const LEDE = "Postavite lozinku za svoj nalog. Uloga i ovlašćenja dolaze iz pozivnice.";
+const FOOTER = "Pozivnica važi 7 dana i može se iskoristiti samo jednom.";
+
+export function InviteScreen({ token }: { token: string }) {
   // A query must not read the clock, so the page passes "now" in once.
   const [now] = useState(() => Date.now());
   const invite = useQuery(api.invites.checkToken, { token, now });
@@ -55,40 +60,49 @@ export function InviteAcceptForm({ token }: { token: string }) {
 
   if (invite === undefined) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="Provera pozivnice">
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-10 w-full" />
-      </div>
+      <AuthCard eyebrow="Pozivnica u tim" lede={LEDE} footer={FOOTER}>
+        <div className="space-y-4" aria-busy="true" aria-label="Provera pozivnice">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </AuthCard>
     );
   }
 
   if (!invite.valid && !accepted) {
     return (
-      <div role="alert" data-testid="invite-invalid" className="space-y-5">
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {invite.reason}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Zatražite novu pozivnicu od administratora agencije.
-        </p>
-        <Button variant="outline" asChild className="w-full">
-          <Link href="/admin/login">Na prijavu</Link>
-        </Button>
-      </div>
+      <AuthCard
+        eyebrow="Pozivnica nije važeća"
+        lede="Link koji ste otvorili ne može da otvori nalog. Pozivnica je možda istekla, već je iskorišćena ili link nije kopiran ceo."
+      >
+        <div role="alert" data-testid="invite-invalid" className="space-y-5">
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {invite.reason}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Zatražite novu pozivnicu od administratora agencije.
+          </p>
+          <Button asChild size="lg" className="h-10 w-full">
+            <Link href="/admin/login">Na prijavu</Link>
+          </Button>
+        </div>
+      </AuthCard>
     );
   }
 
   if (isAuthenticated && !accepted) {
     return (
-      <div className="space-y-5">
-        <p className="text-sm text-muted-foreground">
-          Već ste prijavljeni drugim nalogom. Odjavite se da biste prihvatili ovu pozivnicu.
-        </p>
-        <Button variant="outline" className="w-full" onClick={() => void signOut()}>
-          Odjavite se
-        </Button>
-      </div>
+      <AuthCard eyebrow="Pozivnica u tim" lede={LEDE}>
+        <div className="space-y-5">
+          <p className="text-sm text-muted-foreground">
+            Već ste prijavljeni drugim nalogom. Odjavite se da biste prihvatili ovu pozivnicu.
+          </p>
+          <Button variant="outline" className="w-full" onClick={() => void signOut()}>
+            Odjavite se
+          </Button>
+        </div>
+      </AuthCard>
     );
   }
 
@@ -116,6 +130,7 @@ export function InviteAcceptForm({ token }: { token: string }) {
   });
 
   return (
+    <AuthCard eyebrow="Pozivnica u tim" lede={LEDE} footer={FOOTER}>
     <form className="space-y-5" onSubmit={onSubmit} noValidate data-testid="invite-form">
       <div className="space-y-2">
         <Label htmlFor="invite-email">E-pošta</Label>
@@ -140,9 +155,8 @@ export function InviteAcceptForm({ token }: { token: string }) {
 
       <div className="space-y-2">
         <Label htmlFor="invite-password">Nova lozinka</Label>
-        <Input
+        <PasswordInput
           id="invite-password"
-          type="password"
           autoComplete="new-password"
           aria-invalid={errors.password !== undefined}
           aria-describedby="invite-password-hint"
@@ -155,9 +169,8 @@ export function InviteAcceptForm({ token }: { token: string }) {
 
       <div className="space-y-2">
         <Label htmlFor="invite-confirm">Ponovite lozinku</Label>
-        <Input
+        <PasswordInput
           id="invite-confirm"
-          type="password"
           autoComplete="new-password"
           aria-invalid={errors.confirm !== undefined}
           aria-describedby={errors.confirm ? "invite-confirm-error" : undefined}
@@ -181,5 +194,6 @@ export function InviteAcceptForm({ token }: { token: string }) {
         Aktivirajte nalog
       </Button>
     </form>
+    </AuthCard>
   );
 }

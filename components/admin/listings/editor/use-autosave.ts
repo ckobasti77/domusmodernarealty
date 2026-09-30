@@ -31,7 +31,9 @@ export function useAutosave(form: UseFormReturn<ListingForm>, listing: ListingDo
           ? setVideoUrl({ listingId })
           : field === "tour360"
             ? setTour360({ listingId })
-            : setWalk3d({ listingId }),
+            : field === "walk3d"
+              ? setWalk3d({ listingId })
+              : update({ id: listingId, patch: {}, unset: [field] }),
       onVisibilityRefused: (reasons) =>
         toast.error("Vidljivost nije promenjena u „Javna”", {
           description: `Prvo ispunite uslove za objavu: ${reasons.join("; ")}.`,

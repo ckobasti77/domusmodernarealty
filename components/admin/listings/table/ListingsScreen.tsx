@@ -11,13 +11,15 @@ import { hasRole, LISTING_ROLES, MANAGER_ROLES, useMe } from "@/components/admin
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { ListingStatus } from "@/convex/lib/validators";
 import { STATUS_LABEL } from "@/lib/admin/labels";
 import { formatCount } from "@/lib/format";
 import { useListingFilters } from "./filters";
 import { ListingsFilters } from "./ListingsFilters";
+import { ListingsList } from "./ListingsList";
 import { ListingsTable } from "./ListingsTable";
-import { StatusTabs } from "./StatusTabs";
+import { COUNT_CAP, StatusTabs } from "./StatusTabs";
 import { PAGE_SIZE } from "./types";
 
 const NEW_LISTING_HREF = "/admin/nekretnine/nova";
@@ -31,6 +33,8 @@ const NEW_LISTING_HREF = "/admin/nekretnine/nova";
 const MAX_AUTO_LOADS = 8;
 /** Relative "updated" times refresh once a minute. */
 const NOW_TICK_MS = 60_000;
+/** Below Tailwind's `md`: the stacked list replaces the table. */
+const PHONE_QUERY = "(max-width: 767.98px)";
 
 function useNow(tickMs: number): number {
   const [now, setNow] = useState(() => Date.now());
@@ -50,6 +54,34 @@ function useHeldWhileLoading<T>(value: T, loading: boolean): T {
   const [held, setHeld] = useState(value);
   if (!loading && held !== value) setHeld(value);
   return loading ? held : value;
+}
+
+/**
+ * How many listings the current view holds, when that is known: every page is
+ * loaded, or no filter beyond the status is on (then `counts` has it, unless
+ * it hit the server's read cap). Otherwise the footer shows the loaded count
+ * alone rather than a guess.
+ */
+function knownTotal({
+  loaded,
+  exhausted,
+  hasFilters,
+  status,
+  counts,
+}: {
+  loaded: number;
+  exhausted: boolean;
+  hasFilters: boolean;
+  status: ListingStatus | undefined;
+  counts: readonly { status: ListingStatus; count: number }[] | undefined;
+}): number | undefined {
+  if (exhausted) return loaded;
+  if (hasFilters || counts === undefined) return undefined;
+  const scoped = status === undefined ? counts : counts.filter((row) => row.status === status);
+  if (scoped.some((row) => row.count >= COUNT_CAP)) return undefined;
+  const total = scoped.reduce((sum, row) => sum + row.count, 0);
+  // The two queries update independently; never print "25 od 24".
+  return total >= loaded ? total : undefined;
 }
 
 function emptyCopy({
@@ -100,6 +132,7 @@ function ListingsView() {
   const me = useMe();
   const canManage = hasRole(me, MANAGER_ROLES);
   const now = useNow(NOW_TICK_MS);
+  const phone = useMediaQuery(PHONE_QUERY);
   const { filters, hrefWith, setFilters, clearFilters, hasFilters } = useListingFilters();
 
   const counts = useQuery(api.listingsAdmin.counts, {});
@@ -150,6 +183,13 @@ function ListingsView() {
   const loading = waiting && rows.length === 0;
   const refreshing = waiting && rows.length > 0;
   const canLoadMore = status === "CanLoadMore" || status === "LoadingMore";
+  const total = knownTotal({
+    loaded: rows.length,
+    exhausted: status === "Exhausted",
+    hasFilters,
+    status: filters.status,
+    counts,
+  });
 
   const copy = emptyCopy({ partial: status === "CanLoadMore", hasFilters, status: filters.status });
   const empty = (
@@ -182,6 +222,7 @@ function ListingsView() {
         current={filters.status}
         counts={counts}
         hrefFor={(next) => hrefWith({ status: next })}
+        onSelect={(next) => setFilters({ status: next })}
       />
       <Card className="gap-0 py-0">
         <ListingsFilters
@@ -193,21 +234,25 @@ function ListingsView() {
           onChange={setFilters}
           onClear={clearFilters}
         />
-        <ListingsTable
-          rows={rows}
-          loading={loading}
-          refreshing={refreshing}
-          now={now}
-          canManage={canManage}
-          agents={agents}
-          selectionKey={argsKey}
-          empty={empty}
-        />
+        {phone ? (
+          <ListingsList rows={rows} loading={loading} refreshing={refreshing} empty={empty} />
+        ) : (
+          <ListingsTable
+            rows={rows}
+            loading={loading}
+            refreshing={refreshing}
+            now={now}
+            canManage={canManage}
+            agents={agents}
+            selectionKey={argsKey}
+            empty={empty}
+          />
+        )}
         {!loading && (rows.length > 0 || canLoadMore) ? (
           <div className="flex flex-wrap items-center justify-between gap-2 border-t px-3 py-2 text-sm text-muted-foreground">
             <p className="tabular-nums" aria-live="polite">
-              Prikazano: {formatCount(rows.length, "sr-Latn")}
-              {status === "Exhausted" ? "" : " (ima još)"}
+              Prikazano {formatCount(rows.length, "sr-Latn")}
+              {total !== undefined ? ` od ${formatCount(total, "sr-Latn")}` : ""}
             </p>
             {canLoadMore ? (
               <Button

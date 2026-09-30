@@ -132,8 +132,10 @@ describe("docToForm → formToPatch", () => {
     const form = docToForm(doc);
     const { patch, unsets, held } = buildSave(form, FORM_KEYS);
     expect(held).toEqual([]);
-    // The sample has neither a video nor a 360° tour: "all keys dirty" clears them.
-    expect(unsets).toEqual(["videoUrl", "tour360"]);
+    // With every key dirty, each field the sample does not have is cleared
+    // (no video, no 360° tour, …) and nothing it does have is.
+    expect(unsets).toEqual(expect.arrayContaining(["videoUrl", "tour360"]));
+    for (const field of unsets) expect(doc[field]).toBeUndefined();
     const merged: ListingDoc = { ...doc, ...patch };
     expect(deepEqual(docToForm(merged), form)).toBe(true);
     // Scene-editor fields ride along untouched.
@@ -273,13 +275,16 @@ describe("brokerage contract", () => {
 });
 
 describe("optional fields", () => {
-  it("omits an emptied optional number and treats it as saved", () => {
+  it("clears an emptied optional number through the unset list", () => {
     const baseline = docToForm(sampleDoc());
     const values = edit(baseline, (draft) => {
       draft.yearBuilt = null;
       draft.bathrooms = null;
     });
-    expect(buildSave(values, dirtyKeys(values, baseline))).toEqual({ patch: {}, unsets: [], held: [] });
+    const plan = buildSave(values, dirtyKeys(values, baseline));
+    expect(plan.patch).toEqual({});
+    expect(plan.held).toEqual([]);
+    expect([...plan.unsets].sort()).toEqual(["bathrooms", "yearBuilt"]);
   });
 
   it("holds a number that does not parse", () => {
@@ -327,12 +332,16 @@ describe("optional fields", () => {
     });
   });
 
-  it("does not send a select set back to none", () => {
+  it("clears a select set back to none", () => {
     const values = edit(docToForm(sampleDoc({ subtype: "penthouse" })), (draft) => {
       draft.subtype = "";
       draft.energyClass = "";
     });
-    expect(buildSave(values, ["subtype", "energyClass"])).toEqual({ patch: {}, unsets: [], held: [] });
+    expect(buildSave(values, ["subtype", "energyClass"])).toEqual({
+      patch: {},
+      unsets: ["subtype", "energyClass"],
+      held: [],
+    });
   });
 });
 
@@ -411,13 +420,13 @@ describe("rebasing helpers", () => {
     expect(deepEqual(docToForm(saved).highlights, values.highlights)).toBe(false);
   });
 
-  it("never calls a server value the echo of a field the form does not write", () => {
+  it("the echo of a cleared field is the cleared value, not a colleague's edit", () => {
     const doc = sampleDoc();
     const values = edit(docToForm(doc), (draft) => {
       draft.yearBuilt = null;
     });
     const changed: ListingDoc = { ...doc, yearBuilt: 1950 };
-    expect(echoOf(changed, values, "yearBuilt")).toBeUndefined();
+    expect(echoOf(changed, values, "yearBuilt")).toBeNull();
   });
 
   it("copies only the named keys", () => {

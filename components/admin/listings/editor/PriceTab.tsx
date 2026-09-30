@@ -1,8 +1,6 @@
 "use client";
 
-import { TriangleAlert } from "lucide-react";
 import { useWatch } from "react-hook-form";
-import { L10N_KEYS } from "@/convex/lib/validators";
 import { formatEurPerM2 } from "@/lib/admin/format";
 import { L10N_LABEL } from "@/lib/admin/labels";
 import type { ListingForm } from "@/lib/admin/listing-form";
@@ -108,7 +106,7 @@ export function PriceTab({ data }: { data: EditorData }) {
         )}
       </Group>
 
-      <CommissionGroup stored={data.listing.commissionText !== undefined} />
+      <CommissionGroup />
 
       <Group title="Istorija cene" layout="stack" description="Promene cene se beleže automatski, sa datumom.">
         <PriceHistoryList items={data.priceHistory} />
@@ -131,9 +129,7 @@ function PricePerM2({ rent }: { rent: boolean }) {
   );
 }
 
-function CommissionGroup({ stored }: { stored: boolean }) {
-  const commission = useWatch<ListingForm, "commissionText">({ name: "commissionText" });
-  const empty = L10N_KEYS.every((key) => commission[key].trim() === "");
+function CommissionGroup() {
   return (
     <Group
       title="Tekst o proviziji"
@@ -152,13 +148,6 @@ function CommissionGroup({ stored }: { stored: boolean }) {
           />
         )}
       </LocaleTabs>
-      {stored && empty ? (
-        <p className="flex items-start gap-2 rounded-lg border border-amber-600/30 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:bg-amber-400/10 dark:text-amber-100">
-          <TriangleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-          Sačuvani tekst ostaje na oglasu: uklanjanje posebnog teksta o proviziji još nije podržano. Možete ga zameniti
-          novim tekstom.
-        </p>
-      ) : null}
     </Group>
   );
 }

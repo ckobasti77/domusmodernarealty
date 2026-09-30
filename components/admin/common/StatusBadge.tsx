@@ -3,31 +3,35 @@ import { STATUS_LABEL } from "@/lib/admin/labels";
 import { cn } from "@/lib/utils";
 
 /**
- * Listing status pill. Colour is never the only signal: the label is always
- * there, and each tone keeps ≥ 4.5:1 text contrast in both themes.
+ * Listing status as a 6 px dot and a word (no fill, no pill). The word always
+ * carries the meaning; the dot only speeds up scanning. Dot colours are the
+ * brand state tokens (DESIGN §1), which read on paper and on the dark card.
  */
-const TONE: Record<ListingStatus, string> = {
-  draft: "border-border bg-muted text-muted-foreground",
-  review: "border-amber-700/30 bg-amber-100 text-amber-900 dark:border-amber-400/30 dark:bg-amber-400/15 dark:text-amber-200",
-  published:
-    "border-emerald-700/30 bg-emerald-100 text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-400/15 dark:text-emerald-200",
-  reserved: "border-sky-700/30 bg-sky-100 text-sky-900 dark:border-sky-400/30 dark:bg-sky-400/15 dark:text-sky-200",
-  sold: "border-primary/40 bg-primary/10 text-foreground",
-  rented: "border-primary/40 bg-primary/10 text-foreground",
-  withdrawn: "border-border bg-background text-muted-foreground",
-  archived: "border-border bg-background text-muted-foreground line-through decoration-1",
+const TONE: Record<ListingStatus, { dot: string; text: string }> = {
+  published: { dot: "bg-success", text: "text-foreground" },
+  reserved: { dot: "bg-warning", text: "text-foreground" },
+  review: { dot: "bg-bronze", text: "text-foreground" },
+  sold: { dot: "bg-foreground", text: "text-foreground" },
+  rented: { dot: "bg-foreground", text: "text-foreground" },
+  // Out-of-circulation states step back: stone dot, muted text (#6f685c on
+  // paper ≈ 5.3:1, #b9b0a2 on the dark card ≈ 8:1).
+  draft: { dot: "bg-stone", text: "text-muted-foreground" },
+  withdrawn: { dot: "bg-stone", text: "text-muted-foreground" },
+  archived: { dot: "bg-stone", text: "text-muted-foreground" },
 };
 
 export function StatusBadge({ status, className }: { status: ListingStatus; className?: string }) {
+  const tone = TONE[status];
   return (
     <span
       data-status={status}
       className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-        TONE[status],
+        "inline-flex items-center gap-1.5 text-xs leading-none font-medium whitespace-nowrap",
+        tone.text,
         className,
       )}
     >
+      <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", tone.dot)} />
       {STATUS_LABEL[status]}
     </span>
   );

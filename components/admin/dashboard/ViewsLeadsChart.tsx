@@ -10,14 +10,16 @@ import { CHART_HEIGHT, niceMax, type ChartDay } from "./series";
  * Small multiples on one shared day axis: views (area + line) on top, leads
  * (columns) below, each on its own y scale — two measures of very different
  * size, and never a dual-axis chart. Hand-written SVG: no chart library.
+ * Days before the first rollup row are not data: they are drawn as a stone
+ * hairline on the baseline, and bronze starts where the record does.
  */
 const LEFT = 40;
 const RIGHT = 16;
 const VIEWS_TOP = 24;
-const VIEWS_BOTTOM = 144;
-const LEADS_TOP = 178;
-const LEADS_BOTTOM = 222;
-const AXIS_LABEL_Y = 240;
+const VIEWS_BOTTOM = 172;
+const LEADS_TOP = 206;
+const LEADS_BOTTOM = 254;
+const AXIS_LABEL_Y = 272;
 
 /** Rendered width of an element, tracked with ResizeObserver. */
 function useWidth(node: HTMLElement | null): number {
@@ -72,12 +74,17 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
   const yViews = (value: number) => VIEWS_BOTTOM - (value / maxViews) * (VIEWS_BOTTOM - VIEWS_TOP);
   const leadHeight = (value: number) => (value / maxLeads) * (LEADS_BOTTOM - LEADS_TOP);
 
+  const first = Math.max(0, days.findIndex((day) => day.recorded));
   const line = days
-    .map((day, index) => `${index === 0 ? "M" : "L"}${xAt(index).toFixed(1)},${yViews(day.views).toFixed(1)}`)
+    .slice(first)
+    .map((day, offset) => {
+      const index = first + offset;
+      return `${offset === 0 ? "M" : "L"}${xAt(index).toFixed(1)},${yViews(day.views).toFixed(1)}`;
+    })
     .join(" ");
   const area =
-    count > 0
-      ? `${line} L${xAt(count - 1).toFixed(1)},${VIEWS_BOTTOM} L${xAt(0).toFixed(1)},${VIEWS_BOTTOM} Z`
+    count > first
+      ? `${line} L${xAt(count - 1).toFixed(1)},${VIEWS_BOTTOM} L${xAt(first).toFixed(1)},${VIEWS_BOTTOM} Z`
       : "";
 
   const viewTicks = [0, maxViews, ...(Number.isInteger(maxViews / 2) && maxViews > 1 ? [maxViews / 2] : [])];
@@ -88,11 +95,11 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
   const totalViews = days.reduce((sum, day) => sum + day.views, 0);
   const totalLeads = days.reduce((sum, day) => sum + day.leads, 0);
   const peakDay = days.find((day) => day.views === peakViews && peakViews > 0);
-  const first = days[0];
+  const firstDay = days[first];
   const last = days[count - 1];
   const summary =
-    first !== undefined && last !== undefined
-      ? `${formatShortDay(first.ms)} – ${formatShortDay(last.ms)}: ukupno ${formatCount(totalViews)} ${pluralSr(totalViews, "pregled", "pregleda")} i ${formatCount(totalLeads)} ${pluralSr(totalLeads, "upit", "upita")}.${
+    firstDay !== undefined && last !== undefined
+      ? `${formatShortDay(firstDay.ms)} – ${formatShortDay(last.ms)}: ukupno ${formatCount(totalViews)} ${pluralSr(totalViews, "pregled", "pregleda")} i ${formatCount(totalLeads)} ${pluralSr(totalLeads, "upit", "upita")}.${
           peakDay !== undefined
             ? ` Najviše pregleda ${formatShortDay(peakDay.ms)} (${formatCount(peakDay.views)}).`
             : ""
@@ -178,6 +185,14 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
             </g>
           ))}
 
+          {/* Before the first recorded day: a stone hairline, not a zero line */}
+          {first > 0 ? (
+            <g aria-hidden="true" className="stroke-chart-3" strokeWidth={1} shapeRendering="crispEdges">
+              <line x1={xAt(0)} x2={xAt(first)} y1={crisp(VIEWS_BOTTOM)} y2={crisp(VIEWS_BOTTOM)} />
+              <line x1={xAt(0)} x2={xAt(first)} y1={crisp(LEADS_BOTTOM)} y2={crisp(LEADS_BOTTOM)} />
+            </g>
+          ) : null}
+
           {/* Views: a 15% wash under a 2px line */}
           <path d={area} className="fill-chart-1/15" />
           <path
@@ -230,13 +245,15 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
                 strokeWidth={1}
                 className="stroke-foreground/30"
               />
-              <circle
-                cx={activeX}
-                cy={yViews(activeDay.views)}
-                r={4}
-                strokeWidth={2}
-                className="fill-chart-2 stroke-card dark:fill-chart-1"
-              />
+              {activeDay.recorded ? (
+                <circle
+                  cx={activeX}
+                  cy={yViews(activeDay.views)}
+                  r={4}
+                  strokeWidth={2}
+                  className="fill-chart-2 stroke-card dark:fill-chart-1"
+                />
+              ) : null}
             </g>
           ) : null}
           <rect
@@ -263,20 +280,26 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
           }}
         >
           <p className="font-medium">{formatShortDay(activeDay.ms)}</p>
-          <p className="mt-1 flex items-center justify-between gap-3">
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="h-0.5 w-3 rounded-full bg-chart-2 dark:bg-chart-1" />
-              Pregledi
-            </span>
-            <span data-numeric>{formatCount(activeDay.views)}</span>
-          </p>
-          <p className="mt-0.5 flex items-center justify-between gap-3">
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="size-2 rounded-[2px] bg-chart-4" />
-              Upiti
-            </span>
-            <span data-numeric>{formatCount(activeDay.leads)}</span>
-          </p>
+          {activeDay.recorded ? (
+            <>
+              <p className="mt-1 flex items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="h-0.5 w-3 rounded-full bg-chart-2 dark:bg-chart-1" />
+                  Pregledi
+                </span>
+                <span data-numeric>{formatCount(activeDay.views)}</span>
+              </p>
+              <p className="mt-0.5 flex items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="size-2 rounded-[2px] bg-chart-4" />
+                  Upiti
+                </span>
+                <span data-numeric>{formatCount(activeDay.leads)}</span>
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-muted-foreground">Nema podataka za ovaj dan</p>
+          )}
         </div>
       ) : null}
 
@@ -293,8 +316,8 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
           {days.map((day) => (
             <tr key={day.day}>
               <th scope="row">{formatShortDay(day.ms)}</th>
-              <td>{formatCount(day.views)}</td>
-              <td>{formatCount(day.leads)}</td>
+              <td>{day.recorded ? formatCount(day.views) : "nema podataka"}</td>
+              <td>{day.recorded ? formatCount(day.leads) : "nema podataka"}</td>
             </tr>
           ))}
         </tbody>

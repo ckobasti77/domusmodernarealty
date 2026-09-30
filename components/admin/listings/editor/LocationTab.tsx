@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Plus, Trash2, TriangleAlert } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useController, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { LocationPicker } from "@/components/admin/listings/location/LocationPicker";
@@ -14,7 +14,6 @@ import type { Id } from "@/convex/_generated/dataModel";
 import type { AddressVisibility } from "@/convex/lib/validators";
 import { ADDRESS_VISIBILITY_LABEL, POI_KIND_LABEL } from "@/lib/admin/labels";
 import { POI_MAX, type ListingForm } from "@/lib/admin/listing-form";
-import type { EditorData } from "./editor-context";
 import { Group, NumberField, SelectField, TabPanel, TextField, optionsOf } from "./fields";
 
 type LocationNode = FunctionReturnType<typeof api.locations.tree>[number];
@@ -37,7 +36,7 @@ function atCentroid(nodes: readonly LocationNode[], lat: number, lng: number): b
   return nodes.some((node) => Math.abs(node.lat - lat) < 1e-7 && Math.abs(node.lng - lng) < 1e-7);
 }
 
-export function LocationTab({ data }: { data: EditorData }) {
+export function LocationTab() {
   const nodes = useQuery(api.locations.tree, {});
   return (
     <TabPanel
@@ -45,7 +44,7 @@ export function LocationTab({ data }: { data: EditorData }) {
       title="Lokacija"
       description="Mesto, adresa i pin. Adresa služi timu; na sajtu se prikazuje onoliko koliko dozvoljava „Prikaz adrese”."
     >
-      <PlaceGroup nodes={nodes} data={data} />
+      <PlaceGroup nodes={nodes} />
       <AddressGroup />
       <PinGroup nodes={nodes} />
       <PoiGroup />
@@ -53,7 +52,7 @@ export function LocationTab({ data }: { data: EditorData }) {
   );
 }
 
-function PlaceGroup({ nodes, data }: { nodes: LocationNode[] | undefined; data: EditorData }) {
+function PlaceGroup({ nodes }: { nodes: LocationNode[] | undefined }) {
   const { getValues, setValue } = useFormContext<ListingForm>();
   const [cityId, municipalityId] = useWatch<ListingForm, ["cityId", "municipalityId"]>({
     name: ["cityId", "municipalityId"],
@@ -137,59 +136,7 @@ function PlaceGroup({ nodes, data }: { nodes: LocationNode[] | undefined; data: 
         onValueChange={onNeighborhood}
         disabled={nodes === undefined}
       />
-      <StoredPlaceNote
-        storedId={data.listing.municipalityId}
-        currentId={municipalityId}
-        byId={byId}
-        message={(name) => `Sačuvana opština „${name}” ostaje zapisana dok ne izaberete drugu.`}
-      />
-      <StoredNeighborhoodNote storedId={data.listing.neighborhoodId} byId={byId} />
     </Group>
-  );
-}
-
-/**
- * An optional place id cannot be removed through `update` (Convex drops
- * `undefined`), so an emptied select would silently keep the stored place.
- * Say so, and ask for a replacement instead.
- */
-function StoredPlaceNote({
-  storedId,
-  currentId,
-  byId,
-  message,
-}: {
-  storedId: Id<"locations"> | undefined;
-  currentId: Id<"locations"> | "";
-  byId: Map<Id<"locations">, LocationNode>;
-  message: (name: string) => string;
-}) {
-  if (storedId === undefined || currentId !== "") return null;
-  const name = byId.get(storedId)?.name.sr;
-  if (name === undefined) return null;
-  return (
-    <p className="flex items-start gap-2 rounded-lg border border-amber-600/30 bg-amber-50 px-3 py-2 text-xs text-amber-950 @lg:col-span-2 @3xl:col-span-3 dark:bg-amber-400/10 dark:text-amber-100">
-      <TriangleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-      <span>{message(name)} Jednom sačuvano, ovo polje ne može ostati prazno.</span>
-    </p>
-  );
-}
-
-function StoredNeighborhoodNote({
-  storedId,
-  byId,
-}: {
-  storedId: Id<"locations"> | undefined;
-  byId: Map<Id<"locations">, LocationNode>;
-}) {
-  const current = useWatch<ListingForm, "neighborhoodId">({ name: "neighborhoodId" });
-  return (
-    <StoredPlaceNote
-      storedId={storedId}
-      currentId={current}
-      byId={byId}
-      message={(name) => `Sačuvano naselje „${name}” ostaje zapisano dok ne izaberete drugo.`}
-    />
   );
 }
 

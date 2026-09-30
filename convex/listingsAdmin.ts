@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import type { Infer } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import schema from "./schema";
@@ -149,6 +150,28 @@ const listingPatchV = v.object({
   slug: v.optional(v.string()),
 });
 
+/**
+ * Optional top-level fields the editor can empty. Convex drops `undefined`
+ * inside `patch`, so clearing is an explicit list instead.
+ */
+const clearableFieldV = v.union(
+  v.literal("subtype"),
+  v.literal("municipalityId"),
+  v.literal("neighborhoodId"),
+  v.literal("energyClass"),
+  v.literal("registeredAreaM2"),
+  v.literal("plotAreaM2"),
+  v.literal("outdoorAreaM2"),
+  v.literal("bedrooms"),
+  v.literal("bathrooms"),
+  v.literal("totalFloors"),
+  v.literal("yearBuilt"),
+  v.literal("renovatedYear"),
+  v.literal("completionDate"),
+  v.literal("availableFrom"),
+  v.literal("commissionText"),
+);
+
 const checklistItemV = v.object({
   code: v.string(),
   label: v.string(),
@@ -257,6 +280,31 @@ const VIDEO_URL =
 /** The public page embeds only YouTube and Vimeo (`VideoFacade`). */
 function isVideoUrl(url: string): boolean {
   return url.length <= 500 && VIDEO_URL.test(url);
+}
+
+/**
+ * The three place ids must form one chain: the municipality belongs to the
+ * city and the neighborhood to the municipality (or to the city when a place
+ * has no municipality level). A stale id left behind by a city change would
+ * otherwise put the listing in a municipality of another city.
+ */
+async function assertPlaceChain(
+  ctx: MutationCtx,
+  ids: Pick<Doc<"listings">, "cityId" | "municipalityId" | "neighborhoodId">,
+): Promise<void> {
+  if (ids.municipalityId !== undefined) {
+    const municipality = await ctx.db.get("locations", ids.municipalityId);
+    if (municipality === null || municipality.parentId !== ids.cityId) {
+      invalidInput("Opština ne pripada izabranom gradu.");
+    }
+  }
+  if (ids.neighborhoodId !== undefined) {
+    const neighborhood = await ctx.db.get("locations", ids.neighborhoodId);
+    const parent = ids.municipalityId ?? ids.cityId;
+    if (neighborhood === null || neighborhood.parentId !== parent) {
+      invalidInput("Naselje ne pripada izabranoj opštini.");
+    }
+  }
 }
 
 /** Search terms for the text index: diacritics folded, at most 8 words. */
@@ -664,7 +712,11 @@ export const create = mutation({
 });
 
 export const update = mutation({
-  args: { id: v.id("listings"), patch: listingPatchV },
+  args: {
+    id: v.id("listings"),
+    patch: listingPatchV,
+    unset: v.optional(v.array(clearableFieldV)),
+  },
   returns: v.object({ slug: v.string(), checklist: v.array(checklistItemV) }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, EDITORS);
@@ -735,7 +787,19 @@ export const update = mutation({
         ? { videoUrl: videoUrl.length > 0 ? videoUrl : undefined }
         : {}),
     };
-    const merged = { ...before, ...cleanPatch };
+    // Cleared fields are written as `undefined`, which removes them.
+    const cleared: Partial<Record<Infer<typeof clearableFieldV>, undefined>> = {};
+    for (const field of args.unset ?? []) {
+      if (!(field in args.patch)) cleared[field] = undefined;
+    }
+    const merged = { ...before, ...cleanPatch, ...cleared };
+    const placeTouched =
+      args.patch.cityId !== undefined ||
+      args.patch.municipalityId !== undefined ||
+      args.patch.neighborhoodId !== undefined ||
+      "municipalityId" in cleared ||
+      "neighborhoodId" in cleared;
+    if (placeTouched) await assertPlaceChain(ctx, merged);
 
     // Flipping `visibility` to public is a second route onto the market: a
     // reserved listing with `visibility: "private"` sits in the `hidden` bucket
@@ -791,6 +855,7 @@ export const update = mutation({
     const derived = applyDerived(next, names, sceneCount.length > 0);
     const patch = {
       ...cleanPatch,
+      ...cleared,
       slug,
       updatedAt: now,
       ...derived,

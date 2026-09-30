@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { assertCanEditListing, requireRole } from "./lib/auth";
+import { belgradeMidnight } from "./lib/belgradeTime";
 import { leadSourceV, leadTypeV } from "./lib/validators";
 
 const MANAGERS = ["admin", "manager"] as const;
@@ -36,12 +37,13 @@ export const dashboard = query({
       .withIndex("by_creation_time", (q) => q.gte("_creationTime", weekAgo))
       .take(500);
 
-    const dayStart = args.now - (args.now % 86_400_000);
+    // "Today" is the agency's day in Belgrade, not the UTC day. The next
+    // midnight is computed on its own: a DST day is 23 or 25 hours long.
+    const dayStart = belgradeMidnight(args.now);
+    const dayEnd = belgradeMidnight(dayStart + 36 * 3_600_000);
     const todayViewings = await ctx.db
       .query("viewings")
-      .withIndex("by_start", (q) =>
-        q.gte("start", dayStart).lt("start", dayStart + 86_400_000),
-      )
+      .withIndex("by_start", (q) => q.gte("start", dayStart).lt("start", dayEnd))
       .take(200);
 
     const responded = recentLeads.filter((lead) => lead.firstResponseAt !== undefined);

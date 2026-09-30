@@ -7,16 +7,23 @@
 const DAY_MS = 86_400_000;
 export const CHART_DAYS = 30;
 /** Pixel height of the plot, shared by the chart and its loading skeleton. */
-export const CHART_HEIGHT = 248;
+export const CHART_HEIGHT = 280;
+/** Below this many recorded days the card says where the data starts. */
+export const SHORT_HISTORY_DAYS = 7;
 
 export type SeriesRow = { day: string; views: number; leads: number };
-/** `ms` is noon UTC of the day: the same calendar day in Belgrade, for labels. */
-export type ChartDay = { day: string; ms: number; views: number; leads: number };
+/**
+ * `ms` is noon UTC of the day: the same calendar day in Belgrade, for labels.
+ * `recorded` is false for days the rollup has no row for (drawn as 0).
+ */
+export type ChartDay = { day: string; ms: number; views: number; leads: number; recorded: boolean };
 
 export type ChartWindow = {
   days: ChartDay[];
   /** Days in the window that have a real rollup row (the rest are filled with 0). */
   recorded: number;
+  /** Index of the first day with a rollup row, or -1 when there is none. */
+  firstRecorded: number;
   totalViews: number;
   totalLeads: number;
 };
@@ -62,9 +69,10 @@ export function chartWindow(series: readonly SeriesRow[], now: number): ChartWin
     const leads = row?.leads ?? 0;
     totalViews += views;
     totalLeads += leads;
-    days.push({ day: key, ms: start + DAY_MS / 2, views, leads });
+    days.push({ day: key, ms: start + DAY_MS / 2, views, leads, recorded: row !== undefined });
   }
-  return { days, recorded, totalViews, totalLeads };
+  const firstRecorded = days.findIndex((day) => day.recorded);
+  return { days, recorded, firstRecorded, totalViews, totalLeads };
 }
 
 /** A clean integer axis maximum at or above `value` (never below 1). */

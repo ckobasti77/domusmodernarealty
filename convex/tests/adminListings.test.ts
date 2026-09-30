@@ -136,6 +136,40 @@ describe("admin listing table", () => {
 });
 
 describe("editor side effects", () => {
+  test("emptied optional fields are cleared, and places must form one chain", async () => {
+    const { t, ids } = await setup();
+    const places = await t.run(async (ctx) => {
+      const vracar = await makeLocation(ctx, "vracar", "municipality", ids.city);
+      const neimar = await makeLocation(ctx, "neimar", "neighborhood", vracar);
+      const other = await makeLocation(ctx, "novi-sad");
+      const liman = await makeLocation(ctx, "liman", "municipality", other);
+      return { vracar, neimar, liman };
+    });
+    const asAdmin = t.withIdentity({ subject: ids.admin });
+    await asAdmin.mutation(api.listingsAdmin.update, {
+      id: ids.listingA,
+      patch: { yearBuilt: 1938, municipalityId: places.vracar, neighborhoodId: places.neimar },
+    });
+
+    // A municipality of another city is refused.
+    await expect(
+      asAdmin.mutation(api.listingsAdmin.update, {
+        id: ids.listingA,
+        patch: { municipalityId: places.liman },
+      }),
+    ).rejects.toThrow(/ne pripada/);
+
+    await asAdmin.mutation(api.listingsAdmin.update, {
+      id: ids.listingA,
+      patch: {},
+      unset: ["yearBuilt", "neighborhoodId", "municipalityId"],
+    });
+    const doc = await t.run(async (ctx) => ctx.db.get("listings", ids.listingA));
+    expect(doc?.yearBuilt).toBeUndefined();
+    expect(doc?.municipalityId).toBeUndefined();
+    expect(doc?.neighborhoodId).toBeUndefined();
+  });
+
   test("document verification is attributed to the caller, not the client", async () => {
     const { t, ids } = await setup();
     const asAgent = t.withIdentity({ subject: ids.agentUser });

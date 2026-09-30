@@ -177,7 +177,7 @@ function TabBody({ tab, data }: { tab: EditorTab; data: EditorData }) {
     case "osnovno":
       return <BasicsTab data={data} />;
     case "lokacija":
-      return <LocationTab data={data} />;
+      return <LocationTab />;
     case "karakteristike":
       return <FeaturesTab />;
     case "cena":

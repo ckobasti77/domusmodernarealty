@@ -5,9 +5,11 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
+  type Header,
   type RowSelectionState,
   type SortDirection,
   type SortingState,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import { useMemo, useState, type ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,11 +20,23 @@ import { buildColumns, columnClass } from "./columns";
 import type { AdminRow, AgentOption } from "./types";
 
 const SKELETON_ROWS = 8;
+/** The hidden "leads" column only exists to sort by (see `columns.tsx`). */
+const COLUMN_VISIBILITY: VisibilityState = { leads: false };
 
 function ariaSort(sorted: false | SortDirection): "ascending" | "descending" | "none" {
   if (sorted === "asc") return "ascending";
   if (sorted === "desc") return "descending";
   return "none";
+}
+
+/** `aria-sort` for a header; the merged "Pregledi / upiti" column reports either half. */
+function headerSort(header: Header<AdminRow, unknown>): "ascending" | "descending" | "none" | undefined {
+  const { column } = header;
+  if (column.id === "views") {
+    const leads = header.getContext().table.getColumn("leads");
+    return ariaSort(column.getIsSorted() || (leads?.getIsSorted() ?? false));
+  }
+  return column.getCanSort() ? ariaSort(column.getIsSorted()) : undefined;
 }
 
 /**
@@ -68,7 +82,7 @@ export function ListingsTable({
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting, rowSelection },
+    state: { sorting, rowSelection, columnVisibility: COLUMN_VISIBILITY },
     getRowId: (row) => row._id,
     enableRowSelection: canManage,
     onSortingChange: setSorting,
@@ -98,12 +112,15 @@ export function ListingsTable({
           data-slot="table"
           aria-busy={loading || refreshing}
           className={cn(
-            "w-full min-w-[980px] caption-bottom text-sm transition-opacity duration-150",
+            // Fixed layout: set widths everywhere but the title column, which
+            // takes the rest. Below 880 px the region scrolls sideways and the
+            // actions column stays pinned (sticky) on the right.
+            "w-full min-w-[880px] table-fixed caption-bottom text-sm transition-opacity duration-150",
             refreshing && "opacity-60",
           )}
         >
           <caption className="sr-only">
-            Nekretnine. Kolone Cena, Pregledi, Upiti i Izmenjeno mogu se sortirati.
+            Nekretnine. Sortirati se mogu cena, pregledi, upiti i datum izmene.
           </caption>
           <TableHeader className="sticky top-0 z-10 bg-card shadow-[inset_0_-1px_0_var(--border)] [&_tr]:border-b-0">
             {table.getHeaderGroups().map((group) => (
@@ -112,7 +129,7 @@ export function ListingsTable({
                   <TableHead
                     key={header.id}
                     scope="col"
-                    aria-sort={header.column.getCanSort() ? ariaSort(header.column.getIsSorted()) : undefined}
+                    aria-sort={headerSort(header)}
                     className={cn("h-9 text-xs font-medium text-muted-foreground", columnClass(header.column.id))}
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -124,7 +141,7 @@ export function ListingsTable({
           <TableBody>
             {loading
               ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
-                  <TableRow key={`skeleton-${index}`} className="h-12 hover:bg-transparent" aria-hidden="true">
+                  <TableRow key={`skeleton-${index}`} className="h-14 hover:bg-transparent" aria-hidden="true">
                     {table.getVisibleLeafColumns().map((column) => (
                       <TableCell key={column.id} className={columnClass(column.id)}>
                         <Skeleton className={column.id === "cover" ? "h-10 w-14" : "h-4 w-full min-w-6"} />
@@ -148,10 +165,10 @@ export function ListingsTable({
                     data-ref={row.original.ref}
                     data-status={row.original.status}
                     data-state={row.getIsSelected() ? "selected" : undefined}
-                    className="h-12"
+                    className="group/row h-14"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className={cn("py-1", columnClass(cell.column.id))}>
+                      <TableCell key={cell.id} className={cn("py-1.5", columnClass(cell.column.id))}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}

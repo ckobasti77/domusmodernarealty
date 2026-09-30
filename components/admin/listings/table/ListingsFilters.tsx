@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { PROPERTY_TYPE_LABEL, TRANSACTION_LABEL } from "@/lib/admin/labels";
+import { cn } from "@/lib/utils";
 import {
   isPropertyType,
   isTransaction,
@@ -30,6 +31,7 @@ function FilterSelect({
   allLabel,
   options,
   onChange,
+  className,
 }: {
   id: string;
   label: string;
@@ -37,14 +39,15 @@ function FilterSelect({
   allLabel: string;
   options: readonly Option[];
   onChange: (value: string | undefined) => void;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center">
+    <div className={cn("flex min-w-0 items-center", className)}>
       <Label htmlFor={id} className="sr-only">
         {label}
       </Label>
       <Select value={value ?? ALL} onValueChange={(next) => onChange(next === ALL ? undefined : next)}>
-        <SelectTrigger id={id} className="h-8 min-w-36">
+        <SelectTrigger id={id} className="h-8 w-full sm:w-auto sm:min-w-36">
           <SelectValue />
         </SelectTrigger>
         <SelectContent position="popper" align="start">
@@ -81,11 +84,12 @@ function SearchBox({ value, onCommit }: { value: string; onCommit: (q: string) =
   }, [draft, value, onCommit]);
 
   return (
-    <div className="w-full sm:w-72">
+    <div className="col-span-2 w-full sm:w-72">
       <Label htmlFor="listings-search" className="sr-only">
         Pretraga nekretnina
       </Label>
-      <InputGroup>
+      {/* Same 44 px touch height as the selects below `md`. */}
+      <InputGroup className="max-md:h-11">
         <InputGroupAddon>
           <Search aria-hidden="true" />
         </InputGroupAddon>
@@ -144,7 +148,9 @@ export function ListingsFilters({
   }));
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b p-3">
+    // Phones: a two-column grid (search and the demo switch on full rows);
+    // from `sm` one wrapping row.
+    <div className="grid grid-cols-2 gap-2 border-b p-3 sm:flex sm:flex-wrap sm:items-center">
       <SearchBox value={filters.q} onCommit={commitSearch} />
       <FilterSelect
         id="filter-transaction"
@@ -170,9 +176,10 @@ export function ListingsFilters({
           allLabel="Svi agenti"
           options={agentOptions}
           onChange={(value) => onChange({ agent: value })}
+          className="col-span-2"
         />
       ) : null}
-      <div className="flex h-8 items-center gap-2 px-1">
+      <div className="col-span-2 flex h-8 items-center gap-2 px-1">
         <Switch
           id="filter-demo"
           checked={filters.demo}
@@ -183,7 +190,12 @@ export function ListingsFilters({
         </Label>
       </div>
       {hasFilters ? (
-        <Button variant="ghost" size="sm" onClick={onClear} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClear}
+          className="col-span-2 justify-self-start text-muted-foreground"
+        >
           <X aria-hidden="true" />
           Poništi filtere
         </Button>

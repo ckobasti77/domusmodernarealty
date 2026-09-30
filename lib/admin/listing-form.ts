@@ -24,14 +24,11 @@
  * say so). `null`, not `undefined`: react-hook-form reads an `undefined` field
  * back as its default value, so an emptied input would spring back.
  *
- * WHAT CANNOT BE CLEARED. Convex drops `undefined` keys from arguments, so an
- * optional TOP-LEVEL field (yearBuilt, subtype, energyClass, municipalityId,
- * commissionText, …) cannot be removed through `listingsAdmin.update`: when the
- * user empties one, the stored value simply stays (the key is treated as saved
- * so autosave does not loop). Nested optionals are fine: the parent object is
- * sent whole without the key. Three top-level fields do have a clearing route
- * and use it (`Unset`): the video URL (`media.setVideoUrl`) and the 360° tour /
- * 3D walkthrough (`toursAdmin.setTour360` / `setWalk3d`).
+ * CLEARING. Convex drops `undefined` keys from arguments, so an emptied
+ * optional TOP-LEVEL field becomes an `Unset`: `listingsAdmin.update({ unset })`
+ * for the fields in `CLEARABLE_FIELDS`, and the video URL / 360° tour / 3D
+ * walkthrough through their own mutations. Nested optionals need nothing: the
+ * parent object is sent whole without the key.
  */
 import type { FunctionArgs } from "convex/server";
 import { z } from "zod";
@@ -678,8 +675,31 @@ export function docToForm(doc: ListingDoc): ListingForm {
 
 /* ---------------------------------------------------------- form → patch */
 
-/** A top-level field that is cleared through its own mutation, not `update`. */
-export type Unset = "videoUrl" | "tour360" | "walk3d";
+/** Optional top-level fields `listingsAdmin.update` clears through its `unset` list. */
+export const CLEARABLE_FIELDS = [
+  "subtype",
+  "municipalityId",
+  "neighborhoodId",
+  "energyClass",
+  "registeredAreaM2",
+  "plotAreaM2",
+  "outdoorAreaM2",
+  "bedrooms",
+  "bathrooms",
+  "totalFloors",
+  "yearBuilt",
+  "renovatedYear",
+  "completionDate",
+  "availableFrom",
+  "commissionText",
+] as const satisfies readonly (keyof ListingDoc)[];
+export type ClearableField = (typeof CLEARABLE_FIELDS)[number];
+
+/**
+ * A top-level field the user emptied. Video, 360° tour and 3D walk go through
+ * their own mutations; the rest through `update({ unset })`.
+ */
+export type Unset = "videoUrl" | "tour360" | "walk3d" | ClearableField;
 
 export type SavePlan = {
   patch: ListingPatch;
@@ -840,13 +860,14 @@ export function buildSave(values: ListingForm, keys: readonly FormKey[]): SavePl
         put(patch, key, values[key]);
         break;
 
-      // Optional top-level selects: "none" cannot be stored (see the file header).
+      // Optional top-level selects: "none" clears the stored value.
       case "subtype":
       case "municipalityId":
       case "neighborhoodId":
       case "energyClass": {
         const value = values[key];
         if (value !== "") put(patch, key, value);
+        else unsets.push(key);
         break;
       }
 
@@ -872,6 +893,7 @@ export function buildSave(values: ListingForm, keys: readonly FormKey[]): SavePl
         const out = optionalL10nOut(values.commissionText);
         if (out !== undefined) patch.commissionText = out;
         else if (hasAnyText(values.commissionText)) held.push(key);
+        else unsets.push(key);
         break;
       }
 
@@ -894,7 +916,8 @@ export function buildSave(values: ListingForm, keys: readonly FormKey[]): SavePl
       case "renovatedYear": {
         const value = values[key];
         if (isNum(value)) put(patch, key, value);
-        else if (value !== null) held.push(key);
+        else if (value === null) unsets.push(key);
+        else held.push(key);
         break;
       }
 
@@ -902,7 +925,8 @@ export function buildSave(values: ListingForm, keys: readonly FormKey[]): SavePl
       case "availableFrom": {
         const ms = fromDateInput(values[key]);
         if (ms !== undefined) put(patch, key, ms);
-        else if (values[key] !== "") held.push(key);
+        else if (values[key] === "") unsets.push(key);
+        else held.push(key);
         break;
       }
 
@@ -1104,13 +1128,8 @@ export function echoOf(doc: ListingDoc, values: ListingForm, key: FormKey): unkn
   // of a sale): the server's value cannot be an echo of ours.
   const writes = Object.prototype.hasOwnProperty.call(plan.patch, key) || plan.unsets.some((field) => field === key);
   if (!writes) return undefined;
-  const merged: ListingDoc = {
-    ...doc,
-    ...plan.patch,
-    ...(plan.unsets.includes("videoUrl") ? { videoUrl: undefined } : {}),
-    ...(plan.unsets.includes("tour360") ? { tour360: undefined } : {}),
-    ...(plan.unsets.includes("walk3d") ? { walk3d: undefined } : {}),
-  };
+  const merged: ListingDoc = { ...doc, ...plan.patch };
+  for (const field of plan.unsets) delete merged[field];
   return docToForm(merged)[key];
 }
 

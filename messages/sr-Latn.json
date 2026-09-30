@@ -395,6 +395,7 @@
     "statusRented": "Izdato",
     "statusReserved": "Rezervisano",
     "statusSold": "Prodato",
+    "previewBanner": "Pregled za tim — nekretnina još nije javno objavljena",
     "tour360": "360° obilazak",
     "viewGallery": "{count, plural, one {Pogledajte # fotografiju} few {Pogledajte # fotografije} other {Pogledajte # fotografija}}",
     "walk3d": "3D šetnja",

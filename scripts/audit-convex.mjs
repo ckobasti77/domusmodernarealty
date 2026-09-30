@@ -30,6 +30,7 @@ const ADMIN_MODULES = [
   "analytics",
   "activity",
   "demo",
+  "geocode",
 ];
 
 /** Public mutations that must be rate limited and honeypot-guarded. */
@@ -47,7 +48,7 @@ const ROLE_EXEMPT = new Set(["users.getMe", "invites.checkToken"]);
  * Helpers that call `requireRole` themselves and then apply the per-document
  * ownership rule. A function that goes through one of these is authorized.
  */
-const ROLE_HELPERS = ["requireRole(", "loadEditable("];
+const ROLE_HELPERS = ["requireRole(", "requireRoleAction(", "loadEditable("];
 
 const FUNCTION_RE =
   /export const (\w+) = (internalQuery|internalMutation|internalAction|query|mutation|action)\(\{([\s\S]*?)\n\}\);/g;

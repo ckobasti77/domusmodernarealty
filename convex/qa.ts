@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { deleteListingCascade } from "./listingsAdmin";
 import { leadTypeV, leadStatusV, viewingModeV, viewingStatusV } from "./lib/validators";
 
 /**
@@ -176,5 +177,98 @@ export const viewsForSession = internalQuery({
       )
       .take(10);
     return rows.length;
+  },
+});
+
+/**
+ * Removes an e2e staff account (created through a real invite by the admin
+ * spec) and everything Convex Auth hung off it, plus the throwaway agent
+ * profile it was linked to. Only `e2e+…@mihajlo-estate.local` addresses.
+ */
+export const purgeE2EUser = internalMutation({
+  args: { email: v.string() },
+  returns: v.object({ users: v.number(), invites: v.number(), agents: v.number() }),
+  handler: async (ctx, args) => {
+    assertE2EEmail(args.email);
+    let users = 0;
+    let agents = 0;
+    const rows = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .take(5);
+    for (const user of rows) {
+      const accounts = await ctx.db
+        .query("authAccounts")
+        .withIndex("userIdAndProvider", (q) => q.eq("userId", user._id))
+        .take(10);
+      for (const account of accounts) {
+        const codes = await ctx.db
+          .query("authVerificationCodes")
+          .withIndex("accountId", (q) => q.eq("accountId", account._id))
+          .take(20);
+        for (const code of codes) await ctx.db.delete("authVerificationCodes", code._id);
+        await ctx.db.delete("authAccounts", account._id);
+      }
+      const sessions = await ctx.db
+        .query("authSessions")
+        .withIndex("userId", (q) => q.eq("userId", user._id))
+        .take(50);
+      for (const session of sessions) {
+        const tokens = await ctx.db
+          .query("authRefreshTokens")
+          .withIndex("sessionId", (q) => q.eq("sessionId", session._id))
+          .take(100);
+        for (const token of tokens) await ctx.db.delete("authRefreshTokens", token._id);
+        await ctx.db.delete("authSessions", session._id);
+      }
+      if (user.agentId !== undefined) {
+        const agent = await ctx.db.get("agents", user.agentId);
+        if (agent !== null && agent.name.startsWith("E2E ")) {
+          const owned = await ctx.db
+            .query("listings")
+            .withIndex("by_agentId", (q) => q.eq("agentId", agent._id))
+            .take(1);
+          if (owned.length === 0) {
+            await ctx.db.delete("agents", agent._id);
+            agents += 1;
+          }
+        } else if (agent !== null && agent.userId === user._id) {
+          await ctx.db.patch("agents", agent._id, { userId: undefined });
+        }
+      }
+      await ctx.db.delete("users", user._id);
+      users += 1;
+    }
+    const invites = await ctx.db
+      .query("invites")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .take(20);
+    for (const invite of invites) await ctx.db.delete("invites", invite._id);
+    return { users, invites: invites.length, agents };
+  },
+});
+
+/** Titles of listings the admin spec creates start with this marker. */
+const E2E_TITLE = "[E2E]";
+
+/** Deletes every non-demo listing whose Serbian title starts with "[E2E]". */
+export const purgeE2EListings = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    let removed = 0;
+    for (const status of ["draft", "review", "published", "reserved", "withdrawn", "archived"] as const) {
+      const rows = await ctx.db
+        .query("listings")
+        .withIndex("by_status_and_updatedAt", (q) => q.eq("status", status))
+        .order("desc")
+        .take(200);
+      for (const doc of rows) {
+        if (doc.isDemo || !doc.title.sr.startsWith(E2E_TITLE)) continue;
+        await deleteListingCascade(ctx, doc);
+        removed += 1;
+      }
+    }
+    return removed;
   },
 });

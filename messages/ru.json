@@ -330,6 +330,7 @@
     "addToCompare": "Добавить в сравнение",
     "statusReserved": "Забронировано",
     "statusSold": "Продано",
+    "previewBanner": "Предпросмотр для команды — объект ещё не опубликован",
     "statusRented": "Сдано",
     "exclusive": "Эксклюзив",
     "new": "Новое",

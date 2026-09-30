@@ -34,21 +34,32 @@ import { htmlLang, routing, type Locale } from "@/i18n/routing";
 import { fixTypography, fixWidows, formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
 import { breadcrumbJsonLd, listingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
-import { getListingBySlug, getPublicSettings, getSimilarListings } from "@/lib/listing-data";
+import { getListingBySlug, getListingPreview, getPublicSettings, getSimilarListings } from "@/lib/listing-data";
 import { floorLabel, placeLine, placeShort, structureShort, structureTitle } from "@/lib/listing-text";
 import { absoluteUrl, localizedAlternates } from "@/lib/seo";
 
 type Params = PageProps<"/[locale]/properties/[slug]">["params"];
+type Search = PageProps<"/[locale]/properties/[slug]">["searchParams"];
 
 const CLOSED = new Set(["sold", "rented"]);
 
-async function resolve(params: Params) {
-  const { locale, slug } = await params;
+async function resolve(params: Params, searchParams: Search) {
+  const [{ locale, slug }, query] = await Promise.all([params, searchParams]);
   if (!hasLocale(routing.locales, locale)) notFound();
-  // Settings are independent of the listing, so both reads start together.
-  const [result, settings] = await Promise.all([getListingBySlug(slug), getPublicSettings()]);
+  // `?preview=<token>` is the staff preview link from the admin editor. A
+  // valid token shows the listing whatever its status; anything else falls
+  // through to the public read, so a bad token is simply a 404.
+  const token = typeof query.preview === "string" && query.preview.length >= 32 ? query.preview : undefined;
+  // Settings are independent of the listing, so all reads start together.
+  const [publicResult, settings, previewListing] = await Promise.all([
+    getListingBySlug(slug),
+    getPublicSettings(),
+    token !== undefined ? getListingPreview(slug, token) : Promise.resolve(null),
+  ]);
+  const preview = previewListing !== null;
+  const result = preview ? { kind: "listing" as const, listing: previewListing } : publicResult;
   // The server's clock for the "Novo" badge on similar cards, read once per request.
-  return { locale, slug, now: Date.now(), result, settings };
+  return { locale, slug, now: Date.now(), result, preview, settings };
 }
 
 function href(slug: string) {
@@ -67,9 +78,19 @@ function priceText(
   return listing.transaction === "rent" ? `${base} ${tUnits("perMonth")}` : base;
 }
 
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { locale, result } = await resolve(params);
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: Search;
+}): Promise<Metadata> {
+  const { locale, result, preview } = await resolve(params, searchParams);
   if (result.kind !== "listing") return {};
+  if (preview) {
+    // A staff preview must never be indexed or shared as a card.
+    return { title: result.listing.ref, robots: { index: false, follow: false, nocache: true } };
+  }
   const listing = result.listing;
   const t = await getTranslations({ locale, namespace: "listing" });
   const tUnits = await getTranslations({ locale, namespace: "units" });
@@ -126,8 +147,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function ListingPage({ params }: { params: Params }) {
-  const { locale, now, result, settings } = await resolve(params);
+export default async function ListingPage({ params, searchParams }: { params: Params; searchParams: Search }) {
+  const { locale, now, result, preview, settings } = await resolve(params, searchParams);
   if (result.kind === "redirect") {
     // A renamed listing keeps its old URLs alive (ARCHITECTURE §4 `slugHistory`).
     permanentRedirect({ href: href(result.slug), locale });
@@ -257,8 +278,20 @@ export default async function ListingPage({ params }: { params: Params }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-      <ViewTracker listingId={listing._id} />
+      {preview ? (
+        <p
+          role="status"
+          data-testid="listing-preview-banner"
+          className="fixed inset-x-0 bottom-0 z-[var(--z-menu)] bg-bronze-deep px-4 py-3 text-center font-sans text-label uppercase tracking-[0.12em] text-paper"
+        >
+          {t("previewBanner")}
+        </p>
+      ) : (
+        <>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
+          <ViewTracker listingId={listing._id} />
+        </>
+      )}
 
       {/* ------------------------------------------ dark band: media + title */}
       <div className="bg-ink text-ivory" data-listing-status={listing.status}>
@@ -412,7 +445,9 @@ export default async function ListingPage({ params }: { params: Params }) {
               </Reveal>
             ) : null}
 
-            {closed ? null : <ContactForms listingId={listing._id} agentId={listing.agent._id} refCode={listing.ref} />}
+            {closed || preview ? null : (
+              <ContactForms listingId={listing._id} agentId={listing.agent._id} refCode={listing.ref} />
+            )}
           </div>
 
           <div className="lg:col-span-4">
@@ -437,7 +472,7 @@ export default async function ListingPage({ params }: { params: Params }) {
         {...(listing.agent.phone !== undefined ? { phone: listing.agent.phone } : {})}
         {...(listing.agent.viber !== undefined ? { viber: listing.agent.viber } : {})}
         {...(listing.agent.whatsapp !== undefined ? { whatsapp: listing.agent.whatsapp } : {})}
-        canBook={!closed}
+        canBook={!closed && !preview}
       />
     </>
   );

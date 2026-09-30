@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { logActivity } from "./lib/activity";
 import { getViewer, requireRole } from "./lib/auth";
 import { forbidden, invalidInput, notFound } from "./lib/errors";
@@ -164,3 +164,17 @@ export const linkAgent = mutation({
 });
 
 export { ALL_ROLES };
+
+/**
+ * Actions have no `ctx.db`, so `requireRoleAction` reads the caller through
+ * this. `ctx.runQuery` from an action carries the caller's auth identity.
+ */
+export const viewerForAction = internalQuery({
+  args: {},
+  returns: v.union(v.null(), v.object({ _id: v.id("users"), role: roleV, status: userStatusV })),
+  handler: async (ctx) => {
+    const viewer = await getViewer(ctx);
+    if (viewer === null) return null;
+    return { _id: viewer._id, role: viewer.role, status: viewer.status };
+  },
+});

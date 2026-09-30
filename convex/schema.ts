@@ -261,6 +261,11 @@ export default defineSchema({
     .index("by_slug", { fields: ["slug"] })
     .index("by_ref", { fields: ["ref"] })
     .index("by_agentId", { fields: ["agentId"] })
+    // The admin table for an agent (own listings only) and the agent filter.
+    .index("by_agentId_and_updatedAt", { fields: ["agentId", "updatedAt"] })
+    .index("by_agentId_and_status_and_updatedAt", {
+      fields: ["agentId", "status", "updatedAt"],
+    })
     .index("by_status_and_updatedAt", { fields: ["status", "updatedAt"] })
     .index("by_isDemo", { fields: ["isDemo"] })
     .index("by_scope_and_publishedAt", { fields: ["scope", "publishedAt"] })

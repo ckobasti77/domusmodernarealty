@@ -13,18 +13,18 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#fbf9f5",
-  colorScheme: "light",
 };
 
 /**
  * ADMIN root layout (root layout #2). Serbian (Latin) only, `noindex`, and
  * deliberately free of Lenis and GSAP — admin micro-interactions are CSS
  * transitions under 300 ms. `class="admin"` switches globals.css over to the
- * shadcn semantic palette.
+ * shadcn semantic palette; next-themes toggles `.dark` on <html>, hence
+ * `suppressHydrationWarning`.
  */
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <html lang="sr-Latn" className={fontVariables}>
+    <html lang="sr-Latn" className={fontVariables} suppressHydrationWarning>
       <body className="admin min-h-svh">
         <AdminProviders>{children}</AdminProviders>
       </body>

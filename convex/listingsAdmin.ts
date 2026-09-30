@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import schema from "./schema";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -7,7 +8,12 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { diffFields, logActivity } from "./lib/activity";
 import { assertCanEditListing, requireRole } from "./lib/auth";
 import type { Viewer } from "./lib/auth";
-import { assertPublishable, publishChecklist } from "./lib/checklist";
+import {
+  assertPublishable,
+  checklistBlockers,
+  checklistContext,
+  publishChecklist,
+} from "./lib/checklist";
 import { applyCountDelta } from "./lib/counts";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
@@ -19,6 +25,7 @@ import {
   slugify,
 } from "./lib/slug";
 import { normalizeText } from "./lib/search";
+import { optionalPhone, requireEmail } from "./lib/rateLimit";
 import { randomToken } from "./lib/tokens";
 import {
   addressVisibilityV,
@@ -144,7 +151,16 @@ const checklistItemV = v.object({
   code: v.string(),
   label: v.string(),
   ok: v.boolean(),
+  warning: v.optional(v.boolean()),
 });
+
+const checklistContextV = v.object({
+  agentPublic: v.boolean(),
+  registryOk: v.boolean(),
+});
+
+/** Preview links live this long; a scheduled job then clears the token. */
+const PREVIEW_TTL_MS = 14 * 86_400_000;
 
 const adminRowV = v.object({
   _id: v.id("listings"),
@@ -232,11 +248,25 @@ function visibleToViewer(viewer: Viewer, doc: Doc<"listings">): boolean {
   return true;
 }
 
+/**
+ * The agent whose listings this viewer may list: an agent is pinned to their own
+ * profile whatever filter they send; admin and manager may narrow to anyone.
+ */
+function scopedAgentId(
+  viewer: Viewer,
+  requested: Id<"agents"> | undefined,
+): Id<"agents"> | null | undefined {
+  if (viewer.role === "agent") return viewer.agentId ?? null;
+  return requested;
+}
+
 export const list = query({
   args: {
     status: v.optional(listingStatusV),
     q: v.optional(v.string()),
     agentId: v.optional(v.id("agents")),
+    transaction: v.optional(transactionV),
+    propertyType: v.optional(propertyTypeV),
     onlyDemo: v.optional(v.boolean()),
     paginationOpts: paginationOptsValidator,
   },
@@ -247,27 +277,57 @@ export const list = query({
   }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, EDITORS);
-
-    const result =
-      args.status !== undefined
-        ? await ctx.db
-            .query("listings")
-            .withIndex("by_status_and_updatedAt", (q) => q.eq("status", args.status!))
-            .order("desc")
-            .paginate(args.paginationOpts)
-        : await ctx.db.query("listings").order("desc").paginate(args.paginationOpts);
+    const agentId = scopedAgentId(viewer, args.agentId);
+    // An agent account that is not linked to an agent profile owns nothing.
+    if (agentId === null) return { page: [], isDone: true, continueCursor: "" };
 
     const needle =
-      args.q !== undefined && args.q.trim().length > 0
-        ? normalizeText(args.q)
-        : undefined;
+      args.q !== undefined && args.q.trim().length > 0 ? normalizeText(args.q) : "";
+
+    // Text search goes through the search index (relevance order); everything
+    // else walks the narrowest `updatedAt` index. The remaining filters are
+    // cheap equality checks on the page.
+    const result =
+      needle.length > 0
+        ? await ctx.db
+            .query("listings")
+            .withSearchIndex("search_text", (q) => {
+              const base = q.search("searchText", needle);
+              return args.propertyType !== undefined
+                ? base.eq("propertyType", args.propertyType)
+                : base;
+            })
+            .paginate(args.paginationOpts)
+        : agentId !== undefined
+          ? args.status !== undefined
+            ? await ctx.db
+                .query("listings")
+                .withIndex("by_agentId_and_status_and_updatedAt", (q) =>
+                  q.eq("agentId", agentId).eq("status", args.status!),
+                )
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("listings")
+                .withIndex("by_agentId_and_updatedAt", (q) => q.eq("agentId", agentId))
+                .order("desc")
+                .paginate(args.paginationOpts)
+          : args.status !== undefined
+            ? await ctx.db
+                .query("listings")
+                .withIndex("by_status_and_updatedAt", (q) => q.eq("status", args.status!))
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db.query("listings").order("desc").paginate(args.paginationOpts);
 
     const page = [];
     for (const doc of result.page) {
       if (!visibleToViewer(viewer, doc)) continue;
-      if (args.agentId !== undefined && doc.agentId !== args.agentId) continue;
+      if (agentId !== undefined && doc.agentId !== agentId) continue;
+      if (args.status !== undefined && doc.status !== args.status) continue;
+      if (args.transaction !== undefined && doc.transaction !== args.transaction) continue;
+      if (args.propertyType !== undefined && doc.propertyType !== args.propertyType) continue;
       if (args.onlyDemo === true && !doc.isDemo) continue;
-      if (needle !== undefined && !doc.searchText.includes(needle)) continue;
       page.push(await toAdminRow(ctx, doc));
     }
 
@@ -275,30 +335,90 @@ export const list = query({
   },
 });
 
+const STATUSES = [
+  "draft",
+  "review",
+  "published",
+  "reserved",
+  "sold",
+  "rented",
+  "withdrawn",
+  "archived",
+] as const;
+
+/** Status tab badges. Capped at 501 per status: Convex has no count operator. */
 export const counts = query({
   args: {},
   returns: v.array(v.object({ status: listingStatusV, count: v.number() })),
   handler: async (ctx) => {
-    await requireRole(ctx, EDITORS);
-    const statuses = [
-      "draft",
-      "review",
-      "published",
-      "reserved",
-      "sold",
-      "rented",
-      "withdrawn",
-      "archived",
-    ] as const;
+    const viewer = await requireRole(ctx, EDITORS);
+    const agentId = scopedAgentId(viewer, undefined);
     const out = [];
-    for (const status of statuses) {
-      const rows = await ctx.db
-        .query("listings")
-        .withIndex("by_status_and_updatedAt", (q) => q.eq("status", status))
-        .take(501);
+    for (const status of STATUSES) {
+      if (agentId === null) {
+        out.push({ status, count: 0 });
+        continue;
+      }
+      const rows =
+        agentId !== undefined
+          ? await ctx.db
+              .query("listings")
+              .withIndex("by_agentId_and_status_and_updatedAt", (q) =>
+                q.eq("agentId", agentId).eq("status", status),
+              )
+              .take(501)
+          : await ctx.db
+              .query("listings")
+              .withIndex("by_status_and_updatedAt", (q) => q.eq("status", status))
+              .take(501);
       out.push({ status, count: rows.length });
     }
     return out;
+  },
+});
+
+/** ⌘K palette: jump to a listing by ref ("ME-1042", "1042") or title words. */
+export const quickFind = query({
+  args: { q: v.string() },
+  returns: v.array(
+    v.object({
+      _id: v.id("listings"),
+      ref: v.string(),
+      title: v.string(),
+      status: listingStatusV,
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const viewer = await requireRole(ctx, EDITORS);
+    const raw = args.q.trim().slice(0, 80);
+    if (raw.length === 0) return [];
+
+    const out: { _id: Id<"listings">; ref: string; title: string; status: Doc<"listings">["status"] }[] = [];
+    const seen = new Set<string>();
+    const push = (doc: Doc<"listings">) => {
+      if (seen.has(doc._id) || !visibleToViewer(viewer, doc)) return;
+      seen.add(doc._id);
+      out.push({ _id: doc._id, ref: doc.ref, title: doc.title.sr, status: doc.status });
+    };
+
+    const digits = raw.match(/\d{3,6}/)?.[0];
+    if (digits !== undefined) {
+      const exact = await ctx.db
+        .query("listings")
+        .withIndex("by_ref", (q) => q.eq("ref", formatRef(Number(digits))))
+        .unique();
+      if (exact !== null) push(exact);
+    }
+
+    const needle = normalizeText(raw);
+    if (needle.length > 0) {
+      const hits = await ctx.db
+        .query("listings")
+        .withSearchIndex("search_text", (q) => q.search("searchText", needle))
+        .take(12);
+      for (const doc of hits) push(doc);
+    }
+    return out.slice(0, 8);
   },
 });
 
@@ -309,7 +429,17 @@ export const get = query({
     v.object({
       listing: schema.doc("listings"),
       checklist: v.array(checklistItemV),
+      checklistContext: checklistContextV,
       agentName: v.string(),
+      owner: v.union(
+        v.object({
+          name: v.string(),
+          phone: v.optional(v.string()),
+          email: v.optional(v.string()),
+        }),
+        v.null(),
+      ),
+      docsVerifiedByName: v.optional(v.string()),
       mediaUrls: v.record(v.string(), v.string()),
       priceHistory: v.array(
         v.object({ at: v.number(), from: v.number(), to: v.number() }),
@@ -323,6 +453,17 @@ export const get = query({
     const doc = await ctx.db.get("listings", args.id);
     if (doc === null) return null;
     assertCanEditListing(viewer, doc);
+
+    const context = await checklistContext(ctx, doc);
+    const ownerDoc =
+      doc.ownerContactId !== undefined
+        ? await ctx.db.get("contacts", doc.ownerContactId)
+        : null;
+    const verifier =
+      doc.legal.docsVerifiedBy !== undefined
+        ? await ctx.db.get("users", doc.legal.docsVerifiedBy)
+        : null;
+    const verifierName = verifier?.name ?? verifier?.email;
 
     const agent = await ctx.db.get("agents", doc.agentId);
     const mediaUrls: Record<string, string> = {};
@@ -345,8 +486,18 @@ export const get = query({
 
     return {
       listing: doc,
-      checklist: publishChecklist(doc, args.now),
+      checklist: publishChecklist(doc, args.now, context),
+      checklistContext: context,
       agentName: agent?.name ?? "—",
+      owner:
+        ownerDoc === null || ownerDoc.anonymizedAt !== undefined
+          ? null
+          : {
+              name: ownerDoc.name,
+              ...(ownerDoc.phone !== undefined ? { phone: ownerDoc.phone } : {}),
+              ...(ownerDoc.email !== undefined ? { email: ownerDoc.email } : {}),
+            },
+      ...(verifierName !== undefined ? { docsVerifiedByName: verifierName } : {}),
       mediaUrls,
       priceHistory: changes.map((change) => ({
         at: change.at,
@@ -467,7 +618,6 @@ export const create = mutation({
       },
       media: [],
       floorPlans: [],
-      previewToken: randomToken(),
       updatedAt: now,
       createdBy: viewer._id,
     };
@@ -509,16 +659,42 @@ export const update = mutation({
     if (args.patch.areaM2 !== undefined && args.patch.areaM2 < 0) {
       invalidInput("Kvadratura ne može biti negativna.");
     }
+    if (args.patch.videoUrl !== undefined && !/^https:\/\/\S+$/.test(args.patch.videoUrl)) {
+      invalidInput("Video adresa mora počinjati sa https://");
+    }
+    if (args.patch.agentId !== undefined && args.patch.agentId !== before.agentId) {
+      if ((await ctx.db.get("agents", args.patch.agentId)) === null) notFound("Agent");
+    }
 
     const now = Date.now();
-    const merged = { ...before, ...args.patch };
+
+    // "Documents verified" is attested by whoever ticks it, never by a client-
+    // supplied user id; unticking clears both halves.
+    let legalPatch = args.patch.legal;
+    if (legalPatch !== undefined) {
+      const { docsVerifiedBy: _clientVerifier, ...legalRest } = legalPatch;
+      const previousVerifier = before.legal.docsVerifiedBy;
+      legalPatch =
+        legalPatch.docsVerifiedAt === undefined
+          ? legalRest
+          : legalPatch.docsVerifiedAt !== before.legal.docsVerifiedAt
+            ? { ...legalRest, docsVerifiedBy: viewer._id }
+            : previousVerifier !== undefined
+              ? { ...legalRest, docsVerifiedBy: previousVerifier }
+              : legalRest;
+    }
+    const cleanPatch = {
+      ...args.patch,
+      ...(legalPatch !== undefined ? { legal: legalPatch } : {}),
+    };
+    const merged = { ...before, ...cleanPatch };
 
     // Flipping `visibility` to public is a second route onto the market: a
     // reserved listing with `visibility: "private"` sits in the `hidden` bucket
     // until this patch moves it. It has to clear the same Art. 18 checklist as
     // `publish`, or a price-0, photo-less, mandate-less listing goes live.
     if (args.patch.visibility === "public" && before.visibility !== "public") {
-      assertPublishable(merged, now);
+      assertPublishable(merged, now, await checklistContext(ctx, merged));
     }
 
     // Slug: explicit rename keeps a redirect from the old value.
@@ -566,7 +742,7 @@ export const update = mutation({
     };
     const derived = applyDerived(next, names, sceneCount.length > 0);
     const patch = {
-      ...args.patch,
+      ...cleanPatch,
       slug,
       updatedAt: now,
       ...derived,
@@ -591,7 +767,10 @@ export const update = mutation({
       by: viewer._id,
     });
 
-    return { slug, checklist: publishChecklist(after, now) };
+    return {
+      slug,
+      checklist: publishChecklist(after, now, await checklistContext(ctx, after)),
+    };
   },
 });
 
@@ -605,7 +784,7 @@ export const publish = mutation({
     assertCanEditListing(viewer, before);
 
     const now = Date.now();
-    assertPublishable(before, now);
+    assertPublishable(before, now, await checklistContext(ctx, before));
 
     const next = {
       ...before,
@@ -740,8 +919,23 @@ export const duplicate = mutation({
       floorNum: _dropFloor,
       hasTour: _dropTour,
       mandateEnd: _dropMandateEnd,
+      // A copy is a new offer: it needs its own brokerage contract and preview
+      // link, and it has no price history to show a "reduced" badge from.
+      mandate: _dropMandate,
+      previewToken: _dropPreviewToken,
+      previewExpiresAt: _dropPreviewExpires,
+      previousPrice: _dropPreviousPrice,
+      publishedAt: _dropPublishedAt,
       ...rest
     } = source;
+
+    // Two listings must never share a storage blob: deleting a photo from one
+    // would break the other. Remote (URL) photos are copied as-is; uploaded
+    // ones are duplicated into new blobs by a scheduled action.
+    const byUrl = (items: typeof source.media) =>
+      items.filter((item) => item.image.kind === "url");
+    const stored = (items: typeof source.media) =>
+      items.filter((item) => item.image.kind === "storage");
 
     const base = {
       ...rest,
@@ -751,14 +945,24 @@ export const duplicate = mutation({
       visibility: "private" as const,
       isFeatured: false,
       title: { ...source.title, sr: titleSr },
-      publishedAt: undefined,
-      previewToken: randomToken(),
+      media: byUrl(source.media),
+      floorPlans: byUrl(source.floorPlans),
       updatedAt: now,
       createdBy: viewer._id,
     };
     const names = await locationNamesFor(ctx, base);
     const derived = applyDerived(base, names, false);
     const id = await ctx.db.insert("listings", { ...base, ...derived });
+
+    const storedMedia = stored(source.media);
+    const storedPlans = stored(source.floorPlans);
+    if (storedMedia.length > 0 || storedPlans.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.listingsInternal.copyStoredMedia, {
+        listingId: id,
+        media: storedMedia,
+        floorPlans: storedPlans,
+      });
+    }
 
     await logActivity(ctx, {
       entity: "listing",
@@ -780,69 +984,7 @@ export const remove = mutation({
     const doc = await ctx.db.get("listings", args.id);
     if (doc === null) notFound("Nekretnina");
 
-    await applyCountDelta(ctx, doc, null);
-
-    for (const item of doc.media) {
-      if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
-    }
-    for (const item of doc.floorPlans) {
-      if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
-    }
-
-    const scenes = await ctx.db
-      .query("tourScenes")
-      .withIndex("by_listingId_and_order", (q) => q.eq("listingId", doc._id))
-      .take(60);
-    for (const scene of scenes) await ctx.db.delete("tourScenes", scene._id);
-
-    const stats = await ctx.db
-      .query("listingStats")
-      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-      .unique();
-    if (stats !== null) await ctx.db.delete("listingStats", stats._id);
-
-    const splats = await ctx.db
-      .query("splatAssets")
-      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-      .take(20);
-    for (const splat of splats) await ctx.db.delete("splatAssets", splat._id);
-
-    const changes = await ctx.db
-      .query("priceChanges")
-      .withIndex("by_listingId_and_at", (q) => q.eq("listingId", doc._id))
-      .take(60);
-    for (const change of changes) await ctx.db.delete("priceChanges", change._id);
-
-    const redirects = await ctx.db
-      .query("slugRedirects")
-      .withIndex("by_from", (q) => q.eq("from", doc.slug))
-      .take(20);
-    for (const row of redirects) await ctx.db.delete("slugRedirects", row._id);
-
-    const views = await ctx.db
-      .query("listingViews")
-      .withIndex("by_listingId_and_sessionKey", (q) => q.eq("listingId", doc._id))
-      .take(500);
-    for (const row of views) await ctx.db.delete("listingViews", row._id);
-
-    // Leads and viewings are business records: keep them, but drop the pointer so
-    // the admin UI stops rendering a reference to a document that is gone.
-    const viewings = await ctx.db
-      .query("viewings")
-      .withIndex("by_listingId_and_start", (q) => q.eq("listingId", doc._id))
-      .take(100);
-    for (const viewing of viewings) {
-      await ctx.db.patch("viewings", viewing._id, { status: "cancelled" });
-    }
-    const leads = await ctx.db
-      .query("leads")
-      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-      .take(200);
-    for (const lead of leads) {
-      await ctx.db.patch("leads", lead._id, { listingId: undefined });
-    }
-
-    await ctx.db.delete("listings", doc._id);
+    await deleteListingCascade(ctx, doc);
     await logActivity(ctx, {
       entity: "listing",
       entityId: args.id,
@@ -854,6 +996,76 @@ export const remove = mutation({
   },
 });
 
+/**
+ * Deletes a listing and everything that hangs off it. Leads and viewings are
+ * business records: they are kept, only their pointer to the listing is dropped.
+ */
+export async function deleteListingCascade(ctx: MutationCtx, doc: Doc<"listings">): Promise<void> {
+  await applyCountDelta(ctx, doc, null);
+
+  for (const item of doc.media) {
+    if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
+  }
+  for (const item of doc.floorPlans) {
+    if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
+  }
+
+  const scenes = await ctx.db
+    .query("tourScenes")
+    .withIndex("by_listingId_and_order", (q) => q.eq("listingId", doc._id))
+    .take(60);
+  for (const scene of scenes) await ctx.db.delete("tourScenes", scene._id);
+
+  const stats = await ctx.db
+    .query("listingStats")
+    .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
+    .unique();
+  if (stats !== null) await ctx.db.delete("listingStats", stats._id);
+
+  const splats = await ctx.db
+    .query("splatAssets")
+    .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
+    .take(20);
+  for (const splat of splats) await ctx.db.delete("splatAssets", splat._id);
+
+  const changes = await ctx.db
+    .query("priceChanges")
+    .withIndex("by_listingId_and_at", (q) => q.eq("listingId", doc._id))
+    .take(60);
+  for (const change of changes) await ctx.db.delete("priceChanges", change._id);
+
+  const redirects = await ctx.db
+    .query("slugRedirects")
+    .withIndex("by_from", (q) => q.eq("from", doc.slug))
+    .take(20);
+  for (const row of redirects) await ctx.db.delete("slugRedirects", row._id);
+
+  const views = await ctx.db
+    .query("listingViews")
+    .withIndex("by_listingId_and_sessionKey", (q) => q.eq("listingId", doc._id))
+    .take(500);
+  for (const row of views) await ctx.db.delete("listingViews", row._id);
+
+  // Leads and viewings are business records: keep them, but drop the pointer so
+  // the admin UI stops rendering a reference to a document that is gone.
+  const viewings = await ctx.db
+    .query("viewings")
+    .withIndex("by_listingId_and_start", (q) => q.eq("listingId", doc._id))
+    .take(100);
+  for (const viewing of viewings) {
+    await ctx.db.patch("viewings", viewing._id, { status: "cancelled" });
+  }
+  const leads = await ctx.db
+    .query("leads")
+    .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
+    .take(200);
+  for (const lead of leads) {
+    await ctx.db.patch("leads", lead._id, { listingId: undefined });
+  }
+
+  await ctx.db.delete("listings", doc._id);
+}
+
 export const bulk = mutation({
   args: {
     ids: v.array(v.id("listings")),
@@ -864,6 +1076,8 @@ export const bulk = mutation({
       v.literal("feature"),
       v.literal("unfeature"),
       v.literal("assign"),
+      // Deletes demo listings only; a real listing in the selection is skipped.
+      v.literal("deleteDemo"),
     ),
     agentId: v.optional(v.id("agents")),
   },
@@ -877,9 +1091,29 @@ export const bulk = mutation({
     let done = 0;
     const now = Date.now();
 
-    for (const id of args.ids.slice(0, 100)) {
+    // Deleting cascades into several tables per listing; keep one call well
+    // inside the transaction limits.
+    const limit = args.action === "deleteDemo" ? 25 : 100;
+    for (const id of args.ids.slice(0, limit)) {
       const before = await ctx.db.get("listings", id);
       if (before === null) continue;
+
+      if (args.action === "deleteDemo") {
+        if (!before.isDemo) {
+          skipped.push({ ref: before.ref, reason: "Nije demo nekretnina" });
+          continue;
+        }
+        await deleteListingCascade(ctx, before);
+        await logActivity(ctx, {
+          entity: "listing",
+          entityId: id,
+          action: "listing.deleted",
+          summary: `${before.ref} (demo, grupno)`,
+          by: viewer._id,
+        });
+        done += 1;
+        continue;
+      }
 
       if (args.action === "feature" || args.action === "unfeature") {
         await ctx.db.patch("listings", id, {
@@ -907,9 +1141,11 @@ export const bulk = mutation({
             : ("archived" as const);
 
       if (status === "published") {
-        const blockers = publishChecklist(before, now).filter((item) => !item.ok);
+        const blockers = checklistBlockers(
+          publishChecklist(before, now, await checklistContext(ctx, before)),
+        );
         if (blockers.length > 0) {
-          skipped.push({ ref: before.ref, reason: blockers[0].label });
+          skipped.push({ ref: before.ref, reason: blockers[0] });
           continue;
         }
       }
@@ -982,7 +1218,7 @@ export const regenerateSlug = mutation({
 
 export const rotatePreviewToken = mutation({
   args: { id: v.id("listings") },
-  returns: v.object({ token: v.string() }),
+  returns: v.object({ token: v.string(), expiresAt: v.number() }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, EDITORS);
     const doc = await ctx.db.get("listings", args.id);
@@ -990,9 +1226,16 @@ export const rotatePreviewToken = mutation({
     assertCanEditListing(viewer, doc);
 
     const token = randomToken();
+    const expiresAt = Date.now() + PREVIEW_TTL_MS;
     await ctx.db.patch("listings", doc._id, {
       previewToken: token,
-      previewExpiresAt: Date.now() + 14 * 86_400_000,
+      previewExpiresAt: expiresAt,
+    });
+    // `listings.previewBySlug` checks the expiry against a caller-supplied
+    // `now`; clearing the token server-side makes the expiry authoritative.
+    await ctx.scheduler.runAt(expiresAt, internal.listingsInternal.expirePreviewToken, {
+      id: doc._id,
+      token,
     });
     await logActivity(ctx, {
       entity: "listing",
@@ -1001,7 +1244,82 @@ export const rotatePreviewToken = mutation({
       summary: doc.ref,
       by: viewer._id,
     });
-    return { token };
+    return { token, expiresAt };
+  },
+});
+
+/**
+ * The seller's private contact (PRD B3 "Pravno"). Never exposed publicly: the
+ * public DTOs do not read `ownerContactId`. Passing `name: ""` unlinks it.
+ */
+export const setOwner = mutation({
+  args: {
+    id: v.id("listings"),
+    name: v.string(),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const viewer = await requireRole(ctx, EDITORS);
+    const doc = await ctx.db.get("listings", args.id);
+    if (doc === null) notFound("Nekretnina");
+    assertCanEditListing(viewer, doc);
+
+    const name = args.name.trim().slice(0, 120);
+    if (name.length === 0) {
+      if (doc.ownerContactId !== undefined) {
+        await ctx.db.patch("listings", doc._id, { ownerContactId: undefined, updatedAt: Date.now() });
+      }
+      return null;
+    }
+    const phone = optionalPhone(args.phone);
+    const email =
+      args.email !== undefined && args.email.trim().length > 0
+        ? requireEmail(args.email)
+        : undefined;
+
+    const fields = {
+      name,
+      ...(phone !== undefined ? { phone } : {}),
+      ...(email !== undefined ? { email } : {}),
+    };
+    if (doc.ownerContactId !== undefined) {
+      const existing = await ctx.db.get("contacts", doc.ownerContactId);
+      if (existing !== null) {
+        // `undefined` clears a field the editor emptied.
+        await ctx.db.patch("contacts", existing._id, {
+          name,
+          phone,
+          email,
+          tags: existing.tags.includes("vlasnik") ? existing.tags : [...existing.tags, "vlasnik"],
+        });
+        await logActivity(ctx, {
+          entity: "listing",
+          entityId: doc._id,
+          action: "listing.owner.updated",
+          summary: doc.ref,
+          by: viewer._id,
+        });
+        return null;
+      }
+    }
+
+    const contactId = await ctx.db.insert("contacts", {
+      ...fields,
+      tags: ["vlasnik"],
+      consents: [],
+      isDemo: false,
+    });
+    await ctx.db.patch("listings", doc._id, { ownerContactId: contactId, updatedAt: Date.now() });
+    await logActivity(ctx, {
+      entity: "listing",
+      entityId: doc._id,
+      action: "listing.owner.linked",
+      summary: doc.ref,
+      by: viewer._id,
+    });
+    return null;
   },
 });
 

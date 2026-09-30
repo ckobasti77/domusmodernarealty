@@ -1,5 +1,9 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalAction, internalMutation } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { mediaItemV } from "./lib/validators";
+import type { MediaItem } from "./lib/validators";
 import { logActivity } from "./lib/activity";
 import { applyCountDelta } from "./lib/counts";
 import { applyDerived, locationNamesFor } from "./lib/derive";
@@ -75,5 +79,95 @@ export const rebuildLocationCounts = internalMutation({
 
     const rows = await ctx.db.query("locationCounts").take(2000);
     return { locations: rows.length, listings: counted };
+  },
+});
+
+/**
+ * Scheduled by `listingsAdmin.rotatePreviewToken` for the moment the link
+ * expires. Only clears the token it was scheduled for: a newer link survives.
+ */
+export const expirePreviewToken = internalMutation({
+  args: { id: v.id("listings"), token: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const listing = await ctx.db.get("listings", args.id);
+    if (listing === null || listing.previewToken !== args.token) return null;
+    await ctx.db.patch("listings", listing._id, {
+      previewToken: undefined,
+      previewExpiresAt: undefined,
+    });
+    return null;
+  },
+});
+
+/**
+ * `listingsAdmin.duplicate` never lets two listings share a storage blob, so
+ * the copy's uploaded photos are re-stored here as new blobs and then merged
+ * back in their original order.
+ */
+export const copyStoredMedia = internalAction({
+  args: {
+    listingId: v.id("listings"),
+    media: v.array(mediaItemV),
+    floorPlans: v.array(mediaItemV),
+  },
+  returns: v.object({ copied: v.number() }),
+  handler: async (ctx, args) => {
+    const copy = async (items: MediaItem[]): Promise<MediaItem[]> => {
+      const out: MediaItem[] = [];
+      for (const item of items) {
+        if (item.image.kind !== "storage") continue;
+        const blob = await ctx.storage.get(item.image.storageId);
+        if (blob === null) continue;
+        const storageId: Id<"_storage"> = await ctx.storage.store(blob);
+        out.push({ ...item, image: { kind: "storage", storageId } });
+      }
+      return out;
+    };
+    const media = await copy(args.media);
+    const floorPlans = await copy(args.floorPlans);
+    await ctx.runMutation(internal.listingsInternal.mergeCopiedMedia, {
+      listingId: args.listingId,
+      media,
+      floorPlans,
+    });
+    return { copied: media.length + floorPlans.length };
+  },
+});
+
+export const mergeCopiedMedia = internalMutation({
+  args: {
+    listingId: v.id("listings"),
+    media: v.array(mediaItemV),
+    floorPlans: v.array(mediaItemV),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const listing = await ctx.db.get("listings", args.listingId);
+    if (listing === null) {
+      // The copy was deleted while the blobs were being copied.
+      for (const item of [...args.media, ...args.floorPlans]) {
+        if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
+      }
+      return null;
+    }
+    const merge = (current: MediaItem[], copied: MediaItem[]): MediaItem[] => {
+      const all = [...current, ...copied].sort((a, b) => a.order - b.order);
+      const hasCover = all.some((item) => item.isCover === true);
+      return all.map((item, index) => ({
+        ...item,
+        order: index,
+        ...(hasCover ? {} : { isCover: index === 0 }),
+      }));
+    };
+    await ctx.db.patch("listings", listing._id, {
+      media: merge(listing.media, args.media),
+      floorPlans: merge(listing.floorPlans, args.floorPlans).map((item) => {
+        const { isCover: _floorPlanCover, ...rest } = item;
+        return rest;
+      }),
+      updatedAt: Date.now(),
+    });
+    return null;
   },
 });

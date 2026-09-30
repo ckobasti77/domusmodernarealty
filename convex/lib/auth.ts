@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Doc } from "../_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { internal } from "../_generated/api";
+import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
 import { forbidden, unauthenticated } from "./errors";
 import type { Role } from "./validators";
 
@@ -74,4 +75,16 @@ export async function requireRoleMutation(
   roles: readonly Role[],
 ): Promise<Viewer> {
   return await requireRole(ctx, roles);
+}
+
+/** `requireRole` for actions, which cannot read the database directly. */
+export async function requireRoleAction(
+  ctx: ActionCtx,
+  roles: readonly Role[],
+): Promise<{ _id: Doc<"users">["_id"]; role: Role }> {
+  const viewer = await ctx.runQuery(internal.users.viewerForAction, {});
+  if (viewer === null) unauthenticated();
+  if (viewer.status === "disabled") forbidden("pristup panelu");
+  if (!roles.includes(viewer.role)) forbidden("ovu radnju");
+  return { _id: viewer._id, role: viewer.role };
 }

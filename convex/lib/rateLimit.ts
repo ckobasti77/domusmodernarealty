@@ -1,4 +1,4 @@
-import { HOUR, MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
+import { HOUR, MINUTE, RateLimiter, SECOND } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 import { appError, invalidInput } from "./errors";
@@ -25,6 +25,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   trackViewPerSession: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 30 },
   trackViewGlobal: { kind: "fixed window", rate: 5000, period: HOUR },
   favoritePerSession: { kind: "token bucket", rate: 30, period: HOUR, capacity: 15 },
+  // Nominatim usage policy: at most one request per second from the whole app.
+  geocodeGlobal: { kind: "token bucket", rate: 1, period: SECOND, capacity: 1 },
 });
 
 export type PublicFormLimit =

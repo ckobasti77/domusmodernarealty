@@ -285,7 +285,16 @@ test.describe("mobile action bar", () => {
     await expect(bar.getByRole("link", { name: "Viber" })).toHaveAttribute("href", /^viber:\/\/chat\?number=%2B381/);
     await expect(bar.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/381/);
 
-    await bar.getByRole("link", { name: "Zakaži" }).click();
+    // The booking cell is the one light block on the ink bar; its label must not
+    // take the bar's ivory text colour (it once rendered ivory on ivory).
+    const book = bar.getByRole("link", { name: "Zakaži" });
+    const colours = await book.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { text: style.color, fill: style.backgroundColor };
+    });
+    expect(colours.text).not.toBe(colours.fill);
+
+    await book.click();
     await expect(page.getByRole("tab", { name: "Razgledanje" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByTestId("viewing-form")).toBeInViewport();
   });

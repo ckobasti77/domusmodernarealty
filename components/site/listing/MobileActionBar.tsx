@@ -25,8 +25,13 @@ export function MobileActionBar({
   const t = useTranslations("listing.actionBar");
   const tCommon = useTranslations("common");
 
-  const item =
-    "flex min-h-14 flex-1 flex-col items-center justify-center gap-1 font-sans text-label uppercase tracking-[0.12em] text-ivory transition-colors duration-200 active:bg-ink-3";
+  // The colours live in the variants, never in the shared base: two `text-*`
+  // utilities on one element resolve by stylesheet order, not class order, and
+  // that once turned the booking label ivory on its own ivory fill.
+  const base =
+    "flex min-h-14 flex-1 flex-col items-center justify-center gap-1 font-sans text-label uppercase tracking-[0.12em] transition-colors duration-200";
+  const item = `${base} text-ivory active:bg-ink-3`;
+  const book = `${base} bg-ivory text-ink active:bg-ivory-2`;
 
   return (
     <nav
@@ -54,7 +59,7 @@ export function MobileActionBar({
         </a>
       ) : null}
       {canBook ? (
-        <a href="#razgledanje" data-contact-tab="viewing" className={`${item} bg-ivory text-ink active:bg-ivory-2`}>
+        <a href="#razgledanje" data-contact-tab="viewing" className={book}>
           <CalendarDays aria-hidden="true" strokeWidth={1.25} className="size-5" />
           {t("book")}
         </a>

@@ -110,3 +110,58 @@ Each night-run step appends a section:
   - convex-auditor: 3 High / 3 Medium fixed, each High reproduced by a new test. No data exposure found.
 - Known issues / follow-ups: see night-run/state/steps/06.done.md (scale ceiling ~500 listings per scope → slim projection table; `/uporedi` and `/kontakt?message=` are step 10).
 - Verify: npm run verify -> OK (exit 0). e2e 121 passed / 39 skipped / 0 failed. vitest 98/98. i18n 781 keys x 4. audit-convex 144 functions, no problems. vitals /sr/nekretnine + /ru/nedvizhimost at 390/1440: LCP = first card image (584-616 ms), CLS 0.0000.
+
+## Step 07 - Listing detail page (2026-09-30 21:55)
+- Done:
+  - An earlier interrupted run had built the page (commits `3837a8c`…`7b4a00a`) without a done file. This run audited it against every PRD A5 bullet and the step brief, then closed the gaps below.
+  - `/[locale]/properties/[slug]` (`/sr/nekretnine/<slug>`…):
+    - server-rendered from `listings.bySlug`, with `notFound()` for anything not public and a permanent redirect from `slugRedirects`;
+    - sold/rented listings: ribbon, demoted price, no forms, similar listings.
+  - Gallery and media:
+    - 1 + 4 editorial gallery with room chips, opening yet-another-react-lightbox (Zoom, Thumbnails, Captions with room tags; keyboard and swipe);
+    - media tabs only when they have data: photos, plans, video facade, and 360°/3D slots (poster + "Uskoro"; prop contract in `components/tours/TourSlot.tsx`).
+  - Page content:
+    - price block with €/m², price-drop badge + history disclosure, RSD toggle and the Art. 18 line;
+    - key facts, description + highlights, grouped features, legal block with the verified-docs rule, commission;
+    - location map (exact pin or approximate circle) + POIs + neighbourhood teaser;
+    - mortgage and total-cost calculators (`lib/mortgage.ts`, `lib/costs.ts`).
+  - Contact and sharing:
+    - sticky agent card; phone action bar (Pozovi / Viber / WhatsApp / Zakaži);
+    - inquiry and viewing forms (zod, honeypot, consent + separate marketing opt-in, friendly rate-limit message);
+    - similar-listings rail; share row.
+  - SEO and tracking:
+    - `generateMetadata` with canonical + hreflang;
+    - JSON-LD `RealEstateListing` + `Offer` + `Apartment|House…` + `BreadcrumbList`;
+    - a JPEG share image at the localized public URL;
+    - one tracked view per session.
+  - This run:
+    - convex-auditor pass on the page's backend: 0 Critical, 2 High, 7 Medium; both Highs and the in-scope Mediums/Lows fixed:
+      - server-side Belgrade time;
+      - slot-grid enforcement and one open request per address;
+      - per-address limits;
+      - off-market and hidden-agent guards;
+      - POI rounding;
+      - published-only price history;
+      - `hasTour`;
+      - self-rescheduling view-log prune.
+    - A 12 s map load deadline with an "unavailable" notice.
+    - Fixed the invisible "Zakaži" label on the phone bar.
+    - Fixed a hydration race in the view-count e2e.
+- Files: `convex/lib/belgradeTime.ts` (new), `convex/{viewings,agents,leads,stats}.ts`, `convex/lib/{dto,rateLimit,derive,search,errors,validators}.ts`, `convex/tests/listingDetail.test.ts` (new, 14 cases), `components/forms/ViewingForm.tsx`, `components/map/{useLoadDeadline.ts,ListingMap,ListingMapLoader,SearchMap,SearchMapLoader}.tsx`, `components/site/listing/MobileActionBar.tsx`, `lib/errors.ts`, `messages/*.json` (+3 keys), `tests/e2e/{listing-detail,search}.spec.ts`, `lib/belgrade-time.test.ts`.
+- Decisions: see `[07]` entries dated 2026-09-30 in DECISIONS.md:
+  - server-side Belgrade time;
+  - web viewing = one grid step;
+  - per-address limits over global windows;
+  - off-market guards;
+  - agency card for hidden agents;
+  - POI rounding;
+  - `hasTour`;
+  - map load deadline;
+  - no two `text-*` utilities.
+- Known issues / follow-ups:
+  - OpenFreeMap was unreachable from this machine all evening: 2 desktop map e2e cases skipped with that reason.
+  - Turnstile is not wired (it needs keys).
+  - Preview-token expiry is trusted from the client (step 08).
+  - The broker-registry number is still the demo placeholder "000".
+  - See `night-run/state/steps/07.done.md`.
+- Verify: npm run verify -> OK; vitest 112/112; e2e 131 passed / 41 skipped / 0 failed (listing spec 37/37 after the last fix)

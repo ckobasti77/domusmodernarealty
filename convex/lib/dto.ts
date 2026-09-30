@@ -32,7 +32,8 @@ import {
   tourProviderV,
   transactionV,
 } from "./validators";
-import type { AddressVisibility, ImageRef, MediaItem } from "./validators";
+import { publicCoords } from "./geo";
+import type { ImageRef, MediaItem } from "./validators";
 
 /* ----------------------------------------------------------------- images */
 
@@ -88,41 +89,6 @@ async function publicImageList(
     if (resolved !== null) out.push(resolved);
   }
   return out;
-}
-
-/* ------------------------------------------------------------ coordinates */
-
-/**
- * Public coordinates.
- *
- * Snapping, NOT jittering. A deterministic offset derived from the document id
- * is invertible — the id ships next to the coordinates in the same DTO and the
- * algorithm is in this repo, so anyone could subtract it and recover the exact
- * address. Rounding to a grid destroys the information instead:
- *  - "exact"  → untouched;
- *  - "street" → ~110 m cell, which hides the house number but keeps the street;
- *  - "area"   → ~550 m cell, i.e. roughly a neighborhood block.
- */
-const STREET_GRID = 0.001;
-const AREA_GRID = 0.005;
-
-function snap(value: number, grid: number): number {
-  return Math.round(value / grid) * grid;
-}
-
-export function publicCoords(
-  _id: string,
-  lat: number,
-  lng: number,
-  visibility: AddressVisibility,
-): { lat: number; lng: number; precision: AddressVisibility } {
-  if (visibility === "exact") return { lat, lng, precision: "exact" };
-  const grid = visibility === "street" ? STREET_GRID : AREA_GRID;
-  return {
-    lat: snap(lat, grid),
-    lng: snap(lng, grid),
-    precision: visibility,
-  };
 }
 
 /* ------------------------------------------------------------- location DTO */
@@ -222,6 +188,11 @@ export const listingCardV = v.object({
   floorNum: v.number(),
   totalFloors: v.optional(v.number()),
   cover: v.optional(publicImageV),
+  /**
+   * The first few gallery frames, cover first. Only the search results carry
+   * them (PRD A4 card carousel); every other card surface shows the cover.
+   */
+  images: v.optional(v.array(publicImageV)),
   photoCount: v.number(),
   cityId: v.id("locations"),
   municipalityId: v.optional(v.id("locations")),
@@ -245,14 +216,21 @@ export const listingCardV = v.object({
 });
 export type ListingCard = Infer<typeof listingCardV>;
 
+/** One map pin plus what its mini-card popup shows. */
 export const mapPointV = v.object({
   _id: v.id("listings"),
   slug: v.string(),
+  ref: v.string(),
   lat: v.number(),
   lng: v.number(),
   price: v.number(),
+  pricePerM2: v.number(),
+  priceOnRequest: v.optional(v.boolean()),
   transaction: transactionV,
   propertyType: propertyTypeV,
+  title: l10nV,
+  areaM2: v.number(),
+  rooms: v.number(),
   coverUrl: v.optional(v.string()),
 });
 export type MapPoint = Infer<typeof mapPointV>;
@@ -352,18 +330,34 @@ function labelOf(
   return (neighborhood ?? municipality ?? city)?.name ?? { sr: "Srbija" };
 }
 
+export type CardOptions = {
+  /** How many gallery frames to attach as `images` (0 = cover only). */
+  gallery?: number;
+};
+
 export async function toCard(
   ctx: QueryCtx,
   listing: Doc<"listings">,
+  options: CardOptions = {},
 ): Promise<ListingCard> {
   const { city, municipality, neighborhood } = await locationChain(ctx, listing);
+  const ordered = [...listing.media].sort((a, b) => a.order - b.order);
   const coverItem =
-    listing.media.find((item) => item.isCover === true) ??
-    [...listing.media].sort((a, b) => a.order - b.order)[0];
+    listing.media.find((item) => item.isCover === true) ?? ordered[0];
   const cover =
     coverItem !== undefined ? await publicImage(ctx, coverItem) : null;
+  const galleryCount = Math.min(Math.max(options.gallery ?? 0, 0), 8);
+  const images: PublicImage[] = [];
+  if (galleryCount > 1 && cover !== null) {
+    images.push(cover);
+    for (const item of ordered) {
+      if (images.length >= galleryCount) break;
+      if (item.id === coverItem?.id) continue;
+      const resolved = await publicImage(ctx, item);
+      if (resolved !== null) images.push(resolved);
+    }
+  }
   const coords = publicCoords(
-    listing._id,
     listing.location.lat,
     listing.location.lng,
     listing.location.addressVisibility,
@@ -391,6 +385,7 @@ export async function toCard(
     floorNum: listing.floorNum,
     ...(listing.totalFloors !== undefined ? { totalFloors: listing.totalFloors } : {}),
     ...(cover !== null ? { cover } : {}),
+    ...(images.length > 1 ? { images } : {}),
     photoCount: listing.media.length,
     cityId: listing.cityId,
     ...(listing.municipalityId !== undefined
@@ -429,7 +424,6 @@ export async function toMapPoint(
   listing: Doc<"listings">,
 ): Promise<MapPoint> {
   const coords = publicCoords(
-    listing._id,
     listing.location.lat,
     listing.location.lng,
     listing.location.addressVisibility,
@@ -441,11 +435,19 @@ export async function toMapPoint(
   return {
     _id: listing._id,
     slug: listing.slug,
+    ref: listing.ref,
     lat: coords.lat,
     lng: coords.lng,
     price: listing.price,
+    pricePerM2: listing.pricePerM2,
+    ...(listing.priceOnRequest !== undefined
+      ? { priceOnRequest: listing.priceOnRequest }
+      : {}),
     transaction: listing.transaction,
     propertyType: listing.propertyType,
+    title: listing.title,
+    areaM2: listing.areaM2,
+    rooms: listing.rooms,
     ...(coverUrl !== null ? { coverUrl } : {}),
   };
 }

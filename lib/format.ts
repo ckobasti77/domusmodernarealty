@@ -49,6 +49,24 @@ export function formatPrice(value: number, locale: Locale): string {
 }
 
 /**
+ * A map pin's price: short enough for a 20 px tall label. Sale prices drop to
+ * thousands ("215k €", "1,25M €" with the locale's decimal mark); rents and
+ * small figures stay in full.
+ */
+export function formatPinPrice(value: number, locale: Locale): string {
+  const intl = INTL_LOCALE[locale];
+  if (value >= 1_000_000) {
+    const millions = new Intl.NumberFormat(intl, { maximumFractionDigits: 2 }).format(value / 1_000_000);
+    return `${millions}M €`;
+  }
+  if (value >= 10_000) {
+    const thousands = new Intl.NumberFormat(intl, { maximumFractionDigits: 0 }).format(Math.round(value / 1_000));
+    return `${thousands}k €`;
+  }
+  return formatPrice(value, locale);
+}
+
+/**
  * The square-metre unit per locale. Russian writes it with a Cyrillic м, so a
  * hard-coded "m²" mixes scripts inside one string. These values MUST match
  * `units.m2` in `messages/*.json`; callers that already hold a translator

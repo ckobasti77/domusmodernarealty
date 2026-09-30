@@ -173,7 +173,59 @@
     "sortAreaDesc": "Wohnfläche: absteigend",
     "sortPricePerM2Asc": "€/m²: aufsteigend",
     "sortRelevance": "Relevanz",
-    "queryPlaceholder": "Viertel, Straße oder Objektnummer"
+    "queryPlaceholder": "Viertel, Straße oder Objektnummer",
+    "sortPricePerM2Desc": "€/m²: absteigend",
+    "title": {
+      "all": "{transaction, select, rent {Immobilien zur Miete} other {Immobilien zum Kauf}}",
+      "apartment": "{transaction, select, rent {Wohnungen zur Miete} other {Wohnungen zum Kauf}}",
+      "house": "{transaction, select, rent {Häuser zur Miete} other {Häuser zum Kauf}}",
+      "commercial": "{transaction, select, rent {Ladenlokale zur Miete} other {Ladenlokale zum Kauf}}",
+      "office": "{transaction, select, rent {Büros zur Miete} other {Büros zum Kauf}}",
+      "land": "{transaction, select, rent {Grundstücke zur Pacht} other {Grundstücke zum Kauf}}",
+      "garage": "{transaction, select, rent {Garagen zur Miete} other {Garagen zum Kauf}}",
+      "cottage": "{transaction, select, rent {Ferienhäuser zur Miete} other {Ferienhäuser zum Kauf}}"
+    },
+    "titleWithPlace": "{title} — {place}",
+    "metaDescription": "{title}. Suchen Sie nach Lage, Preis, Wohnfläche und Zimmerzahl – als Liste oder auf der Karte, mit Fotos und 3D-Touren.",
+    "breadcrumbLabel": "Navigationspfad",
+    "showResults": "{count, plural, one {# Ergebnis anzeigen} other {# Ergebnisse anzeigen}}",
+    "showResultsApprox": "{count}+ Ergebnisse anzeigen",
+    "counting": "Ergebnisse werden gezählt…",
+    "loadingResults": "Ergebnisse werden geladen…",
+    "shownOf": "{shown} von {total} angezeigt",
+    "empty": {
+      "suggestionsLabel": "Versuchen Sie es ohne einen dieser Filter:",
+      "ctaTitle": "Nicht die passende Immobilie gefunden?",
+      "ctaBody": "Beschreiben Sie uns, wonach Sie suchen, und wir melden uns, sobald ein passendes Angebot vorliegt. Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
+      "cta": "Suchwunsch senden",
+      "messagePrefix": "Ich suche: {summary}"
+    },
+    "view": {
+      "label": "Ergebnisansicht",
+      "list": "Liste",
+      "map": "Karte"
+    },
+    "map": {
+      "label": "Karte mit den Suchergebnissen",
+      "searchAsMove": "Beim Verschieben der Karte suchen",
+      "loading": "Karte wird geladen…",
+      "cluster": "{count, plural, one {# Immobilie} other {# Immobilien}} an dieser Stelle – zum Anzeigen hineinzoomen",
+      "pin": "{price} — {title}",
+      "truncated": "Die Karte zeigt die ersten {count} Ergebnisse.",
+      "viewListing": "Immobilie ansehen",
+      "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus."
+    },
+    "chips": {
+      "label": "Aktive Filter",
+      "remove": "Filter entfernen: {label}",
+      "clearAll": "Alle zurücksetzen",
+      "range": "{from} – {to}",
+      "from": "ab {value}",
+      "to": "bis {value}",
+      "floor": "Etage: {range}",
+      "query": "„{q}“",
+      "bbox": "Kartenausschnitt"
+    }
   },
   "filters": {
     "heading": "Filter",
@@ -197,7 +249,48 @@
     "location": "Lage",
     "addedWithin": "Online seit",
     "withTour": "Mit 3D-Tour",
-    "activeCount": "{count, plural, one {# Filter} other {# Filter}}"
+    "activeCount": "{count, plural, one {# Filter} other {# Filter}}",
+    "more": "Alle Filter",
+    "clearAll": "Alle zurücksetzen",
+    "done": "Fertig",
+    "from": "Von",
+    "to": "Bis",
+    "priceFrom": "Preis ab",
+    "priceTo": "Preis bis",
+    "areaFrom": "Wohnfläche ab",
+    "areaTo": "Wohnfläche bis",
+    "query": "Stichwortsuche",
+    "locationSearch": "Ort oder Stadtteil suchen",
+    "locationEmpty": "Keine passenden Gebiete gefunden.",
+    "locationCount": "{count, plural, one {# Gebiet} other {# Gebiete}}",
+    "locationIncluded": "Bereits über {name} ausgewählt",
+    "showChildren": "Teilgebiete anzeigen: {name}",
+    "hideChildren": "Teilgebiete ausblenden: {name}",
+    "roomsPlus": "5+",
+    "floorFrom": "Etage ab",
+    "floorTo": "Etage bis",
+    "floorAny": "Beliebig",
+    "notGround": "Kein Erdgeschoss",
+    "notTop": "Keine oberste Etage",
+    "toggle": {
+      "elevator": "Aufzug",
+      "outdoor": "Terrasse, Loggia oder Balkon",
+      "parking": "Parkplatz oder Garage",
+      "registered": "Im Grundbuch eingetragen",
+      "moveIn": "Bezugsfertig",
+      "furnished": "Möbliert",
+      "vatRefund": "MwSt.-Rückerstattung",
+      "mortgage": "Finanzierbar",
+      "exclusive": "Exklusiv",
+      "hasTour": "3D- oder 360°-Tour"
+    },
+    "added": {
+      "any": "Beliebig",
+      "1d": "In den letzten 24 Stunden",
+      "3d": "In den letzten 3 Tagen",
+      "7d": "In den letzten 7 Tagen",
+      "14d": "In den letzten 14 Tagen"
+    }
   },
   "listing": {
     "reference": "Objektnummer",
@@ -564,7 +657,15 @@
     "hasTour": "3D-Tour",
     "rooms": "{rooms, plural, one {# Zimmer} other {# Zimmer}}",
     "area": "{area} m²",
-    "floorOf": "{floor} / {total}"
+    "floorOf": "{floor} / {total}",
+    "priceReduced": "Preis gesenkt",
+    "registered": "Im Grundbuch eingetragen",
+    "newBuild": "Neubau",
+    "mortgage": "Finanzierbar",
+    "monthlyRate": "Rate ab ca. {amount} mtl.",
+    "monthlyRateDetails": "Unverbindlich berechnete Monatsrate bei {down} % Eigenkapital, {years} Jahren Laufzeit und einem Sollzins von {rate} %. Kein Angebot einer Bank.",
+    "compare": "Vergleichen",
+    "compareLabel": "Vergleichen: {title}"
   },
   "forms": {
     "name": "Vor- und Nachname",
@@ -702,7 +803,12 @@
     "limitReached": "{max, plural, one {Sie können höchstens # Immobilie vergleichen.} other {Sie können höchstens # Immobilien vergleichen.}}",
     "remove": "Entfernen",
     "bestValue": "Bester Wert",
-    "shareCta": "Vergleich teilen"
+    "shareCta": "Vergleich teilen",
+    "trayLabel": "Zum Vergleich ausgewählt",
+    "traySelected": "{count, plural, one {# Immobilie ausgewählt} other {# Immobilien ausgewählt}}",
+    "trayCta": "Vergleichen",
+    "trayClear": "Auswahl aufheben",
+    "trayRemove": "Aus dem Vergleich entfernen: {title}"
   },
   "legal": {
     "privacyHeading": "Datenschutzerklärung",

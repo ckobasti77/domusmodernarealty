@@ -20,7 +20,15 @@
     "floorOf": "{floor} / {total}",
     "hasTour": "3D tura",
     "new": "Novo",
-    "rooms": "{rooms, plural, one {# soba} few {# sobe} other {# soba}}"
+    "rooms": "{rooms, plural, one {# soba} few {# sobe} other {# soba}}",
+    "priceReduced": "Snižena cena",
+    "registered": "Uknjiženo",
+    "newBuild": "Novogradnja",
+    "mortgage": "Može na kredit",
+    "monthlyRate": "Rata od ~{amount}/mes.",
+    "monthlyRateDetails": "Informativna mesečna rata uz {down}% učešća, na {years, plural, one {# godinu} few {# godine} other {# godina}}, po nominalnoj kamati od {rate}%. Nije ponuda banke.",
+    "compare": "Uporedi",
+    "compareLabel": "Uporedi: {title}"
   },
   "common": {
     "all": "Sve",
@@ -52,7 +60,12 @@
     "lede": "Uporedite do četiri nekretnine jednu uz drugu.",
     "limitReached": "{max, plural, one {Možete uporediti najviše # nekretninu.} few {Možete uporediti najviše # nekretnine.} other {Možete uporediti najviše # nekretnina.}}",
     "remove": "Ukloni",
-    "shareCta": "Podelite poređenje"
+    "shareCta": "Podelite poređenje",
+    "trayLabel": "Izabrano za poređenje",
+    "traySelected": "{count, plural, one {# nekretnina izabrana} few {# nekretnine izabrane} other {# nekretnina izabrano}}",
+    "trayCta": "Uporedi",
+    "trayClear": "Očisti izbor",
+    "trayRemove": "Ukloni iz poređenja: {title}"
   },
   "consent": {
     "acceptAll": "Prihvatam sve",
@@ -126,7 +139,48 @@
     "rooms": "Struktura",
     "sale": "Prodaja",
     "transaction": "Tip oglasa",
-    "withTour": "Ima 3D turu"
+    "withTour": "Ima 3D turu",
+    "more": "Svi filteri",
+    "clearAll": "Obriši sve",
+    "done": "Gotovo",
+    "from": "Od",
+    "to": "Do",
+    "priceFrom": "Cena od",
+    "priceTo": "Cena do",
+    "areaFrom": "Kvadratura od",
+    "areaTo": "Kvadratura do",
+    "query": "Pretraga po tekstu",
+    "locationSearch": "Pretražite lokacije",
+    "locationEmpty": "Nijedna lokacija ne odgovara pretrazi.",
+    "locationCount": "{count, plural, one {# lokacija} few {# lokacije} other {# lokacija}}",
+    "locationIncluded": "Već obuhvaćeno izborom: {name}",
+    "showChildren": "Prikaži uža područja: {name}",
+    "hideChildren": "Sakrij uža područja: {name}",
+    "roomsPlus": "5+",
+    "floorFrom": "Sprat od",
+    "floorTo": "Sprat do",
+    "floorAny": "Bilo koji",
+    "notGround": "Nije prizemlje",
+    "notTop": "Nije poslednji sprat",
+    "toggle": {
+      "elevator": "Lift",
+      "outdoor": "Terasa, lođa ili balkon",
+      "parking": "Parking ili garaža",
+      "registered": "Uknjiženo",
+      "moveIn": "Useljivo",
+      "furnished": "Namešteno",
+      "vatRefund": "Povraćaj PDV-a",
+      "mortgage": "Može na kredit",
+      "exclusive": "Ekskluzivno",
+      "hasTour": "3D ili 360° tura"
+    },
+    "added": {
+      "any": "Bilo kada",
+      "1d": "U poslednja 24 sata",
+      "3d": "U poslednja 3 dana",
+      "7d": "U poslednjih 7 dana",
+      "14d": "U poslednjih 14 dana"
+    }
   },
   "footer": {
     "aboutHeading": "Agencija",
@@ -706,7 +760,59 @@
     "sortPriceAsc": "Cena: rastuće",
     "sortPriceDesc": "Cena: opadajuće",
     "sortPricePerM2Asc": "€/m²: rastuće",
-    "sortRelevance": "Relevantnost"
+    "sortRelevance": "Relevantnost",
+    "sortPricePerM2Desc": "€/m²: opadajuće",
+    "title": {
+      "all": "{transaction, select, rent {Nekretnine za izdavanje} other {Nekretnine na prodaju}}",
+      "apartment": "{transaction, select, rent {Stanovi za izdavanje} other {Stanovi na prodaju}}",
+      "house": "{transaction, select, rent {Kuće za izdavanje} other {Kuće na prodaju}}",
+      "commercial": "{transaction, select, rent {Lokali za izdavanje} other {Lokali na prodaju}}",
+      "office": "{transaction, select, rent {Kancelarije za izdavanje} other {Kancelarije na prodaju}}",
+      "land": "{transaction, select, rent {Placevi za izdavanje} other {Placevi na prodaju}}",
+      "garage": "{transaction, select, rent {Garaže za izdavanje} other {Garaže na prodaju}}",
+      "cottage": "{transaction, select, rent {Vikendice za izdavanje} other {Vikendice na prodaju}}"
+    },
+    "titleWithPlace": "{title} — {place}",
+    "metaDescription": "{title}. Pretražite ponudu po lokaciji, ceni, kvadraturi i strukturi, na listi ili na mapi, sa fotografijama i 3D turama.",
+    "breadcrumbLabel": "Putanja",
+    "showResults": "{count, plural, one {Prikaži # rezultat} few {Prikaži # rezultata} other {Prikaži # rezultata}}",
+    "showResultsApprox": "Prikaži {count}+ rezultata",
+    "counting": "Brojanje rezultata…",
+    "loadingResults": "Učitavanje rezultata…",
+    "shownOf": "Prikazano {shown} od {total}",
+    "empty": {
+      "suggestionsLabel": "Pokušajte da uklonite neki od filtera:",
+      "ctaTitle": "Niste pronašli pravu nekretninu?",
+      "ctaBody": "Opišite nam šta tražite i javićemo Vam se čim naiđemo na odgovarajuću ponudu. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+      "cta": "Pošaljite nam šta tražite",
+      "messagePrefix": "Tražim: {summary}"
+    },
+    "view": {
+      "label": "Prikaz rezultata",
+      "list": "Lista",
+      "map": "Mapa"
+    },
+    "map": {
+      "label": "Mapa rezultata pretrage",
+      "searchAsMove": "Pretraga pri pomeranju mape",
+      "loading": "Učitavanje mape…",
+      "cluster": "{count, plural, one {# nekretnina} few {# nekretnine} other {# nekretnina}} na ovom mestu — uvećajte mapu",
+      "pin": "{price} — {title}",
+      "truncated": "Mapa prikazuje prvih {count} rezultata.",
+      "viewListing": "Pogledajte nekretninu",
+      "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu."
+    },
+    "chips": {
+      "label": "Aktivni filteri",
+      "remove": "Ukloni filter: {label}",
+      "clearAll": "Obriši sve",
+      "range": "{from} – {to}",
+      "from": "od {value}",
+      "to": "do {value}",
+      "floor": "Sprat: {range}",
+      "query": "„{q}”",
+      "bbox": "Oblast na mapi"
+    }
   },
   "sell": {
     "benefitsHeading": "Šta dobijate",

@@ -590,7 +590,22 @@ export const floorBandV = v.union(
   v.literal("attic"),
 );
 
-/** Everything the public search accepts. All optional; absent = no constraint. */
+/** A map viewport in degrees (WGS84). */
+export const bboxV = v.object({
+  west: v.number(),
+  south: v.number(),
+  east: v.number(),
+  north: v.number(),
+});
+
+/**
+ * Everything the public search accepts. All optional; absent = no constraint.
+ *
+ * The three location arrays are ONE multi-select: a listing matches when its
+ * city, municipality OR neighborhood is among the selected ids (the search
+ * page sends a node from any level of the tree, and "Vračar + Dorćol" must mean
+ * both places, not their empty intersection).
+ */
 export const searchFiltersV = v.object({
   q: v.optional(v.string()),
   /**
@@ -625,16 +640,17 @@ export const searchFiltersV = v.object({
   vatRefund: v.optional(v.boolean()),
   mortgage: v.optional(v.boolean()),
   exclusive: v.optional(v.boolean()),
+  /** Any private outdoor space: terrace, loggia, balcony or French balcony. */
+  outdoor: v.optional(v.boolean()),
   hasTour: v.optional(v.boolean()),
   agentId: v.optional(v.id("agents")),
   /** Absolute epoch ms, computed on the client from "added in last N days". */
   publishedAfter: v.optional(v.number()),
+  /**
+   * "Search as I move the map": tested against the PUBLIC (snapped)
+   * coordinates, i.e. exactly where the pin is drawn.
+   */
+  bbox: v.optional(bboxV),
 });
 export type SearchFilters = Infer<typeof searchFiltersV>;
 
-export const bboxV = v.object({
-  west: v.number(),
-  south: v.number(),
-  east: v.number(),
-  north: v.number(),
-});

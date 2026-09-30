@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { api, internal } from "../_generated/api";
 import { testApp } from "../../tests/unit/convex-harness";
 import { makeAgent, makeListing, makeLocation } from "./fixtures";
-import { normalizeText } from "../lib/search";
+import { normalizeText, pickDriver } from "../lib/search";
 import { computeValuation, floorToNumber } from "../lib/money";
 import { foldDiacritics, listingSlug, slugify } from "../lib/slug";
 
@@ -236,6 +236,69 @@ describe("listings.search filters", () => {
     expect(byNeighborhood.page).toHaveLength(1);
   });
 
+  test("locations from different levels are one OR-ed multi-select", async () => {
+    const { t, ids } = await fixture();
+    // Neimar (one listing) + Novi Sad (one listing): both, not the empty intersection.
+    const mixed = await t.query(api.listings.search, {
+      filters: {
+        transaction: "sale",
+        cityId: [ids.otherCity],
+        neighborhoodId: [ids.neighborhood],
+      },
+      sort: "newest",
+      paginationOpts: PAGE,
+    });
+    expect(mixed.page).toHaveLength(2);
+
+    // Two places + a price range must not ride a single-place index.
+    const ranged = await t.query(api.listings.search, {
+      filters: {
+        transaction: "sale",
+        cityId: [ids.otherCity],
+        municipalityId: [ids.municipality],
+        priceMin: 100_000,
+        priceMax: 800_000,
+      },
+      sort: "price_asc",
+      paginationOpts: PAGE,
+    });
+    expect(ranged.page.map((card) => card.price)).toEqual([150_000, 200_000, 700_000]);
+    expect(
+      pickDriver(
+        { transaction: "sale", cityId: [ids.otherCity], municipalityId: [ids.municipality], priceMin: 1 },
+        "newest",
+      ).driver,
+    ).toBe("price");
+  });
+
+  test("walking the cursor returns every match once, with a tiny page size", async () => {
+    const { t } = await fixture();
+    const seen: string[] = [];
+    let cursor: string | null = null;
+    for (let guard = 0; guard < 10; guard += 1) {
+      const result: { page: { _id: string }[]; isDone: boolean; continueCursor: string } = await t.query(
+        api.listings.search,
+        { filters: { transaction: "sale", features: ["elevator"] }, sort: "price_asc", paginationOpts: { cursor, numItems: 1 } },
+      );
+      seen.push(...result.page.map((card) => card._id));
+      if (result.isDone) break;
+      cursor = result.continueCursor;
+    }
+    const counted = await t.query(api.listings.count, { filters: { transaction: "sale", features: ["elevator"] } });
+    expect(seen).toHaveLength(counted.count);
+    expect(new Set(seen).size).toBe(seen.length);
+  });
+
+  test("the outdoor toggle accepts a terrace, loggia or balcony", async () => {
+    const { t } = await fixture();
+    const outdoor = await t.query(api.listings.search, {
+      filters: { transaction: "sale", outdoor: true },
+      sort: "newest",
+      paginationOpts: PAGE,
+    });
+    expect(outdoor.page).toHaveLength(2);
+  });
+
   test("every sort order is honoured", async () => {
     const { t } = await fixture();
     const asc = await t.query(api.listings.search, {
@@ -305,10 +368,53 @@ describe("listings.search filters", () => {
     expect(all.truncated).toBe(false);
 
     const none = await t.query(api.listings.mapPoints, {
-      filters: { transaction: "sale" },
-      bbox: { west: 0, south: 0, east: 1, north: 1 },
+      filters: { transaction: "sale", bbox: { west: 0, south: 0, east: 1, north: 1 } },
     });
     expect(none.points).toHaveLength(0);
+
+    // The fixture pins sit at 44.8 / 20.45 ("area" precision snaps to the same cell).
+    const belgrade = { west: 20.3, south: 44.7, east: 20.6, north: 44.9 };
+    const inside = await t.query(api.listings.mapPoints, {
+      filters: { transaction: "sale", bbox: belgrade },
+    });
+    expect(inside.points).toHaveLength(4);
+    const listed = await t.query(api.listings.search, {
+      filters: { transaction: "sale", bbox: belgrade },
+      sort: "newest",
+      paginationOpts: PAGE,
+    });
+    expect(listed.page.map((card) => card._id).sort()).toEqual(
+      inside.points.map((point) => point._id).sort(),
+    );
+    const counted = await t.query(api.listings.count, {
+      filters: { transaction: "sale", bbox: { west: 0, south: 0, east: 1, north: 1 } },
+    });
+    expect(counted).toEqual({ count: 0, exact: true });
+  });
+
+  test("map points carry what the pin popup shows", async () => {
+    const { t } = await fixture();
+    const { points } = await t.query(api.listings.mapPoints, {
+      filters: { transaction: "sale", rooms: [4] },
+    });
+    expect(points).toHaveLength(1);
+    expect(points[0]).toMatchObject({ price: 700_000, areaM2: 130, rooms: 4 });
+    expect(points[0].title.sr).toContain("Penthaus");
+  });
+
+  test("search cards carry a short gallery, other card surfaces only the cover", async () => {
+    const { t } = await fixture();
+    const result = await t.query(api.listings.search, {
+      filters: { transaction: "sale" },
+      sort: "newest",
+      paginationOpts: PAGE,
+    });
+    for (const card of result.page) {
+      expect(card.images).toHaveLength(5);
+      expect(card.images?.[0].id).toBe(card.cover?.id);
+    }
+    const featured = await t.query(api.listings.featured, {});
+    expect(featured.every((card) => card.images === undefined)).toBe(true);
   });
 
   test("bySlug resolves published and sold, refuses drafts, and follows redirects", async () => {

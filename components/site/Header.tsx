@@ -63,6 +63,22 @@ export function Header() {
     { scope: header },
   );
 
+  // Publishes the bar's height as `--header-h`, so sticky page chrome (the
+  // search filter bar and map) can sit exactly under the fixed header.
+  useEffect(() => {
+    const node = header.current;
+    if (node === null) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty("--header-h", `${Math.round(node.getBoundingClientRect().height)}px`);
+    });
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--header-h");
+    };
+  }, []);
+
   const close = useCallback(() => setMenu((prev) => ({ ...prev, open: false })), []);
 
   return (

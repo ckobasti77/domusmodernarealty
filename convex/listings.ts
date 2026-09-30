@@ -1,7 +1,7 @@
 import { paginationOptsValidator } from "convex/server";
-import type { PaginationOptions, PaginationResult } from "convex/server";
+import type { NamedTableInfo, OrderedQuery } from "convex/server";
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
+import type { DataModel, Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import {
@@ -14,10 +14,9 @@ import {
 } from "./lib/dto";
 import type { ListingCard } from "./lib/dto";
 import {
-  BATCH_SIZE,
-  COUNT_BATCHES,
-  MAX_BATCHES,
+  COUNT_SCAN,
   MAX_POINTS,
+  SEARCH_SCAN,
   TEXT_TAKE,
   compareListings,
   driverDescending,
@@ -28,55 +27,38 @@ import {
   pickDriver,
 } from "./lib/search";
 import type { DriverPlan } from "./lib/search";
-import { bboxV, searchFiltersV, sortV } from "./lib/validators";
+import { searchFiltersV, sortV } from "./lib/validators";
 import type { SearchFilters, Sort } from "./lib/validators";
 
-/* -------------------------------------------------------------- driver pages */
+/** Gallery frames attached to each search result card (PRD A4 carousel). */
+const SEARCH_CARD_FRAMES = 5;
 
-type DriverPage = Pick<
-  PaginationResult<Doc<"listings">>,
-  "page" | "isDone" | "continueCursor"
->;
+/* ------------------------------------------------------------ driver queries */
+
+type ListingQuery = OrderedQuery<NamedTableInfo<DataModel, "listings">>;
 
 /**
- * Runs ONE page of the chosen driver index. Every branch is written out so the
- * Convex index-range types stay exact; `pickDriver` guarantees a range filter
- * only ever lands on the last indexed field.
+ * The index range for a driver, ordered and ready to `.paginate()` or
+ * `.take()`. Every branch is written out so the Convex index-range types stay
+ * exact; `pickDriver` guarantees a range filter only ever lands on the last
+ * indexed field. Text search is handled by the callers (relevance order only).
  */
-async function driverPage(
+function driverQuery(
   ctx: QueryCtx,
   scope: string,
   filters: SearchFilters,
   plan: DriverPlan,
   sort: Sort,
-  opts: PaginationOptions,
-): Promise<DriverPage> {
+): ListingQuery {
   const order = driverDescending(sort) ? "desc" : "asc";
   const { priceMin, priceMax, areaMin, areaMax } = filters;
+  const listings = ctx.db.query("listings");
 
   switch (plan.driver) {
-    case "price":
-      return await ctx.db
-        .query("listings")
-        .withIndex("by_scope_and_price", (q) => {
-          const base = q.eq("scope", scope);
-          if (priceMin !== undefined && priceMax !== undefined) {
-            return base.gte("price", priceMin).lte("price", priceMax);
-          }
-          if (priceMin !== undefined) return base.gte("price", priceMin);
-          if (priceMax !== undefined) return base.lte("price", priceMax);
-          return base;
-        })
-        .order(order)
-        .paginate(opts);
-
     case "cityPrice": {
       const cityId = filters.cityId?.[0];
-      if (cityId === undefined) {
-        return await driverPage(ctx, scope, filters, { ...plan, driver: "price" }, sort, opts);
-      }
-      return await ctx.db
-        .query("listings")
+      if (cityId === undefined) break;
+      return listings
         .withIndex("by_scope_and_cityId_and_price", (q) => {
           const base = q.eq("scope", scope).eq("cityId", cityId);
           if (priceMin !== undefined && priceMax !== undefined) {
@@ -86,17 +68,13 @@ async function driverPage(
           if (priceMax !== undefined) return base.lte("price", priceMax);
           return base;
         })
-        .order(order)
-        .paginate(opts);
+        .order(order);
     }
 
     case "municipalityPrice": {
       const municipalityId = filters.municipalityId?.[0];
-      if (municipalityId === undefined) {
-        return await driverPage(ctx, scope, filters, { ...plan, driver: "price" }, sort, opts);
-      }
-      return await ctx.db
-        .query("listings")
+      if (municipalityId === undefined) break;
+      return listings
         .withIndex("by_scope_and_municipalityId_and_price", (q) => {
           const base = q.eq("scope", scope).eq("municipalityId", municipalityId);
           if (priceMin !== undefined && priceMax !== undefined) {
@@ -106,13 +84,24 @@ async function driverPage(
           if (priceMax !== undefined) return base.lte("price", priceMax);
           return base;
         })
-        .order(order)
-        .paginate(opts);
+        .order(order);
+    }
+
+    case "neighborhoodPublishedAt": {
+      const neighborhoodId = filters.neighborhoodId?.[0];
+      if (neighborhoodId === undefined) break;
+      return listings
+        .withIndex("by_scope_and_neighborhoodId_and_publishedAt", (q) => {
+          const base = q.eq("scope", scope).eq("neighborhoodId", neighborhoodId);
+          return filters.publishedAfter !== undefined
+            ? base.gte("publishedAt", filters.publishedAfter)
+            : base;
+        })
+        .order(order);
     }
 
     case "areaM2":
-      return await ctx.db
-        .query("listings")
+      return listings
         .withIndex("by_scope_and_areaM2", (q) => {
           const base = q.eq("scope", scope);
           if (areaMin !== undefined && areaMax !== undefined) {
@@ -122,123 +111,66 @@ async function driverPage(
           if (areaMax !== undefined) return base.lte("areaM2", areaMax);
           return base;
         })
-        .order(order)
-        .paginate(opts);
+        .order(order);
 
     case "pricePerM2":
-      return await ctx.db
-        .query("listings")
+      return listings
         .withIndex("by_scope_and_pricePerM2", (q) => q.eq("scope", scope))
-        .order(order)
-        .paginate(opts);
-
-    case "neighborhoodPublishedAt": {
-      const neighborhoodId = filters.neighborhoodId?.[0];
-      if (neighborhoodId === undefined) {
-        return await driverPage(
-          ctx,
-          scope,
-          filters,
-          { ...plan, driver: "publishedAt" },
-          sort,
-          opts,
-        );
-      }
-      return await ctx.db
-        .query("listings")
-        .withIndex("by_scope_and_neighborhoodId_and_publishedAt", (q) => {
-          const base = q.eq("scope", scope).eq("neighborhoodId", neighborhoodId);
-          return filters.publishedAfter !== undefined
-            ? base.gte("publishedAt", filters.publishedAfter)
-            : base;
-        })
-        .order(order)
-        .paginate(opts);
-    }
-
-    case "text": {
-      const normalized = normalizeText(filters.q ?? "");
-      const found = await ctx.db
-        .query("listings")
-        .withSearchIndex("search_text", (q) =>
-          q.search("searchText", normalized).eq("scope", scope),
-        )
-        .take(TEXT_TAKE);
-      // Relevance order only, and a hard 1024-document scan cap: text search is
-      // therefore a single bounded page, never a cursor walk.
-      return { page: found, isDone: true, continueCursor: "" };
-    }
+        .order(order);
 
     case "publishedAt":
-    default:
-      return await ctx.db
-        .query("listings")
-        .withIndex("by_scope_and_publishedAt", (q) => {
+    case "text":
+      break;
+
+    case "price":
+      return listings
+        .withIndex("by_scope_and_price", (q) => {
           const base = q.eq("scope", scope);
-          return filters.publishedAfter !== undefined
-            ? base.gte("publishedAt", filters.publishedAfter)
-            : base;
+          if (priceMin !== undefined && priceMax !== undefined) {
+            return base.gte("price", priceMin).lte("price", priceMax);
+          }
+          if (priceMin !== undefined) return base.gte("price", priceMin);
+          if (priceMax !== undefined) return base.lte("price", priceMax);
+          return base;
         })
-        .order(order)
-        .paginate(opts);
+        .order(order);
   }
+
+  // A location driver whose id went missing falls back to the date index; a
+  // price range cannot, so it keeps the global price index.
+  if (plan.driver === "cityPrice" || plan.driver === "municipalityPrice") {
+    return driverQuery(ctx, scope, filters, { ...plan, driver: "price" }, sort);
+  }
+  return listings
+    .withIndex("by_scope_and_publishedAt", (q) => {
+      const base = q.eq("scope", scope);
+      return filters.publishedAfter !== undefined
+        ? base.gte("publishedAt", filters.publishedAfter)
+        : base;
+    })
+    .order(order);
 }
 
-type Collected = {
-  docs: Doc<"listings">[];
-  scanned: number;
-  isDone: boolean;
-  continueCursor: string;
-  batches: number;
-};
-
-/**
- * Walks the driver index in bounded batches, post-filtering each batch, until
- * `target` matches exist or the index is exhausted. The FIRST call forwards
- * `opts` verbatim so reactive pagination keeps its native behaviour.
- */
-async function collectMatches(
-  ctx: QueryCtx,
-  filters: SearchFilters,
-  plan: DriverPlan,
-  sort: Sort,
-  opts: PaginationOptions,
-  target: number,
-  maxBatches: number,
-): Promise<Collected> {
-  const scope = listedScope(filters.transaction);
-  const docs: Doc<"listings">[] = [];
-  let scanned = 0;
-  let isDone = false;
-  let continueCursor = "";
-  let batches = 0;
-  let cursor: string | null = opts.cursor;
-
-  while (batches < maxBatches) {
-    const page = await driverPage(
-      ctx,
-      scope,
-      filters,
-      plan,
-      sort,
-      batches === 0 ? opts : { cursor, numItems: BATCH_SIZE },
-    );
-    scanned += page.page.length;
-    for (const doc of page.page) {
-      if (matches(doc, filters)) docs.push(doc);
-    }
-    isDone = page.isDone;
-    continueCursor = page.continueCursor;
-    cursor = page.continueCursor;
-    batches += 1;
-    if (isDone || docs.length >= target) break;
-  }
-
-  return { docs, scanned, isDone, continueCursor, batches };
+/** Relevance-ordered text matches: one bounded read, never a cursor walk. */
+async function textMatches(ctx: QueryCtx, scope: string, filters: SearchFilters) {
+  const normalized = normalizeText(filters.q ?? "");
+  return await ctx.db
+    .query("listings")
+    .withSearchIndex("search_text", (q) => q.search("searchText", normalized).eq("scope", scope))
+    .take(TEXT_TAKE);
 }
 
 /* ------------------------------------------------------------------- queries */
 
+/**
+ * One page of results. Convex allows ONE `.paginate()` per function, so a page
+ * is a single window of the driver index — at least `SEARCH_SCAN` documents —
+ * post-filtered by `matches()`. A selective filter can therefore return a short
+ * (even empty) page with `isDone: false`; `usePaginatedQuery` handles short
+ * pages and "load more" reads the next window. `paginationOpts` is forwarded
+ * with only `numItems` widened, so `cursor`, `endCursor`, `id` and
+ * `maximumRowsRead` keep their native behaviour.
+ */
 export const search = query({
   args: {
     filters: searchFiltersV,
@@ -256,53 +188,70 @@ export const search = query({
   }),
   handler: async (ctx, args) => {
     const plan = pickDriver(args.filters, args.sort);
-    const collected = await collectMatches(
-      ctx,
-      args.filters,
-      plan,
-      args.sort,
-      args.paginationOpts,
-      args.paginationOpts.numItems,
-      MAX_BATCHES,
-    );
+    const scope = listedScope(args.filters.transaction);
 
+    const window =
+      plan.driver === "text"
+        ? { page: await textMatches(ctx, scope, args.filters), isDone: true, continueCursor: "" }
+        : await driverQuery(ctx, scope, args.filters, plan, args.sort).paginate({
+            ...args.paginationOpts,
+            numItems: Math.max(args.paginationOpts.numItems, SEARCH_SCAN),
+          });
+
+    const matched = window.page.filter((doc) => matches(doc, args.filters));
     const ordered = plan.orderedInWindow
-      ? [...collected.docs].sort((a, b) => compareListings(a, b, args.sort))
-      : collected.docs;
+      ? matched.sort((a, b) => compareListings(a, b, args.sort))
+      : matched;
 
     const cards: ListingCard[] = [];
-    for (const doc of ordered) cards.push(await toCard(ctx, doc));
+    for (const doc of ordered) {
+      cards.push(await toCard(ctx, doc, { gallery: SEARCH_CARD_FRAMES }));
+    }
 
     return {
       page: cards,
-      isDone: collected.isDone,
-      continueCursor: collected.continueCursor,
-      scanned: collected.scanned,
+      isDone: window.isDone,
+      continueCursor: window.continueCursor,
+      scanned: window.page.length,
       orderedInWindow: plan.orderedInWindow,
     };
   },
 });
 
+/**
+ * How many listings match, from one bounded read of the driver range
+ * (`COUNT_SCAN` documents). `exact` is false when the range holds more than
+ * that — the UI then renders "N+".
+ */
 export const count = query({
   args: { filters: searchFiltersV },
   returns: v.object({ count: v.number(), exact: v.boolean() }),
   handler: async (ctx, args) => {
     const plan = pickDriver(args.filters, "newest");
-    const collected = await collectMatches(
-      ctx,
-      args.filters,
-      plan,
-      "newest",
-      { cursor: null, numItems: BATCH_SIZE },
-      Number.MAX_SAFE_INTEGER,
-      COUNT_BATCHES,
-    );
-    return { count: collected.docs.length, exact: collected.isDone };
+    const scope = listedScope(args.filters.transaction);
+    if (plan.driver === "text") {
+      const found = await textMatches(ctx, scope, args.filters);
+      return {
+        count: found.filter((doc) => matches(doc, args.filters)).length,
+        exact: found.length < TEXT_TAKE,
+      };
+    }
+    const docs = await driverQuery(ctx, scope, args.filters, plan, "newest").take(COUNT_SCAN + 1);
+    const scanned = docs.slice(0, COUNT_SCAN);
+    return {
+      count: scanned.filter((doc) => matches(doc, args.filters)).length,
+      exact: docs.length <= COUNT_SCAN,
+    };
   },
 });
 
+/**
+ * Every pin for a search, including `filters.bbox` when "search as I move the
+ * map" is on — the same `matches()` as `search`, so the map and the list show
+ * one result set.
+ */
 export const mapPoints = query({
-  args: { filters: searchFiltersV, bbox: v.optional(bboxV) },
+  args: { filters: searchFiltersV },
   returns: v.object({
     points: v.array(mapPointV),
     truncated: v.boolean(),
@@ -318,19 +267,7 @@ export const mapPoints = query({
     const points = [];
     for (const doc of found) {
       if (!matches(doc, args.filters)) continue;
-      const point = await toMapPoint(ctx, doc);
-      if (args.bbox !== undefined) {
-        const { west, south, east, north } = args.bbox;
-        if (
-          point.lng < west ||
-          point.lng > east ||
-          point.lat < south ||
-          point.lat > north
-        ) {
-          continue;
-        }
-      }
-      points.push(point);
+      points.push(await toMapPoint(ctx, doc));
     }
 
     return { points, truncated: found.length === MAX_POINTS };

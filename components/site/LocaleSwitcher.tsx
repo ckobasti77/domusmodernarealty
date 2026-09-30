@@ -48,9 +48,18 @@ export function LocaleSwitcher({
 
   // `usePathname()` can return a dynamic template such as `/properties/[slug]`,
   // which `replace()` only accepts together with its `params`. The route-aware
-  // overload cannot express "whatever the current route is", so the pair is
-  // asserted to the href type — the values themselves come straight from Next.
-  const target = { pathname, params } as RouteHref;
+  // overload cannot express "whatever the current route is", so the href is
+  // asserted to the route type at the call — its values come straight from Next.
+  const target = { pathname, params };
+
+  // The query string is locale-independent (lib/search-params.ts), so a
+  // filtered search keeps every filter across a language switch. It is read at
+  // click time: the search page updates it through the History API, and a
+  // `useSearchParams()` here would opt every page into client rendering.
+  const switchTo = (locale: Locale) => {
+    const query = Object.fromEntries(new URLSearchParams(window.location.search));
+    router.replace({ ...target, query } as RouteHref, { locale });
+  };
 
   const stacked = variant === "stacked";
 
@@ -65,7 +74,7 @@ export function LocaleSwitcher({
                 type="button"
                 lang={locale}
                 aria-current={isActive ? "true" : undefined}
-                onClick={() => router.replace(target, { locale })}
+                onClick={() => switchTo(locale)}
                 className={cn(
                   "transition-colors duration-200",
                   stacked

@@ -28,6 +28,7 @@ import type * as lib_counts from "../lib/counts.js";
 import type * as lib_derive from "../lib/derive.js";
 import type * as lib_dto from "../lib/dto.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_geo from "../lib/geo.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_search from "../lib/search.js";
@@ -96,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   "lib/derive": typeof lib_derive;
   "lib/dto": typeof lib_dto;
   "lib/errors": typeof lib_errors;
+  "lib/geo": typeof lib_geo;
   "lib/money": typeof lib_money;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/search": typeof lib_search;

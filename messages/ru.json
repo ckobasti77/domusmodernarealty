@@ -173,7 +173,59 @@
     "sortAreaDesc": "Площадь: по убыванию",
     "sortPricePerM2Asc": "€/м²: по возрастанию",
     "sortRelevance": "Релевантность",
-    "queryPlaceholder": "Район, улица или код объекта"
+    "queryPlaceholder": "Район, улица или код объекта",
+    "sortPricePerM2Desc": "€/м²: по убыванию",
+    "title": {
+      "all": "{transaction, select, rent {Аренда недвижимости} other {Продажа недвижимости}}",
+      "apartment": "{transaction, select, rent {Аренда квартир} other {Продажа квартир}}",
+      "house": "{transaction, select, rent {Аренда домов} other {Продажа домов}}",
+      "commercial": "{transaction, select, rent {Аренда коммерческих помещений} other {Продажа коммерческих помещений}}",
+      "office": "{transaction, select, rent {Аренда офисов} other {Продажа офисов}}",
+      "land": "{transaction, select, rent {Аренда участков} other {Продажа участков}}",
+      "garage": "{transaction, select, rent {Аренда гаражей} other {Продажа гаражей}}",
+      "cottage": "{transaction, select, rent {Аренда дач} other {Продажа дач}}"
+    },
+    "titleWithPlace": "{title} — {place}",
+    "metaDescription": "{title}. Подбирайте объекты по расположению, цене, площади и количеству комнат — списком или на карте, с фотографиями и 3D-турами.",
+    "breadcrumbLabel": "Навигационная цепочка",
+    "showResults": "{count, plural, one {Показать # результат} few {Показать # результата} many {Показать # результатов} other {Показать # результата}}",
+    "showResultsApprox": "Показать более {count} результатов",
+    "counting": "Подсчёт результатов…",
+    "loadingResults": "Загрузка результатов…",
+    "shownOf": "Показано {shown} из {total}",
+    "empty": {
+      "suggestionsLabel": "Попробуйте убрать один из фильтров:",
+      "ctaTitle": "Не нашли подходящий объект?",
+      "ctaBody": "Опишите, что Вы ищете, и мы свяжемся с Вами, как только появится подходящее предложение. Мы отвечаем в тот же рабочий день, самое позднее — в течение 24 часов.",
+      "cta": "Расскажите, что Вы ищете",
+      "messagePrefix": "Ищу: {summary}"
+    },
+    "view": {
+      "label": "Вид результатов",
+      "list": "Список",
+      "map": "Карта"
+    },
+    "map": {
+      "label": "Карта результатов поиска",
+      "searchAsMove": "Искать при перемещении карты",
+      "loading": "Загрузка карты…",
+      "cluster": "{count, plural, one {# объект} few {# объекта} many {# объектов} other {# объекта}} в этом месте — приблизьте карту",
+      "pin": "{price} — {title}",
+      "truncated": "На карте показаны первые {count} результатов.",
+      "viewListing": "Смотреть объект",
+      "emptyArea": "В этой части карты нет результатов. Переместите или отдалите карту."
+    },
+    "chips": {
+      "label": "Активные фильтры",
+      "remove": "Убрать фильтр: {label}",
+      "clearAll": "Сбросить всё",
+      "range": "{from} – {to}",
+      "from": "от {value}",
+      "to": "до {value}",
+      "floor": "Этаж: {range}",
+      "query": "«{q}»",
+      "bbox": "Область на карте"
+    }
   },
   "filters": {
     "heading": "Фильтры",
@@ -197,7 +249,48 @@
     "location": "Район",
     "addedWithin": "Опубликовано",
     "withTour": "С 3D-туром",
-    "activeCount": "{count, plural, one {# фильтр} few {# фильтра} many {# фильтров} other {# фильтра}}"
+    "activeCount": "{count, plural, one {# фильтр} few {# фильтра} many {# фильтров} other {# фильтра}}",
+    "more": "Все фильтры",
+    "clearAll": "Сбросить всё",
+    "done": "Готово",
+    "from": "От",
+    "to": "До",
+    "priceFrom": "Цена от",
+    "priceTo": "Цена до",
+    "areaFrom": "Площадь от",
+    "areaTo": "Площадь до",
+    "query": "Поиск по тексту",
+    "locationSearch": "Найдите город или район",
+    "locationEmpty": "Подходящих локаций не найдено.",
+    "locationCount": "{count, plural, one {# локация} few {# локации} many {# локаций} other {# локации}}",
+    "locationIncluded": "Уже выбрано в составе: {name}",
+    "showChildren": "Развернуть: {name}",
+    "hideChildren": "Свернуть: {name}",
+    "roomsPlus": "5+",
+    "floorFrom": "Этаж от",
+    "floorTo": "Этаж до",
+    "floorAny": "Любой",
+    "notGround": "Не первый этаж",
+    "notTop": "Не последний этаж",
+    "toggle": {
+      "elevator": "Лифт",
+      "outdoor": "Терраса, лоджия или балкон",
+      "parking": "Парковка или гараж",
+      "registered": "Собственность оформлена",
+      "moveIn": "Готово к заселению",
+      "furnished": "С мебелью",
+      "vatRefund": "Возврат НДС",
+      "mortgage": "Возможна ипотека",
+      "exclusive": "Эксклюзив",
+      "hasTour": "3D-тур или обзор 360°"
+    },
+    "added": {
+      "any": "За всё время",
+      "1d": "За последние 24 часа",
+      "3d": "За последние 3 дня",
+      "7d": "За последние 7 дней",
+      "14d": "За последние 14 дней"
+    }
   },
   "listing": {
     "reference": "Код объекта",
@@ -564,7 +657,15 @@
     "hasTour": "3D-тур",
     "rooms": "{rooms, plural, one {# комн.} few {# комн.} many {# комн.} other {# комн.}}",
     "area": "{area} м²",
-    "floorOf": "{floor} / {total}"
+    "floorOf": "{floor} / {total}",
+    "priceReduced": "Цена снижена",
+    "registered": "Собственность оформлена",
+    "newBuild": "Новостройка",
+    "mortgage": "Возможна ипотека",
+    "monthlyRate": "Ипотека от ~{amount}/мес.",
+    "monthlyRateDetails": "Ориентировочный ежемесячный платёж: первоначальный взнос {down}%, срок {years, plural, one {# год} few {# года} many {# лет} other {# года}}, номинальная ставка {rate}% годовых. Не является предложением банка.",
+    "compare": "Сравнить",
+    "compareLabel": "Сравнить: {title}"
   },
   "forms": {
     "name": "Имя и фамилия",
@@ -702,7 +803,12 @@
     "limitReached": "{max, plural, one {Одновременно можно сравнить не более # объекта.} few {Одновременно можно сравнить не более # объектов.} many {Одновременно можно сравнить не более # объектов.} other {Одновременно можно сравнить не более # объектов.}}",
     "remove": "Удалить",
     "bestValue": "Лучшее предложение",
-    "shareCta": "Поделиться сравнением"
+    "shareCta": "Поделиться сравнением",
+    "trayLabel": "Выбрано для сравнения",
+    "traySelected": "{count, plural, one {Выбран # объект} few {Выбрано # объекта} many {Выбрано # объектов} other {Выбрано # объекта}}",
+    "trayCta": "Сравнить",
+    "trayClear": "Сбросить выбор",
+    "trayRemove": "Убрать из сравнения: {title}"
   },
   "legal": {
     "privacyHeading": "Политика конфиденциальности",

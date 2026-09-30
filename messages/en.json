@@ -173,7 +173,59 @@
     "sortAreaDesc": "Floor area: largest first",
     "sortPricePerM2Asc": "€/m²: low to high",
     "sortRelevance": "Relevance",
-    "queryPlaceholder": "Neighbourhood, street or reference"
+    "queryPlaceholder": "Neighbourhood, street or reference",
+    "sortPricePerM2Desc": "€/m²: high to low",
+    "title": {
+      "all": "{transaction, select, rent {Properties to rent} other {Properties for sale}}",
+      "apartment": "{transaction, select, rent {Apartments to rent} other {Apartments for sale}}",
+      "house": "{transaction, select, rent {Houses to rent} other {Houses for sale}}",
+      "commercial": "{transaction, select, rent {Retail units to rent} other {Retail units for sale}}",
+      "office": "{transaction, select, rent {Offices to rent} other {Offices for sale}}",
+      "land": "{transaction, select, rent {Land to rent} other {Land for sale}}",
+      "garage": "{transaction, select, rent {Garages to rent} other {Garages for sale}}",
+      "cottage": "{transaction, select, rent {Holiday cottages to rent} other {Holiday cottages for sale}}"
+    },
+    "titleWithPlace": "{title} — {place}",
+    "metaDescription": "{title}. Search by location, price, floor area and number of rooms, as a list or on the map, with photographs and 3D tours.",
+    "breadcrumbLabel": "Breadcrumb",
+    "showResults": "{count, plural, one {Show # result} other {Show # results}}",
+    "showResultsApprox": "Show {count}+ results",
+    "counting": "Counting results…",
+    "loadingResults": "Loading results…",
+    "shownOf": "Showing {shown} of {total}",
+    "empty": {
+      "suggestionsLabel": "Try removing a filter:",
+      "ctaTitle": "Still looking for the right property?",
+      "ctaBody": "Tell us what you are looking for and we will be in touch as soon as something suitable comes up. We reply the same working day, and within 24 hours at the latest.",
+      "cta": "Tell us what you are looking for",
+      "messagePrefix": "I am looking for: {summary}"
+    },
+    "view": {
+      "label": "Results view",
+      "list": "List",
+      "map": "Map"
+    },
+    "map": {
+      "label": "Map of search results",
+      "searchAsMove": "Search as I move the map",
+      "loading": "Loading map…",
+      "cluster": "{count, plural, one {# property} other {# properties}} here — zoom in to see them",
+      "pin": "{price} — {title}",
+      "truncated": "The map shows the first {count} results.",
+      "viewListing": "View property",
+      "emptyArea": "No results in this part of the map. Try moving the map or zooming out."
+    },
+    "chips": {
+      "label": "Active filters",
+      "remove": "Remove filter: {label}",
+      "clearAll": "Clear all",
+      "range": "{from} – {to}",
+      "from": "from {value}",
+      "to": "up to {value}",
+      "floor": "Floor: {range}",
+      "query": "“{q}”",
+      "bbox": "Map area"
+    }
   },
   "filters": {
     "heading": "Filters",
@@ -197,7 +249,48 @@
     "location": "Location",
     "addedWithin": "Listed",
     "withTour": "With a 3D tour",
-    "activeCount": "{count, plural, one {# filter} other {# filters}}"
+    "activeCount": "{count, plural, one {# filter} other {# filters}}",
+    "more": "All filters",
+    "clearAll": "Clear all",
+    "done": "Done",
+    "from": "From",
+    "to": "To",
+    "priceFrom": "Minimum price",
+    "priceTo": "Maximum price",
+    "areaFrom": "Minimum floor area",
+    "areaTo": "Maximum floor area",
+    "query": "Keyword search",
+    "locationSearch": "Search locations",
+    "locationEmpty": "No locations match your search.",
+    "locationCount": "{count, plural, one {# location} other {# locations}}",
+    "locationIncluded": "Included with {name}",
+    "showChildren": "Show areas within {name}",
+    "hideChildren": "Hide areas within {name}",
+    "roomsPlus": "5+",
+    "floorFrom": "Lowest floor",
+    "floorTo": "Highest floor",
+    "floorAny": "Any",
+    "notGround": "Not ground floor",
+    "notTop": "Not top floor",
+    "toggle": {
+      "elevator": "Lift",
+      "outdoor": "Terrace, loggia or balcony",
+      "parking": "Parking or garage",
+      "registered": "Registered title",
+      "moveIn": "Ready to move in",
+      "furnished": "Furnished",
+      "vatRefund": "Eligible for VAT refund",
+      "mortgage": "Mortgage possible",
+      "exclusive": "Exclusive",
+      "hasTour": "3D or 360° tour"
+    },
+    "added": {
+      "any": "Any time",
+      "1d": "In the last 24 hours",
+      "3d": "In the last 3 days",
+      "7d": "In the last 7 days",
+      "14d": "In the last 14 days"
+    }
   },
   "listing": {
     "reference": "Reference",
@@ -564,7 +657,15 @@
     "hasTour": "3D tour",
     "rooms": "{rooms, plural, one {# room} other {# rooms}}",
     "area": "{area} m²",
-    "floorOf": "{floor} / {total}"
+    "floorOf": "{floor} / {total}",
+    "priceReduced": "Price reduced",
+    "registered": "Registered title",
+    "newBuild": "New build",
+    "mortgage": "Mortgage possible",
+    "monthlyRate": "Mortgage from ~{amount}/mo.",
+    "monthlyRateDetails": "Indicative monthly repayment with a {down}% deposit over {years} years at a nominal interest rate of {rate}%. Not an offer from a bank.",
+    "compare": "Compare",
+    "compareLabel": "Compare: {title}"
   },
   "forms": {
     "name": "Full name",
@@ -702,7 +803,12 @@
     "limitReached": "{max, plural, one {You can compare up to # property.} other {You can compare up to # properties.}}",
     "remove": "Remove",
     "bestValue": "Best value",
-    "shareCta": "Share comparison"
+    "shareCta": "Share comparison",
+    "trayLabel": "Selected for comparison",
+    "traySelected": "{count, plural, one {# property selected} other {# properties selected}}",
+    "trayCta": "Compare",
+    "trayClear": "Clear selection",
+    "trayRemove": "Remove from comparison: {title}"
   },
   "legal": {
     "privacyHeading": "Privacy policy",

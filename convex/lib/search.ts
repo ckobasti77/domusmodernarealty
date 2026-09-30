@@ -12,6 +12,7 @@
  * a bounded loop.
  */
 import type { Doc } from "../_generated/dataModel";
+import { inBbox, publicCoords } from "./geo";
 import { foldDiacritics } from "./slug";
 import type {
   Features,
@@ -23,11 +24,14 @@ import type {
 } from "./validators";
 import { FEATURE_KEYS } from "./validators";
 
-/** Batches of continuation reads inside one `listings.search` call. */
-export const MAX_BATCHES = 8;
-export const BATCH_SIZE = 100;
-/** Batches for `listings.count` — more scanning, smaller payload. */
-export const COUNT_BATCHES = 15;
+/**
+ * Documents one `listings.search` page reads from its driver index. Convex
+ * allows a single `.paginate()` per function, so a page is one window of at
+ * least this many documents, post-filtered.
+ */
+export const SEARCH_SCAN = 120;
+/** Documents `listings.count` reads (one `.take()`); beyond it the count is "N+". */
+export const COUNT_SCAN = 600;
 export const MAX_POINTS = 1000;
 /** `withSearchIndex` cap; the Convex hard limit is 1024 scanned docs. */
 export const TEXT_TAKE = 200;
@@ -128,18 +132,26 @@ export function pickDriver(filters: SearchFilters, sort: Sort): DriverPlan {
   const hasAreaRange =
     filters.areaMin !== undefined || filters.areaMax !== undefined;
 
-  const singleCity = filters.cityId?.length === 1;
-  const singleMunicipality = filters.municipalityId?.length === 1;
-  const singleNeighborhood = filters.neighborhoodId?.length === 1;
+  // The location arrays are one OR-ed multi-select (see `searchFiltersV`), so a
+  // location-specific index is only exact when exactly ONE place is selected.
+  const locationCount =
+    (filters.cityId?.length ?? 0) +
+    (filters.municipalityId?.length ?? 0) +
+    (filters.neighborhoodId?.length ?? 0);
+  const singleCity = locationCount === 1 && filters.cityId?.length === 1;
+  const singleMunicipality =
+    locationCount === 1 && filters.municipalityId?.length === 1;
+  const singleNeighborhood =
+    locationCount === 1 && filters.neighborhoodId?.length === 1;
 
   if (hasPriceRange) {
-    if (singleCity && !singleNeighborhood && !singleMunicipality) {
+    if (singleCity) {
       return {
         driver: "cityPrice",
         orderedInWindow: !PRICE_SORTS.includes(sort),
       };
     }
-    if (singleMunicipality && !singleNeighborhood) {
+    if (singleMunicipality) {
       return {
         driver: "municipalityPrice",
         orderedInWindow: !PRICE_SORTS.includes(sort),
@@ -218,6 +230,35 @@ function matchesFloorBands(
   });
 }
 
+/**
+ * One multi-select across the three levels: in ANY selected city, municipality
+ * or neighborhood. No location selected means everywhere.
+ */
+function matchesLocation(listing: Doc<"listings">, filters: SearchFilters): boolean {
+  const cities = filters.cityId ?? [];
+  const municipalities = filters.municipalityId ?? [];
+  const neighborhoods = filters.neighborhoodId ?? [];
+  if (cities.length + municipalities.length + neighborhoods.length === 0) return true;
+  if (cities.includes(listing.cityId)) return true;
+  if (
+    listing.municipalityId !== undefined &&
+    municipalities.includes(listing.municipalityId)
+  ) {
+    return true;
+  }
+  return (
+    listing.neighborhoodId !== undefined &&
+    neighborhoods.includes(listing.neighborhoodId)
+  );
+}
+
+/** PRD A3 "terasa/lođa/balkon" is one toggle: any private outdoor space. */
+function hasOutdoorSpace(features: Features): boolean {
+  return (
+    features.terrace || features.loggia || features.balcony || features.frenchBalcony
+  );
+}
+
 function isFeatureKey(key: string): key is keyof Features {
   return (FEATURE_KEYS as readonly string[]).includes(key);
 }
@@ -238,23 +279,7 @@ export function matches(listing: Doc<"listings">, filters: SearchFilters): boole
     return false;
   }
 
-  if (!includesAny(filters.cityId, listing.cityId)) return false;
-  if (
-    filters.municipalityId !== undefined &&
-    filters.municipalityId.length > 0 &&
-    (listing.municipalityId === undefined ||
-      !filters.municipalityId.includes(listing.municipalityId))
-  ) {
-    return false;
-  }
-  if (
-    filters.neighborhoodId !== undefined &&
-    filters.neighborhoodId.length > 0 &&
-    (listing.neighborhoodId === undefined ||
-      !filters.neighborhoodId.includes(listing.neighborhoodId))
-  ) {
-    return false;
-  }
+  if (!matchesLocation(listing, filters)) return false;
 
   if (filters.priceMin !== undefined && listing.price < filters.priceMin) return false;
   if (filters.priceMax !== undefined && listing.price > filters.priceMax) return false;
@@ -309,6 +334,7 @@ export function matches(listing: Doc<"listings">, filters: SearchFilters): boole
   if (filters.vatRefund === true && listing.vatRefundEligible !== true) return false;
   if (filters.mortgage === true && listing.mortgageEligible !== true) return false;
   if (filters.exclusive === true && !listing.isExclusive) return false;
+  if (filters.outdoor === true && !hasOutdoorSpace(listing.features)) return false;
   if (filters.hasTour === true && !listing.hasTour) return false;
   if (filters.agentId !== undefined && listing.agentId !== filters.agentId) {
     return false;
@@ -318,6 +344,14 @@ export function matches(listing: Doc<"listings">, filters: SearchFilters): boole
     (listing.publishedAt === undefined || listing.publishedAt < filters.publishedAfter)
   ) {
     return false;
+  }
+  if (filters.bbox !== undefined) {
+    const point = publicCoords(
+      listing.location.lat,
+      listing.location.lng,
+      listing.location.addressVisibility,
+    );
+    if (!inBbox(point, filters.bbox)) return false;
   }
 
   return true;

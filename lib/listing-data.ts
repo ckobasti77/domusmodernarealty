@@ -25,3 +25,18 @@ export const getSimilarListings = cache(async (id: Id<"listings">) => {
 });
 
 export { getPublicSettings } from "@/components/site/Footer";
+
+/**
+ * Staff preview of an unpublished listing (`?preview=<token>` from the admin).
+ * The expiry is checked against this server's clock, and
+ * `listingsInternal.expirePreviewToken` also clears the token when it lapses.
+ * Any failure means "no preview", so the page falls back to the public read.
+ */
+export const getListingPreview = cache(async (slug: string, token: string) => {
+  try {
+    return await fetchQuery(api.listings.previewBySlug, { slug, token, now: Date.now() });
+  } catch (error) {
+    console.error("[listing] listings.previewBySlug failed:", error);
+    return null;
+  }
+});

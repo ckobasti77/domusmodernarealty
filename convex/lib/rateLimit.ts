@@ -27,6 +27,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   favoritePerSession: { kind: "token bucket", rate: 30, period: HOUR, capacity: 15 },
   // Nominatim usage policy: at most one request per second from the whole app.
   geocodeGlobal: { kind: "token bucket", rate: 1, period: SECOND, capacity: 1 },
+  // One editor typing fast must not drain the shared per-second slot.
+  geocodePerUser: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 5 },
 });
 
 export type PublicFormLimit =

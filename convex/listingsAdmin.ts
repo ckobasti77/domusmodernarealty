@@ -15,6 +15,7 @@ import {
   publishChecklist,
 } from "./lib/checklist";
 import { applyCountDelta } from "./lib/counts";
+import { deleteListingCascade } from "./lib/listingCascade";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
 import {
@@ -24,7 +25,7 @@ import {
   refNumber,
   slugify,
 } from "./lib/slug";
-import { normalizeText } from "./lib/search";
+import { isPublicScope, normalizeText } from "./lib/search";
 import { optionalPhone, requireEmail } from "./lib/rateLimit";
 import { randomToken } from "./lib/tokens";
 import {
@@ -65,7 +66,8 @@ const listingPatchV = v.object({
   isExclusive: v.optional(v.boolean()),
   isFeatured: v.optional(v.boolean()),
   agentId: v.optional(v.id("agents")),
-  ownerContactId: v.optional(v.id("contacts")),
+  // No `ownerContactId`: the seller is linked only through `setOwner`, so a
+  // caller can never point a listing at (and then read or edit) any contact.
   mandate: v.optional(mandateV),
 
   title: v.optional(l10nV),
@@ -157,6 +159,7 @@ const checklistItemV = v.object({
 const checklistContextV = v.object({
   agentPublic: v.boolean(),
   registryOk: v.boolean(),
+  registryRequired: v.boolean(),
 });
 
 /** Preview links live this long; a scheduled job then clears the token. */
@@ -248,6 +251,19 @@ function visibleToViewer(viewer: Viewer, doc: Doc<"listings">): boolean {
   return true;
 }
 
+const VIDEO_URL =
+  /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/|(?:player\.)?vimeo\.com\/)[\w\-?=&/%.]{3,200}$/;
+
+/** The public page embeds only YouTube and Vimeo (`VideoFacade`). */
+function isVideoUrl(url: string): boolean {
+  return url.length <= 500 && VIDEO_URL.test(url);
+}
+
+/** Search terms for the text index: diacritics folded, at most 8 words. */
+function searchNeedle(raw: string): string {
+  return normalizeText(raw.slice(0, 120)).split(" ").filter(Boolean).slice(0, 8).join(" ");
+}
+
 /**
  * The agent whose listings this viewer may list: an agent is pinned to their own
  * profile whatever filter they send; admin and manager may narrow to anyone.
@@ -281,23 +297,29 @@ export const list = query({
     // An agent account that is not linked to an agent profile owns nothing.
     if (agentId === null) return { page: [], isDone: true, continueCursor: "" };
 
-    const needle =
-      args.q !== undefined && args.q.trim().length > 0 ? normalizeText(args.q) : "";
+    const needle = args.q !== undefined ? searchNeedle(args.q) : "";
+    const paginationOpts = {
+      ...args.paginationOpts,
+      numItems: Math.min(Math.max(args.paginationOpts.numItems, 1), 100),
+    };
 
-    // Text search goes through the search index (relevance order); everything
-    // else walks the narrowest `updatedAt` index. The remaining filters are
-    // cheap equality checks on the page.
+    // Text search goes through the search index (relevance order) with every
+    // filter applied inside the index; everything else walks the narrowest
+    // `updatedAt` index. What remains are cheap equality checks on the page.
     const result =
       needle.length > 0
         ? await ctx.db
             .query("listings")
             .withSearchIndex("search_text", (q) => {
-              const base = q.search("searchText", needle);
-              return args.propertyType !== undefined
-                ? base.eq("propertyType", args.propertyType)
-                : base;
+              let search = q.search("searchText", needle);
+              if (agentId !== undefined) search = search.eq("agentId", agentId);
+              if (args.status !== undefined) search = search.eq("status", args.status);
+              if (args.transaction !== undefined) search = search.eq("transaction", args.transaction);
+              if (args.propertyType !== undefined) search = search.eq("propertyType", args.propertyType);
+              if (args.onlyDemo === true) search = search.eq("isDemo", true);
+              return search;
             })
-            .paginate(args.paginationOpts)
+            .paginate(paginationOpts)
         : agentId !== undefined
           ? args.status !== undefined
             ? await ctx.db
@@ -306,19 +328,19 @@ export const list = query({
                   q.eq("agentId", agentId).eq("status", args.status!),
                 )
                 .order("desc")
-                .paginate(args.paginationOpts)
+                .paginate(paginationOpts)
             : await ctx.db
                 .query("listings")
                 .withIndex("by_agentId_and_updatedAt", (q) => q.eq("agentId", agentId))
                 .order("desc")
-                .paginate(args.paginationOpts)
+                .paginate(paginationOpts)
           : args.status !== undefined
             ? await ctx.db
                 .query("listings")
                 .withIndex("by_status_and_updatedAt", (q) => q.eq("status", args.status!))
                 .order("desc")
-                .paginate(args.paginationOpts)
-            : await ctx.db.query("listings").order("desc").paginate(args.paginationOpts);
+                .paginate(paginationOpts)
+            : await ctx.db.query("listings").order("desc").paginate(paginationOpts);
 
     const page = [];
     for (const doc of result.page) {
@@ -406,15 +428,19 @@ export const quickFind = query({
       const exact = await ctx.db
         .query("listings")
         .withIndex("by_ref", (q) => q.eq("ref", formatRef(Number(digits))))
-        .unique();
+        .first();
       if (exact !== null) push(exact);
     }
 
-    const needle = normalizeText(raw);
-    if (needle.length > 0) {
+    const needle = searchNeedle(raw);
+    const agentId = scopedAgentId(viewer, undefined);
+    if (needle.length > 0 && agentId !== null) {
       const hits = await ctx.db
         .query("listings")
-        .withSearchIndex("search_text", (q) => q.search("searchText", needle))
+        .withSearchIndex("search_text", (q) => {
+          const search = q.search("searchText", needle);
+          return agentId !== undefined ? search.eq("agentId", agentId) : search;
+        })
         .take(12);
       for (const doc of hits) push(doc);
     }
@@ -463,7 +489,7 @@ export const get = query({
       doc.legal.docsVerifiedBy !== undefined
         ? await ctx.db.get("users", doc.legal.docsVerifiedBy)
         : null;
-    const verifierName = verifier?.name ?? verifier?.email;
+    const verifierName = verifier === null ? undefined : (verifier.name ?? "Član tima");
 
     const agent = await ctx.db.get("agents", doc.agentId);
     const mediaUrls: Record<string, string> = {};
@@ -659,33 +685,55 @@ export const update = mutation({
     if (args.patch.areaM2 !== undefined && args.patch.areaM2 < 0) {
       invalidInput("Kvadratura ne može biti negativna.");
     }
-    if (args.patch.videoUrl !== undefined && !/^https:\/\/\S+$/.test(args.patch.videoUrl)) {
-      invalidInput("Video adresa mora počinjati sa https://");
+    // An empty string clears the video; anything else must be a YouTube or
+    // Vimeo page (the public page embeds only those two players).
+    const videoUrl = args.patch.videoUrl?.trim();
+    if (videoUrl !== undefined && videoUrl.length > 0 && !isVideoUrl(videoUrl)) {
+      invalidInput("Video mora biti YouTube ili Vimeo adresa (https://…).");
     }
     if (args.patch.agentId !== undefined && args.patch.agentId !== before.agentId) {
-      if ((await ctx.db.get("agents", args.patch.agentId)) === null) notFound("Agent");
+      const agent = await ctx.db.get("agents", args.patch.agentId);
+      if (agent === null) notFound("Agent");
+      // A live listing must keep a bookable agent (the publish checklist rule).
+      if (!agent.isPublic && isPublicScope(before.scope)) {
+        invalidInput("Objavljenu nekretninu možete dodeliti samo agentu koji je vidljiv na sajtu.");
+      }
     }
 
     const now = Date.now();
 
-    // "Documents verified" is attested by whoever ticks it, never by a client-
-    // supplied user id; unticking clears both halves.
+    // "Documents verified" is attested by the server: the client only says
+    // whether the box is ticked. A fresh tick is stamped with this moment and
+    // the caller, an unchanged tick keeps the original stamp, and unticking
+    // clears both. A client can neither backdate it nor name someone else.
     let legalPatch = args.patch.legal;
     if (legalPatch !== undefined) {
-      const { docsVerifiedBy: _clientVerifier, ...legalRest } = legalPatch;
-      const previousVerifier = before.legal.docsVerifiedBy;
+      const {
+        docsVerifiedBy: _clientVerifier,
+        docsVerifiedAt: clientVerifiedAt,
+        ...legalRest
+      } = legalPatch;
+      const previous = before.legal;
       legalPatch =
-        legalPatch.docsVerifiedAt === undefined
+        clientVerifiedAt === undefined
           ? legalRest
-          : legalPatch.docsVerifiedAt !== before.legal.docsVerifiedAt
-            ? { ...legalRest, docsVerifiedBy: viewer._id }
-            : previousVerifier !== undefined
-              ? { ...legalRest, docsVerifiedBy: previousVerifier }
-              : legalRest;
+          : previous.docsVerifiedAt !== undefined
+            ? {
+                ...legalRest,
+                docsVerifiedAt: previous.docsVerifiedAt,
+                ...(previous.docsVerifiedBy !== undefined
+                  ? { docsVerifiedBy: previous.docsVerifiedBy }
+                  : {}),
+              }
+            : { ...legalRest, docsVerifiedAt: now, docsVerifiedBy: viewer._id };
     }
+    const { videoUrl: _rawVideoUrl, ...patchRest } = args.patch;
     const cleanPatch = {
-      ...args.patch,
+      ...patchRest,
       ...(legalPatch !== undefined ? { legal: legalPatch } : {}),
+      ...(videoUrl !== undefined
+        ? { videoUrl: videoUrl.length > 0 ? videoUrl : undefined }
+        : {}),
     };
     const merged = { ...before, ...cleanPatch };
 
@@ -926,8 +974,29 @@ export const duplicate = mutation({
       previewExpiresAt: _dropPreviewExpires,
       previousPrice: _dropPreviousPrice,
       publishedAt: _dropPublishedAt,
+      // The seller of the copy is set on the copy; sharing the contact would
+      // let `setOwner` on one listing rewrite the other's owner.
+      ownerContactId: _dropOwner,
+      // Uploaded 3D assets and an uploaded OG image would be shared blobs, and
+      // the scenes of a 360° tour belong to the source listing.
+      walk3d: _dropWalk3d,
+      tour360: sourceTour,
+      seo: sourceSeo,
       ...rest
     } = source;
+
+    // Verification attests to the source's documents, not the copy's.
+    const {
+      docsVerifiedAt: _dropVerifiedAt,
+      docsVerifiedBy: _dropVerifiedBy,
+      ...legal
+    } = source.legal;
+    const seo =
+      sourceSeo === undefined
+        ? undefined
+        : sourceSeo.ogImage?.kind === "storage"
+          ? { ...sourceSeo, ogImage: undefined }
+          : sourceSeo;
 
     // Two listings must never share a storage blob: deleting a photo from one
     // would break the other. Remote (URL) photos are copied as-is; uploaded
@@ -945,6 +1014,9 @@ export const duplicate = mutation({
       visibility: "private" as const,
       isFeatured: false,
       title: { ...source.title, sr: titleSr },
+      legal,
+      ...(sourceTour !== undefined ? { tour360: { ...sourceTour, published: false } } : {}),
+      ...(seo !== undefined ? { seo } : {}),
       media: byUrl(source.media),
       floorPlans: byUrl(source.floorPlans),
       updatedAt: now,
@@ -996,75 +1068,6 @@ export const remove = mutation({
   },
 });
 
-/**
- * Deletes a listing and everything that hangs off it. Leads and viewings are
- * business records: they are kept, only their pointer to the listing is dropped.
- */
-export async function deleteListingCascade(ctx: MutationCtx, doc: Doc<"listings">): Promise<void> {
-  await applyCountDelta(ctx, doc, null);
-
-  for (const item of doc.media) {
-    if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
-  }
-  for (const item of doc.floorPlans) {
-    if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
-  }
-
-  const scenes = await ctx.db
-    .query("tourScenes")
-    .withIndex("by_listingId_and_order", (q) => q.eq("listingId", doc._id))
-    .take(60);
-  for (const scene of scenes) await ctx.db.delete("tourScenes", scene._id);
-
-  const stats = await ctx.db
-    .query("listingStats")
-    .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-    .unique();
-  if (stats !== null) await ctx.db.delete("listingStats", stats._id);
-
-  const splats = await ctx.db
-    .query("splatAssets")
-    .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-    .take(20);
-  for (const splat of splats) await ctx.db.delete("splatAssets", splat._id);
-
-  const changes = await ctx.db
-    .query("priceChanges")
-    .withIndex("by_listingId_and_at", (q) => q.eq("listingId", doc._id))
-    .take(60);
-  for (const change of changes) await ctx.db.delete("priceChanges", change._id);
-
-  const redirects = await ctx.db
-    .query("slugRedirects")
-    .withIndex("by_from", (q) => q.eq("from", doc.slug))
-    .take(20);
-  for (const row of redirects) await ctx.db.delete("slugRedirects", row._id);
-
-  const views = await ctx.db
-    .query("listingViews")
-    .withIndex("by_listingId_and_sessionKey", (q) => q.eq("listingId", doc._id))
-    .take(500);
-  for (const row of views) await ctx.db.delete("listingViews", row._id);
-
-  // Leads and viewings are business records: keep them, but drop the pointer so
-  // the admin UI stops rendering a reference to a document that is gone.
-  const viewings = await ctx.db
-    .query("viewings")
-    .withIndex("by_listingId_and_start", (q) => q.eq("listingId", doc._id))
-    .take(100);
-  for (const viewing of viewings) {
-    await ctx.db.patch("viewings", viewing._id, { status: "cancelled" });
-  }
-  const leads = await ctx.db
-    .query("leads")
-    .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-    .take(200);
-  for (const lead of leads) {
-    await ctx.db.patch("leads", lead._id, { listingId: undefined });
-  }
-
-  await ctx.db.delete("listings", doc._id);
-}
 
 export const bulk = mutation({
   args: {
@@ -1091,24 +1094,24 @@ export const bulk = mutation({
     let done = 0;
     const now = Date.now();
 
-    // Deleting cascades into several tables per listing; keep one call well
-    // inside the transaction limits.
-    const limit = args.action === "deleteDemo" ? 25 : 100;
-    for (const id of args.ids.slice(0, limit)) {
+    const LIMIT = 100;
+    for (const [index, id] of args.ids.entries()) {
       const before = await ctx.db.get("listings", id);
       if (before === null) continue;
+      if (index >= LIMIT) {
+        skipped.push({ ref: before.ref, reason: `Najviše ${LIMIT} nekretnina po radnji` });
+        continue;
+      }
 
       if (args.action === "deleteDemo") {
         if (!before.isDemo) {
           skipped.push({ ref: before.ref, reason: "Nije demo nekretnina" });
           continue;
         }
-        await deleteListingCascade(ctx, before);
-        await logActivity(ctx, {
-          entity: "listing",
-          entityId: id,
-          action: "listing.deleted",
-          summary: `${before.ref} (demo, grupno)`,
+        // One transaction per listing: a cascade can touch hundreds of rows,
+        // and several of them in one call could exceed the write limits.
+        await ctx.scheduler.runAfter(0, internal.listingsInternal.deleteDemoListing, {
+          id,
           by: viewer._id,
         });
         done += 1;
@@ -1127,7 +1130,12 @@ export const bulk = mutation({
         if (args.agentId === undefined) invalidInput("Izaberite agenta.");
         // A stale id would orphan the listing: `toDetail` returns null and the
         // public page 404s.
-        if ((await ctx.db.get("agents", args.agentId)) === null) notFound("Agent");
+        const agent = await ctx.db.get("agents", args.agentId);
+        if (agent === null) notFound("Agent");
+        if (!agent.isPublic && isPublicScope(before.scope)) {
+          skipped.push({ ref: before.ref, reason: "Agent nije vidljiv na sajtu, a nekretnina je objavljena" });
+          continue;
+        }
         await ctx.db.patch("listings", id, { agentId: args.agentId, updatedAt: now });
         done += 1;
         continue;
@@ -1270,6 +1278,13 @@ export const setOwner = mutation({
     if (name.length === 0) {
       if (doc.ownerContactId !== undefined) {
         await ctx.db.patch("listings", doc._id, { ownerContactId: undefined, updatedAt: Date.now() });
+        await logActivity(ctx, {
+          entity: "listing",
+          entityId: doc._id,
+          action: "listing.owner.unlinked",
+          summary: doc.ref,
+          by: viewer._id,
+        });
       }
       return null;
     }
@@ -1286,7 +1301,8 @@ export const setOwner = mutation({
     };
     if (doc.ownerContactId !== undefined) {
       const existing = await ctx.db.get("contacts", doc.ownerContactId);
-      if (existing !== null) {
+      // An anonymized contact stays erased: new details get a new contact.
+      if (existing !== null && existing.anonymizedAt === undefined) {
         // `undefined` clears a field the editor emptied.
         await ctx.db.patch("contacts", existing._id, {
           name,
@@ -1334,11 +1350,25 @@ export const todos = query({
   }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, EDITORS);
-    const docs = await ctx.db
-      .query("listings")
-      .withIndex("by_status_and_updatedAt", (q) => q.eq("status", "published"))
-      .order("desc")
-      .take(300);
+    const agentId = scopedAgentId(viewer, undefined);
+    // Agents read their own index, so their to-dos are never crowded out by
+    // the rest of the agency's 300 most recent listings.
+    const docs =
+      agentId === null
+        ? []
+        : agentId !== undefined
+          ? await ctx.db
+              .query("listings")
+              .withIndex("by_agentId_and_status_and_updatedAt", (q) =>
+                q.eq("agentId", agentId).eq("status", "published"),
+              )
+              .order("desc")
+              .take(300)
+          : await ctx.db
+              .query("listings")
+              .withIndex("by_status_and_updatedAt", (q) => q.eq("status", "published"))
+              .order("desc")
+              .take(300);
 
     const missingPhotos = [];
     const missingFloorPlan = [];

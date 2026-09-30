@@ -110,6 +110,7 @@ describe("admin listing table", () => {
   });
 
   test("bulk demo delete removes demo rows and skips real ones", async () => {
+    vi.useFakeTimers();
     const { t, ids } = await setup();
     const real = await t.run(async (ctx) => {
       const id = await makeListing(ctx, 3, ids.city, ids.agentA);
@@ -123,6 +124,8 @@ describe("admin listing table", () => {
     });
     expect(result.done).toBe(1);
     expect(result.skipped).toEqual([{ ref: "ME-2003", reason: "Nije demo nekretnina" }]);
+    // Each deletion runs in its own scheduled transaction.
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
     const left = await t.run(async (ctx) => ({
       demo: await ctx.db.get("listings", ids.listingB),
       real: await ctx.db.get("listings", real),
@@ -143,14 +146,23 @@ describe("editor side effects", () => {
         legal: {
           registration: "registered",
           legalization: "legal",
-          docsVerifiedAt: at,
+          docsVerifiedAt: at - 86_400_000 * 30,
           docsVerifiedBy: ids.admin,
         },
       },
     });
     const doc = await t.run(async (ctx) => ctx.db.get("listings", ids.listingA));
     expect(doc?.legal.docsVerifiedBy).toBe(ids.agentUser);
-    expect(doc?.legal.docsVerifiedAt).toBe(at);
+    // Stamped by the server, not the client-supplied (possibly backdated) time.
+    expect(doc?.legal.docsVerifiedAt).toBeGreaterThanOrEqual(at);
+
+    // A later autosave with a different time keeps the original stamp.
+    await asAgent.mutation(api.listingsAdmin.update, {
+      id: ids.listingA,
+      patch: { legal: { registration: "registered", legalization: "legal", docsVerifiedAt: 1 } },
+    });
+    const again = await t.run(async (ctx) => ctx.db.get("listings", ids.listingA));
+    expect(again?.legal.docsVerifiedAt).toBe(doc?.legal.docsVerifiedAt);
   });
 
   test("the owner contact is private staff data", async () => {

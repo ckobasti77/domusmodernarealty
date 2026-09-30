@@ -7,6 +7,7 @@ import type { MediaItem } from "./lib/validators";
 import { logActivity } from "./lib/activity";
 import { applyCountDelta } from "./lib/counts";
 import { applyDerived, locationNamesFor } from "./lib/derive";
+import { deleteListingCascade } from "./lib/listingCascade";
 
 /**
  * Daily cron: a published listing whose brokerage contract has expired must come
@@ -100,10 +101,15 @@ export const expirePreviewToken = internalMutation({
   },
 });
 
+/** Blobs copied per action run: small enough for the action's memory and time. */
+const COPY_CHUNK = 5;
+const MAX_MEDIA_PER_LISTING = 60;
+
 /**
  * `listingsAdmin.duplicate` never lets two listings share a storage blob, so
- * the copy's uploaded photos are re-stored here as new blobs and then merged
- * back in their original order.
+ * the copy's uploaded photos are re-stored here as new blobs, a few per run,
+ * each run merging what it copied and scheduling the next. One failing blob is
+ * skipped (the copy simply lacks that photo) instead of losing the batch.
  */
 export const copyStoredMedia = internalAction({
   args: {
@@ -113,60 +119,119 @@ export const copyStoredMedia = internalAction({
   },
   returns: v.object({ copied: v.number() }),
   handler: async (ctx, args) => {
-    const copy = async (items: MediaItem[]): Promise<MediaItem[]> => {
-      const out: MediaItem[] = [];
-      for (const item of items) {
-        if (item.image.kind !== "storage") continue;
+    const queue = [
+      ...args.media.map((item) => ({ target: "media" as const, item })),
+      ...args.floorPlans.map((item) => ({ target: "floorPlans" as const, item })),
+    ];
+    const chunk = queue.slice(0, COPY_CHUNK);
+    const rest = queue.slice(COPY_CHUNK);
+
+    const media: MediaItem[] = [];
+    const floorPlans: MediaItem[] = [];
+    for (const { target, item } of chunk) {
+      if (item.image.kind !== "storage") continue;
+      try {
         const blob = await ctx.storage.get(item.image.storageId);
         if (blob === null) continue;
         const storageId: Id<"_storage"> = await ctx.storage.store(blob);
-        out.push({ ...item, image: { kind: "storage", storageId } });
+        (target === "media" ? media : floorPlans).push({
+          ...item,
+          image: { kind: "storage", storageId },
+        });
+      } catch (error) {
+        console.error(`[duplicate] could not copy media ${item.id}`, error);
       }
-      return out;
-    };
-    const media = await copy(args.media);
-    const floorPlans = await copy(args.floorPlans);
-    await ctx.runMutation(internal.listingsInternal.mergeCopiedMedia, {
+    }
+
+    const keepGoing: boolean = await ctx.runMutation(internal.listingsInternal.mergeCopiedMedia, {
       listingId: args.listingId,
       media,
       floorPlans,
     });
+    if (keepGoing && rest.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.listingsInternal.copyStoredMedia, {
+        listingId: args.listingId,
+        media: rest.filter((entry) => entry.target === "media").map((entry) => entry.item),
+        floorPlans: rest.filter((entry) => entry.target === "floorPlans").map((entry) => entry.item),
+      });
+    }
     return { copied: media.length + floorPlans.length };
   },
 });
 
+/**
+ * Merges copied blobs into the duplicate in their original order. Returns
+ * false when the duplicate is gone (its blobs are then deleted, and the copy
+ * stops). Items already present are skipped, a second cover is dropped, and
+ * nothing past the 60-item limit is kept.
+ */
 export const mergeCopiedMedia = internalMutation({
   args: {
     listingId: v.id("listings"),
     media: v.array(mediaItemV),
     floorPlans: v.array(mediaItemV),
   },
-  returns: v.null(),
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const listing = await ctx.db.get("listings", args.listingId);
-    if (listing === null) {
-      // The copy was deleted while the blobs were being copied.
-      for (const item of [...args.media, ...args.floorPlans]) {
+    const discard = async (items: MediaItem[]) => {
+      for (const item of items) {
         if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
       }
-      return null;
+    };
+    if (listing === null) {
+      await discard([...args.media, ...args.floorPlans]);
+      return false;
     }
-    const merge = (current: MediaItem[], copied: MediaItem[]): MediaItem[] => {
-      const all = [...current, ...copied].sort((a, b) => a.order - b.order);
-      const hasCover = all.some((item) => item.isCover === true);
-      return all.map((item, index) => ({
+
+    const merge = async (current: MediaItem[], copied: MediaItem[], gallery: boolean) => {
+      const present = new Set(current.map((item) => item.id));
+      const fresh = copied.filter((item) => !present.has(item.id));
+      await discard(copied.filter((item) => present.has(item.id)));
+
+      const hasCover = current.some((item) => item.isCover === true);
+      const incoming = fresh.map((item) => {
+        const { isCover, ...rest } = item;
+        return gallery && isCover === true && !hasCover ? { ...rest, isCover: true } : rest;
+      });
+      const all = [...current, ...incoming].sort((a, b) => a.order - b.order);
+      const kept = all.slice(0, MAX_MEDIA_PER_LISTING);
+      await discard(all.slice(MAX_MEDIA_PER_LISTING).filter((item) => !present.has(item.id)));
+
+      const anyCover = kept.some((item) => item.isCover === true);
+      return kept.map((item, index) => ({
         ...item,
         order: index,
-        ...(hasCover ? {} : { isCover: index === 0 }),
+        ...(gallery && !anyCover && index === 0 ? { isCover: true } : {}),
       }));
     };
+
     await ctx.db.patch("listings", listing._id, {
-      media: merge(listing.media, args.media),
-      floorPlans: merge(listing.floorPlans, args.floorPlans).map((item) => {
-        const { isCover: _floorPlanCover, ...rest } = item;
-        return rest;
-      }),
+      media: await merge(listing.media, args.media, true),
+      floorPlans: await merge(listing.floorPlans, args.floorPlans, false),
       updatedAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+/**
+ * One demo listing, scheduled by `listingsAdmin.bulk({ action: "deleteDemo" })`
+ * so every cascade runs in its own transaction. Re-checks `isDemo`.
+ */
+export const deleteDemoListing = internalMutation({
+  args: { id: v.id("listings"), by: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get("listings", args.id);
+    if (doc === null || !doc.isDemo) return null;
+    await deleteListingCascade(ctx, doc);
+    await logActivity(ctx, {
+      entity: "listing",
+      entityId: args.id,
+      action: "listing.deleted",
+      summary: `${doc.ref} (demo, grupno)`,
+      by: args.by,
     });
     return null;
   },

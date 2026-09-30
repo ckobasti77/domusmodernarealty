@@ -44,6 +44,12 @@ export type ChecklistContext = {
   agentPublic: boolean;
   /** Settings carry a real "Registar posrednika" number, not the demo "000". */
   registryOk: boolean;
+  /**
+   * The agency's settings are real (no longer the seeded demo values). From
+   * then on a missing registry number blocks publishing; on the demo
+   * deployment it is only a warning.
+   */
+  registryRequired: boolean;
 };
 
 /** The seeded placeholder: all zeros, or empty. */
@@ -110,14 +116,15 @@ export function publishChecklist(
       label: "Dodeljen je agent koji je vidljiv na sajtu",
       ok: context.agentPublic,
     });
-    // Art. 18 wants the registry number on every listing. It is a site-wide
-    // setting, so a missing number is flagged here but does not block one
-    // listing: it blocks nothing the owner can fix from this screen.
+    // Art. 18 wants the registry number on every listing. While the settings
+    // are still the seeded demo values it is a warning (the demo deployment
+    // must stay publishable); once the agency's real data is entered, a
+    // placeholder number blocks publishing.
     items.push({
       code: "registry",
       label: "Broj iz Registra posrednika je unet u Podešavanjima",
       ok: context.registryOk,
-      warning: true,
+      ...(context.registryRequired ? {} : { warning: true }),
     });
   }
 
@@ -141,6 +148,7 @@ export async function checklistContext(
   return {
     agentPublic: agent !== null && agent.isPublic,
     registryOk: settings !== null && !isPlaceholderRegistry(settings.registryNo),
+    registryRequired: settings !== null && !settings.isDemo,
   };
 }
 

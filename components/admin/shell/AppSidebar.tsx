@@ -45,6 +45,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        <nav aria-label="Glavni meni" className="contents">
         {groups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
@@ -86,6 +87,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        </nav>
       </SidebarContent>
 
       <SidebarFooter className="px-3 pb-4 group-data-[collapsible=icon]:hidden">

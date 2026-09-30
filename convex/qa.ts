@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
-import { deleteListingCascade } from "./listingsAdmin";
+import { deleteListingCascade } from "./lib/listingCascade";
 import { leadTypeV, leadStatusV, viewingModeV, viewingStatusV } from "./lib/validators";
 
 /**
@@ -257,7 +257,7 @@ export const purgeE2EListings = internalMutation({
   returns: v.number(),
   handler: async (ctx) => {
     let removed = 0;
-    for (const status of ["draft", "review", "published", "reserved", "withdrawn", "archived"] as const) {
+    for (const status of ["draft", "review", "published", "reserved", "sold", "rented", "withdrawn", "archived"] as const) {
       const rows = await ctx.db
         .query("listings")
         .withIndex("by_status_and_updatedAt", (q) => q.eq("status", status))

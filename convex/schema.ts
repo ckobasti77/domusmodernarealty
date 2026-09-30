@@ -285,7 +285,17 @@ export default defineSchema({
     .index("by_status_and_mandateEnd", { fields: ["status", "mandateEnd"] })
     .searchIndex("search_text", {
       searchField: "searchText",
-      filterFields: ["scope", "propertyType", "cityId", "hasTour"],
+      // agentId, status, transaction and isDemo serve the admin table and ⌘K.
+      filterFields: [
+        "scope",
+        "propertyType",
+        "cityId",
+        "hasTour",
+        "agentId",
+        "status",
+        "transaction",
+        "isDemo",
+      ],
     }),
 
   /** 301 targets for renamed slugs. */
@@ -293,7 +303,9 @@ export default defineSchema({
     from: v.string(),
     listingId: v.id("listings"),
     at: v.number(),
-  }).index("by_from", { fields: ["from"] }),
+  })
+    .index("by_from", { fields: ["from"] })
+    .index("by_listingId", { fields: ["listingId"] }),
 
   priceChanges: defineTable({
     listingId: v.id("listings"),

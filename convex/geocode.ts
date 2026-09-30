@@ -13,7 +13,12 @@ const EDITORS = ["admin", "manager", "agent"] as const;
  * `User-Agent`, so the lookup runs here, behind staff auth.
  */
 const NOMINATIM = "https://nominatim.openstreetmap.org/search";
-const USER_AGENT = "MihajloEstateAdmin/1.0 (listing address lookup)";
+/** Identifies the app and a contact point, as the policy asks. */
+function userAgent(): string {
+  const site = process.env.SITE_URL ?? "https://mihajloestate.rs";
+  return `MihajloEstateAdmin/1.0 (+${site}; listing address lookup)`;
+}
+const TIMEOUT_MS = 8_000;
 
 const resultV = v.object({
   label: v.string(),
@@ -39,9 +44,16 @@ export const search = action({
   args: { q: v.string() },
   returns: v.array(resultV),
   handler: async (ctx, args) => {
-    await requireRoleAction(ctx, EDITORS);
+    const viewer = await requireRoleAction(ctx, EDITORS);
     const q = args.q.trim().slice(0, 160);
     if (q.length < 3) return [];
+
+    const own = await rateLimiter.limit(ctx, "geocodePerUser", { key: viewer._id });
+    if (!own.ok) {
+      appError("RATE_LIMITED", "Previše pretraga adrese. Pokušajte za trenutak.", {
+        retryAfter: own.retryAfter,
+      });
+    }
 
     let slot = await rateLimiter.limit(ctx, "geocodeGlobal");
     if (!slot.ok) {
@@ -68,9 +80,15 @@ export const search = action({
     url.searchParams.set("limit", "6");
     url.searchParams.set("accept-language", "sr-Latn,sr,en");
 
-    const response = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { "User-Agent": userAgent(), Accept: "application/json" },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch {
+      appError("CONFLICT", "Servis za adrese ne odgovara. Unesite koordinate ručno ili pokušajte kasnije.");
+    }
     if (!response.ok) {
       appError("CONFLICT", `Servis za adrese nije dostupan (${response.status}).`);
     }

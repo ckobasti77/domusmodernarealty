@@ -53,7 +53,6 @@ export const publicCsp = serialize({
     ...CONVEX,
     MAP_TILES,
     ...SPLAT_HOSTS,
-    "https://nominatim.openstreetmap.org",
   ],
   "frame-src": [
     "https://my.matterport.com",
@@ -66,7 +65,9 @@ export const publicCsp = serialize({
 export const adminCsp = serialize({
   ...SHARED,
   "img-src": ["'self'", "data:", "blob:", ...DEMO_IMAGE_HOSTS, "https://*.convex.cloud", MAP_TILES],
-  "connect-src": ["'self'", ...CONVEX, MAP_TILES, "https://nominatim.openstreetmap.org"],
+  // Address search goes through the `geocode.search` Convex action (it must
+  // send an identifying User-Agent and share one rate limit), never from here.
+  "connect-src": ["'self'", ...CONVEX, MAP_TILES],
   "frame-src": ["'none'"],
 });
 

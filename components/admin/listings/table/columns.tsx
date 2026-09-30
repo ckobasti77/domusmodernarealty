@@ -11,6 +11,7 @@ import { formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { RowActions } from "./RowActions";
 import type { AdminRow } from "./types";
+import { adminThumb } from "@/lib/admin/images";
 
 export type ListingColumnId =
   | "select"
@@ -90,13 +91,15 @@ function Cover({ row }: { row: AdminRow }) {
     // 56×40 thumbnail gains nothing from the image optimizer.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={row.coverUrl}
+      src={adminThumb(row.coverUrl, 160)}
       alt=""
       width={56}
       height={40}
       loading="lazy"
       decoding="async"
-      className="h-10 w-14 rounded-md bg-muted object-cover"
+      // `max-w-none`: preflight's `max-width: 100%` lets an auto-layout table
+      // squeeze this cell to zero width.
+      className="h-10 w-14 max-w-none rounded-md bg-muted object-cover"
     />
   );
 }

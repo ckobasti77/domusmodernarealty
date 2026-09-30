@@ -1,4 +1,5 @@
 import type { MediaItem } from "@/convex/lib/validators";
+import { adminThumb } from "@/lib/admin/images";
 
 /** The two media collections of a listing (`media.*` mutations call it `target`). */
 export type MediaTarget = "gallery" | "floorPlans";
@@ -57,15 +58,5 @@ export function formatMb(bytes: number): string {
  * Convex storage URLs are served as uploaded.
  */
 export function thumbUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname !== "images.unsplash.com") return url;
-    parsed.searchParams.set("w", "640");
-    parsed.searchParams.set("q", "70");
-    parsed.searchParams.set("auto", "format");
-    parsed.searchParams.set("fit", "crop");
-    return parsed.toString();
-  } catch {
-    return url;
-  }
+  return adminThumb(url, 640);
 }

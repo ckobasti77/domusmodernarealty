@@ -1,20 +1,17 @@
 "use client";
 
-import * as maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
-import { Layer, Map, Marker, NavigationControl, Source, type MapEvent } from "@vis.gl/react-maplibre";
+import { Layer, Map, Marker, NavigationControl, Source, type MapStyleDataEvent } from "@vis.gl/react-maplibre";
 import type { Feature, Polygon } from "geojson";
+import { maplibregl } from "./maplibre";
+import { applyHouseStyleOnce } from "./style";
 
 /**
  * A single-listing map (PRD A5): an exact pin when the listing publishes its
  * address, otherwise a translucent circle over the snapped public coordinates,
  * so the page never implies more precision than the DTO allows.
  *
- * MapLibre 6 loads its worker from `public/maplibre/` (ARCHITECTURE §8: the
- * bundled worker URL does not resolve under Turbopack). This module is only
- * ever imported through `next/dynamic({ ssr: false })`.
+ * This module is only ever imported through `next/dynamic({ ssr: false })`.
  */
-maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
@@ -39,27 +36,6 @@ export type ListingMapProps = {
   locale: string;
 };
 
-/**
- * Positron prints every label twice ("Patrijarha Varnave Патријарха Варнаве").
- * One script per page: Latin everywhere, Serbian Cyrillic for Russian readers.
- * The land is tinted to the site ivory so the map does not read as a cold grey
- * card on a warm page (design-critic, step 07).
- */
-function applyHouseStyle(map: maplibregl.Map, locale: string) {
-  const label: maplibregl.ExpressionSpecification =
-    locale === "ru"
-      ? ["coalesce", ["get", "name:nonlatin"], ["get", "name"]]
-      : ["coalesce", ["get", "name:latin"], ["get", "name"]];
-  for (const layer of map.getStyle().layers) {
-    if (layer.type === "symbol" && layer.layout?.["text-field"] !== undefined) {
-      map.setLayoutProperty(layer.id, "text-field", label);
-    }
-    if (layer.type === "background") {
-      map.setPaintProperty(layer.id, "background-color", "#EAE3D6");
-    }
-  }
-}
-
 export default function ListingMap({ lat, lng, precision, locale }: ListingMapProps) {
   const exact = precision === "exact";
   return (
@@ -73,7 +49,7 @@ export default function ListingMap({ lat, lng, precision, locale }: ListingMapPr
       touchPitch={false}
       cooperativeGestures
       attributionControl={{ compact: true }}
-      onLoad={(event: MapEvent) => applyHouseStyle(event.target, locale)}
+      onStyleData={(event: MapStyleDataEvent) => applyHouseStyleOnce(event.target, locale)}
     >
       <NavigationControl position="top-right" showCompass={false} />
       {exact ? (

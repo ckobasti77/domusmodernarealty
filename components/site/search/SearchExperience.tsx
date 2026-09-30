@@ -9,6 +9,7 @@ import { SearchMapLoader } from "@/components/map/SearchMapLoader";
 import type { CardMortgage } from "@/components/site/PropertyCard";
 import { api } from "@/convex/_generated/api";
 import type { ListingCard } from "@/convex/lib/dto";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { Locale } from "@/i18n/routing";
 import { formatCount } from "@/lib/format";
@@ -80,6 +81,7 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
   const translators = useSearchTranslators();
   const { state, navigate } = useSearchUrl();
   const desktop = useMediaQuery("(min-width: 1024px)");
+  const hydrated = useHydrated();
   const lenis = useLenis();
 
   const index = useMemo(() => indexLocations(tree), [tree]);
@@ -155,11 +157,14 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
   // A filter change while scrolled deep into the list brings the list's top
   // back under the filter bar. Map moves (bbox) do not scroll.
   const listTop = useRef<HTMLDivElement>(null);
-  const revealList = useCallback(() => {
+  // `align` also pulls a list that sits BELOW the bar up to it (the phone map
+  // view must fill the screen); otherwise only a list scrolled past is restored.
+  const revealList = useCallback((align = false) => {
     const node = listTop.current;
     if (node === null) return;
     const chrome = (document.querySelector<HTMLElement>("[data-search-bar]")?.offsetHeight ?? 0) + headerHeight();
-    if (node.getBoundingClientRect().top >= chrome) return;
+    const top = node.getBoundingClientRect().top;
+    if (align ? Math.abs(top - chrome) < 1 : top >= chrome) return;
     if (lenis !== undefined) lenis.scrollTo(node, { offset: -chrome, immediate: true });
     else window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY - chrome });
   }, [lenis]);
@@ -190,6 +195,8 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
       {/* ------------------------------------------------ sticky filter bar */}
       <div
         data-search-bar=""
+        // Tests (and nothing else) wait for this before they interact.
+        data-ready={hydrated ? "true" : "false"}
         className="sticky top-(--header-h,85px) z-(--z-sticky) border-b border-hairline-light bg-paper/95 backdrop-blur-sm"
       >
         <div className="mx-auto flex h-16 max-w-bleed items-center px-gutter md:px-gutter-md lg:h-18 lg:px-gutter-lg">
@@ -274,7 +281,7 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
               aria-pressed={view === option}
               onClick={() => {
                 setView(option);
-                revealList();
+                revealList(option === "map");
               }}
               data-testid={`view-${option}`}
               className={cn(

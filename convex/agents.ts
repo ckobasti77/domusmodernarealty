@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { agentPublicV, listingCardV, toAgentPublic, toCard } from "./lib/dto";
 import type { ListingCard } from "./lib/dto";
-import { listedScope } from "./lib/search";
 
 export const list = query({
   args: {},

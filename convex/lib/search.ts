@@ -183,6 +183,32 @@ export function pickDriver(filters: SearchFilters, sort: Sort): DriverPlan {
   return { driver: "publishedAt", orderedInWindow: false };
 }
 
+/** The filter keys each driver's index range expresses by itself. */
+const DRIVER_COVERS: Record<Driver, readonly (keyof SearchFilters)[]> = {
+  price: ["priceMin", "priceMax"],
+  cityPrice: ["cityId", "priceMin", "priceMax"],
+  municipalityPrice: ["municipalityId", "priceMin", "priceMax"],
+  areaM2: ["areaMin", "areaMax"],
+  neighborhoodPublishedAt: ["neighborhoodId", "publishedAfter"],
+  publishedAt: ["publishedAfter"],
+  pricePerM2: [],
+  text: [],
+};
+
+/**
+ * True when the driver's index range IS the result set (every active filter is
+ * part of the range), so a page can be exactly `numItems` long with an exact
+ * cursor. Otherwise the page must scan a wider window and post-filter it.
+ */
+export function coveredByDriver(filters: SearchFilters, plan: DriverPlan): boolean {
+  if (plan.driver === "text") return false;
+  const covered = new Set<string>(["transaction", ...DRIVER_COVERS[plan.driver]]);
+  return Object.entries(filters).every(
+    ([key, value]) =>
+      value === undefined || (Array.isArray(value) && value.length === 0) || covered.has(key),
+  );
+}
+
 /** Descending for the "biggest/newest first" sorts. */
 export function driverDescending(sort: Sort): boolean {
   return (

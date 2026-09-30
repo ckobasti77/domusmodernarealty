@@ -314,8 +314,15 @@ export function toQuery(state: SearchState): Record<string, string> {
   return out;
 }
 
+/**
+ * The query string, with commas left literal: `rooms=2,3&location=vracar,dorcol`
+ * reads better in a shared link than `%2C`, and a comma is a legal sub-delimiter
+ * in a query (RFC 3986).
+ */
 export function toQueryString(state: SearchState): string {
-  return new URLSearchParams(toQuery(state)).toString();
+  return Object.entries(toQuery(state))
+    .map(([key, value]) => `${key}=${encodeURIComponent(value).replace(/%2C/gi, ",")}`)
+    .join("&");
 }
 
 /** A stable identity for a search (used to match server data to client args). */

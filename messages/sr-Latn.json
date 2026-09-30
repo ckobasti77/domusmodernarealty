@@ -800,7 +800,8 @@
       "pin": "{price} — {title}",
       "truncated": "Mapa prikazuje prvih {count} rezultata.",
       "viewListing": "Pogledajte nekretninu",
-      "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu."
+      "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu.",
+      "attribution": "Izvori podataka mape"
     },
     "chips": {
       "label": "Aktivni filteri",

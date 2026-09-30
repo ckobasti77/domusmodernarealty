@@ -271,6 +271,32 @@ describe("listings.search filters", () => {
     ).toBe("price");
   });
 
+  test("an unfiltered search pages exactly by numItems, a post-filtered one by window", async () => {
+    const { t } = await fixture();
+    const exact = await t.query(api.listings.search, {
+      filters: { transaction: "sale" },
+      sort: "newest",
+      paginationOpts: { cursor: null, numItems: 2 },
+    });
+    expect(exact.page).toHaveLength(2);
+    expect(exact.isDone).toBe(false);
+    const rest = await t.query(api.listings.search, {
+      filters: { transaction: "sale" },
+      sort: "newest",
+      paginationOpts: { cursor: exact.continueCursor, numItems: 2 },
+    });
+    expect(rest.page).toHaveLength(2);
+    expect(new Set([...exact.page, ...rest.page].map((card) => card._id)).size).toBe(4);
+
+    const filtered = await t.query(api.listings.search, {
+      filters: { transaction: "sale", rooms: [2, 4] },
+      sort: "newest",
+      paginationOpts: { cursor: null, numItems: 1 },
+    });
+    expect(filtered.page).toHaveLength(2);
+    expect(filtered.isDone).toBe(true);
+  });
+
   test("walking the cursor returns every match once, with a tiny page size", async () => {
     const { t } = await fixture();
     const seen: string[] = [];

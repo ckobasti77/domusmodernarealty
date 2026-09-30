@@ -7,7 +7,7 @@ import { assertCanEditListing, requireRole } from "./lib/auth";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { notFound } from "./lib/errors";
 import { assertUploadOk } from "./media";
-import { assetV, imageV, l10nV, tour360V, walk3dV } from "./lib/validators";
+import { imageV, l10nV, tour360V, walk3dV } from "./lib/validators";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
 

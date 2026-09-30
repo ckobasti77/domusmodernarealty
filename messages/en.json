@@ -213,7 +213,8 @@
       "pin": "{price} — {title}",
       "truncated": "The map shows the first {count} results.",
       "viewListing": "View property",
-      "emptyArea": "No results in this part of the map. Try moving the map or zooming out."
+      "emptyArea": "No results in this part of the map. Try moving the map or zooming out.",
+      "attribution": "Map data sources"
     },
     "chips": {
       "label": "Active filters",

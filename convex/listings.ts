@@ -19,6 +19,7 @@ import {
   SEARCH_SCAN,
   TEXT_TAKE,
   compareListings,
+  coveredByDriver,
   driverDescending,
   isPublicScope,
   listedScope,
@@ -164,12 +165,15 @@ async function textMatches(ctx: QueryCtx, scope: string, filters: SearchFilters)
 
 /**
  * One page of results. Convex allows ONE `.paginate()` per function, so a page
- * is a single window of the driver index — at least `SEARCH_SCAN` documents —
- * post-filtered by `matches()`. A selective filter can therefore return a short
- * (even empty) page with `isDone: false`; `usePaginatedQuery` handles short
- * pages and "load more" reads the next window. `paginationOpts` is forwarded
- * with only `numItems` widened, so `cursor`, `endCursor`, `id` and
- * `maximumRowsRead` keep their native behaviour.
+ * is a single window of the driver index:
+ *  - when the index range expresses every filter (`coveredByDriver`), the page
+ *    is exactly `paginationOpts` — `numItems` long with an exact cursor;
+ *  - otherwise the window widens to at least `SEARCH_SCAN` documents and is
+ *    post-filtered by `matches()`, so a selective filter can return a short
+ *    (even empty) page with `isDone: false`; `usePaginatedQuery` handles
+ *    short pages and "load more" reads the next window.
+ * `paginationOpts` is forwarded whole (only `numItems` may widen), so `cursor`,
+ * `endCursor`, `id` and `maximumRowsRead` keep their native behaviour.
  */
 export const search = query({
   args: {
@@ -193,10 +197,11 @@ export const search = query({
     const window =
       plan.driver === "text"
         ? { page: await textMatches(ctx, scope, args.filters), isDone: true, continueCursor: "" }
-        : await driverQuery(ctx, scope, args.filters, plan, args.sort).paginate({
-            ...args.paginationOpts,
-            numItems: Math.max(args.paginationOpts.numItems, SEARCH_SCAN),
-          });
+        : await driverQuery(ctx, scope, args.filters, plan, args.sort).paginate(
+            coveredByDriver(args.filters, plan)
+              ? args.paginationOpts
+              : { ...args.paginationOpts, numItems: Math.max(args.paginationOpts.numItems, SEARCH_SCAN) },
+          );
 
     const matched = window.page.filter((doc) => matches(doc, args.filters));
     const ordered = plan.orderedInWindow

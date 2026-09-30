@@ -213,7 +213,8 @@
       "pin": "{price} — {title}",
       "truncated": "Die Karte zeigt die ersten {count} Ergebnisse.",
       "viewListing": "Immobilie ansehen",
-      "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus."
+      "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus.",
+      "attribution": "Quellen der Kartendaten"
     },
     "chips": {
       "label": "Aktive Filter",

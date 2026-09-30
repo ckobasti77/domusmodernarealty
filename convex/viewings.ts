@@ -1,26 +1,40 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { logActivity } from "./lib/activity";
+import {
+  BOOKING_DAYS,
+  BOOKING_LEAD_MS,
+  belgradeWall,
+  DAY_MS,
+  VIEWING_SLOT_MS,
+} from "./lib/belgradeTime";
 import { appError, invalidInput } from "./lib/errors";
 import {
   assertHoneypotEmpty,
+  consumeEmailLimit,
   consumeLimit,
   optionalPhone,
   optionalText,
   requireEmail,
   requireText,
 } from "./lib/rateLimit";
-import { isPublicScope } from "./lib/search";
+import { isListedScope } from "./lib/search";
 import { localeV, viewingModeV } from "./lib/validators";
-import { clampOffset } from "./agents";
+import { parseHm } from "./agents";
 import { CONSENT_TEXT_VERSION } from "./leads";
 
-const MAX_SLOT_MS = 3 * 60 * 60 * 1000;
+/** Viewings entered by the office can run longer than a web slot; overlap checks look this far back. */
+const LONGEST_VIEWING_MS = 3 * 60 * 60 * 1000;
 
 /**
  * Public viewing request. Re-checks the slot against the agent's weekly
  * availability AND existing requested/confirmed viewings, so a stale UI cannot
  * double-book. Creates the viewing plus a `viewing` lead.
+ *
+ * Every time rule is evaluated on the server in Europe/Belgrade (the agent's
+ * hours are Belgrade wall-clock time): a web request is exactly one slot of
+ * the agent's hourly grid, at least `BOOKING_LEAD_MS` ahead and at most
+ * `BOOKING_DAYS` out, on a listing that is still on the market.
  */
 export const request = mutation({
   args: {
@@ -30,8 +44,6 @@ export const request = mutation({
     start: v.number(),
     end: v.number(),
     mode: viewingModeV,
-    /** Visitor offset from UTC in minutes; agent hours are local wall-clock. */
-    tzOffsetMinutes: v.number(),
     contact: v.object({
       name: v.string(),
       email: v.string(),
@@ -51,54 +63,54 @@ export const request = mutation({
     await consumeLimit(ctx, "viewingPerSession", args.sessionKey);
 
     const now = Date.now();
-    if (args.end <= args.start) invalidInput("Termin nije ispravan.");
-    if (args.end - args.start > MAX_SLOT_MS) {
-      invalidInput("Termin je predug.");
+    if (args.end - args.start !== VIEWING_SLOT_MS) invalidInput("Termin nije ispravan.");
+    if (args.start < now + BOOKING_LEAD_MS) {
+      invalidInput("Termin mora biti najmanje dva sata unapred.");
     }
-    if (args.start < now) invalidInput("Izabrani termin je u prošlosti.");
     // PRD A5: the widget offers the next 14 days.
-    if (args.start > now + 14 * 86_400_000) {
-      invalidInput("Termin se može zakazati najviše 14 dana unaprijed.");
+    if (args.start > now + BOOKING_DAYS * DAY_MS) {
+      invalidInput("Termin se može zakazati najviše 14 dana unapred.");
     }
 
+    // Sold and rented listings stay visible but take no bookings (PRD A5).
     const listing = await ctx.db.get("listings", args.listingId);
-    if (listing === null || !isPublicScope(listing.scope)) {
+    if (listing === null || !isListedScope(listing.scope)) {
       appError("NOT_FOUND", "Nekretnina nije pronađena.");
     }
     const agent = await ctx.db.get("agents", listing.agentId);
-    if (agent === null) appError("NOT_FOUND", "Agent nije pronađen.");
+    if (agent === null || !agent.isPublic) appError("NOT_FOUND", "Agent nije pronađen.");
 
-    // 1) the slot must sit inside the agent's weekly availability, compared in
-    //    LOCAL space because the agent entered local wall-clock hours.
-    const tzMs = clampOffset(args.tzOffsetMinutes) * 60_000;
-    const localStart = args.start + tzMs;
-    const localEnd = args.end + tzMs;
-    const weekday = new Date(localStart).getUTCDay();
-    const localDayStart = localStart - (localStart % 86_400_000);
-    const withinAvailability = agent.availability.some((slot) => {
+    // 1) the slot must be one step of the agent's hourly grid inside their
+    //    weekly availability, compared in Belgrade wall-clock time.
+    const wallStart = belgradeWall(args.start);
+    const weekday = new Date(wallStart).getUTCDay();
+    const intoDay = wallStart % DAY_MS;
+    const onGrid = agent.availability.some((slot) => {
       if (slot.weekday !== weekday) return false;
       const from = parseHm(slot.from);
       const to = parseHm(slot.to);
       if (from === null || to === null) return false;
       return (
-        localStart >= localDayStart + from && localEnd <= localDayStart + to
+        intoDay >= from &&
+        intoDay + VIEWING_SLOT_MS <= to &&
+        (intoDay - from) % VIEWING_SLOT_MS === 0
       );
     });
-    if (!withinAvailability) {
+    if (!onGrid) {
       appError("SLOT_TAKEN", "Izabrani termin nije u radnom vremenu agenta.");
     }
 
     // 2) the slot must not overlap a requested or confirmed viewing. The window
     //    is widened by the longest allowed slot so an evening viewing that runs
     //    past midnight still counts.
-    const windowStart = args.start - (args.start % 86_400_000) - MAX_SLOT_MS;
+    const windowStart = args.start - (args.start % DAY_MS) - LONGEST_VIEWING_MS;
     const sameDay = await ctx.db
       .query("viewings")
       .withIndex("by_agentId_and_start", (q) =>
         q
           .eq("agentId", agent._id)
           .gte("start", windowStart)
-          .lt("start", windowStart + 86_400_000 + 2 * MAX_SLOT_MS),
+          .lt("start", windowStart + DAY_MS + 2 * LONGEST_VIEWING_MS),
       )
       .take(100);
     const clash = sameDay.some(
@@ -116,6 +128,8 @@ export const request = mutation({
     const email = requireEmail(args.contact.email);
     const phone = optionalPhone(args.contact.phone);
     const message = optionalText(args.message, "Poruka", 1000);
+    // Fresh session keys are free for a script; an address is not.
+    await consumeEmailLimit(ctx, "viewingPerEmail", email);
 
     const consent = {
       privacy: true,
@@ -132,6 +146,16 @@ export const request = mutation({
 
     let contactId;
     if (existing !== null && existing.anonymizedAt === undefined) {
+      // One open request per visitor and listing: the agent answers it before
+      // the same address can hold a second slot on this property.
+      const open = await ctx.db
+        .query("leads")
+        .withIndex("by_contactId", (q) => q.eq("contactId", existing._id))
+        .order("desc")
+        .take(50);
+      if (open.some((lead) => lead.type === "viewing" && lead.listingId === listing._id && lead.status === "new")) {
+        appError("ALREADY_REQUESTED", "Zahtev za razgledanje ove nekretnine je već poslat.");
+      }
       // Public path: fill gaps only, never replace an existing identifier.
       await ctx.db.patch("contacts", existing._id, {
         ...(existing.phone === undefined && phone !== undefined ? { phone } : {}),
@@ -209,12 +233,3 @@ export const request = mutation({
     return { viewingId, leadId };
   },
 });
-
-function parseHm(value: string): number | null {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
-  if (match === null) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  if (hours > 23 || minutes > 59) return null;
-  return (hours * 60 + minutes) * 60_000;
-}

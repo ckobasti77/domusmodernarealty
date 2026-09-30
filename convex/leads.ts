@@ -7,13 +7,15 @@ import { appError, invalidInput } from "./lib/errors";
 import { computeValuation, floorToNumber } from "./lib/money";
 import {
   assertHoneypotEmpty,
+  cleanUtm,
+  consumeEmailLimit,
   consumeLimit,
   optionalPhone,
   optionalText,
   requireEmail,
   requireText,
 } from "./lib/rateLimit";
-import { isPublicScope } from "./lib/search";
+import { isListedScope } from "./lib/search";
 import {
   conditionV,
   floorV,
@@ -63,6 +65,8 @@ async function upsertContact(
   const name = requireText(input.name, "Ime", 120, 2);
   const email = requireEmail(input.email);
   const phone = optionalPhone(input.phone);
+  // Fresh session keys are free for a script; an address is not.
+  await consumeEmailLimit(ctx, "leadPerEmail", email);
 
   const consent = {
     privacy: true,
@@ -156,7 +160,7 @@ async function createLead(
     ...(args.valuation !== undefined ? { valuation: args.valuation } : {}),
     source: "web",
     locale: args.locale,
-    ...(args.utm !== undefined ? { utm: args.utm } : {}),
+    ...(args.utm !== undefined ? { utm: cleanUtm(args.utm) } : {}),
     consent: {
       privacy: true,
       marketing: args.marketing,
@@ -193,8 +197,9 @@ export const createInquiry = mutation({
     assertPrivacyConsent(args.privacy);
     await consumeLimit(ctx, "leadPerSession", args.sessionKey);
 
+    // Sold and rented listings stay visible but take no inquiries (PRD A5).
     const listing = await ctx.db.get("listings", args.listingId);
-    if (listing === null || !isPublicScope(listing.scope)) {
+    if (listing === null || !isListedScope(listing.scope)) {
       appError("NOT_FOUND", "Nekretnina nije pronađena.");
     }
 

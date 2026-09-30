@@ -216,7 +216,8 @@
       "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus.",
       "attribution": "Quellen der Kartendaten",
       "outsideBelgrade": "{count} weitere außerhalb Belgrads zeigen",
-      "showAll": "Alle {count} Ergebnisse auf der Karte zeigen"
+      "showAll": "Alle {count} Ergebnisse auf der Karte zeigen",
+      "offline": "Die Karte kann gerade nicht geladen werden. Alle Ergebnisse stehen in der Liste."
     },
     "chips": {
       "label": "Aktive Filter",
@@ -560,7 +561,8 @@
       "loadMap": "Karte anzeigen",
       "poiHeading": "In der Nähe",
       "neighborhoodCta": "Lernen Sie {name} kennen",
-      "attribution": "Karte: OpenFreeMap, Daten © OpenStreetMap-Mitwirkende"
+      "attribution": "Karte: OpenFreeMap, Daten © OpenStreetMap-Mitwirkende",
+      "mapOffline": "Die Karte kann gerade nicht geladen werden. Die Lage ist oben angegeben."
     },
     "poi": {
       "school": "Schule",
@@ -853,7 +855,8 @@
     "UPLOAD_REJECTED": "Die Datei wurde nicht akzeptiert. Bitte prüfen Sie Format und Größe.",
     "INVALID_INPUT": "Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut.",
     "SPAM": "Die Anfrage wurde nicht angenommen. Bitte versuchen Sie es erneut.",
-    "offline": "Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+    "offline": "Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+    "ALREADY_REQUESTED": "Sie haben für diese Immobilie bereits eine Besichtigung angefragt. Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden."
   },
   "seo": {
     "defaultTitle": "Mihajlo Estate — Immobilien in Belgrad und Serbien",

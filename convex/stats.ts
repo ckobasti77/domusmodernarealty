@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { assertSessionKey, consumeLimit } from "./lib/rateLimit";
 import { isPublicScope } from "./lib/search";
 
@@ -102,7 +103,8 @@ export const trackFavorite = mutation({
 /**
  * `listingViews` exists only to make `trackView` idempotent per session. It is
  * append-only and would otherwise grow forever, so a nightly cron drops rows
- * older than the retention window in bounded batches.
+ * older than the retention window in bounded batches, rescheduling itself
+ * while a full batch comes back.
  */
 export const pruneListingViews = internalMutation({
   args: { olderThanDays: v.optional(v.number()) },
@@ -115,7 +117,12 @@ export const pruneListingViews = internalMutation({
       .withIndex("by_creation_time", (q) => q.lt("_creationTime", cutoff))
       .take(500);
     for (const row of stale) await ctx.db.delete("listingViews", row._id);
-    return { deleted: stale.length, more: stale.length === 500 };
+    const more = stale.length === 500;
+    // A busy day leaves more than one batch; keep going until the backlog is gone.
+    if (more) {
+      await ctx.scheduler.runAfter(0, internal.stats.pruneListingViews, { olderThanDays: days });
+    }
+    return { deleted: stale.length, more };
   },
 });
 

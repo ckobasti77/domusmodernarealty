@@ -7,6 +7,7 @@ import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import type { SearchFilters } from "@/convex/lib/validators";
 import type { Bbox } from "@/lib/search-params";
 import { cn } from "@/lib/utils";
+import { useLoadDeadline } from "./useLoadDeadline";
 
 const SearchMap = dynamic(() => import("./SearchMap"), { ssr: false });
 
@@ -77,8 +78,18 @@ export function SearchMapLoader({
     setReady(true);
   }, []);
 
+  const { failed, fail } = useLoadDeadline(supported === true && !ready);
+
   const state =
-    supported === null ? "idle" : !supported ? "unsupported" : ready ? "ready" : "loading";
+    supported === null
+      ? "idle"
+      : !supported
+        ? "unsupported"
+        : ready
+          ? "ready"
+          : failed
+            ? "unavailable"
+            : "loading";
 
   function toggleSearchAsMove() {
     if (searchAsMove) {
@@ -107,6 +118,7 @@ export function SearchMapLoader({
           onBoundsChange={onBoundsChange}
           initialBbox={initialBbox}
           onReady={handleReady}
+          onFailed={fail}
         />
       ) : null}
 
@@ -142,10 +154,12 @@ export function SearchMapLoader({
         </p>
       ) : null}
 
-      {state === "unsupported" ? (
-        <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3 p-6 text-center text-stone-text">
+      {state === "unsupported" || state === "unavailable" ? (
+        <div className="absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3 bg-ivory-2 p-6 text-center text-stone-text">
           <MapPin aria-hidden="true" strokeWidth={1.25} className="size-6" />
-          <p className="text-small">{tSearch("mapUnavailable")}</p>
+          <p role="status" className="max-w-[28ch] text-small">
+            {state === "unsupported" ? tSearch("mapUnavailable") : t("offline")}
+          </p>
         </div>
       ) : null}
     </div>

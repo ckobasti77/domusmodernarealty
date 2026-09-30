@@ -12,6 +12,7 @@ export type ErrorCode =
   | "PUBLISH_BLOCKED"
   | "RATE_LIMITED"
   | "SLOT_TAKEN"
+  | "ALREADY_REQUESTED"
   | "SPAM"
   | "CONFLICT";
 

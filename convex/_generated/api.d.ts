@@ -23,6 +23,7 @@ import type * as leads from "../leads.js";
 import type * as leadsAdmin from "../leadsAdmin.js";
 import type * as lib_activity from "../lib/activity.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_belgradeTime from "../lib/belgradeTime.js";
 import type * as lib_checklist from "../lib/checklist.js";
 import type * as lib_counts from "../lib/counts.js";
 import type * as lib_derive from "../lib/derive.js";
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   leadsAdmin: typeof leadsAdmin;
   "lib/activity": typeof lib_activity;
   "lib/auth": typeof lib_auth;
+  "lib/belgradeTime": typeof lib_belgradeTime;
   "lib/checklist": typeof lib_checklist;
   "lib/counts": typeof lib_counts;
   "lib/derive": typeof lib_derive;

@@ -171,6 +171,8 @@ export type SearchMapProps = {
   initialBbox?: Bbox;
   /** Fired on the map's `load`, with a reader of the live viewport for the toggle. */
   onReady: (readBounds: () => Bbox | null) => void;
+  /** Fired when the style or its sources fail before the first `load`. */
+  onFailed: () => void;
 };
 
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -319,6 +321,7 @@ export default function SearchMap({
   onBoundsChange,
   initialBbox,
   onReady,
+  onFailed,
 }: SearchMapProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("search.map");
@@ -461,6 +464,11 @@ export default function SearchMap({
     });
   }
 
+  /** Before `load` an error means no map at all; later ones are single tiles MapLibre retries. */
+  function handleError() {
+    if (!loaded) onFailed();
+  }
+
   function handleMoveEnd(event: ViewStateChangeEvent) {
     const map = event.target;
     refresh(map);
@@ -559,6 +567,7 @@ export default function SearchMap({
         cursor={visible.gl && glPointer ? "pointer" : undefined}
         onStyleData={handleStyleData}
         onLoad={handleLoad}
+        onError={handleError}
         onMoveEnd={handleMoveEnd}
         onSourceData={handleSourceData}
         onIdle={handleIdle}

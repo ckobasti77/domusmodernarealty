@@ -201,6 +201,8 @@ export async function makeListing(
     })),
     floorPlans: [],
     poi: [],
+    // A tour the page can open: published, with scenes (as the seed does).
+    ...(overrides.hasTour === true ? { tour360: { provider: "self" as const, published: true } } : {}),
     publishedAt: overrides.publishedAt ?? now - index * 86_400_000,
     updatedAt: now - index * 3600_000,
   };

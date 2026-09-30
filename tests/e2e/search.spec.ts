@@ -293,8 +293,9 @@ test.describe("search — map", () => {
     // Novi Sad: few listings, so every one is an unclustered price pin.
     await visit(page, "/sr/nekretnine?location=novi-sad");
     const map = page.getByTestId("search-map");
-    await expect(map).toHaveAttribute("data-map-state", /ready|unsupported/, { timeout: 30_000 });
+    await expect(map).toHaveAttribute("data-map-state", /ready|unsupported|unavailable/, { timeout: 30_000 });
     test.skip((await map.getAttribute("data-map-state")) === "unsupported", "no WebGL2 in this browser");
+    test.skip((await map.getAttribute("data-map-state")) === "unavailable", "the OpenFreeMap tile server is unreachable");
 
     const expected = sale.filter((card) => card.cityId === placeId("novi-sad") || card.municipalityId === placeId("novi-sad"));
     expect(expected.length).toBeGreaterThan(0);
@@ -314,8 +315,9 @@ test.describe("search — map", () => {
   test("the whole-country view clusters, and 'search as I move the map' filters by the viewport", async ({ page }) => {
     await visit(page, "/sr/nekretnine");
     const map = page.getByTestId("search-map");
-    await expect(map).toHaveAttribute("data-map-state", /ready|unsupported/, { timeout: 30_000 });
+    await expect(map).toHaveAttribute("data-map-state", /ready|unsupported|unavailable/, { timeout: 30_000 });
     test.skip((await map.getAttribute("data-map-state")) === "unsupported", "no WebGL2 in this browser");
+    test.skip((await map.getAttribute("data-map-state")) === "unavailable", "the OpenFreeMap tile server is unreachable");
 
     const markers = map.locator('[data-testid="map-pin"], [data-testid="map-cluster"]');
     await expect.poll(() => markers.count()).toBeGreaterThan(0);
@@ -353,7 +355,8 @@ test.describe("search — phone", () => {
     await page.getByTestId("view-map").click();
     const map = page.getByTestId("search-map");
     await expect(map).toBeVisible();
-    await expect(map).toHaveAttribute("data-map-state", /ready|unsupported/, { timeout: 30_000 });
+    // "unavailable" (tile server unreachable) still proves the switch: the panel shows its notice.
+    await expect(map).toHaveAttribute("data-map-state", /ready|unsupported|unavailable/, { timeout: 30_000 });
     await expect(page.getByTestId("results-list")).toBeHidden();
     await page.getByTestId("view-list").click();
     await expect(page.getByTestId("results-list")).toBeVisible();

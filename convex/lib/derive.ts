@@ -48,10 +48,11 @@ export function applyDerived(
   const area = listing.areaM2 > 0 ? listing.areaM2 : 1;
   const pricePerM2 = Math.round((listing.price / area) * 100) / 100;
 
-  const hasTour =
-    (listing.tour360?.published ?? false) ||
-    (listing.walk3d?.published ?? false) ||
-    hasTourScenes;
+  // Only what the detail page will actually open: an unpublished 360° tour's
+  // scenes must not earn the card a "360°" badge.
+  const tour360Live =
+    listing.tour360?.published === true && (hasTourScenes || listing.tour360.url !== undefined);
+  const hasTour = tour360Live || listing.walk3d?.published === true;
 
   return {
     scope: scopeKey(bucketOf(listing.status, listing.visibility), listing.transaction),

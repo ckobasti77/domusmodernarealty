@@ -2,6 +2,7 @@
 
 import { Layer, Map, Marker, NavigationControl, Source, type MapStyleDataEvent } from "@vis.gl/react-maplibre";
 import type { Feature, Polygon } from "geojson";
+import { useRef } from "react";
 import { maplibregl } from "./maplibre";
 import { applyHouseStyleOnce } from "./style";
 
@@ -36,8 +37,15 @@ export type ListingMapProps = {
   locale: string;
 };
 
-export default function ListingMap({ lat, lng, precision, locale }: ListingMapProps) {
+type ListingMapEvents = {
+  onLoad: () => void;
+  /** The style or its sources failed before the first `load`. */
+  onFailed: () => void;
+};
+
+export default function ListingMap({ lat, lng, precision, locale, onLoad, onFailed }: ListingMapProps & ListingMapEvents) {
   const exact = precision === "exact";
+  const loaded = useRef(false);
   return (
     <Map
       mapLib={maplibregl}
@@ -50,6 +58,14 @@ export default function ListingMap({ lat, lng, precision, locale }: ListingMapPr
       cooperativeGestures
       attributionControl={{ compact: true }}
       onStyleData={(event: MapStyleDataEvent) => applyHouseStyleOnce(event.target, locale)}
+      onLoad={() => {
+        loaded.current = true;
+        onLoad();
+      }}
+      // Before `load` an error means no map at all; later ones are single tiles MapLibre retries.
+      onError={() => {
+        if (!loaded.current) onFailed();
+      }}
     >
       <NavigationControl position="top-right" showCompass={false} />
       {exact ? (

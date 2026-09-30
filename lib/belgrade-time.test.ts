@@ -1,3 +1,4 @@
+import * as server from "@/convex/lib/belgradeTime";
 import { describe, expect, it } from "vitest";
 import {
   belgradeDayKey,
@@ -31,5 +32,27 @@ describe("belgrade-time", () => {
     // After 25 October Belgrade is back on UTC+1, so midnight is 23:00 UTC.
     expect(days[13].start).toBe(Date.UTC(2026, 10, 1, 23));
     expect(new Set(days.map((day) => day.key)).size).toBe(14);
+  });
+});
+
+describe("the server's EU rule agrees with the browser's time-zone data", () => {
+  it("offset and local midnight match every 30 minutes around each switch, 2025–2030", () => {
+    for (let year = 2025; year <= 2030; year += 1) {
+      for (const month of [2, 9]) {
+        const from = Date.UTC(year, month, 20);
+        for (let at = from; at < from + 14 * 86_400_000; at += 30 * 60_000) {
+          expect(server.belgradeOffsetMinutes(at)).toBe(belgradeOffsetMinutes(at));
+          expect(server.belgradeMidnight(at)).toBe(belgradeMidnight(at));
+        }
+      }
+    }
+  });
+
+  it("wall-clock readings round-trip outside the spring gap", () => {
+    for (let at = Date.UTC(2026, 9, 24); at < Date.UTC(2026, 9, 27); at += 15 * 60_000) {
+      const wall = server.belgradeWall(at);
+      // The October overlap maps back to the earlier (summer) instant.
+      expect([at, at - 60 * 60_000]).toContain(server.fromBelgradeWall(wall));
+    }
   });
 });

@@ -322,6 +322,7 @@ export const poiV = v.object({
   name: v.string(),
   distanceM: v.number(),
 });
+export type Poi = Infer<typeof poiV>;
 
 export const tourProviderV = v.union(
   v.literal("self"),
@@ -434,6 +435,7 @@ export const utmV = v.object({
   term: v.optional(v.string()),
   content: v.optional(v.string()),
 });
+export type Utm = Infer<typeof utmV>;
 
 export const valuationResultV = v.object({
   low: v.number(),

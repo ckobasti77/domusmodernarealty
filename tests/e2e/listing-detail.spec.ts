@@ -321,9 +321,12 @@ test.describe("server rendering and tracking", () => {
   test("a view is counted once per session, not once per load", async ({ page }) => {
     const slug = "trosoban-stan-od-82-m-na-dusanovcu-dva-koraka-od-pijace-me-1056";
     await quietVisit(page, `/sr/nekretnine/${slug}`);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // The H1 is server HTML, visible before hydration; the key only exists once
+    // the tracker's effect has run, so wait for it rather than read it once.
+    await expect
+      .poll(() => page.evaluate(() => window.sessionStorage.getItem("me:sk")), { timeout: 15_000 })
+      .not.toBeNull();
     const sessionKey = await page.evaluate(() => window.sessionStorage.getItem("me:sk"));
-    expect(sessionKey).not.toBeNull();
     await expect.poll(() => convexRun<number>("qa:viewsForSession", { slug, sessionKey }), { timeout: 15_000 }).toBe(1);
 
     await page.reload();
@@ -358,6 +361,16 @@ test.describe("media tabs and calculators", () => {
     await expect(calculator.getByRole("button", { name: "Učešće 10%" })).toHaveAttribute("aria-pressed", "true");
     await expect(monthly).not.toHaveText(at20 ?? "");
     await expect(page.getByTestId("cost-calculator")).toContainText("Porez na prenos");
+  });
+
+  test("the location map settles: the map, or a notice when the tile server is unreachable", async ({ page }) => {
+    await quietVisit(page, `/sr/nekretnine/${LISTING}`);
+    const map = page.getByRole("region", { name: "Mapa lokacije" });
+    await map.scrollIntoViewIfNeeded();
+    await expect(map).toHaveAttribute("data-map-state", /ready|unavailable|unsupported/, { timeout: 30_000 });
+    if ((await map.getAttribute("data-map-state")) === "unavailable") {
+      await expect(map.getByRole("status")).toContainText("Lokacija je navedena iznad");
+    }
   });
 
   test("a rental shows the monthly rent and no purchase calculators", async ({ page }) => {

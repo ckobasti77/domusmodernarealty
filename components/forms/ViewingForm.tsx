@@ -12,7 +12,8 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useHydrated } from "@/hooks/useHydrated";
 import type { Locale } from "@/i18n/routing";
-import { BELGRADE_TZ, belgradeDayKey, belgradeOffsetMinutes, nextBelgradeDays } from "@/lib/belgrade-time";
+import { BOOKING_DAYS, BOOKING_LEAD_MS } from "@/convex/lib/belgradeTime";
+import { BELGRADE_TZ, belgradeDayKey, nextBelgradeDays } from "@/lib/belgrade-time";
 import { errorMessageKey } from "@/lib/errors";
 import { getSessionKey } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -23,55 +24,26 @@ import { ConsentFields, contactFields, FormError, SuccessPanel } from "./shared"
  * (status "requested") plus a lead.
  *
  * Slots come from `agents.slots`: the agent's weekly hours minus requested and
- * confirmed viewings. Hours are Belgrade wall-clock time, so the whole widget
- * works in Europe/Belgrade and says so. The 14-day window is queried in at most
- * two segments, split where the UTC offset changes, so a DST switch inside the
- * window cannot shift the later slots by an hour.
+ * confirmed viewings. Hours are Belgrade wall-clock time and the server does
+ * every time-zone calculation itself (DST included), so the widget only names
+ * the first day and shows the times in Europe/Belgrade, saying so.
  */
-
-const DAYS = 14;
-const SLOT_MINUTES = 60;
-/** No same-hour surprises for the agent. */
-const LEAD_TIME_MS = 2 * 60 * 60_000;
 
 type Slot = { start: number; end: number; taken: boolean };
 
 function useSlots(agentId: Id<"agents">, now: number) {
-  const days = nextBelgradeDays(now, DAYS);
-  const offsets = days.map((day) => belgradeOffsetMinutes(day.start + 12 * 60 * 60_000));
-  const split = offsets.findIndex((offset) => offset !== offsets[0]);
-  const firstLen = split === -1 ? days.length : split;
+  const days = nextBelgradeDays(now, BOOKING_DAYS);
+  const slots = useQuery(api.agents.slots, { agentId, fromDay: days[0].start, days: BOOKING_DAYS });
 
-  const first = useQuery(api.agents.slots, {
-    agentId,
-    fromDay: days[0].start,
-    days: firstLen,
-    tzOffsetMinutes: offsets[0],
-    slotMinutes: SLOT_MINUTES,
-  });
-  const second = useQuery(
-    api.agents.slots,
-    split === -1
-      ? "skip"
-      : {
-          agentId,
-          fromDay: days[split].start,
-          days: days.length - split,
-          tzOffsetMinutes: offsets[split],
-          slotMinutes: SLOT_MINUTES,
-        },
-  );
-
-  const loading = first === undefined || (split !== -1 && second === undefined);
   const byDay = new Map<string, Slot[]>();
-  for (const slot of [...(first ?? []), ...(second ?? [])]) {
-    if (slot.start < now + LEAD_TIME_MS) continue;
+  for (const slot of slots ?? []) {
+    if (slot.start < now + BOOKING_LEAD_MS) continue;
     const key = belgradeDayKey(slot.start);
     const list = byDay.get(key) ?? [];
     list.push(slot);
     byDay.set(key, list);
   }
-  return { days, byDay, loading };
+  return { days, byDay, loading: slots === undefined };
 }
 
 export function ViewingForm({ listingId, agentId }: { listingId: Id<"listings">; agentId: Id<"agents"> }) {
@@ -139,7 +111,6 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
         start: slot.start,
         end: slot.end,
         mode: values.mode,
-        tzOffsetMinutes: belgradeOffsetMinutes(slot.start),
         contact: {
           name: values.name,
           email: values.email,

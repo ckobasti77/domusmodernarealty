@@ -2,17 +2,25 @@ import { HOUR, MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 import { appError, invalidInput } from "./errors";
+import type { Utm } from "./validators";
 
 /**
- * Per-session token buckets plus a global fixed window per form, so one abusive
- * client cannot exhaust the site-wide budget and a burst of real traffic still
- * gets through.
+ * Three layers per public form:
+ *  - a per-session token bucket (the session key is minted by the browser, so
+ *    it only slows an honest double-click or a naive bot);
+ *  - a per-email bucket, which a script cannot mint for free;
+ *  - a global fixed window. It is a runaway-flood breaker, set far above any
+ *    real agency's volume, NOT the primary control: a low global cap would let
+ *    one script with fresh session keys lock every real visitor out for the
+ *    hour. A server-verified challenge (Turnstile) is the next layer.
  */
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   leadPerSession: { kind: "token bucket", rate: 5, period: HOUR, capacity: 3 },
-  leadGlobal: { kind: "fixed window", rate: 200, period: HOUR },
+  leadPerEmail: { kind: "token bucket", rate: 4, period: HOUR, capacity: 3 },
+  leadGlobal: { kind: "fixed window", rate: 1000, period: HOUR },
   viewingPerSession: { kind: "token bucket", rate: 4, period: HOUR, capacity: 2 },
-  viewingGlobal: { kind: "fixed window", rate: 120, period: HOUR },
+  viewingPerEmail: { kind: "token bucket", rate: 3, period: HOUR, capacity: 2 },
+  viewingGlobal: { kind: "fixed window", rate: 600, period: HOUR },
   valuationPerSession: { kind: "token bucket", rate: 4, period: HOUR, capacity: 2 },
   trackViewPerSession: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 30 },
   trackViewGlobal: { kind: "fixed window", rate: 5000, period: HOUR },
@@ -74,6 +82,23 @@ export async function consumeLimit(
   }
 }
 
+/**
+ * One token from the per-email bucket. Call it with the normalized address
+ * from `requireEmail`, after the per-session check.
+ */
+export async function consumeEmailLimit(
+  ctx: MutationCtx,
+  limit: "leadPerEmail" | "viewingPerEmail",
+  email: string,
+): Promise<void> {
+  const result = await rateLimiter.limit(ctx, limit, { key: email });
+  if (!result.ok) {
+    appError("RATE_LIMITED", "Previše zahteva. Pokušajte ponovo kasnije.", {
+      retryAfter: result.retryAfter,
+    });
+  }
+}
+
 /** The honeypot field must arrive empty; bots fill it. */
 export function assertHoneypotEmpty(hp: string | undefined): void {
   if (hp !== undefined && hp.trim().length > 0) {
@@ -114,10 +139,28 @@ export function optionalText(
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[+()\-\s\d]{6,24}$/;
 
+/** RFC 5321 caps a forward path at 254 characters. */
+const EMAIL_MAX = 254;
+
 export function requireEmail(value: string): string {
   const email = value.trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) invalidInput("Unesite ispravnu email adresu.");
+  // Length first: the pattern backtracks on long crafted strings.
+  if (email.length > EMAIL_MAX || !EMAIL_RE.test(email)) {
+    invalidInput("Unesite ispravnu email adresu.");
+  }
   return email;
+}
+
+const UTM_MAX = 200;
+
+/** Campaign tags arrive from URLs; keep them short and drop empty ones. */
+export function cleanUtm(utm: Utm): Utm {
+  const out: Utm = {};
+  for (const key of ["source", "medium", "campaign", "term", "content"] as const) {
+    const value = utm[key]?.trim().slice(0, UTM_MAX);
+    if (value !== undefined && value.length > 0) out[key] = value;
+  }
+  return out;
 }
 
 export function optionalPhone(value: string | undefined): string | undefined {

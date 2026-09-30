@@ -3,8 +3,9 @@
 import { MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ListingMapProps } from "./ListingMap";
+import { useLoadDeadline } from "./useLoadDeadline";
 
 const ListingMap = dynamic(() => import("./ListingMap"), { ssr: false });
 
@@ -35,6 +36,12 @@ export function ListingMapLoader(props: ListingMapProps) {
   const tSearch = useTranslations("search");
   const box = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<"idle" | "visible" | "unsupported">("idle");
+  const [loaded, setLoaded] = useState(false);
+  const { failed, fail } = useLoadDeadline(state === "visible" && !loaded);
+  const mapState =
+    state !== "visible" ? state : loaded ? "ready" : failed ? "unavailable" : "loading";
+
+  const handleLoad = useCallback(() => setLoaded(true), []);
 
   useEffect(() => {
     const node = box.current;
@@ -58,15 +65,19 @@ export function ListingMapLoader(props: ListingMapProps) {
       role="region"
       aria-label={t("mapLabel")}
       data-lenis-prevent=""
-      data-map-state={state}
+      data-map-state={mapState}
       className="relative aspect-[4/3] w-full overflow-clip bg-ivory-2 md:aspect-[16/9]"
     >
-      {state === "visible" ? (
-        <ListingMap {...props} />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-stone-text">
+      {state === "visible" ? <ListingMap {...props} onLoad={handleLoad} onFailed={fail} /> : null}
+      {mapState === "ready" || mapState === "loading" ? null : (
+        <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center gap-3 bg-ivory-2 p-6 text-center text-stone-text">
           <MapPin aria-hidden="true" strokeWidth={1.25} className="size-6" />
-          {state === "unsupported" ? <p className="text-small">{tSearch("mapUnavailable")}</p> : null}
+          {mapState === "unsupported" ? <p className="text-small">{tSearch("mapUnavailable")}</p> : null}
+          {mapState === "unavailable" ? (
+            <p role="status" className="max-w-[28ch] text-small">
+              {t("mapOffline")}
+            </p>
+          ) : null}
         </div>
       )}
     </div>

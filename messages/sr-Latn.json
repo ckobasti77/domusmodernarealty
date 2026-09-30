@@ -108,7 +108,8 @@
     "UPLOAD_REJECTED": "Fajl nije prihvaćen. Proverite format i veličinu.",
     "INVALID_INPUT": "Proverite unete podatke i pokušajte ponovo.",
     "SPAM": "Zahtev nije prihvaćen. Pokušajte ponovo.",
-    "offline": "Veza sa serverom nije uspostavljena. Proverite internet i pokušajte ponovo."
+    "offline": "Veza sa serverom nije uspostavljena. Proverite internet i pokušajte ponovo.",
+    "ALREADY_REQUESTED": "Već ste poslali zahtev za razgledanje ove nekretnine. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata."
   },
   "favorites": {
     "clear": "Očisti listu",
@@ -625,7 +626,8 @@
       "loadMap": "Prikaži mapu",
       "poiHeading": "U blizini",
       "neighborhoodCta": "Upoznajte kraj {name}",
-      "attribution": "Mapa: OpenFreeMap, podaci © OpenStreetMap saradnici"
+      "attribution": "Mapa: OpenFreeMap, podaci © OpenStreetMap saradnici",
+      "mapOffline": "Mapa trenutno ne može da se učita. Lokacija je navedena iznad."
     },
     "poi": {
       "school": "Škola",
@@ -804,7 +806,8 @@
       "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu.",
       "attribution": "Izvori podataka mape",
       "outsideBelgrade": "Prikaži i {count} van Beograda",
-      "showAll": "Prikaži svih {count} rezultata na mapi"
+      "showAll": "Prikaži svih {count} rezultata na mapi",
+      "offline": "Mapa trenutno ne može da se učita. Svi rezultati su u listi."
     },
     "chips": {
       "label": "Aktivni filteri",

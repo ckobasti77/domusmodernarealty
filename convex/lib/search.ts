@@ -99,6 +99,11 @@ export function isPublicScope(scope: string): boolean {
   return scope.startsWith("listed:") || scope.startsWith("closed:");
 }
 
+/** On the market: the only scope that takes inquiries and viewing requests. */
+export function isListedScope(scope: string): boolean {
+  return scope.startsWith("listed:");
+}
+
 /* ------------------------------------------------------------ driver choice */
 
 export type Driver =

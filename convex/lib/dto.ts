@@ -33,7 +33,7 @@ import {
   transactionV,
 } from "./validators";
 import { publicCoords } from "./geo";
-import type { ImageRef, MediaItem } from "./validators";
+import type { AddressVisibility, ImageRef, MediaItem, Poi } from "./validators";
 
 /* ----------------------------------------------------------------- images */
 
@@ -165,6 +165,61 @@ export async function toAgentPublic(
     availability: agent.availability,
     isDemo: agent.isDemo,
   };
+}
+
+const AGENCY_ROLE = {
+  sr: "Kancelarija agencije",
+  en: "Agency office",
+  ru: "Офис агентства",
+  de: "Büro der Agentur",
+} as const;
+
+/**
+ * The contact card for a listing whose agent is not public (`isPublic: false`):
+ * the agency's own name and channels from settings, never the hidden agent's
+ * name, phone, e-mail or licence. Booking stays off (`agents.slots` returns no
+ * slots and `viewings.request` refuses a non-public agent); inquiries still
+ * reach the assigned agent through the lead.
+ */
+async function agencyContact(
+  ctx: QueryCtx,
+  agent: Doc<"agents">,
+): Promise<AgentPublic> {
+  const settings = await ctx.db
+    .query("settings")
+    .withIndex("by_key", (q) => q.eq("key", "global"))
+    .unique();
+  const name = settings?.companyName ?? "Mihajlo Estate";
+  const phone = settings?.phones[0];
+  return {
+    _id: agent._id,
+    slug: agent.slug,
+    name,
+    role: AGENCY_ROLE,
+    monogram: monogramOf(name),
+    languages: [],
+    ...(phone !== undefined ? { phone } : {}),
+    ...(settings?.viber !== undefined ? { viber: settings.viber } : {}),
+    ...(settings?.whatsapp !== undefined ? { whatsapp: settings.whatsapp } : {}),
+    ...(settings !== null ? { email: settings.email } : {}),
+    areas: [],
+    availability: [],
+    isDemo: agent.isDemo,
+  };
+}
+
+/**
+ * Nearby places with the exact distance would let anyone triangulate an
+ * address the listing hides, so they are rounded to the precision the map
+ * shows: 100 m when the street is public, 250 m for an area.
+ */
+function publicPoi(poi: readonly Poi[], visibility: AddressVisibility): Poi[] {
+  if (visibility === "exact") return [...poi];
+  const step = visibility === "street" ? 100 : 250;
+  return poi.map((item) => ({
+    ...item,
+    distanceM: Math.max(step, Math.round(item.distanceM / step) * step),
+  }));
 }
 
 /* -------------------------------------------------------------- listing DTOs */
@@ -303,7 +358,6 @@ export const listingDetailV = listingCardV.extend({
   city: v.optional(locationRefV),
   municipality: v.optional(locationRefV),
   neighborhood: v.optional(locationRefV),
-  views: v.number(),
   seoTitle: v.optional(l10nV),
   seoDescription: v.optional(l10nV),
 });
@@ -465,10 +519,6 @@ export async function toDetail(
     .query("tourScenes")
     .withIndex("by_listingId_and_order", (q) => q.eq("listingId", listing._id))
     .take(40);
-  const stats = await ctx.db
-    .query("listingStats")
-    .withIndex("by_listingId", (q) => q.eq("listingId", listing._id))
-    .unique();
   const changes = await ctx.db
     .query("priceChanges")
     .withIndex("by_listingId_and_at", (q) => q.eq("listingId", listing._id))
@@ -562,17 +612,24 @@ export async function toDetail(
     ...(showStreet && listing.location.streetNo !== undefined
       ? { streetNo: listing.location.streetNo }
       : {}),
-    ...(listing.poi !== undefined ? { poi: listing.poi } : {}),
-    priceHistory: changes.map((change) => ({
-      at: change.at,
-      from: change.from,
-      price: change.to,
-    })),
-    agent: await toAgentPublic(ctx, agentDoc),
+    ...(listing.poi !== undefined
+      ? { poi: publicPoi(listing.poi, listing.location.addressVisibility) }
+      : {}),
+    // Edits made while the listing was a draft are corrections, not price
+    // changes a buyer saw.
+    priceHistory: changes
+      .filter((change) => listing.publishedAt !== undefined && change.at >= listing.publishedAt)
+      .map((change) => ({
+        at: change.at,
+        from: change.from,
+        price: change.to,
+      })),
+    agent: agentDoc.isPublic
+      ? await toAgentPublic(ctx, agentDoc)
+      : await agencyContact(ctx, agentDoc),
     ...(city !== null ? { city: locationRef(city) } : {}),
     ...(municipality !== null ? { municipality: locationRef(municipality) } : {}),
     ...(neighborhood !== null ? { neighborhood: locationRef(neighborhood) } : {}),
-    views: stats?.views ?? 0,
     ...(listing.seo?.metaTitle !== undefined
       ? { seoTitle: listing.seo.metaTitle }
       : {}),

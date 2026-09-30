@@ -22,7 +22,7 @@ Parallelize: after you define the shared admin patterns (list page, detail sheet
 11. **Public site uses the managed content:** landing texts, stats, testimonials (verified only), legal pages and settings now come from `pages`/`settings`. Verify the landing still renders identically with the seed content.
 12. **Tests:**
     - move a lead through the pipeline (activity logged)
-    - create a post → visible on `/sr/magazin`
+    - create a post → it is returned by the public posts query in sr-Latn (the `/sr/magazin` page itself is built in step 10; do not build it here, step 10 adds the page-level test)
     - edit the hero text → visible on the landing
     - invite → accept → the new agent logs in with limited menu items
     - CSV export downloads

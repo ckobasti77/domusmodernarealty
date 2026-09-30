@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { contextSafeFn, gsap, MOTION_QUERIES, SplitText, useGSAP } from "@/components/motion/gsap";
-import { onIntroReveal } from "@/components/motion/intro";
+import { isIntroDone, onIntroReveal } from "@/components/motion/intro";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { MediaVideo, ResponsiveImage } from "@/lib/media";
 import { PORTRAIT } from "./art-direction";
@@ -154,7 +154,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
         // The headline waits for the webfont, so it is split in a later task;
         // `contextSafe` keeps that late split and its tween inside this
         // branch's context, so a branch change or an unmount reverts them.
-        const enterTitle = contextSafeFn(contextSafe, (tl: gsap.core.Timeline) => {
+        const enterTitle = contextSafeFn(contextSafe, (tl: gsap.core.Timeline, at: number) => {
           if (title === undefined || disposed) return;
           split = SplitText.create(title, {
             type: "lines",
@@ -177,7 +177,8 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
                 split = null;
               },
             },
-            0.2,
+            // A late webfont must not drop the lines in mid-rise.
+            Math.max(at, tl.time() + 0.05),
           );
         });
 
@@ -186,36 +187,46 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
           started = true;
           entered = true;
 
-          const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+          // Paused until a painted frame: a long task at hydration would
+          // otherwise make GSAP jump over the first part of the entrance.
+          const tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
+          // Behind the curtain the copy waits until the lift has uncovered it
+          // (about a third of a second), so the headline rises in view.
+          const lead = document.documentElement.dataset.intro === "play" && !isIntroDone() ? 0.32 : 0;
 
-          // The media settles first, so the curtain lifts onto movement.
+          // The media moves from the first frame, so the curtain lifts onto movement.
           if (stillOnly) {
+            // The first-paint state in globals.css is this "from", so a repeat
+            // visit never pops. It ends overscaled (1.02 covers the 0.6% drift)
+            // and eases out inside five seconds (WCAG 2.2.2).
             tl.fromTo(
               frame,
-              { scale: 1.12, xPercent: -1.2, yPercent: -0.8 },
-              { scale: 1, xPercent: 1.2, yPercent: 0.8, duration: 12, ease: "none" },
+              { x: 0, y: 0, scale: 1.06, xPercent: -0.6, yPercent: -0.4 },
+              { scale: 1.02, xPercent: 0.6, yPercent: 0.4, duration: 5, ease: "sine.out" },
               0,
             );
           } else {
-            tl.fromTo(frame, { scale: 1.08 }, { scale: 1, duration: 1.8, ease: "estate" }, 0);
+            tl.fromTo(frame, { x: 0, y: 0, xPercent: 0, yPercent: 0, scale: 1.08 }, { scale: 1, duration: 1.8, ease: "estate" }, 0);
           }
 
+          // Three beats: the photograph, the headline, then the lede and search.
           if (eyebrow !== undefined) {
-            tl.fromTo(eyebrow, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.9 }, 0.1);
+            tl.fromTo(eyebrow, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.8 }, 0.1 + lead);
           }
           if (lede !== undefined) {
-            tl.fromTo(lede, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.1 }, 0.55);
+            tl.fromTo(lede, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.9 }, 0.48 + lead);
           }
           if (search !== undefined) {
-            tl.fromTo(search, { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 1.1 }, 0.7);
+            tl.fromTo(search, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.9 }, 0.6 + lead);
           }
           if (cue !== undefined) {
-            tl.fromTo(cue, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" }, 1.1);
+            tl.fromTo(cue, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 1 + lead);
           }
+          requestAnimationFrame(() => requestAnimationFrame(() => tl.play()));
 
           // Split against the real face: measuring the fallback font would
           // break every line the moment EB Garamond swaps in.
-          if (title !== undefined) void fontsReady(700).then(() => enterTitle(tl));
+          if (title !== undefined) void fontsReady(700).then(() => enterTitle(tl, 0.1 + lead));
         });
 
         const unsubscribe = onIntroReveal(play);
@@ -260,7 +271,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
         data-hero-parallax=""
         className="absolute inset-x-0 bottom-px top-0 -z-10 max-h-[calc(100svh-1px)] overflow-clip"
       >
-        <div data-hero-frame="" className="absolute inset-0">
+        <div data-hero-frame={video === null ? "still" : "film"} className="absolute inset-0">
           <picture>
             {posterMobile !== null
               ? posterMobile.sources.map((source) => (

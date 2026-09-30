@@ -107,7 +107,7 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
               id="hero-title"
               data-hero-title=""
               data-hero-reveal="title"
-              className="col-span-4 max-w-[14ch] font-display text-display-xl font-normal text-ivory max-lg:[@media(max-height:47rem)]:text-[3rem] lg:col-span-8 lg:[@media(max-height:51rem)]:text-[min(9vw,12svh)]"
+              className="col-span-4 max-w-[14ch] font-display text-display-xl font-normal text-ivory max-lg:[@media(max-height:47rem)]:text-[3rem] md:max-lg:portrait:text-[11.5vw] lg:col-span-8 lg:[@media(max-height:51rem)]:text-[min(9vw,12svh)]"
             >
               {/* Display-xl: only a pair this short may be joined, or it would not fit a phone. */}
               {fixWidows(t("heroHeadline"), 10)}
@@ -120,11 +120,12 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
             </p>
           </div>
 
-          {/* On the 12-column grid: the bar spans the columns under the headline
-              and stops one gutter short of the lede's column; the scroll cue
-              sits on the container's right edge. */}
+          {/* On the 12-column grid: from 1440px the bar spans the columns under
+              the headline and stops one gutter short of the lede's column; below
+              that it takes ten, so no select cuts its value. The scroll cue sits
+              on the container's right edge. */}
           <div className="mt-10 flex items-end gap-10 max-lg:[@media(max-height:47rem)]:mt-6 lg:mt-14 lg:grid lg:grid-cols-12 lg:gap-x-6 lg:[@media(max-height:51rem)]:mt-10">
-            <div data-hero-reveal="search" className="min-w-0 flex-1 lg:col-span-10 xl:col-span-8">
+            <div data-hero-reveal="search" className="min-w-0 flex-1 lg:col-span-10 min-[90rem]:col-span-8">
               <HeroSearch locations={locations} />
             </div>
 

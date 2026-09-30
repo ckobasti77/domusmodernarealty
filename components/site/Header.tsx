@@ -80,13 +80,13 @@ export function Header() {
         solid ? "border-b border-hairline-dark bg-ink" : "border-b border-transparent bg-transparent",
       )}
     >
-      <div className="mx-auto flex max-w-bleed items-center justify-between gap-6 px-gutter py-5 md:px-gutter-md lg:px-gutter-lg">
-        <Link href="/" aria-label={tCommon("brand")} className="block w-[190px] shrink-0 lg:w-[240px]">
+      <div className="mx-auto flex max-w-content items-center justify-between gap-6 px-gutter py-5 md:px-gutter-md lg:px-gutter-lg">
+        <Link href="/" aria-label={tCommon("brand")} className="block w-[190px] shrink-0 text-ivory lg:w-[240px]">
           <Logo tone="dark" title="" />
         </Link>
 
-        <nav aria-label={t("home")} className="hidden lg:block">
-          <ul className="flex items-center gap-8">
+        <nav aria-label={t("mainLabel")} className="hidden lg:block">
+          <ul className="flex items-center gap-6 xl:gap-8">
             {NAV.map((item) => {
               const active = pathname === item.href;
               return (
@@ -96,7 +96,7 @@ export function Header() {
                     prefetch={false}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative inline-flex min-h-11 items-center font-sans text-small uppercase tracking-[0.12em]",
+                      "relative inline-flex min-h-11 items-center whitespace-nowrap font-sans text-small uppercase tracking-[0.12em]",
                       "transition-colors duration-200 ease-out",
                       "after:absolute after:inset-x-0 after:bottom-3 after:h-px after:origin-left after:bg-bronze",
                       "after:transition-transform after:duration-300 after:ease-out",
@@ -257,7 +257,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
       id="site-menu"
       role="dialog"
       aria-modal="true"
-      aria-label={tCommon("openMenu")}
+      aria-label={tCommon("menu")}
       // The overlay scrolls itself on short screens; Lenis must not hijack it.
       data-lenis-prevent
       className="fixed inset-0 z-(--z-menu) flex flex-col overflow-y-auto bg-ink opacity-0 lg:hidden"
@@ -275,7 +275,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         </button>
       </div>
 
-      <nav aria-label={t("home")} className="flex-1 px-gutter pb-10 md:px-gutter-md">
+      <nav aria-label={t("mainLabel")} className="flex-1 px-gutter pb-10 md:px-gutter-md">
         <ul className="flex flex-col">
           {NAV.map((item) => (
             <li key={item.href} data-menu-item className="hairline-b-dark">

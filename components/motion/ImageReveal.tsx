@@ -86,9 +86,9 @@ export function ImageReveal({
   return (
     <div
       ref={root}
-      data-image-reveal=""
+      // Closed from the first paint by globals.css, only when motion is allowed.
+      data-image-reveal={from}
       className={cn("relative overflow-hidden bg-ivory-2", ratio, className)}
-      style={{ clipPath: HIDDEN[from] }}
     >
       <Image
         data-reveal-image=""

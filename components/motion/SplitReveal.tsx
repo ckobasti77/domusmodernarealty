@@ -112,9 +112,11 @@ export function SplitReveal({
     <Tag className={cn("relative", className)}>
       {/* The accessible copy. Never split, never animated. */}
       <span className="sr-only">{content}</span>
-      {/* The animated copy starts invisible so the un-split text never flashes
-          before the fonts resolve; every matchMedia branch sets it to 1. */}
-      <span ref={root} data-split="" aria-hidden="true" className="block opacity-0">
+      {/* With motion allowed, the animated copy starts invisible so the
+          un-split text never flashes before the fonts resolve; every matchMedia
+          branch sets it to 1. Under reduced motion it is simply there from the
+          first paint, hydrated or not. */}
+      <span ref={root} data-split="" aria-hidden="true" className="block motion-safe:opacity-0">
         {content}
       </span>
     </Tag>

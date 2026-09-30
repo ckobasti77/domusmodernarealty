@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
@@ -15,7 +16,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *  3. under `prefers-reduced-motion: reduce` nothing pins, Lenis is absent and
  *     every animated element paints its final state;
  *  4. with motion on a desktop, the featured rail and the tours stage pin, and
- *     the rail's "01 / 06" counter follows the scroll.
+ *     the rail's "01 / 06" counter follows the scroll;
+ *  5. axe finds nothing serious or critical, with the cookie banner open and
+ *     after the choice, once every section has been scrolled through.
  */
 
 /** Every titled section, in page order. The intro statement has no heading. */
@@ -527,12 +530,12 @@ test.describe("desktop choreography", () => {
     await expect(index).not.toHaveText("01");
     await expect.poll(async () => Math.abs(await viewportTop(rail)), { message: "rail held at the top" }).toBeLessThan(1);
 
-    // The tours stage holds too, while its window opens from 58% towards full bleed.
+    // The tours stage holds too, while its window opens from 66% towards full bleed.
     const stageRange = await pinRange(stage);
     await scrollToY(page, stageRange.start + (stageRange.end - stageRange.start) * 0.25);
     await expect.poll(async () => Math.abs(await viewportTop(stage)), { message: "stage held at the top" }).toBeLessThan(1);
     const early = (await computedScale(page.locator("[data-tours-window]"))).x;
-    expect(early).toBeGreaterThan(0.58);
+    expect(early).toBeGreaterThan(0.66);
     expect(early).toBeLessThan(1);
 
     await scrollToY(page, stageRange.start + (stageRange.end - stageRange.start) * 0.75);
@@ -623,4 +626,39 @@ test.describe("first visit: the cookie banner never covers the hero", () => {
       });
     }
   }
+});
+
+/* ------------------------------------------------------------ accessibility */
+
+/** WCAG 2.2 A/AA violations that axe rates serious or critical, one line each. */
+async function seriousViolations(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  return results.violations
+    .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
+    .map((violation) => `${violation.impact} ${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(" | ")}`);
+}
+
+test.describe("accessibility", () => {
+  test("no serious or critical axe violations, with the banner open and after the choice @public @a11y", async ({
+    page,
+  }) => {
+    // A first visit: the preloader, then the banner, are part of what is judged.
+    const response = await page.goto("/sr");
+    expect(response?.status()).toBe(200);
+    const banner = page.getByRole("dialog").filter({ hasText: "Kolačići" });
+    await expect(banner).toBeVisible({ timeout: 10_000 });
+    expect(await seriousViolations(page)).toEqual([]);
+
+    await banner.getByRole("button", { name: "Samo neophodni" }).click();
+    await expect(banner).toBeHidden();
+
+    // Every reveal plays once it has been scrolled past; judge the page after that.
+    const bottom = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    for (let y = 0; y < bottom; y += 700) await scrollToY(page, y);
+    await scrollToY(page, bottom);
+    await scrollToY(page, 0);
+    expect(await seriousViolations(page)).toEqual([]);
+  });
 });

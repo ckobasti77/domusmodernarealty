@@ -16,7 +16,7 @@ import "@/app/globals.css";
 
 /** Resting states for everything the motion layer starts hidden. */
 const NO_SCRIPT_CSS =
-  "[data-hero-reveal],[data-split]{opacity:1!important}[data-image-reveal]{clip-path:none!important}";
+  "[data-hero-reveal],[data-split]{opacity:1!important}[data-image-reveal]{clip-path:none!important}[data-hero-frame]{transform:none!important}";
 
 export const viewport: Viewport = {
   themeColor: "#0e0d0b",

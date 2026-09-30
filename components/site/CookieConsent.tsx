@@ -32,7 +32,7 @@ import { CheckboxField } from "./Field";
  * a phone), and its height is reserved in the landing hero from the first
  * paint (`html[data-consent="pending"]` sets `--consent-reserve` in
  * globals.css), so the hero copy is never covered and nothing shifts when it
- * arrives. On a first visit it waits for the intro curtain, then slides in.
+ * arrives. On a first visit it waits for the intro curtain and the hero's entrance, then slides in.
  */
 export function CookieConsent() {
   const t = useTranslations("consent");
@@ -44,6 +44,7 @@ export function CookieConsent() {
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const headingId = useId();
+  const settingsId = useId();
   const panel = useRef<HTMLDivElement>(null);
 
   const visible = hydrated && record === null && introDone;
@@ -70,7 +71,15 @@ export function CookieConsent() {
   if (!visible) return null;
 
   const save = (categories: ConsentCategories) => {
+    // The banner unmounts on a decision; a keyboard user inside it would be
+    // dropped on <body>. Hand focus to the page's main landmark instead.
+    const hadFocus = panel.current?.contains(document.activeElement) === true;
     setConsent(categories);
+    if (!hadFocus) return;
+    const main = document.getElementById("main");
+    if (main === null) return;
+    main.tabIndex = -1;
+    main.focus({ preventScroll: true });
   };
 
   return (
@@ -85,22 +94,25 @@ export function CookieConsent() {
         // Without this the last control sits under an iPhone's home indicator.
         "pb-[env(safe-area-inset-bottom)]",
         "border-t border-hairline-dark bg-ink text-ivory",
-        // Rises from the bottom edge once; the global reduced-motion rule flattens it.
-        "transition-[translate] duration-300 ease-out starting:translate-y-full",
+        // Rises from the bottom edge once, after the hero's own entrance has
+        // settled (the curtain signals at 1.8 s, the hero copy lands by ~2.5 s),
+        // so the two never move at the same time. The global reduced-motion
+        // rule flattens the movement.
+        "transition-[translate] delay-700 duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] starting:translate-y-full",
       )}
     >
-      <div className="mx-auto flex max-w-content flex-col gap-3 px-gutter py-4 md:px-gutter-md lg:flex-row lg:items-center lg:gap-12 lg:px-gutter-lg lg:py-6">
+      <div className="mx-auto flex max-w-content flex-col gap-3 px-gutter py-4 md:px-gutter-md lg:flex-row lg:items-center lg:gap-12 lg:px-gutter-lg lg:py-5">
         <div className="min-w-0 flex-1">
-          {/* The serif title is a luxury flourish on a compliance notice. Below
-              1024px it is a small label, and on a phone it is visually hidden:
-              there it costs a line the body needs. It stays the accessible name. */}
-          <h2
-            id={headingId}
-            className="eyebrow text-bronze max-sm:sr-only lg:font-display lg:text-h3 lg:font-normal lg:normal-case lg:tracking-normal lg:text-ivory"
-          >
+          {/* A small label, not a serif title: over the hero a second display line
+              would read as another headline. On a phone, and from 1024px to
+              1279px where the text column is narrow, it is visually hidden (it
+              costs a line the body needs) and stays the accessible name. */}
+          <h2 id={headingId} className="eyebrow text-bronze max-sm:sr-only lg:max-xl:sr-only">
             {t("bannerHeading")}
           </h2>
-          <p className="mt-1.5 max-w-[80ch] text-pretty text-small text-mist lg:mt-1">
+          {/* One line from 1280px up: the body and both links share it, so the
+              bar stays about 100px tall. */}
+          <p className="mt-1.5 max-w-[80ch] text-pretty text-small text-mist lg:max-w-none lg:max-xl:mt-0 xl:mt-1">
             {fixOrphans(t("bannerBody"))}{" "}
             <Link
               href="/privacy"
@@ -109,25 +121,24 @@ export function CookieConsent() {
             >
               {tLegal("privacyHeading")}
             </Link>
-            {showSettings ? null : (
-              <>
-                {" "}
-                <span aria-hidden="true" className="text-mist/60">
-                  /
-                </span>{" "}
-                <button
-                  type="button"
-                  onClick={() => setShowSettings(true)}
-                  className="text-ivory underline decoration-ivory/40 underline-offset-4 transition-colors duration-200 pointer-fine:hover:text-bronze"
-                >
-                  {t("settings")}
-                </button>
-              </>
-            )}
+            {" "}
+            <span aria-hidden="true" className="text-mist/60">
+              /
+            </span>{" "}
+            {/* A disclosure, so it stays where it is (and keeps focus) when open. */}
+            <button
+              type="button"
+              aria-expanded={showSettings}
+              aria-controls={settingsId}
+              onClick={() => setShowSettings((open) => !open)}
+              className="text-ivory underline decoration-ivory/40 underline-offset-4 transition-colors duration-200 pointer-fine:hover:text-bronze"
+            >
+              {t("settings")}
+            </button>
           </p>
 
           {showSettings ? (
-            <div className="mt-5 space-y-4 border-t border-hairline-dark pt-5">
+            <div id={settingsId} className="mt-5 space-y-4 border-t border-hairline-dark pt-5">
               {/* Necessary is locked on: without it the site cannot function. */}
               <CheckboxField
                 label={t("necessary")}
@@ -192,13 +203,10 @@ export function CookieConsent() {
 }
 
 /**
- * Footer link that re-opens the banner. GDPR requires consent to be as easy to
- * withdraw as it was to give, which means a permanent entry point.
- */
-/**
- * Publishes the banner's height as `--consent-h` on `<html>` so a `min-h-svh`
- * hero can hold its CTAs above it (`app/[locale]/page.tsx`). It is cleared when
- * the banner unmounts, so the padding disappears with it.
+ * Publishes the banner's measured height as `--consent-h` on `<html>`, so
+ * fixed bottom UI (the listing page's mobile action bar, the page-end padding in
+ * globals.css) can sit above it. It is cleared when the banner unmounts, so the
+ * offset disappears with it.
  */
 function useConsentHeight(panel: React.RefObject<HTMLDivElement | null>, active: boolean) {
   useEffect(() => {
@@ -221,6 +229,10 @@ function useConsentHeight(panel: React.RefObject<HTMLDivElement | null>, active:
   }, [panel, active]);
 }
 
+/**
+ * Footer link that re-opens the banner. GDPR requires consent to be as easy to
+ * withdraw as it was to give, which means a permanent entry point.
+ */
 export function ConsentSettingsButton({ className }: { className?: string }) {
   const t = useTranslations("consent");
 

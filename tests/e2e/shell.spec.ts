@@ -125,7 +125,7 @@ test.describe("header and mobile menu", () => {
     const toggle = page.getByRole("button", { name: "Otvori meni" });
     await toggle.click();
 
-    const menu = page.getByRole("dialog", { name: "Otvori meni" });
+    const menu = page.getByRole("dialog", { name: "Meni" });
     await expect(menu).toBeVisible();
     // Focus moves into the overlay, onto the close button.
     await expect(menu.getByRole("button", { name: "Zatvori meni" })).toBeFocused();

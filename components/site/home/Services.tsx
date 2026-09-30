@@ -42,8 +42,9 @@ const SERVICES: readonly { key: string; href: Href }[] = [
 const FOLDED = [
   "transition-[opacity,translate,clip-path] duration-300 ease-estate",
   "lg:pointer-fine:translate-y-2 lg:pointer-fine:opacity-0 lg:pointer-fine:[clip-path:inset(0_0_100%_0)]",
-  "lg:pointer-fine:group-hover/svc:translate-y-0 lg:pointer-fine:group-hover/svc:opacity-100 lg:pointer-fine:group-hover/svc:[clip-path:inset(0)]",
-  "lg:pointer-fine:group-focus-within/svc:translate-y-0 lg:pointer-fine:group-focus-within/svc:opacity-100 lg:pointer-fine:group-focus-within/svc:[clip-path:inset(0)]",
+  // Open means a little past the box, so the focused link's ring is not clipped.
+  "lg:pointer-fine:group-hover/svc:translate-y-0 lg:pointer-fine:group-hover/svc:opacity-100 lg:pointer-fine:group-hover/svc:[clip-path:inset(-8px)]",
+  "lg:pointer-fine:group-focus-within/svc:translate-y-0 lg:pointer-fine:group-focus-within/svc:opacity-100 lg:pointer-fine:group-focus-within/svc:[clip-path:inset(-8px)]",
 ].join(" ");
 
 function pad(n: number): string {
@@ -63,7 +64,7 @@ export async function Services({ locale }: { locale: Locale }) {
             <li key={service.key} className="group/svc relative border-b border-hairline-light">
               {/* Below 1024px the number gets a narrow track of its own, so the text
                   keeps a readable measure instead of losing a quarter of the row. */}
-              <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 py-8 md:grid-cols-[4rem_minmax(0,1fr)] md:gap-x-6 lg:grid-cols-12 lg:items-center lg:py-9">
+              <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 py-8 md:grid-cols-[4rem_minmax(0,1fr)] md:gap-x-6 lg:grid-cols-12 lg:items-center lg:py-7">
                 <span
                   aria-hidden="true"
                   data-numeric=""
@@ -74,7 +75,7 @@ export async function Services({ locale }: { locale: Locale }) {
 
                 <h3
                   className={cn(
-                    "col-start-2 font-display text-h2 font-normal lg:col-span-5 lg:text-display-m",
+                    "col-start-2 font-display text-h2 font-normal lg:col-span-6 lg:text-[clamp(2.5rem,3.6vw,3.75rem)]",
                     "transition-[translate,color] duration-300 ease-estate",
                     "lg:pointer-fine:group-hover/svc:translate-x-3 lg:pointer-fine:group-hover/svc:text-bronze-text",
                   )}
@@ -82,7 +83,7 @@ export async function Services({ locale }: { locale: Locale }) {
                   {t(`services${service.key}Title`)}
                 </h3>
 
-                <div className={cn("col-start-2 mt-4 lg:col-span-5 lg:col-start-7 lg:mt-0", FOLDED)}>
+                <div className={cn("col-start-2 mt-4 lg:col-span-5 lg:col-start-8 lg:mt-0", FOLDED)}>
                   <p className="max-w-[56ch] text-pretty text-body text-stone-text">
                     {fixTypography(t(`services${service.key}Body`))}{" "}
                     <Link

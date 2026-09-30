@@ -19,7 +19,9 @@ import { cn } from "@/lib/utils";
  *    2 MB of a mobile data plan.
  *
  * Decorative by contract: it is `aria-hidden` and carries no controls, so it
- * must never hold information the still and the copy do not.
+ * must never hold information the still and the copy do not. A loop runs for
+ * longer than five seconds, so the host must offer a pause (WCAG 2.2.2) and
+ * pass it in as `paused`; the visibility observer never overrides it.
  */
 
 type SaveDataConnection = { saveData?: boolean };
@@ -32,11 +34,14 @@ function prefersLightPayload(): boolean {
 export function AmbientVideo({
   video,
   media = "(min-width: 768px)",
+  paused = false,
   className,
 }: {
   video: MediaVideo;
   /** Only viewports matching this query ever load the video. */
   media?: string;
+  /** Held still by the visitor. */
+  paused?: boolean;
   className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -64,6 +69,10 @@ export function AmbientVideo({
     const target = host.current;
     const player = element.current;
     if (target === null || player === null) return;
+    if (paused) {
+      player.pause();
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry === undefined) return;
@@ -74,7 +83,7 @@ export function AmbientVideo({
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [mounted]);
+  }, [mounted, paused]);
 
   return (
     <div ref={host} aria-hidden="true" className={cn("pointer-events-none absolute inset-0", className)}>

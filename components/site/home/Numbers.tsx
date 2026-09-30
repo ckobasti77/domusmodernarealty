@@ -19,15 +19,25 @@ import { parseStat, type PublicSettings } from "./data";
  */
 
 /** "Ornate historic facades and a street lamp in central Belgrade". */
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1655245934655-bde35a9dae80";
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1655245934655-bde35a9dae80";
 
-export async function Numbers({ locale, stats }: { locale: Locale; stats: PublicSettings["stats"] }) {
+export async function Numbers({
+  locale,
+  stats,
+}: {
+  locale: Locale;
+  stats: PublicSettings["stats"];
+}) {
   if (stats.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "home" });
   const anyDemo = stats.some((stat) => stat.isDemo);
 
   return (
-    <section aria-labelledby="numbers-title" className="bg-ivory-2 py-section text-ink lg:py-section-lg">
+    <section
+      aria-labelledby="numbers-title"
+      className="bg-ivory-2 py-section text-ink lg:py-section-lg"
+    >
       <Container>
         <div className="grid grid-cols-4 gap-x-6 gap-y-14 lg:grid-cols-12 lg:items-start">
           <div className="col-span-4 lg:col-span-6">
@@ -44,12 +54,20 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
                     key={`${stat.value}-${index}`}
                     className="flex flex-col-reverse justify-end gap-3 border-b border-hairline-light py-8 odd:pr-6 even:border-l even:pl-6 lg:py-10 lg:even:pl-10"
                   >
-                    <dt lang={label.lang !== locale ? label.lang : undefined} className="min-h-[2lh] max-w-[14ch] font-mono text-label uppercase text-stone-text lg:min-h-0 lg:max-w-none lg:whitespace-nowrap">
+                    <dt
+                      lang={label.lang !== locale ? label.lang : undefined}
+                      className="min-h-[2lh] max-w-[14ch] font-mono text-label uppercase text-stone-text md:min-h-0 md:max-w-none md:whitespace-nowrap"
+                    >
                       {label.text}
                     </dt>
                     <dd className="font-display text-display-xl font-normal leading-none">
                       {parsed !== null ? (
-                        <Counter value={parsed.value} prefix={parsed.prefix || undefined} suffix={parsed.suffix || undefined} />
+                        <Counter
+                          value={parsed.value}
+                          index={index}
+                          prefix={parsed.prefix || undefined}
+                          suffix={parsed.suffix || undefined}
+                        />
                       ) : (
                         stat.value
                       )}
@@ -60,15 +78,18 @@ export async function Numbers({ locale, stats }: { locale: Locale; stats: Public
             </dl>
 
             {anyDemo ? (
-              <p className="mt-8 max-w-[52ch] text-pretty text-small text-stone-text">{fixTypography(t("numbersDemo"))}</p>
+              <p className="mt-8 max-w-[52ch] text-pretty text-small text-stone-text">
+                {fixTypography(t("numbersDemo"))}
+              </p>
             ) : null}
           </div>
 
           {/* On desktop the facade straddles the seam with the section above: the
-              one image on the page that breaks its band. */}
+              one image on the page that breaks its band. Below 1024px it would be
+              the third warm render in a row, so it is left out. */}
           <ClipReveal
             from="top"
-            className="relative z-10 col-span-4 aspect-video md:aspect-[16/10] lg:col-span-5 lg:col-start-8 lg:-mt-64 lg:aspect-auto lg:min-h-[36rem] lg:self-stretch"
+            className="relative z-10 col-span-4 aspect-video max-lg:hidden md:aspect-[16/10] lg:col-span-5 lg:col-start-8 lg:-mt-64 lg:aspect-auto lg:min-h-[36rem] lg:self-stretch"
           >
             <Picture
               image={artImage("about", FALLBACK_IMAGE)}

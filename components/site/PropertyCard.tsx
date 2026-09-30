@@ -11,11 +11,12 @@ import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { fixTypography, formatArea } from "@/lib/format";
 import { frameLoader } from "@/lib/image-loaders";
-import { clipTitle } from "@/lib/listing-text";
+import { clipTitle, floorName } from "@/lib/listing-text";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
 import { FavoriteButton } from "./FavoriteButton";
+import { displayFloor, displayTotalFloors } from "./listing/floor";
 import { Price } from "./Price";
 
 /**
@@ -77,6 +78,14 @@ export function PropertyCard({
 
   const title = pickL10n(listing.title, locale);
   const shown = clipTitle(title.text);
+  // Serbian portals write storeys as codes ("PR / 5"). Other locales get the
+  // words the listing page uses, and Russian counts the ground floor as the first.
+  const floor = displayFloor(listing.floor, locale);
+  const floorText =
+    locale === "sr-Latn" || typeof floor === "number"
+      ? String(floor)
+      : floorName(tListing, floor);
+  const totalFloors = displayTotalFloors(listing.totalFloors, locale);
   const location = pickL10n(listing.locationLabel, locale);
 
   const frames: readonly PublicImage[] =
@@ -114,16 +123,24 @@ export function PropertyCard({
           {listing.status === "reserved" ? (
             <Badge tone="status">{tListing("statusReserved")}</Badge>
           ) : null}
-          {listing.status === "sold" ? <Badge tone="status">{tListing("statusSold")}</Badge> : null}
+          {listing.status === "sold" ? (
+            <Badge tone="status">{tListing("statusSold")}</Badge>
+          ) : null}
           {listing.status === "rented" ? (
             <Badge tone="status">{tListing("statusRented")}</Badge>
           ) : null}
-          {listing.isExclusive ? <Badge tone="dark">{t("exclusive")}</Badge> : null}
+          {listing.isExclusive ? (
+            <Badge tone="dark">{t("exclusive")}</Badge>
+          ) : null}
           {listing.hasTour ? <Badge tone="dark">{t("hasTour")}</Badge> : null}
         </div>
 
         <div className="absolute right-4 top-4 z-20">
-          <FavoriteButton listingId={listing._id} title={title.text} tone="dark" />
+          <FavoriteButton
+            listingId={listing._id}
+            title={title.text}
+            tone="dark"
+          />
         </div>
       </div>
 
@@ -135,10 +152,13 @@ export function PropertyCard({
           className="line-clamp-2 min-h-[2lh] font-display text-h3 font-normal"
         >
           <Link
-            href={{ pathname: "/properties/[slug]", params: { slug: listing.slug } }}
+            href={{
+              pathname: "/properties/[slug]",
+              params: { slug: listing.slug },
+            }}
             prefetch={false}
             lang={title.lang === locale ? undefined : title.lang}
-            className="after:absolute after:inset-0 after:z-10 after:content-[''] pointer-fine:group-hover/card:text-bronze-text transition-colors duration-200"
+            className="after:absolute after:inset-0 after:z-10 after:content-[''] pointer-fine:group-hover/card:text-bronze-text transition-colors duration-200 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-4 focus-visible:after:outline-current"
           >
             {shown.clipped ? (
               <>
@@ -152,7 +172,10 @@ export function PropertyCard({
           </Link>
         </h3>
 
-        <p className="text-small text-stone-text" lang={location.lang === locale ? undefined : location.lang}>
+        <p
+          className="text-small text-stone-text"
+          lang={location.lang === locale ? undefined : location.lang}
+        >
           {location.text}
         </p>
 
@@ -177,9 +200,9 @@ export function PropertyCard({
             {t("rooms", { rooms: listing.rooms })}
           </MetaItem>
           <MetaItem label={tListing("floor")} className="pl-4">
-            {listing.totalFloors !== undefined
-              ? t("floorOf", { floor: String(listing.floor), total: listing.totalFloors })
-              : String(listing.floor)}
+            {totalFloors !== undefined
+              ? t("floorOf", { floor: floorText, total: totalFloors })
+              : floorText}
           </MetaItem>
         </dl>
 
@@ -228,7 +251,10 @@ function Gallery({
   const t = useTranslations("common");
   const tCard = useTranslations("card");
   const groupId = useId();
-  const [emblaRef, embla] = useEmblaCarousel({ loop: frames.length > 2, align: "start" });
+  const [emblaRef, embla] = useEmblaCarousel({
+    loop: frames.length > 2,
+    align: "start",
+  });
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -249,11 +275,16 @@ function Gallery({
   if (frames.length === 0) {
     return (
       <div
-        className={cn("flex items-center justify-center bg-ivory-2 text-stone-text", aspect)}
+        className={cn(
+          "flex items-center justify-center bg-ivory-2 text-stone-text",
+          aspect,
+        )}
         role="img"
         aria-label={alt}
       >
-        <span className="font-mono text-label uppercase">{tCard("featured")}</span>
+        <span className="font-mono text-label uppercase">
+          {tCard("featured")}
+        </span>
       </div>
     );
   }
@@ -277,20 +308,29 @@ function Gallery({
                 aria-roledescription={single ? undefined : "slide"}
                 aria-label={single ? undefined : `${i + 1} / ${frames.length}`}
               >
-                <Image
-                  data-card-image=""
-                  src={frame.url}
-                  // Demo photos arrive already cropped to the frame, so a 3:2
-                  // source is not enlarged to fill a 4:5 card.
-                  loader={frameLoader(frame.url, ratio === "4/5" ? 1.25 : 2 / 3)}
-                  alt={frameAlt.text}
-                  fill
-                  sizes={sizes}
-                  priority={priority && i === 0}
-                  placeholder={frame.blurDataURL !== undefined ? "blur" : "empty"}
-                  blurDataURL={frame.blurDataURL}
-                  className="scale-[1.04] object-cover transition-transform duration-700 ease-out pointer-fine:group-hover/card:scale-100"
-                />
+                {/* The featured rail's parallax moves this wrapper, so it never
+                    fights the photo's own hover transition. */}
+                <div data-card-parallax="" className="absolute inset-0">
+                  <Image
+                    data-card-image=""
+                    src={frame.url}
+                    // Demo photos arrive already cropped to the frame, so a 3:2
+                    // source is not enlarged to fill a 4:5 card.
+                    loader={frameLoader(
+                      frame.url,
+                      ratio === "4/5" ? 1.25 : 2 / 3,
+                    )}
+                    alt={frameAlt.text}
+                    fill
+                    sizes={sizes}
+                    priority={priority && i === 0}
+                    placeholder={
+                      frame.blurDataURL !== undefined ? "blur" : "empty"
+                    }
+                    blurDataURL={frame.blurDataURL}
+                    className="scale-[1.04] object-cover transition-[scale] duration-700 ease-out pointer-fine:group-hover/card:scale-100"
+                  />
+                </div>
               </div>
             );
           })}
@@ -307,7 +347,11 @@ function Gallery({
               aria-label={t("back")}
               className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-fine:hover:bg-ink"
             >
-              <ChevronLeft aria-hidden="true" strokeWidth={1.25} className="size-5" />
+              <ChevronLeft
+                aria-hidden="true"
+                strokeWidth={1.25}
+                className="size-5"
+              />
             </button>
             <p
               data-numeric
@@ -323,7 +367,11 @@ function Gallery({
               aria-label={t("more")}
               className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-fine:hover:bg-ink"
             >
-              <ChevronRight aria-hidden="true" strokeWidth={1.25} className="size-5" />
+              <ChevronRight
+                aria-hidden="true"
+                strokeWidth={1.25}
+                className="size-5"
+              />
             </button>
           </div>
           <span id={groupId} className="sr-only">

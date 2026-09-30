@@ -38,7 +38,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
       gsap.to(el, {
         yPercent: -100,
         duration: DURATION.curtain * 0.55,
-        ease: "expo.inOut",
+        ease: "power3.out",
         onComplete: () => {
           gsap.set(el, { autoAlpha: 0 });
         },

@@ -36,12 +36,16 @@ export function IntroWords({ text, className }: { text: string; className?: stri
           onSplit(self) {
             return gsap.fromTo(
               self.words,
-              { opacity: 0.15 },
+              // Never below 0.5: dimmed ink on ivory still clears 3:1 for this
+              // display size (WCAG 1.4.3), so the words read before they light up.
+              { opacity: 0.5 },
               {
                 opacity: 1,
                 ease: "none",
+                duration: 0.35,
                 stagger: 0.1,
-                scrollTrigger: { trigger: el, start: "top 78%", end: "bottom 52%", scrub: true },
+                // Fully lit before the paragraph reaches the middle of the screen.
+                scrollTrigger: { trigger: el, start: "top 80%", end: "bottom 70%", scrub: true },
               },
             );
           },

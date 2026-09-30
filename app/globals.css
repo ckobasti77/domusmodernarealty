@@ -311,6 +311,18 @@
   :focus {
     scroll-margin-top: 6rem;
   }
+
+  /* ...and neither may the cookie banner at the bottom (technique C43): the
+     browser scrolls a focused element clear of the banner's published height. */
+  html {
+    scroll-padding-bottom: calc(var(--consent-h, 0px) + 1rem);
+  }
+
+  /* The skip-link target and the post-consent focus target: a landmark that
+     takes focus programmatically, not a control, so it draws no ring. */
+  #main:focus {
+    outline: none;
+  }
 }
 
 @utility eyebrow {
@@ -355,12 +367,14 @@
     scroll-behavior: auto !important;
   }
 
+  /* Movement goes; feedback stays. Colour and opacity changes still ease, so
+     a hovered or focused control keeps its cue, but nothing slides or scales. */
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, opacity !important;
   }
 }
 
@@ -461,7 +475,7 @@ html[data-consent="pending"] {
 
 @media (width >= 64rem) {
   html[data-consent="pending"] {
-    --consent-reserve: 9rem;
+    --consent-reserve: 7rem;
   }
 }
 
@@ -474,6 +488,33 @@ html[data-consent="pending"] {
 @media (prefers-reduced-motion: no-preference) {
   [data-hero-reveal] {
     opacity: 0;
+  }
+
+  /* The hero still's Ken Burns starts here (HeroStage's "from"), so the
+     photograph never snaps from 1 to its starting scale at hydration. */
+  [data-hero-frame="still"] {
+    transform: translate(-0.6%, -0.4%) scale(1.06);
+  }
+  /* Portrait screens never play the film, so its frame runs the same move
+     (the PORTRAIT query in components/site/home/art-direction.ts). */
+  @media (max-width: 767px), (max-width: 1023px) and (orientation: portrait) {
+    [data-hero-frame="film"] {
+      transform: translate(-0.6%, -0.4%) scale(1.06);
+    }
+  }
+
+  /* components/motion/ImageReveal.tsx: closed until its reveal runs. */
+  [data-image-reveal="bottom"] {
+    clip-path: inset(0% 0% 100% 0%);
+  }
+  [data-image-reveal="top"] {
+    clip-path: inset(100% 0% 0% 0%);
+  }
+  [data-image-reveal="left"] {
+    clip-path: inset(0% 100% 0% 0%);
+  }
+  [data-image-reveal="right"] {
+    clip-path: inset(0% 0% 0% 100%);
   }
 
   /* components/motion/ClipReveal.tsx: closed until its reveal runs. */
@@ -503,6 +544,8 @@ html[data-consent="pending"] {
   }
 }
 
+/* Two passes and it rests: a loop that runs on would be moving content with no
+   way to stop it (WCAG 2.2.2), and by then the visitor has seen the hint. */
 .scroll-cue-line {
-  animation: me-scroll-cue 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation: me-scroll-cue 2.4s cubic-bezier(0.65, 0, 0.35, 1) 2;
 }

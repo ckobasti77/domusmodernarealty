@@ -78,13 +78,13 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
                   <li
                     key={listing._id}
                     data-featured-card=""
-                    className="w-[78vw] shrink-0 snap-start sm:w-[46vw] lg:w-[min(24vw,calc((100svh-18rem)*0.5))]"
+                    className="w-[78vw] shrink-0 snap-start sm:w-[40vw] lg:w-[min(24vw,calc((100svh-18rem)*0.5))]"
                   >
                     <PropertyCard
                       listing={listing}
                       ratio="4/5"
                       // The rail draws each photo at 1.14x for its parallax.
-                      sizes="(min-width: 1024px) 28vw, (min-width: 640px) 46vw, 78vw"
+                      sizes="(min-width: 1024px) 28vw, (min-width: 640px) 40vw, 78vw"
                     />
                   </li>
                 ))}

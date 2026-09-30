@@ -30,7 +30,7 @@ export function ScrollProgress({ className }: { className?: string }) {
         gsap.to(bar, {
           scaleX: 1,
           ease: "none",
-          scrollTrigger: { trigger: document.body, start: "top top", end: "bottom bottom", scrub: 0.6 },
+          scrollTrigger: { trigger: document.body, start: "top top", end: "bottom bottom", scrub: true },
         });
       });
 

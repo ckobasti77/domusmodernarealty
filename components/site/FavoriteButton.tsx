@@ -27,7 +27,8 @@ export function FavoriteButton({
 }) {
   const t = useTranslations("listing");
   const [isFavorite, toggle] = useFavorite(listingId);
-  const label = `${isFavorite ? t("removeFromFavorites") : t("addToFavorites")}: ${title}`;
+  // A toggle keeps one name; `aria-pressed` says whether it is on.
+  const label = `${t("addToFavorites")}: ${title}`;
 
   return (
     <button

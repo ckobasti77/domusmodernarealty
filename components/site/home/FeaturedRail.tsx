@@ -85,7 +85,7 @@ export function FeaturedRail({ total, children }: { total: number; children: Rea
         });
 
         for (const card of cards) {
-          const image = card.querySelector("[data-card-image]");
+          const image = card.querySelector("[data-card-parallax]");
           if (image === null) continue;
           // Scaled up so the drift never uncovers the frame's edges.
           gsap.fromTo(

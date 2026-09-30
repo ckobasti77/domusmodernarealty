@@ -22,10 +22,12 @@ export type CounterProps = {
   /** Rendered after the number, e.g. "+" or "m²". */
   suffix?: string;
   duration?: number;
+  /** Position in its list: figures land one after another, 80 ms apart. */
+  index?: number;
   className?: string;
 };
 
-export function Counter({ value, prefix, suffix, duration = 1.6, className }: CounterProps) {
+export function Counter({ value, prefix, suffix, duration = 1.4, index = 0, className }: CounterProps) {
   const locale = useLocale() as Locale;
   const root = useRef<HTMLSpanElement>(null);
 
@@ -52,14 +54,18 @@ export function Counter({ value, prefix, suffix, duration = 1.6, className }: Co
         gsap.to(state, {
           n: value,
           duration: seconds,
-          ease: "power2.out",
-          onUpdate: () => write(state.n),
+          delay: index * 0.08,
+          // A gentle ease and whole steps down: no figure crawls through its
+          // last digits, and each lands exactly on its value.
+          ease: "power1.out",
+          onUpdate: () => write(Math.floor(state.n)),
           onComplete: () => write(value),
-          scrollTrigger: { trigger: el, start: "top 85%", once: true },
+          // One trigger for the whole list, so the figures start together.
+          scrollTrigger: { trigger: el.closest("dl") ?? el, start: "top 80%", once: true },
         });
       };
 
-      mm.add(MOTION_QUERIES.mobile, () => run(duration * 0.75));
+      mm.add(MOTION_QUERIES.mobile, () => run(duration * 0.8));
       mm.add(MOTION_QUERIES.desktop, () => run(duration));
 
       return () => mm.revert();

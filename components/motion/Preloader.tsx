@@ -76,8 +76,17 @@ export function Preloader() {
     }
 
     const timers: number[] = [];
+    // The lift's own start, not a timer: at hydration the CSS animation can
+    // still be pending, and a timer would then reveal the hero 150-250 ms
+    // before the curtain moves. The timer stays as a late fallback.
+    const onLift = (event: AnimationEvent) => {
+      if (event.target === curtain && event.animationName === "me-preloader-lift") revealIntro();
+    };
     if (elapsed >= LIFT_AT_MS) revealIntro();
-    else timers.push(window.setTimeout(revealIntro, LIFT_AT_MS - elapsed));
+    else {
+      curtain.addEventListener("animationstart", onLift);
+      timers.push(window.setTimeout(revealIntro, LIFT_AT_MS - elapsed + 250));
+    }
     timers.push(window.setTimeout(finishIntro, DONE_AT_MS - elapsed));
 
     // Hold the page still while the curtain is down, so a scroll during the
@@ -93,6 +102,7 @@ export function Preloader() {
     );
 
     return () => {
+      curtain.removeEventListener("animationstart", onLift);
       for (const timer of timers) window.clearTimeout(timer);
       html.style.overflow = previous;
       revealIntro();

@@ -31,14 +31,14 @@ export async function Neighborhoods({ locale, items }: { locale: Locale; items: 
 
   return (
     <section aria-labelledby="neighborhoods-title" className="bg-ink text-ivory">
-      <div className="relative isolate min-h-[72svh] overflow-clip lg:min-h-[86svh]">
+      <div className="relative isolate min-h-[72svh] overflow-clip lg:min-h-[72svh]">
         <ParallaxLayer amount={10} className="absolute inset-0 -z-10">
           <Picture
             image={remoteResponsiveImage(BELGRADE_AERIAL, 1920, 1280)}
             alt=""
             sizes="100vw"
             className="absolute inset-0"
-            imgClassName="photo-grade"
+            imgClassName="photo-grade object-[50%_68%]"
           />
         </ParallaxLayer>
         {/* Weighted to the bottom, where the heading sits and the index begins
@@ -49,7 +49,7 @@ export async function Neighborhoods({ locale, items }: { locale: Locale; items: 
         />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-r from-ink/50 to-transparent to-60%" />
 
-        <Container className="flex min-h-[72svh] flex-col justify-end pb-14 pt-section lg:min-h-[86svh] lg:pb-20 lg:pt-section-lg">
+        <Container className="flex min-h-[72svh] flex-col justify-end pb-14 pt-section lg:min-h-[72svh] lg:pb-20 lg:pt-section-lg">
           <SectionHeading
             id="neighborhoods-title"
             eyebrowTone="dark"

@@ -14,7 +14,7 @@ export async function IntroStatement({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "home" });
 
   return (
-    <section className="bg-ivory py-section text-ink lg:py-section-lg">
+    <section className="bg-ivory py-section text-ink lg:pb-20 lg:pt-section-lg">
       <Container>
         <div className="grid grid-cols-4 gap-x-6 lg:grid-cols-12">
           <IntroWords

@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ export function LocaleSwitcher({
   variant?: "inline" | "stacked";
 }) {
   const active = useLocale() as Locale;
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const params = useParams();
   const router = useRouter();
@@ -54,7 +55,7 @@ export function LocaleSwitcher({
   const stacked = variant === "stacked";
 
   return (
-    <nav aria-label={FULL_NAMES[active]} className={className}>
+    <nav aria-label={t("languageLabel")} className={className}>
       <ul className={cn(stacked ? "flex flex-col" : "flex items-center gap-4")}>
         {locales.map((locale) => {
           const isActive = locale === active;
@@ -82,7 +83,8 @@ export function LocaleSwitcher({
                   </>
                 ) : (
                   <>
-                    <span className="sr-only">{FULL_NAMES[locale]}</span>
+                    {/* The name carries the visible code too (WCAG 2.5.3, label in name). */}
+                    <span className="sr-only">{`${FULL_NAMES[locale]} (${LABELS[locale]})`}</span>
                     <span aria-hidden="true">{LABELS[locale]}</span>
                   </>
                 )}

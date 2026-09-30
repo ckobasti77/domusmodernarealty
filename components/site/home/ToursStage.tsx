@@ -1,7 +1,9 @@
 "use client";
 
+import { Pause, Play } from "lucide-react";
 import Image from "next/image";
-import { useRef } from "react";
+import { useTranslations } from "next-intl";
+import { useRef, useState } from "react";
 import { AmbientVideo } from "@/components/motion/AmbientVideo";
 import { gsap, MOTION_QUERIES, useGSAP } from "@/components/motion/gsap";
 import { buttonClasses } from "@/components/site/Button";
@@ -17,7 +19,7 @@ import type { MediaVideo, ResponsiveImage } from "@/lib/media";
  *    muted loop), framed by a hairline.
  *
  * Desktop (≥1024px, motion allowed): the stage pins and the scroll opens the
- * window from 58% to full bleed while the film inside settles from 1.25 → 1.
+ * window from 66% to full bleed while the film inside settles from 1.25 → 1.
  * The frame is four 1px lines kept exactly 40px outside the window, so it
  * stays a crisp hairline at every size (a scaled border would thin to a soft
  * 0.6px), and it dissolves as the window reaches the edges. In the last beat
@@ -31,7 +33,7 @@ import type { MediaVideo, ResponsiveImage } from "@/lib/media";
  * assistive technology.
  */
 
-const START = 0.58;
+const START = 0.66;
 /** Frame-to-window distance in px. */
 const GUTTER = 40;
 
@@ -45,6 +47,8 @@ export type ToursStageProps = {
 
 export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps) {
   const root = useRef<HTMLDivElement>(null);
+  const t = useTranslations("home");
+  const [filmPaused, setFilmPaused] = useState(false);
 
   useGSAP(
     () => {
@@ -129,8 +133,15 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
       className="relative isolate aspect-[4/5] overflow-clip bg-ink sm:aspect-video lg:aspect-auto lg:h-[calc(100svh-var(--consent-reserve,0px))]"
     >
       <div data-tours-backdrop="" className="absolute inset-0 -z-10">
-        <Picture image={backdrop} alt={backdropAlt} sizes="100vw" className="absolute inset-0" />
-        <div aria-hidden="true" className="absolute inset-0 bg-ink/55" />
+        <Picture
+          image={backdrop}
+          alt={backdropAlt}
+          sizes="100vw"
+          className="absolute inset-0"
+          // Half-desaturated and held back, so the sunlit film is the one room in colour.
+          imgClassName="grayscale-50"
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-ink/70" />
       </div>
 
       <div data-tours-window="" className="absolute inset-0 overflow-clip">
@@ -138,7 +149,7 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
           {film !== null ? (
             <>
               <Image src={film.poster} alt="" fill sizes="100vw" className="object-cover" />
-              <AmbientVideo video={film} />
+              <AmbientVideo video={film} paused={filmPaused} />
             </>
           ) : (
             // No film delivered: the window opens onto the still itself.
@@ -150,11 +161,29 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
       {/* Invisible until the desktop timeline draws it; otherwise the four lines
           would sit as a cross in the middle of the stage. */}
       <div data-tours-frame="" aria-hidden="true" className="pointer-events-none absolute inset-0 hidden opacity-0 lg:block">
-        <span data-tours-line="" className="absolute inset-x-0 top-1/2 h-px bg-ivory/50" />
-        <span data-tours-line="" className="absolute inset-x-0 top-1/2 h-px bg-ivory/50" />
-        <span data-tours-line="" className="absolute inset-y-0 left-1/2 w-px bg-ivory/50" />
-        <span data-tours-line="" className="absolute inset-y-0 left-1/2 w-px bg-ivory/50" />
+        <span data-tours-line="" className="absolute inset-x-0 top-1/2 h-px bg-bronze/60" />
+        <span data-tours-line="" className="absolute inset-x-0 top-1/2 h-px bg-bronze/60" />
+        <span data-tours-line="" className="absolute inset-y-0 left-1/2 w-px bg-bronze/60" />
+        <span data-tours-line="" className="absolute inset-y-0 left-1/2 w-px bg-bronze/60" />
       </div>
+
+      {/* The film loops for as long as the stage is on screen, so it can be held
+          still (WCAG 2.2.2). Only where the film can play at all: from 768px,
+          with motion allowed. Below the fixed header's height. */}
+      {film !== null ? (
+        <button
+          type="button"
+          onClick={() => setFilmPaused((value) => !value)}
+          className="absolute right-6 top-28 z-10 hidden size-11 items-center justify-center border border-ivory/40 text-ivory transition-colors duration-200 motion-safe:md:flex pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze"
+        >
+          {filmPaused ? (
+            <Play aria-hidden="true" strokeWidth={1.25} className="size-4" />
+          ) : (
+            <Pause aria-hidden="true" strokeWidth={1.25} className="size-4" />
+          )}
+          <span className="sr-only">{t(filmPaused ? "toursFilmPlay" : "toursFilmPause")}</span>
+        </button>
+      ) : null}
 
       {cta !== null ? (
         <div

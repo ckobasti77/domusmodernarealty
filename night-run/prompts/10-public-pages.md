@@ -22,6 +22,7 @@ Parallelize with subagents where pages are independent (each subagent owns its r
     - sell form
     - contact form
     - compare with 3 listings
+    - a post created through the admin (step 09 editor or its Convex mutation) appears on `/sr/magazin` and its article page
     - every page returns 200 in all 4 locales (a parameterized test over all routes)
 
 ## Definition of done

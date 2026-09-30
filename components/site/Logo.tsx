@@ -76,7 +76,7 @@ export function Logo({
         <path d="M748.3 62V12.4h-19.9V6h47.2v6.4h-20V62h-7.3Z" />
         <path d="M795 62V6h39.7v6.4h-32.4v17.4h29.3v6.4h-29.3v19.4H835V62h-40Z" />
       </g>
-      {rule ? <rect x="0" y="86" width="1000" height="1.5" fill={c.rule} opacity="0.8" /> : null}
+      {rule ? <rect x="0" y="86" width="835" height="1.5" fill={c.rule} opacity="0.8" /> : null}
     </svg>
   );
 }

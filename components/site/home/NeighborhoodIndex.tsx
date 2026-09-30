@@ -89,14 +89,32 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
           let scrolled: string | null = null;
           let hovered: string | null = null;
 
+          // The incoming photograph rises over the outgoing one, which stays
+          // put until it is covered. Fading both at once dipped every switch
+          // about a quarter of the way to ink.
           const show = contextSafeFn(contextSafe, (id: string | null) => {
-            if (id === null || id === shown || !frames.some((frame) => frame.dataset.for === id)) return;
+            const next = frames.find((frame) => frame.dataset.for === id);
+            if (id === null || id === shown || next === undefined) return;
+            const previous = shown;
             shown = id;
+            const rest = frames.filter((frame) => frame !== next);
             for (const frame of frames) {
-              const visible = frame.dataset.for === id ? 1 : 0;
-              if (reduced === true) gsap.set(frame, { opacity: visible });
-              else gsap.to(frame, { opacity: visible, duration: 0.45, ease: "power2.out", overwrite: true });
+              gsap.set(frame, { zIndex: frame === next ? 2 : frame.dataset.for === previous ? 1 : 0 });
             }
+            if (reduced === true) {
+              gsap.set(next, { opacity: 1 });
+              gsap.set(rest, { opacity: 0 });
+              return;
+            }
+            gsap.to(next, {
+              opacity: 1,
+              duration: 0.35,
+              ease: "power2.out",
+              overwrite: true,
+              onComplete: () => {
+                if (shown === id) gsap.set(rest, { opacity: 0 });
+              },
+            });
           });
 
           gsap.set(frames, { opacity: 0 });
@@ -201,8 +219,8 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                 data-hood-label=""
                 lang={item.lang}
                 className={cn(
-                  "block font-display text-h3 font-normal text-ivory lg:col-span-5",
-                  "lg:text-[clamp(3rem,5.2vw,5.5rem)] lg:leading-[0.95]",
+                  "block font-display text-h3 font-normal text-ivory lg:col-span-6",
+                  "lg:text-[clamp(2.75rem,4.2vw,4.75rem)] lg:leading-[0.95]",
                   "transition-[color,translate] duration-300 ease-out",
                   "pointer-fine:group-hover/row:translate-x-3 pointer-fine:group-hover/row:text-bronze",
                   "group-focus-visible/row:text-bronze",
@@ -210,18 +228,16 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
               >
                 {item.name}
               </span>
-              {item.context !== undefined ? (
-                <span className="mt-1.5 block font-mono text-label uppercase text-mist lg:col-span-2 lg:mt-0">
-                  {item.context}
-                </span>
-              ) : (
-                <span aria-hidden="true" className="hidden lg:col-span-2 lg:block" />
-              )}
-              <span
-                data-numeric=""
-                className="mt-1 block font-mono text-label uppercase text-mist lg:col-span-1 lg:mt-0 lg:text-right"
-              >
-                {t("neighborhoodsCount", { count: item.count })}
+              {/* The district over the count, right-aligned on one line each. A
+                  place without a district (a city) keeps the empty line, so every
+                  count sits at the same height. */}
+              <span className="mt-1.5 flex flex-col gap-1 whitespace-nowrap font-mono text-label uppercase text-mist lg:col-span-2 lg:mt-0 lg:items-end lg:text-right">
+                {item.context !== undefined ? (
+                  <span>{item.context}</span>
+                ) : (
+                  <span aria-hidden="true">{"\u00a0"}</span>
+                )}
+                <span data-numeric="">{t("neighborhoodsCount", { count: item.count })}</span>
               </span>
             </Link>
             <span

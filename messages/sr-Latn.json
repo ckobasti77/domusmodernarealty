@@ -500,6 +500,7 @@
       "plotArea": "Površina placa",
       "bedrooms": "Spavaće sobe",
       "bathrooms": "Kupatila",
+      "roomsCount": "Broj soba",
       "floorOf": "{floor} od {total}",
       "renovated": "Renovirano",
       "construction": "Gradnja",
@@ -603,7 +604,7 @@
       "noEncumbrance": "Bez upisanog tereta",
       "ownershipShare": "Udeo u vlasništvu",
       "commission": "Provizija",
-      "verifiedNote": "Naš agent je {date} proverio vlasničku dokumentaciju, u skladu sa članom 16. Zakona o posredovanju u prometu i zakupu nepokretnosti.",
+      "verifiedNote": "Vlasničku dokumentaciju proverio je naš agent ({date}), u skladu sa članom 16. Zakona o posredovanju u prometu i zakupu nepokretnosti.",
       "unverifiedNote": "Dokumentaciju proveravamo pre potpisivanja ugovora. Uvid možete zatražiti od agenta.",
       "termsLink": "Uslovi poslovanja"
     },
@@ -653,7 +654,7 @@
     "costs": {
       "heading": "Ukupni troškovi kupovine",
       "transferTax": "Porez na prenos apsolutnih prava ({rate}%)",
-      "transferTaxNote": "Zakonski ga plaća prodavac, ali se ugovorom često prenosi na kupca.",
+      "transferTaxNote": "Porez na prenos zakonski plaća prodavac, ali se ugovorom često prenosi na kupca.",
       "firstHome": "Kupac prvog stana može biti oslobođen ovog poreza za 40 m² za sebe i po 15 m² za svakog člana domaćinstva. Pravo se ostvaruje u poreskoj upravi, pa ga ovde ne oduzimamo.",
       "vat": "PDV ({rate}%)",
       "vatIncluded": "uračunat u cenu",

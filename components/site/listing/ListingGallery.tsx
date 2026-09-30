@@ -21,8 +21,11 @@ const ListingLightbox = dynamic(() => import("./ListingLightbox"), { ssr: false 
  * that narrow both the grid and the lightbox. Every frame is a real `<button>`,
  * so the grid is keyboard-operable before the lightbox code has even loaded.
  *
- * Below 768px only the large frame is shown; the lightbox is where a phone
- * swipes through the set.
+ * Below 768px only the large frame is shown, edge to edge; the lightbox is
+ * where a phone swipes through the set, and the room chips become one
+ * horizontally scrolling row so the title and price still reach the first
+ * screen. The grid is capped at ~48% of the viewport height for the same
+ * reason on desktop.
  *
  * `variant="plans"` reuses the same machinery for floor plans: a plain grid of
  * contained drawings instead of cropped photographs.
@@ -104,7 +107,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
         className={cn(
           "grid gap-2",
           small.length > 0 && "md:grid-cols-4 md:grid-rows-2",
-          "md:h-[clamp(420px,62vh,680px)]",
+          "md:h-[clamp(340px,48vh,580px)]",
         )}
       >
         {lead !== undefined ? (
@@ -113,7 +116,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
             onClick={() => setOpen(0)}
             aria-label={openLabel(0)}
             className={cn(
-              "group/frame relative block aspect-[4/3] w-full overflow-hidden bg-ink-2 md:aspect-auto md:h-full",
+              "group/frame relative block aspect-[3/2] overflow-hidden bg-ink-2 max-md:-mx-gutter max-md:w-[calc(100%+2*var(--spacing-gutter))] md:aspect-auto md:h-full md:w-full",
               small.length > 0 && "md:col-span-2 md:row-span-2",
               "focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bronze",
             )}
@@ -123,7 +126,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
               alt={altOf(lead)}
               fill
               preload
-              sizes={small.length > 0 ? "(min-width: 768px) 50vw, 100vw" : "100vw"}
+              sizes={small.length > 0 ? "(min-width: 1600px) 800px, (min-width: 768px) 50vw, 100vw" : "100vw"}
               placeholder={lead.blurDataURL !== undefined ? "blur" : "empty"}
               blurDataURL={lead.blurDataURL}
               className="object-cover transition-transform duration-700 ease-out pointer-fine:group-hover/frame:scale-[1.02]"
@@ -178,42 +181,34 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
         })}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        {rooms.length > 1 ? (
-          <div role="group" aria-label={t("galleryUi.filterLabel")} className="flex flex-wrap gap-2">
-            {(["all", ...rooms] as const).map((value) => {
-              const active = room === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setRoom(value)}
-                  className={cn(
-                    "inline-flex min-h-11 items-center border px-4 font-sans text-label font-medium uppercase tracking-[0.12em]",
-                    "transition-colors duration-200 ease-out",
-                    active
-                      ? "border-ivory bg-ivory text-ink"
-                      : "border-ivory/40 text-ivory pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze",
-                  )}
-                >
-                  {value === "all" ? t("galleryUi.all") : t(`room.${value}`)}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <span />
-        )}
-        <button
-          type="button"
-          onClick={() => setOpen(0)}
-          className="inline-flex min-h-11 items-center gap-2 font-sans text-small uppercase tracking-[0.12em] text-ivory transition-colors duration-200 pointer-fine:hover:text-bronze"
+      {rooms.length > 1 ? (
+        <div
+          role="group"
+          aria-label={t("galleryUi.filterLabel")}
+          className="-mx-gutter mt-3 flex gap-2 overflow-x-auto overscroll-x-contain px-gutter pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
         >
-          <Images aria-hidden="true" strokeWidth={1.25} className="size-4" />
-          {t("galleryUi.showAll", { count: total })}
-        </button>
-      </div>
+          {(["all", ...rooms] as const).map((value) => {
+            const active = room === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setRoom(value)}
+                className={cn(
+                  "inline-flex min-h-11 shrink-0 items-center border px-4 font-sans text-label font-medium uppercase tracking-[0.12em]",
+                  "transition-colors duration-200 ease-out",
+                  active
+                    ? "border-ivory bg-ivory text-ink"
+                    : "border-ivory/40 text-ivory pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze",
+                )}
+              >
+                {value === "all" ? t("galleryUi.all") : t(`room.${value}`)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {open !== null ? (
         <ListingLightbox images={filtered} index={open} onClose={() => setOpen(null)} />

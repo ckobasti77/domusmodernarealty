@@ -1,13 +1,18 @@
 import { getFormatter, getTranslations } from "next-intl/server";
 import type { ListingDetail } from "@/convex/lib/dto";
 import type { Locale } from "@/i18n/routing";
-import { formatArea, formatPrice } from "@/lib/format";
-import { floorLabel, structureShort } from "@/lib/listing-text";
+import { formatArea, formatPrice, formatRooms } from "@/lib/format";
+import { floorName } from "@/lib/listing-text";
 import { displayFloor, displayTotalFloors } from "./floor";
 
+type Row = { label: string; value: string };
+
 /**
- * The key-facts grid (PRD A5). A real `<dl>`, so every figure is announced with
- * its label; rows without data are omitted rather than shown as "—".
+ * The key facts (PRD A5): up to four headline figures set large in the display
+ * serif (area, rooms, floor, bathrooms or year), then every other fact in a
+ * hairline grid. Both are real `<dl>`s, so each figure is announced with its
+ * label; rows without data are omitted rather than shown as "—", and nothing
+ * is said twice (a renovation year replaces the "Renovirano" condition).
  */
 export async function KeyFacts({ listing, locale }: { listing: ListingDetail; locale: Locale }) {
   const t = await getTranslations("listing");
@@ -16,46 +21,60 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
   const m2 = tUnits("m2");
   const yesNo = (value: boolean) => (value ? t("facts.yes") : t("facts.no"));
 
-  const rows: { label: string; value: string }[] = [];
+  // Lists of enum values read as "Jug, zapad", like every other value.
+  const sentence = (value: string) => value.charAt(0).toLocaleUpperCase(locale) + value.slice(1);
+  const hasRooms = listing.propertyType !== "land" && listing.propertyType !== "garage";
+  const hasFloor = listing.propertyType !== "land";
+
+  const lead: Row[] = [{ label: t("area"), value: formatArea(listing.areaM2, locale, m2) }];
+  if (hasRooms) lead.push({ label: t("facts.roomsCount"), value: formatRooms(listing.rooms, locale) });
+  if (hasFloor) {
+    const floor = floorName(t, displayFloor(listing.floor, locale));
+    const total = displayTotalFloors(listing.totalFloors, locale);
+    lead.push({ label: t("floor"), value: total !== undefined ? `${floor} / ${total}` : floor });
+  }
+  const leadBathrooms = listing.bathrooms !== undefined && lead.length < 4;
+  if (listing.bathrooms !== undefined && leadBathrooms) {
+    lead.push({ label: t("facts.bathrooms"), value: format.number(listing.bathrooms) });
+  }
+  const leadYear = !leadBathrooms && listing.yearBuilt !== undefined && lead.length < 4;
+  if (leadYear) lead.push({ label: t("yearBuilt"), value: String(listing.yearBuilt) });
+
+  const rows: Row[] = [];
   const push = (label: string, value: string | undefined) => {
     if (value !== undefined && value.length > 0) rows.push({ label, value });
   };
 
-  push(t("area"), formatArea(listing.areaM2, locale, m2));
   if (listing.registeredAreaM2 !== undefined && listing.registeredAreaM2 !== listing.areaM2) {
     push(t("facts.registeredArea"), formatArea(listing.registeredAreaM2, locale, m2));
   }
   if (listing.plotAreaM2 !== undefined) push(t("facts.plotArea"), formatArea(listing.plotAreaM2, locale, m2));
-  if (listing.propertyType !== "land" && listing.propertyType !== "garage") {
-    push(t("rooms"), structureShort(t, tUnits, listing.rooms));
-  }
   if (listing.bedrooms !== undefined) push(t("facts.bedrooms"), format.number(listing.bedrooms));
-  if (listing.bathrooms !== undefined) push(t("facts.bathrooms"), format.number(listing.bathrooms));
-  if (listing.propertyType !== "land") {
-    push(t("floor"), floorLabel(t, displayFloor(listing.floor, locale), displayTotalFloors(listing.totalFloors, locale)));
-  }
-  if (listing.yearBuilt !== undefined) push(t("yearBuilt"), String(listing.yearBuilt));
+  if (listing.bathrooms !== undefined && !leadBathrooms) push(t("facts.bathrooms"), format.number(listing.bathrooms));
+  if (listing.yearBuilt !== undefined && !leadYear) push(t("yearBuilt"), String(listing.yearBuilt));
   if (listing.renovatedYear !== undefined) push(t("facts.renovated"), String(listing.renovatedYear));
   if (listing.completionDate !== undefined) {
     push(t("facts.completion"), format.dateTime(new Date(listing.completionDate), { month: "long", year: "numeric" }));
   }
   push(t("facts.construction"), t(`construction.${listing.constructionType}`));
   if (listing.propertyType !== "land") {
-    push(t("facts.condition"), t(`condition.${listing.condition}`));
+    if (!(listing.condition === "renovated" && listing.renovatedYear !== undefined)) {
+      push(t("facts.condition"), t(`condition.${listing.condition}`));
+    }
     push(t("furnishing"), t(`furnishingValue.${listing.furnishing}`));
   }
   if (listing.heating.length > 0) {
-    push(t("heating"), listing.heating.map((value) => t(`heatingValue.${value}`)).join(", "));
+    push(t("heating"), sentence(listing.heating.map((value) => t(`heatingValue.${value}`)).join(", ")));
   }
   if (listing.parking.length > 0) {
-    push(t("parking"), listing.parking.map((value) => t(`parkingValue.${value}`)).join(", "));
+    push(t("parking"), sentence(listing.parking.map((value) => t(`parkingValue.${value}`)).join(", ")));
   }
   if (listing.propertyType === "apartment" || listing.propertyType === "office") {
     push(t("facts.elevator"), yesNo(listing.features.elevator));
   }
   if (listing.outdoorAreaM2 !== undefined) push(t("facts.outdoor"), formatArea(listing.outdoorAreaM2, locale, m2));
   if (listing.orientation !== undefined && listing.orientation.length > 0) {
-    push(t("facts.orientation"), listing.orientation.map((value) => t(`orientationValue.${value}`)).join(", "));
+    push(t("facts.orientation"), sentence(listing.orientation.map((value) => t(`orientationValue.${value}`)).join(", ")));
   }
   if (listing.energyClass !== undefined) push(t("energyClass"), listing.energyClass);
   if (listing.costs !== undefined && (listing.costs.infostan !== undefined || listing.costs.maintenance !== undefined)) {
@@ -85,9 +104,19 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
       <h2 id="facts-heading" className="font-display text-h2">
         {t("facts.heading")}
       </h2>
-      <dl className="mt-8 grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+      <dl className="hairline-t hairline-b mt-8 grid grid-cols-2 gap-x-6 gap-y-8 py-8 md:grid-cols-4">
+        {lead.map((item) => (
+          <div key={item.label} className="flex min-w-0 flex-col gap-2">
+            <dt className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{item.label}</dt>
+            <dd data-numeric className="font-display text-[clamp(2rem,3.2vw,2.75rem)] leading-none text-ink">
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <dl className="mt-2 grid grid-cols-2 gap-x-6 sm:grid-cols-3">
         {rows.map((row) => (
-          <div key={row.label} className="hairline-t flex flex-col gap-1 py-4">
+          <div key={row.label} className="hairline-b flex flex-col gap-1 py-4">
             <dt className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{row.label}</dt>
             <dd data-numeric className="text-body text-ink">
               {row.value}

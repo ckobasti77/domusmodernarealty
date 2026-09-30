@@ -168,7 +168,13 @@ export function CostCalculator({
         value={feeInput}
         onChange={(e) => setFeeInput(e.target.value)}
       />
-      <dl aria-live="polite">
+      <div aria-live="polite">
+        <p className="eyebrow text-stone-text">{t("total")}</p>
+        <p data-numeric data-testid="cost-total" className="mt-1 font-display text-[2.5rem] leading-none">
+          {formatPrice(result.total, locale)}
+        </p>
+      </div>
+      <dl>
         {result.lines.map((line) => (
           <Row
             key={line.key}
@@ -178,7 +184,6 @@ export function CostCalculator({
           />
         ))}
         <Row label={t("extras")} value={formatPrice(result.extras, locale)} strong />
-        <Row label={t("total")} value={formatPrice(result.total, locale)} strong />
       </dl>
       <p className="text-small text-ink">{result.isNewBuild ? t("vatNote") : `${t("transferTaxNote")} ${t("firstHome")}`}</p>
       <p className="text-small text-stone-text">{t("disclaimer")}</p>

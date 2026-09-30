@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { defaultLocale, routing, type Locale } from "@/i18n/routing";
@@ -22,11 +23,24 @@ import { isUnsplash, unsplashAt } from "@/components/site/listing/media";
  * file-based metadata cannot be overridden. Here the image lives at the
  * localized public path (`/sr/nekretnine/<slug>/opengraph-image`, mapped in
  * `i18n/routing.ts`) and the page points `og:image` at exactly that URL.
+ *
+ * Satori only writes PNG, which for a photograph is ~800 KB. WhatsApp and Viber,
+ * the channels Serbian buyers share on, drop the preview above ~300 KB, so the
+ * PNG is re-encoded to a ~100 KB progressive JPEG before it is sent.
  */
 
 const size = { width: 1200, height: 630 };
 /** Prices change; the page adds `?v=<price>` to the URL, so an hour is enough here. */
-const HEADERS = { "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" };
+const HEADERS = {
+  "Content-Type": "image/jpeg",
+  "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+};
+
+async function asJpeg(image: ImageResponse): Promise<Response> {
+  const png = Buffer.from(await image.arrayBuffer());
+  const jpeg = await sharp(png).jpeg({ quality: 82, mozjpeg: true, progressive: true }).toBuffer();
+  return new Response(new Uint8Array(jpeg), { headers: HEADERS });
+}
 
 const INK = "#0e0d0b";
 const IVORY = "#f4efe6";
@@ -60,13 +74,15 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
   const [fontList, result] = await Promise.all([fonts(), getListingBySlug(slug)]);
 
   if (result.kind !== "listing") {
-    return new ImageResponse(
-      (
-        <div style={{ display: "flex", width: "100%", height: "100%", backgroundColor: INK, padding: 72, alignItems: "flex-end" }}>
-          <Wordmark />
-        </div>
+    return asJpeg(
+      new ImageResponse(
+        (
+          <div style={{ display: "flex", width: "100%", height: "100%", backgroundColor: INK, padding: 72, alignItems: "flex-end" }}>
+            <Wordmark />
+          </div>
+        ),
+        { ...size, fonts: fontList },
       ),
-      { ...size, fonts: fontList, headers: HEADERS },
     );
   }
 
@@ -96,57 +112,56 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
   const ribbon =
     listing.status === "sold" ? t("statusSold") : listing.status === "rented" ? t("statusRented") : null;
 
-  return new ImageResponse(
-    (
-      <div style={{ display: "flex", width: "100%", height: "100%", backgroundColor: INK }}>
-        <div style={{ display: "flex", position: "relative", width: 700, height: "100%" }}>
-          {photo !== null ? (
-            // Satori renders a plain <img>; next/image does not apply here.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="" width={700} height={630} style={{ width: 700, height: 630, objectFit: "cover" }} />
-          ) : null}
-          {ribbon !== null ? (
-            <div
-              style={{
-                position: "absolute",
-                top: 40,
-                left: 40,
-                padding: "10px 18px",
-                backgroundColor: INK,
-                color: IVORY,
-                fontFamily: "Sans",
-                fontSize: 20,
-                letterSpacing: 3,
-                textTransform: "uppercase",
-              }}
-            >
-              {ribbon}
-            </div>
-          ) : null}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            width: 500,
-            height: "100%",
-            padding: "56px 52px",
-          }}
-        >
-          <Wordmark />
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ fontFamily: "Sans", fontSize: 20, letterSpacing: 3, color: MIST, textTransform: "uppercase" }}>
-              {structureTitle(t, listing, locale, m2)}
-            </div>
-            <div style={{ fontFamily: "Serif", fontSize: 60, lineHeight: 1.02, color: IVORY }}>{place}</div>
-            <div style={{ width: "100%", height: 1, backgroundColor: "rgba(244,239,230,0.16)", marginTop: 8 }} />
-            <div style={{ fontFamily: "Sans", fontSize: 46, color: IVORY }}>{price}</div>
-            <div style={{ fontFamily: "Sans", fontSize: 22, color: MIST }}>{facts}</div>
+  const card = (
+    <div style={{ display: "flex", width: "100%", height: "100%", backgroundColor: INK }}>
+      <div style={{ display: "flex", position: "relative", width: 700, height: "100%" }}>
+        {photo !== null ? (
+          // Satori renders a plain <img>; next/image does not apply here.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="" width={700} height={630} style={{ width: 700, height: 630, objectFit: "cover" }} />
+        ) : null}
+        {ribbon !== null ? (
+          <div
+            style={{
+              position: "absolute",
+              top: 40,
+              left: 40,
+              padding: "10px 18px",
+              backgroundColor: INK,
+              color: IVORY,
+              fontFamily: "Sans",
+              fontSize: 20,
+              letterSpacing: 3,
+              textTransform: "uppercase",
+            }}
+          >
+            {ribbon}
           </div>
+        ) : null}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: 500,
+          height: "100%",
+          padding: "56px 52px",
+        }}
+      >
+        <Wordmark />
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ fontFamily: "Sans", fontSize: 20, letterSpacing: 3, color: MIST, textTransform: "uppercase" }}>
+            {structureTitle(t, listing, locale, m2)}
+          </div>
+          <div style={{ fontFamily: "Serif", fontSize: 60, lineHeight: 1.02, color: IVORY }}>{place}</div>
+          <div style={{ width: "100%", height: 1, backgroundColor: "rgba(244,239,230,0.16)", marginTop: 8 }} />
+          <div style={{ fontFamily: "Sans", fontSize: 46, color: IVORY }}>{price}</div>
+          <div style={{ fontFamily: "Sans", fontSize: 22, color: MIST }}>{facts}</div>
         </div>
       </div>
-    ),
-    { ...size, fonts: fontList, headers: HEADERS },
+    </div>
   );
+
+  return asJpeg(new ImageResponse(card, { ...size, fonts: fontList }));
 }

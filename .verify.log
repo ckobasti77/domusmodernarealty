@@ -1,0 +1,96 @@
+
+> mihajlo-estate@0.1.0 verify
+> npm run convex:once && npm run typegen && npm run typecheck && npm run lint && npm run build
+
+
+> mihajlo-estate@0.1.0 convex:once
+> convex dev --once
+
+▌ Developing against deployment:
+▌ [Development] ckobasti77:mihajlo-estate:dev/jovan-milojevic (dev) (dashboard: https://dashboard.convex.dev/t/ckobasti77/mihajlo-estate/youthful-avocet-278)
+▌ └─ https://youthful-avocet-278.eu-west-1.convex.cloud
+- Preparing Convex functions...
+
+[32m✔[39m 19:01:39 Convex functions ready! (56.66s)
+
+> mihajlo-estate@0.1.0 typegen
+> next typegen
+
+Generating route types...
+✓ Types generated successfully
+
+> mihajlo-estate@0.1.0 typecheck
+> tsc --noEmit
+
+
+> mihajlo-estate@0.1.0 lint
+> eslint
+
+
+C:\Users\admin\Desktop\Web Dev Projects\mihajlo-estate\convex\auth.config.ts
+  5:1  warning  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+C:\Users\admin\Desktop\Web Dev Projects\mihajlo-estate\convex\listingsAdmin.ts
+  219:19  warning  '_token' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  220:23  warning  '_expires' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  221:17  warning  '_searchText' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  735:12  warning  '_dropId' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  736:22  warning  '_dropCreation' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  737:14  warning  '_dropScope' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  738:19  warning  '_dropSearch' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  739:19  warning  '_dropPpm2' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  740:17  warning  '_dropFloor' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  741:16  warning  '_dropTour' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  742:19  warning  '_dropMandateEnd' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 12 problems (0 errors, 12 warnings)
+
+
+> mihajlo-estate@0.1.0 prebuild
+> node scripts/copy-maplibre-worker.mjs
+
+maplibre worker: up to date
+
+> mihajlo-estate@0.1.0 build
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 286ms
+- Experiments (use with caution):
+  ✓ globalNotFound
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 32.3s
+  Running TypeScript ...
+  Finished TypeScript in 32.7s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/17) ...
+  Generating static pages using 11 workers (4/17) 
+  Generating static pages using 11 workers (8/17) 
+  Generating static pages using 11 workers (12/17) 
+✓ Generating static pages using 11 workers (17/17) in 1753ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/properties
+├ ƒ /[locale]/properties/[slug]
+├ ƒ /[locale]/properties/[slug]/opengraph-image
+├ ƒ /[locale]/styleguide
+├ ○ /admin/login
+├ ○ /apple-icon.png
+└ ○ /icon.svg
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+real	10m7.462s
+user	0m0.075s
+sys	0m0.091s
+EXIT 0

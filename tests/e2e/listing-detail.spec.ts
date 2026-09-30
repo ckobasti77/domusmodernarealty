@@ -93,8 +93,11 @@ test.describe("listing detail — content, SEO, compliance", () => {
   test("the share image renders at its localized public URL", async ({ request }) => {
     const response = await request.get(`/sr/nekretnine/${LISTING}/opengraph-image`);
     expect(response.status()).toBe(200);
-    expect(response.headers()["content-type"]).toBe("image/png");
-    expect((await response.body()).byteLength).toBeGreaterThan(50_000);
+    expect(response.headers()["content-type"]).toBe("image/jpeg");
+    const bytes = (await response.body()).byteLength;
+    // A real photograph, yet under the ~300 KB WhatsApp/Viber preview limit.
+    expect(bytes).toBeGreaterThan(30_000);
+    expect(bytes).toBeLessThan(300_000);
   });
 
   test("an old slug from the slug history redirects permanently", async ({ request }, testInfo) => {
@@ -151,10 +154,13 @@ test.describe("gallery lightbox", () => {
   test("room chips narrow the gallery", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "chips are exercised once");
     await quietVisit(page, `/sr/nekretnine/${LISTING}`);
-    const all = page.getByRole("button", { name: /Sve fotografije \((\d+)\)/ }).last();
-    const before = await all.textContent();
-    await page.getByRole("group", { name: "Prikaz po prostoriji" }).getByRole("button", { name: "Kuhinja" }).click();
-    await expect(all).not.toHaveText(before ?? "");
+    // The lead frame names its position in the (filtered) set: "… 1 od 9".
+    const lead = page.getByRole("button", { name: /Otvorite fotografiju 1 od \d+/ });
+    const before = await lead.getAttribute("aria-label");
+    const chips = page.getByRole("group", { name: "Prikaz po prostoriji" });
+    await chips.getByRole("button", { name: "Kuhinja" }).click();
+    await expect(chips.getByRole("button", { name: "Kuhinja" })).toHaveAttribute("aria-pressed", "true");
+    await expect(lead).not.toHaveAttribute("aria-label", before ?? "");
   });
 });
 
@@ -290,5 +296,75 @@ test.describe("mobile action bar", () => {
     const bar = page.getByTestId("mobile-action-bar");
     await expect(bar).toBeVisible();
     await expect(bar.getByRole("link", { name: "Zakaži" })).toHaveCount(0);
+  });
+});
+
+test.describe("server rendering and tracking", () => {
+  test("the core content works without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await page.goto(`/sr/nekretnine/${LISTING}`);
+      await expect(page.getByRole("heading", { level: 1 })).toContainText("Trosoban stan u Neimaru");
+      await expect(page.getByTestId("listing-price")).toHaveText("430.000 €");
+      await expect(page.getByTestId("listing-compliance")).toContainText("Registar posrednika br.");
+      await expect(page.getByRole("heading", { name: "Osnovni podaci" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Opis" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Lokacija" })).toBeVisible();
+      // The lead photograph is plain server HTML, not a client render.
+      await expect(page.getByRole("button", { name: /Otvorite fotografiju 1 od/ }).locator("img")).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test("a view is counted once per session, not once per load", async ({ page }) => {
+    const slug = "trosoban-stan-od-82-m-na-dusanovcu-dva-koraka-od-pijace-me-1056";
+    await quietVisit(page, `/sr/nekretnine/${slug}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const sessionKey = await page.evaluate(() => window.sessionStorage.getItem("me:sk"));
+    expect(sessionKey).not.toBeNull();
+    await expect.poll(() => convexRun<number>("qa:viewsForSession", { slug, sessionKey }), { timeout: 15_000 }).toBe(1);
+
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // Give a (wrong) second call time to land before asserting it never did.
+    await page.waitForTimeout(1_500);
+    expect(convexRun<number>("qa:viewsForSession", { slug, sessionKey })).toBe(1);
+  });
+});
+
+test.describe("media tabs and calculators", () => {
+  test("the 360° and 3D tabs show their poster and the Uskoro state", async ({ page }) => {
+    await quietVisit(page, "/sr/nekretnine/penthaus-na-24-spratu-u-beogradu-na-vodi-pogled-na-savu-me-1049");
+    const tabs = page.getByRole("tablist", { name: "Fotografije, planovi i obilasci" });
+    await tabs.getByRole("tab", { name: "360° tura" }).click();
+    await expect(page.locator('[data-tour-slot="tour360"]')).toBeVisible();
+    await expect(page.locator('[data-tour-slot="tour360"]')).toContainText("Uskoro");
+    await tabs.getByRole("tab", { name: "3D šetnja" }).click();
+    await expect(page.locator('[data-tour-slot="walk3d"]')).toBeVisible();
+    await tabs.getByRole("tab", { name: "Fotografije" }).click();
+    await expect(page.getByRole("button", { name: /Otvorite fotografiju 1 od/ })).toBeVisible();
+  });
+
+  test("the down-payment presets recompute the monthly payment", async ({ page }) => {
+    await quietVisit(page, `/sr/nekretnine/${LISTING}`);
+    const calculator = page.getByTestId("mortgage-calculator");
+    await calculator.scrollIntoViewIfNeeded();
+    const monthly = calculator.getByTestId("mortgage-monthly");
+    await calculator.getByRole("button", { name: "Učešće 20%" }).click();
+    const at20 = await monthly.textContent();
+    await calculator.getByRole("button", { name: "Učešće 10%" }).click();
+    await expect(calculator.getByRole("button", { name: "Učešće 10%" })).toHaveAttribute("aria-pressed", "true");
+    await expect(monthly).not.toHaveText(at20 ?? "");
+    await expect(page.getByTestId("cost-calculator")).toContainText("Porez na prenos");
+  });
+
+  test("a rental shows the monthly rent and no purchase calculators", async ({ page }) => {
+    await quietVisit(page, "/sr/nekretnine/namesten-dvosoban-stan-na-banjici-56-m-uz-banjicku-sumu-me-1057");
+    await expect(page.getByTestId("listing-price")).toBeVisible();
+    await expect(page.getByText("mesečno").first()).toBeVisible();
+    await expect(page.getByTestId("mortgage-calculator")).toHaveCount(0);
+    await expect(page.getByTestId("inquiry-form")).toBeVisible();
   });
 });

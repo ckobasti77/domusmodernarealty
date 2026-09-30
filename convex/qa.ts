@@ -155,3 +155,26 @@ export const removeSlugRedirect = internalMutation({
     return rows.length;
   },
 });
+
+/**
+ * How many view rows one browser session left on a listing, for the "one view
+ * per session" e2e case. Session keys are random tokens that identify nobody.
+ */
+export const viewsForSession = internalQuery({
+  args: { slug: v.string(), sessionKey: v.string() },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const listing = await ctx.db
+      .query("listings")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    if (listing === null) throw new Error(`No listing ${args.slug}`);
+    const rows = await ctx.db
+      .query("listingViews")
+      .withIndex("by_listingId_and_sessionKey", (q) =>
+        q.eq("listingId", listing._id).eq("sessionKey", args.sessionKey),
+      )
+      .take(10);
+    return rows.length;
+  },
+});

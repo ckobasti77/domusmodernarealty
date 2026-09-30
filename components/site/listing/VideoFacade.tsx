@@ -58,7 +58,9 @@ export function VideoFacade({ url, title }: { url: string; title: string }) {
   }
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden bg-ink-2" data-lenis-prevent="">
+    // `overflow-clip`, not `hidden`: see ListingMapLoader for why a
+    // `[data-lenis-prevent]` box must not be a scroll container.
+    <div className="relative aspect-video w-full overflow-clip bg-ink-2" data-lenis-prevent="">
       {playing ? (
         <iframe
           src={embed.src}

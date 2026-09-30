@@ -5,7 +5,9 @@ import { useTranslations } from "next-intl";
 import { telHref, viberHref, whatsappHref } from "./contact-links";
 
 /**
- * The phone-only action bar (PRD A5: Pozovi · Viber · Zakaži razgledanje). It
+ * The phone-only action bar (PRD A5: Pozovi · Viber · Zakaži razgledanje). The
+ * booking cell is the one ivory block on the ink bar (bronze is never a large
+ * fill, DESIGN §1). It
  * sits above the cookie banner via `--consent-h`, respects the home-indicator
  * safe area, and drops "Zakaži" on sold/rented listings, which take no bookings.
  */
@@ -52,7 +54,7 @@ export function MobileActionBar({
         </a>
       ) : null}
       {canBook ? (
-        <a href="#razgledanje" data-contact-tab="viewing" className={`${item} bg-bronze-deep text-paper`}>
+        <a href="#razgledanje" data-contact-tab="viewing" className={`${item} bg-ivory text-ink active:bg-ivory-2`}>
           <CalendarDays aria-hidden="true" strokeWidth={1.25} className="size-5" />
           {t("book")}
         </a>

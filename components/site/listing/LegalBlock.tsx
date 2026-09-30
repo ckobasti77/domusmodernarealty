@@ -54,7 +54,7 @@ export async function LegalBlock({
         {t("legal")}
       </h2>
 
-      <div className="mt-6 flex items-start gap-3 bg-ivory-2 p-5">
+      <div className="hairline-t hairline-b mt-6 flex items-start gap-3 py-5">
         {verified ? (
           <ShieldCheck aria-hidden="true" strokeWidth={1.5} className="mt-0.5 size-5 shrink-0 text-success-text" />
         ) : null}

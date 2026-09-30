@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { Suspense, type ReactNode } from "react";
 import { ContactForms } from "@/components/forms/ContactForms";
 import { Badge } from "@/components/site/Badge";
+import type { CardMortgage } from "@/components/site/PropertyCard";
 import { buttonClasses } from "@/components/site/Button";
 import { Container } from "@/components/site/Container";
 import { Eyebrow } from "@/components/site/Eyebrow";
@@ -29,7 +30,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import type { ListingDetail } from "@/convex/lib/dto";
 import { getPathname, Link, permanentRedirect } from "@/i18n/navigation";
 import { htmlLang, routing, type Locale } from "@/i18n/routing";
-import { fixOrphans, formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
+import { fixTypography, fixWidows, formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
 import { breadcrumbJsonLd, listingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
 import { getListingBySlug, getPublicSettings, getSimilarListings } from "@/lib/listing-data";
@@ -43,7 +44,8 @@ const CLOSED = new Set(["sold", "rented"]);
 async function resolve(params: Params) {
   const { locale, slug } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
-  return { locale, slug, result: await getListingBySlug(slug) };
+  // The server's clock for the "Novo" badge on similar cards, read once per request.
+  return { locale, slug, now: Date.now(), result: await getListingBySlug(slug) };
 }
 
 function href(slug: string) {
@@ -100,6 +102,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     )}?v=${listing.price}`,
     width: 1200,
     height: 630,
+    type: "image/jpeg",
     alt: t("ogAlt", { title: pickL10n(listing.title, locale).text, price }),
   };
 
@@ -121,7 +124,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function ListingPage({ params }: { params: Params }) {
-  const { locale, result } = await resolve(params);
+  const { locale, now, result } = await resolve(params);
   if (result.kind === "redirect") {
     // A renamed listing keeps its old URLs alive (ARCHITECTURE §4 `slugHistory`).
     permanentRedirect({ href: href(result.slug), locale });
@@ -138,6 +141,10 @@ export default async function ListingPage({ params }: { params: Params }) {
   const title = pickL10n(listing.title, locale);
   const description = pickL10n(listing.description, locale);
   const highlights = pickL10nList(listing.highlights, locale);
+  const paragraphs = description.text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph.length > 0);
   const closed = CLOSED.has(listing.status);
   const ribbon =
     listing.status === "sold"
@@ -251,10 +258,11 @@ export default async function ListingPage({ params }: { params: Params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <ViewTracker listingId={listing._id} />
 
-      {/* ------------------------------------------------ dark media band */}
+      {/* ------------------------------------------ dark band: media + title */}
       <div className="bg-ink text-ivory" data-listing-status={listing.status}>
-        <Container width="bleed" className="pb-10 pt-24 md:pt-28 lg:pb-14">
-          <nav aria-label={t("breadcrumbLabel")}>
+        <Container width="bleed" className="pt-24 md:pt-28">
+          {/* Phones go straight to the photographs; the menu already links back. */}
+          <nav aria-label={t("breadcrumbLabel")} className="mb-6 hidden md:block">
             <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-label uppercase tracking-[0.12em] text-mist">
               <li>
                 <Link href="/" className="transition-colors duration-200 pointer-fine:hover:text-ivory">
@@ -273,9 +281,55 @@ export default async function ListingPage({ params }: { params: Params }) {
               </li>
             </ol>
           </nav>
-          <div className="mt-6">
-            {mediaTabs.length > 1 ? <Tabs tone="dark" ariaLabel={t("tabs.label")} tabs={mediaTabs} /> : gallery}
-          </div>
+          {mediaTabs.length > 1 ? <Tabs tone="dark" ariaLabel={t("tabs.label")} tabs={mediaTabs} /> : gallery}
+        </Container>
+
+        {/* Title and price sit directly under the photographs, inside the first
+            viewport at 1440×900 and 390×844, on the same 8/4 split as the
+            content grid below. */}
+        <Container className="pb-12 pt-10 md:pb-16 lg:pt-12">
+          {/* Three grid items so a phone reads title → price → badges, while a
+              desktop keeps the badges under the title and the price beside it. */}
+          <header className="grid gap-6 lg:grid-cols-12 lg:gap-x-16 lg:gap-y-5">
+            <div className="min-w-0 lg:col-span-8 lg:row-start-1">
+              <Eyebrow tone="accentDark">{eyebrow}</Eyebrow>
+              <h1 lang={title.lang} className="mt-4 max-w-[22ch] font-display text-display-m text-ivory">
+                {fixWidows(title.text, 18)}
+              </h1>
+              <p className="mt-4 text-body-l text-mist">{placeLine(listing, locale)}</p>
+            </div>
+            <div className="lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1">
+              <PriceBlock
+                tone="dark"
+                price={listing.price}
+                pricePerM2={listing.pricePerM2}
+                {...(listing.previousPrice !== undefined ? { previousPrice: listing.previousPrice } : {})}
+                priceOnRequest={listing.priceOnRequest === true}
+                transaction={listing.transaction}
+                history={listing.priceHistory}
+                {...(settings?.eurRsd !== undefined ? { eurRsd: settings.eurRsd } : {})}
+                {...(listing.vatIncluded !== undefined ? { vatIncluded: listing.vatIncluded } : {})}
+                {...(listing.rent?.deposit !== undefined ? { deposit: listing.rent.deposit } : {})}
+                {...(closed && ribbon !== undefined ? { closedLabel: ribbon } : {})}
+                company={company}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 lg:col-span-8 lg:row-start-2">
+              <span className="mr-2 font-mono text-label uppercase tracking-[0.08em] text-mist">
+                {t("refCode", { ref: listing.ref })}
+              </span>
+              {listing.isExclusive ? <Badge className="border-bronze text-bronze">{t("exclusive")}</Badge> : null}
+              {listing.legal.docsVerifiedAt !== undefined ? (
+                <Badge className="gap-1.5 border-ivory/30 text-ivory">
+                  <ShieldCheck aria-hidden="true" strokeWidth={1.5} className="size-3.5" />
+                  {t("verifiedDocs")}
+                </Badge>
+              ) : null}
+              {listing.constructionType !== "old" ? (
+                <Badge className="border-ivory/30 text-ivory">{t(`construction.${listing.constructionType}`)}</Badge>
+              ) : null}
+            </div>
+          </header>
         </Container>
       </div>
 
@@ -283,47 +337,6 @@ export default async function ListingPage({ params }: { params: Params }) {
       <Container className="py-12 md:py-16 lg:py-20">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="flex min-w-0 flex-col gap-16 lg:col-span-8 lg:gap-20">
-            <header className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
-              <div className="min-w-0 max-w-2xl">
-                <Eyebrow>{eyebrow}</Eyebrow>
-                <h1 lang={title.lang} className="mt-4 font-display text-display-m">
-                  {fixOrphans(title.text)}
-                </h1>
-                <p className="mt-4 text-body-l text-ink">{placeLine(listing, locale)}</p>
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <span className="mr-2 font-mono text-label uppercase tracking-[0.08em] text-stone-text">
-                    {t("refCode", { ref: listing.ref })}
-                  </span>
-                  {listing.isExclusive ? <Badge tone="accent">{t("exclusive")}</Badge> : null}
-                  {listing.legal.docsVerifiedAt !== undefined ? (
-                    <Badge className="gap-1.5" >
-                      <ShieldCheck aria-hidden="true" strokeWidth={1.5} className="size-3.5" />
-                      {t("verifiedDocs")}
-                    </Badge>
-                  ) : null}
-                  {listing.constructionType !== "old" ? (
-                    <Badge>{t(`construction.${listing.constructionType}`)}</Badge>
-                  ) : null}
-                </div>
-              </div>
-              <div className="shrink-0 xl:w-[320px]">
-                {/* The header sits on ivory here, not in an ink band. */}
-                <PriceBlock
-                  tone="light"
-                  price={listing.price}
-                  pricePerM2={listing.pricePerM2}
-                  {...(listing.previousPrice !== undefined ? { previousPrice: listing.previousPrice } : {})}
-                  priceOnRequest={listing.priceOnRequest === true}
-                  transaction={listing.transaction}
-                  history={listing.priceHistory}
-                  {...(settings?.eurRsd !== undefined ? { eurRsd: settings.eurRsd } : {})}
-                  {...(listing.vatIncluded !== undefined ? { vatIncluded: listing.vatIncluded } : {})}
-                  {...(listing.rent?.deposit !== undefined ? { deposit: listing.rent.deposit } : {})}
-                  company={company}
-                />
-              </div>
-            </header>
-
             {closed || listing.status === "reserved" ? (
               <ClosedNotice status={listing.status} />
             ) : null}
@@ -335,26 +348,29 @@ export default async function ListingPage({ params }: { params: Params }) {
                 {t("description")}
               </h2>
               {highlights.items.length > 0 ? (
-                <div className="mt-8 bg-ivory-2 p-6 md:p-8">
+                <div className="hairline-t hairline-b mt-8 py-6 md:py-8">
                   <p className="eyebrow text-stone-text">{t("highlights")}</p>
                   <ul lang={highlights.lang} className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
                     {highlights.items.map((item) => (
                       <li key={item} className="flex gap-3 text-body text-ink">
                         <span aria-hidden="true" className="mt-3 h-px w-4 shrink-0 bg-bronze-text" />
-                        {item}
+                        {fixTypography(item)}
                       </li>
                     ))}
                   </ul>
                 </div>
               ) : null}
-              <div lang={description.lang} className="mt-8 flex max-w-prose flex-col gap-5 text-body-l text-ink">
-                {description.text
-                  .split(/\n{2,}/)
-                  .map((paragraph) => paragraph.trim())
-                  .filter((paragraph) => paragraph.length > 0)
-                  .map((paragraph) => (
-                    <p key={paragraph.slice(0, 48)}>{fixOrphans(paragraph)}</p>
-                  ))}
+              {/* The first paragraph is set as a serif lede; the rest keep a
+                  ~65-character measure. */}
+              <div lang={description.lang} className="mt-10 flex max-w-[40rem] flex-col gap-5 text-body-l text-ink">
+                {paragraphs.map((paragraph, index) => (
+                  <p
+                    key={paragraph.slice(0, 48)}
+                    className={index === 0 ? "font-display text-[1.5rem] leading-[1.3] md:text-[1.75rem]" : undefined}
+                  >
+                    {fixTypography(paragraph)}
+                  </p>
+                ))}
               </div>
             </section>
 
@@ -395,7 +411,12 @@ export default async function ListingPage({ params }: { params: Params }) {
       </Container>
 
       <Suspense fallback={null}>
-        <SimilarListings id={listing._id} heading={t("similar")} />
+        <SimilarListings
+          id={listing._id}
+          heading={t("similar")}
+          now={now}
+          {...(settings !== null ? { mortgage: settings.mortgage } : {})}
+        />
       </Suspense>
 
       <MobileActionBar
@@ -418,25 +439,30 @@ async function ClosedNotice({ status }: { status: string }) {
       </Link>
     );
   return (
-    <div role="status" data-testid="listing-closed" className="flex flex-col items-start gap-5 border-l-2 border-bronze-text bg-ivory-2 p-6 md:p-8">
-      <p className="text-body-l text-ink">{t(`closed.${key}`)}</p>
+    <div role="status" data-testid="listing-closed" className="flex flex-col items-start gap-5 border border-ink/15 p-6 md:p-8">
+      <p className="max-w-[40rem] text-body-l text-ink">{fixTypography(t(`closed.${key}`))}</p>
       {action}
     </div>
   );
 }
 
-async function SimilarListings({ id, heading }: { id: Id<"listings">; heading: string }) {
+async function SimilarListings({
+  id,
+  heading,
+  mortgage,
+  now,
+}: {
+  id: Id<"listings">;
+  heading: string;
+  mortgage?: CardMortgage;
+  now: number;
+}) {
   const similar = await getSimilarListings(id);
   if (similar.length === 0) return null;
   return (
     <section aria-labelledby="similar-heading" className="hairline-t bg-ivory">
       <Container className="py-16 lg:py-24">
-        <h2 id="similar-heading" className="font-display text-h2">
-          {heading}
-        </h2>
-        <div className="mt-10">
-          <SimilarRail listings={similar} />
-        </div>
+        <SimilarRail heading={heading} listings={similar} now={now} {...(mortgage !== undefined ? { mortgage } : {})} />
       </Container>
     </section>
   );

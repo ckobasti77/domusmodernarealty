@@ -22,6 +22,13 @@ function hasWebGL2(): boolean {
  * MapLibre bundle and the tiles never compete with the gallery for the first
  * paint. Wrapped in `data-lenis-prevent` so dragging the map never scrolls the
  * page (CLAUDE.md).
+ *
+ * The box clips with `overflow: clip`, NOT `hidden`. Lenis's stylesheet gives
+ * every `[data-lenis-prevent]` element `overscroll-behavior: contain`, and an
+ * `overflow: hidden` box is a scroll container, so a wheel over the map could
+ * neither scroll it nor chain to the page: the page froze under the pointer.
+ * `clip` is not a scroll container, so the wheel passes on (the map itself
+ * zooms only with Ctrl/⌘ + wheel, `cooperativeGestures`).
  */
 export function ListingMapLoader(props: ListingMapProps) {
   const t = useTranslations("listing.locationBlock");
@@ -52,7 +59,7 @@ export function ListingMapLoader(props: ListingMapProps) {
       aria-label={t("mapLabel")}
       data-lenis-prevent=""
       data-map-state={state}
-      className="relative aspect-[4/3] w-full overflow-hidden bg-ivory-2 md:aspect-[16/9]"
+      className="relative aspect-[4/3] w-full overflow-clip bg-ivory-2 md:aspect-[16/9]"
     >
       {state === "visible" ? (
         <ListingMap {...props} />

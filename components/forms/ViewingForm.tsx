@@ -172,7 +172,10 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
         <legend className="font-sans text-label font-medium uppercase tracking-[0.12em] text-stone-text">
           {t("viewingDate")}
         </legend>
-        <ul className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-2" data-lenis-prevent="">
+        {/* No `data-lenis-prevent`: Lenis lets horizontal gestures through by
+            itself, and its `overscroll-behavior: contain` would stop a vertical
+            wheel over the strip from scrolling the page. */}
+        <ul className="-mx-1 mt-3 flex gap-2 overflow-x-auto overscroll-x-contain px-1 pb-2">
           {days.map((candidate) => {
             const noon = candidate.start + 12 * 60 * 60_000;
             const free = freeOn(candidate.key);

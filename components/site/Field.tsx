@@ -209,7 +209,8 @@ export function CheckboxField({ label, hint, error, className, children, ...rest
           aria-invalid={error !== undefined}
           aria-describedby={describedBy}
           className={cn(
-            "mt-0.5 size-5 shrink-0 appearance-none border border-stone-text bg-paper",
+            // `mt-2.5` centres the box on the label's first line (the label has `py-2.5`).
+            "mt-2.5 size-5 shrink-0 appearance-none border border-stone-text bg-paper",
             "transition-colors duration-150 ease-out",
             "checked:border-bronze-text checked:bg-bronze-text",
             "aria-[invalid=true]:border-danger",

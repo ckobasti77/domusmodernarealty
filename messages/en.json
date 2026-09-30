@@ -435,6 +435,7 @@
       "plotArea": "Plot area",
       "bedrooms": "Bedrooms",
       "bathrooms": "Bathrooms",
+      "roomsCount": "Rooms",
       "floorOf": "{floor} of {total}",
       "renovated": "Renovated",
       "construction": "Construction",
@@ -588,7 +589,7 @@
     "costs": {
       "heading": "Total purchase costs",
       "transferTax": "Property transfer tax ({rate}%)",
-      "transferTaxNote": "The seller is liable by law, but contracts often pass it on to the buyer.",
+      "transferTaxNote": "By law the transfer tax is the seller's, but contracts often pass it on to the buyer.",
       "firstHome": "A first-time buyer may be exempt from this tax on 40 m² for themselves and 15 m² for each household member. The exemption is claimed from the tax office, so we do not deduct it here.",
       "vat": "VAT ({rate}%)",
       "vatIncluded": "included in the price",

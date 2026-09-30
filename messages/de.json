@@ -435,6 +435,7 @@
       "plotArea": "Grundstücksfläche",
       "bedrooms": "Schlafzimmer",
       "bathrooms": "Badezimmer",
+      "roomsCount": "Zimmer",
       "floorOf": "{floor} von {total}",
       "renovated": "Renoviert",
       "construction": "Bauart",
@@ -588,7 +589,7 @@
     "costs": {
       "heading": "Gesamtkosten des Kaufs",
       "transferTax": "Grunderwerbsteuer ({rate} %)",
-      "transferTaxNote": "Gesetzlich trägt sie der Verkäufer, vertraglich wird sie jedoch häufig auf den Käufer übertragen.",
+      "transferTaxNote": "Gesetzlich trägt die Grunderwerbsteuer der Verkäufer, vertraglich wird sie jedoch häufig auf den Käufer übertragen.",
       "firstHome": "Wer seine erste Wohnung kauft, kann für 40 m² für sich selbst und je 15 m² für jedes weitere Haushaltsmitglied von dieser Steuer befreit werden. Die Befreiung wird beim Finanzamt geltend gemacht, daher ziehen wir sie hier nicht ab.",
       "vat": "MwSt. ({rate} %)",
       "vatIncluded": "im Preis enthalten",

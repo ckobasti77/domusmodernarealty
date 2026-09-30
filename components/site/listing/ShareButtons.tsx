@@ -30,7 +30,7 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="eyebrow text-stone-text">{t("heading")}</p>
-      <ul className="flex flex-wrap gap-x-5">
+      <ul className="grid grid-cols-2 gap-x-5 sm:flex sm:flex-wrap">
         <li>
           <button type="button" onClick={copy} className={link}>
             {copied ? (

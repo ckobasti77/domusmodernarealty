@@ -5,6 +5,7 @@ import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Suspense, type ReactNode } from "react";
 import { ContactForms } from "@/components/forms/ContactForms";
+import { Reveal } from "@/components/motion/Reveal";
 import { Badge } from "@/components/site/Badge";
 import type { CardMortgage } from "@/components/site/PropertyCard";
 import { buttonClasses } from "@/components/site/Button";
@@ -44,8 +45,10 @@ const CLOSED = new Set(["sold", "rented"]);
 async function resolve(params: Params) {
   const { locale, slug } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
+  // Settings are independent of the listing, so both reads start together.
+  const [result, settings] = await Promise.all([getListingBySlug(slug), getPublicSettings()]);
   // The server's clock for the "Novo" badge on similar cards, read once per request.
-  return { locale, slug, now: Date.now(), result: await getListingBySlug(slug) };
+  return { locale, slug, now: Date.now(), result, settings };
 }
 
 function href(slug: string) {
@@ -124,7 +127,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function ListingPage({ params }: { params: Params }) {
-  const { locale, now, result } = await resolve(params);
+  const { locale, now, result, settings } = await resolve(params);
   if (result.kind === "redirect") {
     // A renamed listing keeps its old URLs alive (ARCHITECTURE §4 `slugHistory`).
     permanentRedirect({ href: href(result.slug), locale });
@@ -132,7 +135,6 @@ export default async function ListingPage({ params }: { params: Params }) {
   if (result.kind !== "listing") notFound();
   const listing = result.listing;
 
-  const settings = await getPublicSettings();
   const t = await getTranslations("listing");
   const tNav = await getTranslations("nav");
   const tUnits = await getTranslations("units");
@@ -341,9 +343,15 @@ export default async function ListingPage({ params }: { params: Params }) {
               <ClosedNotice status={listing.status} />
             ) : null}
 
-            <KeyFacts listing={listing} locale={locale} />
+            {/* Light motion only (DESIGN §6, RESEARCH "fast listing pages"):
+                each block rises once as it scrolls in; whatever is already on
+                screen at hydration is left alone, and the server HTML is
+                complete without JavaScript. */}
+            <Reveal stagger={0} distance={24} skipInView>
+              <KeyFacts listing={listing} locale={locale} />
+            </Reveal>
 
-            <section aria-labelledby="description-heading">
+            <Reveal as="section" stagger={0} distance={24} skipInView aria-labelledby="description-heading">
               <h2 id="description-heading" className="font-display text-h2">
                 {t("description")}
               </h2>
@@ -372,14 +380,20 @@ export default async function ListingPage({ params }: { params: Params }) {
                   </p>
                 ))}
               </div>
-            </section>
+            </Reveal>
 
-            <FeatureGroups listing={listing} />
-            <LegalBlock listing={listing} locale={locale} commission={listing.commissionText ?? settings?.commissionText ?? null} />
-            <LocationBlock listing={listing} locale={locale} />
+            <Reveal stagger={0} distance={24} skipInView>
+              <FeatureGroups listing={listing} />
+            </Reveal>
+            <Reveal stagger={0} distance={24} skipInView>
+              <LegalBlock listing={listing} locale={locale} commission={listing.commissionText ?? settings?.commissionText ?? null} />
+            </Reveal>
+            <Reveal stagger={0} distance={24} skipInView>
+              <LocationBlock listing={listing} locale={locale} />
+            </Reveal>
 
             {showFinance ? (
-              <section aria-labelledby="finance-heading">
+              <Reveal as="section" stagger={0} distance={24} skipInView aria-labelledby="finance-heading">
                 <h2 id="finance-heading" className="font-display text-h2">
                   {t("financeHeading")}
                 </h2>
@@ -395,7 +409,7 @@ export default async function ListingPage({ params }: { params: Params }) {
                     {...(listing.vatIncluded !== undefined ? { vatIncluded: listing.vatIncluded } : {})}
                   />
                 </div>
-              </section>
+              </Reveal>
             ) : null}
 
             {closed ? null : <ContactForms listingId={listing._id} agentId={listing.agent._id} refCode={listing.ref} />}
@@ -462,7 +476,9 @@ async function SimilarListings({
   return (
     <section aria-labelledby="similar-heading" className="hairline-t bg-ivory">
       <Container className="py-16 lg:py-24">
-        <SimilarRail heading={heading} listings={similar} now={now} {...(mortgage !== undefined ? { mortgage } : {})} />
+        <Reveal stagger={0} distance={24} skipInView>
+          <SimilarRail heading={heading} listings={similar} now={now} {...(mortgage !== undefined ? { mortgage } : {})} />
+        </Reveal>
       </Container>
     </section>
   );

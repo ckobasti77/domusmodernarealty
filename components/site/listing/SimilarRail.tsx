@@ -36,7 +36,8 @@ export function SimilarRail({
     if (node === null) return;
     const card = node.querySelector("li");
     const step = card !== null ? card.getBoundingClientRect().width + 24 : node.clientWidth * 0.8;
-    node.scrollBy({ left: direction * step, behavior: "smooth" });
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollBy({ left: direction * step, behavior: reduced ? "auto" : "smooth" });
   };
 
   const arrow =

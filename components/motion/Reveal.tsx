@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ElementType, type ReactNode } from "react";
+import { useRef, type ElementType, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { DURATION, gsap, MOTION_QUERIES, STAGGER, useGSAP } from "./gsap";
 
@@ -24,8 +24,14 @@ export type RevealProps = {
   /** Travel distance in px. */
   distance?: number;
   delay?: number;
+  /**
+   * Leave the block alone when it is already on screen at hydration. For
+   * server-rendered content pages: hiding text the visitor is reading, only to
+   * fade it back in, would read as a flicker.
+   */
+  skipInView?: boolean;
   className?: string;
-};
+} & Omit<HTMLAttributes<HTMLElement>, "children" | "className">;
 
 export function Reveal({
   children,
@@ -33,7 +39,9 @@ export function Reveal({
   stagger = STAGGER.lines,
   distance = 28,
   delay = 0,
+  skipInView = false,
   className,
+  ...rest
 }: RevealProps) {
   const root = useRef<HTMLElement>(null);
 
@@ -41,6 +49,7 @@ export function Reveal({
     () => {
       const el = root.current;
       if (el === null) return;
+      if (skipInView && el.getBoundingClientRect().top < window.innerHeight) return;
       const targets = stagger > 0 ? Array.from(el.children) : [el];
       if (targets.length === 0) return;
 
@@ -74,11 +83,11 @@ export function Reveal({
 
       return () => mm.revert();
     },
-    { scope: root, dependencies: [stagger, distance, delay] },
+    { scope: root, dependencies: [stagger, distance, delay, skipInView] },
   );
 
   return (
-    <Tag ref={root} className={cn(className)}>
+    <Tag ref={root} className={cn(className)} {...rest}>
       {children}
     </Tag>
   );

@@ -48,26 +48,26 @@ export const NAV: readonly NavGroup[] = [
   {
     label: "Klijenti",
     items: [
-      { href: "/admin/upiti", label: "Upiti", icon: Inbox, roles: LISTINGS, ready: false },
-      { href: "/admin/razgledanja", label: "Razgledanja", icon: CalendarDays, roles: LISTINGS, ready: false },
-      { href: "/admin/kontakti", label: "Kontakti", icon: UserRound, roles: MANAGERS, ready: false },
+      { href: "/admin/upiti", label: "Upiti", icon: Inbox, roles: LISTINGS, ready: true },
+      { href: "/admin/razgledanja", label: "Razgledanja", icon: CalendarDays, roles: LISTINGS, ready: true },
+      { href: "/admin/kontakti", label: "Kontakti", icon: UserRound, roles: MANAGERS, ready: true },
     ],
   },
   {
     label: "Sadržaj",
     items: [
-      { href: "/admin/lokacije", label: "Lokacije", icon: MapPin, roles: CONTENT, ready: false },
-      { href: "/admin/magazin", label: "Magazin", icon: Newspaper, roles: CONTENT, ready: false },
-      { href: "/admin/sadrzaj", label: "Sadržaj sajta", icon: FileText, roles: CONTENT, ready: false },
+      { href: "/admin/lokacije", label: "Lokacije", icon: MapPin, roles: CONTENT, ready: true },
+      { href: "/admin/magazin", label: "Magazin", icon: Newspaper, roles: CONTENT, ready: true },
+      { href: "/admin/sadrzaj", label: "Sadržaj sajta", icon: FileText, roles: CONTENT, ready: true },
     ],
   },
   {
     label: "Agencija",
     items: [
-      { href: "/admin/tim", label: "Tim", icon: Users, roles: MANAGERS, ready: false },
-      { href: "/admin/analitika", label: "Analitika", icon: BarChart3, roles: MANAGERS, ready: false },
-      { href: "/admin/aktivnost", label: "Aktivnost", icon: History, roles: MANAGERS, ready: false },
-      { href: "/admin/podesavanja", label: "Podešavanja", icon: Settings, roles: ADMIN, ready: false },
+      { href: "/admin/tim", label: "Tim", icon: Users, roles: MANAGERS, ready: true },
+      { href: "/admin/analitika", label: "Analitika", icon: BarChart3, roles: MANAGERS, ready: true },
+      { href: "/admin/aktivnost", label: "Aktivnost", icon: History, roles: MANAGERS, ready: true },
+      { href: "/admin/podesavanja", label: "Podešavanja", icon: Settings, roles: ADMIN, ready: true },
       { href: "/admin/demo", label: "Demo sadržaj", icon: FlaskConical, roles: ADMIN, ready: true },
     ],
   },
@@ -102,4 +102,5 @@ export const SEGMENT_LABEL: Record<string, string> = {
   analitika: "Analitika",
   aktivnost: "Aktivnost",
   podesavanja: "Podešavanja",
+  novi: "Novi tekst",
 };

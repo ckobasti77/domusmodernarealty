@@ -406,6 +406,7 @@ export default defineSchema({
     .index("by_listingId", { fields: ["listingId"] })
     .index("by_type_and_status", { fields: ["type", "status"] })
     .index("by_contactId", { fields: ["contactId"] })
+    .index("by_source", { fields: ["source"] })
     .index("by_isDemo", { fields: ["isDemo"] }),
 
   leadNotes: defineTable({
@@ -533,7 +534,9 @@ export default defineSchema({
   })
     .index("by_at", { fields: ["at"] })
     .index("by_entity_and_at", { fields: ["entity", "at"] })
-    .index("by_entityId_and_at", { fields: ["entityId", "at"] }),
+    .index("by_entityId_and_at", { fields: ["entityId", "at"] })
+    // The activity log's user filter.
+    .index("by_by_and_at", { fields: ["by", "at"] }),
 
   /** Prepared for V2 (email alerts); no functions read it yet. */
   savedSearches: defineTable({

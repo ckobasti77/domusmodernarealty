@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ListingStatus } from "@/convex/lib/validators";
 import { STATUS_LABEL } from "@/lib/admin/labels";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,37 @@ export function StatusBadge({ status, className }: { status: ListingStatus; clas
     >
       <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", tone.dot)} />
       {STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+export type DotTone = "success" | "warning" | "accent" | "strong" | "muted" | "danger";
+
+const DOT_TONE: Record<DotTone, { dot: string; text: string }> = {
+  success: { dot: "bg-success", text: "text-foreground" },
+  warning: { dot: "bg-warning", text: "text-foreground" },
+  accent: { dot: "bg-bronze", text: "text-foreground" },
+  strong: { dot: "bg-foreground", text: "text-foreground" },
+  muted: { dot: "bg-stone", text: "text-muted-foreground" },
+  danger: { dot: "bg-destructive", text: "text-foreground" },
+};
+
+/**
+ * The same dot + word as `StatusBadge`, for any other status (lead stage,
+ * viewing, post, user). The word carries the meaning; the dot aids scanning.
+ */
+export function DotBadge({ tone, children, className }: { tone: DotTone; children: ReactNode; className?: string }) {
+  const style = DOT_TONE[tone];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 text-xs leading-none font-medium whitespace-nowrap",
+        style.text,
+        className,
+      )}
+    >
+      <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", style.dot)} />
+      {children}
     </span>
   );
 }

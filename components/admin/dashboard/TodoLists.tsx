@@ -11,7 +11,8 @@ import type { L10nKey } from "@/convex/lib/validators";
 import { formatDate, formatRelative } from "@/lib/admin/format";
 import { L10N_SHORT } from "@/lib/admin/labels";
 import { DashCard } from "./DashCard";
-import { formatCount, isoOf, LEAD_TYPE_LABEL } from "./format";
+import { LEAD_TYPE_LABEL } from "@/lib/admin/labels";
+import { formatCount, isoOf } from "./format";
 
 type Todos = FunctionReturnType<typeof api.listingsAdmin.todos>;
 type AwaitingLead = FunctionReturnType<typeof api.leadsAdmin.awaitingResponse>[number];

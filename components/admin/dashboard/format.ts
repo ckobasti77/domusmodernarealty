@@ -2,7 +2,6 @@
  * Dashboard-only wording and number helpers. Dates and relative times come
  * from `lib/admin/format`; this file adds the greeting, durations and counts.
  */
-import type { LeadType } from "@/convex/lib/validators";
 
 const TZ = "Europe/Belgrade";
 
@@ -62,14 +61,6 @@ export function formatDuration(minutes: number): string {
   const dayWord = `${days} ${pluralSr(days, "dan", "dana")}`;
   return dayHours === 0 ? dayWord : `${dayWord} ${dayHours} h`;
 }
-
-export const LEAD_TYPE_LABEL: Record<LeadType, string> = {
-  inquiry: "Upit",
-  viewing: "Razgledanje",
-  valuation: "Procena",
-  seller: "Prodaja",
-  general: "Opšte",
-};
 
 /** First word of a display name, for the greeting. */
 export function firstName(name: string | undefined): string | undefined {

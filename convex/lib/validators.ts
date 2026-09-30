@@ -375,6 +375,7 @@ export const userStatusV = v.union(
   v.literal("active"),
   v.literal("disabled"),
 );
+export type UserStatus = Infer<typeof userStatusV>;
 
 export const leadTypeV = v.union(
   v.literal("inquiry"),
@@ -413,6 +414,7 @@ export const leadSourceV = v.union(
   v.literal("portal"),
   v.literal("walk_in"),
 );
+export type LeadSource = Infer<typeof leadSourceV>;
 
 /** Free-form form answers, kept to primitive values so nothing is `any`. */
 export const answersV = v.record(
@@ -452,8 +454,10 @@ export const viewingStatusV = v.union(
   v.literal("cancelled"),
   v.literal("no_show"),
 );
+export type ViewingStatus = Infer<typeof viewingStatusV>;
 
 export const viewingModeV = v.union(v.literal("in_person"), v.literal("video"));
+export type ViewingMode = Infer<typeof viewingModeV>;
 
 export const availabilitySlotV = v.object({
   weekday: v.number(),
@@ -475,6 +479,7 @@ export const postStatusV = v.union(
   v.literal("published"),
   v.literal("archived"),
 );
+export type PostStatus = Infer<typeof postStatusV>;
 
 export const postCategoryV = v.union(
   v.literal("guide"),
@@ -483,6 +488,7 @@ export const postCategoryV = v.union(
   v.literal("legal"),
   v.literal("interior"),
 );
+export type PostCategory = Infer<typeof postCategoryV>;
 
 export const pageKeyV = v.union(
   v.literal("home"),

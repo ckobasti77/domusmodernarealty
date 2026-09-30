@@ -31,6 +31,7 @@ const ADMIN_MODULES = [
   "activity",
   "demo",
   "geocode",
+  "uploads",
 ];
 
 /** Public mutations that must be rate limited and honeypot-guarded. */

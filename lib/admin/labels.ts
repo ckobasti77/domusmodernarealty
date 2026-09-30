@@ -5,6 +5,7 @@
  */
 import type { Doc } from "@/convex/_generated/dataModel";
 import type {
+  ActivityEntity,
   AddressVisibility,
   Condition,
   ConstructionType,
@@ -12,12 +13,22 @@ import type {
   Furnishing,
   Heating,
   L10nKey,
+  LeadSource,
+  LeadStatus,
+  LeadType,
   ListingStatus,
+  LocationKind,
+  PageKey,
   Parking,
+  PostCategory,
+  PostStatus,
   PropertyType,
   Role,
   RoomTag,
   Transaction,
+  UserStatus,
+  ViewingMode,
+  ViewingStatus,
   Visibility,
 } from "@/convex/lib/validators";
 
@@ -235,4 +246,113 @@ export const L10N_SHORT: Record<L10nKey, string> = {
   en: "EN",
   ru: "RU",
   de: "DE",
+};
+
+/* ------------------------------------------------------------- CRM (B4–B6) */
+
+export const LEAD_TYPE_LABEL: Record<LeadType, string> = {
+  inquiry: "Upit",
+  viewing: "Razgledanje",
+  valuation: "Procena",
+  seller: "Prodaja",
+  general: "Opšte",
+};
+
+/** Pipeline stages, in PRD B4 order (Novi → … → Dobijen / Izgubljen). */
+export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
+  new: "Novi",
+  contacted: "Kontaktiran",
+  qualified: "Kvalifikovan",
+  viewing: "Razgledanje",
+  offer: "Ponuda",
+  won: "Dobijen",
+  lost: "Izgubljen",
+};
+
+export const LEAD_SOURCE_LABEL: Record<LeadSource, string> = {
+  web: "Sajt",
+  phone: "Telefon",
+  email: "E-pošta",
+  portal: "Portal",
+  walk_in: "Lično u agenciji",
+};
+
+export const VIEWING_STATUS_LABEL: Record<ViewingStatus, string> = {
+  requested: "Zatraženo",
+  confirmed: "Potvrđeno",
+  done: "Održano",
+  cancelled: "Otkazano",
+  no_show: "Nije se pojavio",
+};
+
+export const VIEWING_MODE_LABEL: Record<ViewingMode, string> = {
+  in_person: "Uživo",
+  video: "Video poziv",
+};
+
+/** Monday first, the way a Serbian calendar reads. Keys are JS weekdays (0 = Sunday). */
+export const WEEKDAYS_MON_FIRST: readonly { weekday: number; label: string; short: string }[] = [
+  { weekday: 1, label: "Ponedeljak", short: "Pon" },
+  { weekday: 2, label: "Utorak", short: "Uto" },
+  { weekday: 3, label: "Sreda", short: "Sre" },
+  { weekday: 4, label: "Četvrtak", short: "Čet" },
+  { weekday: 5, label: "Petak", short: "Pet" },
+  { weekday: 6, label: "Subota", short: "Sub" },
+  { weekday: 0, label: "Nedelja", short: "Ned" },
+];
+
+/* ------------------------------------------------------ team and content */
+
+export const USER_STATUS_LABEL: Record<UserStatus, string> = {
+  invited: "Pozvan",
+  active: "Aktivan",
+  disabled: "Deaktiviran",
+};
+
+export const LOCATION_KIND_LABEL: Record<LocationKind, string> = {
+  city: "Grad",
+  municipality: "Opština",
+  neighborhood: "Naselje",
+};
+
+export const POST_STATUS_LABEL: Record<PostStatus, string> = {
+  draft: "Nacrt",
+  published: "Objavljeno",
+  archived: "Arhivirano",
+};
+
+export const POST_CATEGORY_LABEL: Record<PostCategory, string> = {
+  guide: "Vodič",
+  neighborhood: "Kraj",
+  market: "Tržište",
+  legal: "Pravo",
+  interior: "Enterijer",
+};
+
+export const PAGE_KEY_LABEL: Record<PageKey, string> = {
+  home: "Početna",
+  about: "O nama",
+  sell: "Prodajte",
+  valuation: "Procena",
+  contact: "Kontakt",
+  privacy: "Politika privatnosti",
+  terms: "Uslovi korišćenja",
+  cookies: "Kolačići",
+};
+
+export const ACTIVITY_ENTITY_LABEL: Record<ActivityEntity, string> = {
+  listing: "Nekretnina",
+  lead: "Upit",
+  viewing: "Razgledanje",
+  contact: "Kontakt",
+  user: "Korisnik",
+  agent: "Agent",
+  location: "Lokacija",
+  post: "Tekst",
+  page: "Stranica",
+  testimonial: "Utisak",
+  settings: "Podešavanja",
+  media: "Mediji",
+  tour: "Tura",
+  demo: "Demo sadržaj",
 };

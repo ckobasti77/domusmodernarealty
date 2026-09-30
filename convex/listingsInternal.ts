@@ -190,7 +190,7 @@ export const mergeCopiedMedia = internalMutation({
       await discard(copied.filter((item) => present.has(item.id)));
 
       const hasCover = current.some((item) => item.isCover === true);
-      const incoming = fresh.map((item) => {
+      const incoming: MediaItem[] = fresh.map((item) => {
         const { isCover, ...rest } = item;
         return gallery && isCover === true && !hasCover ? { ...rest, isCover: true } : rest;
       });

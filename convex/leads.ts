@@ -133,6 +133,15 @@ async function bumpListingLeads(
   await ctx.db.patch("listingStats", stats._id, { leads: stats.leads + 1 });
 }
 
+/** Staff-facing Serbian wording for the activity log. */
+const LEAD_TYPE_SUMMARY: Record<LeadType, string> = {
+  inquiry: "upit o nekretnini",
+  viewing: "zahtev za razgledanje",
+  valuation: "zahtev za procenu",
+  seller: "ponuda nekretnine za prodaju",
+  general: "opšti upit",
+};
+
 async function createLead(
   ctx: MutationCtx,
   args: {
@@ -177,7 +186,7 @@ async function createLead(
     entity: "lead",
     entityId: leadId,
     action: "lead.created",
-    summary: `Novi upit (${args.type}) sa sajta`,
+    summary: `Sa sajta: ${LEAD_TYPE_SUMMARY[args.type]}`,
   });
 
   return leadId;

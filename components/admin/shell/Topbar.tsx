@@ -76,7 +76,8 @@ function ThemeToggle() {
 }
 
 function initials(name: string): string {
-  const parts = name.split(/[\s@.]+/).filter(Boolean);
+  // Letters only: "Mihajlo (admin)" must read "MA", not "M(".
+  const parts = name.split(/[^\p{L}]+/u).filter(Boolean);
   const letters = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "");
   return letters.join("") || "?";
 }

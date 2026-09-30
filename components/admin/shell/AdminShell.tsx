@@ -16,7 +16,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <BreadcrumbLabelProvider>
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset>
+          {/* `min-w-0`: a wide table scrolls inside its card instead of widening the page. */}
+          <SidebarInset className="min-w-0">
             <Topbar onOpenPalette={() => setPaletteOpen(true)} />
             <div className="flex-1 px-4 py-6 md:px-8 md:py-8" id="admin-main">
               {children}

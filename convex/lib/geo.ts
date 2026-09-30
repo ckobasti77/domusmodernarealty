@@ -6,8 +6,9 @@
  * algorithm is in this repo, so anyone could subtract it and recover the exact
  * address. Rounding to a grid destroys the information instead:
  *  - "exact"  → untouched;
- *  - "street" → ~110 m cell, which hides the house number but keeps the street;
- *  - "area"   → ~550 m cell, i.e. roughly a neighborhood block.
+ *  - "street" → a 0.001° cell (~110 m north–south, ~80 m east–west in Belgrade),
+ *    which hides the house number but keeps the street;
+ *  - "area"   → a 0.005° cell (~550 × ~400 m), roughly a neighborhood block.
  *
  * Lives on its own so the search post-filter (`lib/search.ts`) can test a map
  * bounding box against exactly the coordinates the map draws, without importing

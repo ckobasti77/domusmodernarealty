@@ -58,6 +58,9 @@ export type SearchExperienceProps = {
   titleTemplate: string;
 };
 
+/** Extra index windows read automatically when a page comes back short. */
+const MAX_AUTO_WINDOWS = 8;
+
 type Shown = { key: string; cards: readonly ListingCard[]; status: ResultsStatus; signature: string };
 
 /**
@@ -100,6 +103,20 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
   const key = searchKey(state);
 
   const results = usePaginatedQuery(api.listings.search, { filters, sort }, { initialNumItems: PAGE_SIZE });
+  const { status: pageStatus, loadMore } = results;
+  const loadedCount = results.results.length;
+
+  // A post-filtered window can hold fewer matches than a page — even none —
+  // while more exist further down the index. Keep reading windows, a bounded
+  // number of times per search, before settling on what there is.
+  const autoLoads = useRef({ key, count: 0 });
+  useEffect(() => {
+    if (autoLoads.current.key !== key) autoLoads.current = { key, count: 0 };
+    if (pageStatus !== "CanLoadMore" || loadedCount >= PAGE_SIZE) return;
+    if (autoLoads.current.count >= MAX_AUTO_WINDOWS) return;
+    autoLoads.current.count += 1;
+    loadMore(PAGE_SIZE);
+  }, [key, pageStatus, loadedCount, loadMore]);
   const { value: liveCount } = useResultCount(filters, key === initial.key ? initial.count : undefined);
 
   // What the grid shows: live results once loaded, the server's page for the
@@ -237,7 +254,7 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
           aria-label={t("heading")}
           className={cn(
             // Phones keep room under the last card for the floating switch.
-            "min-w-0 px-gutter pb-32 pt-8 md:px-gutter-md lg:px-gutter-lg lg:pb-24",
+            "min-w-0 px-gutter pb-32 pt-4 md:px-gutter-md lg:px-gutter-lg lg:pb-24 lg:pt-8",
             mapHidden ? "lg:w-full" : "lg:w-[55%]",
             view === "map" && "max-lg:hidden",
           )}

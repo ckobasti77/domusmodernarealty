@@ -802,7 +802,7 @@
       "viewListing": "Pogledajte nekretninu",
       "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu.",
       "attribution": "Izvori podataka mape",
-      "outsideBelgrade": "+{count} van Beograda",
+      "outsideBelgrade": "Prikaži i {count} van Beograda",
       "showAll": "Prikaži svih {count} rezultata na mapi"
     },
     "chips": {
@@ -815,7 +815,9 @@
       "floor": "Sprat: {range}",
       "query": "„{q}”",
       "bbox": "Oblast na mapi"
-    }
+    },
+    "placePair": "{first} i {second}",
+    "placeCount": "{count, plural, one {# lokacija} few {# lokacije} other {# lokacija}}"
   },
   "sell": {
     "benefitsHeading": "Šta dobijate",

@@ -76,3 +76,37 @@ Each night-run step appends a section:
 - Critique: design 6.5/10 → its 3 Highs fixed; motion 5 Highs → 4 fixed (the scroll position lost when crossing 1024px is a known issue); accessibility 3 serious → all fixed. axe serious/critical: 23 (sr) / 36 (en) at 1440 before → 0 after.
 - Known issues / follow-ups: see night-run/state/steps/05b.done.md.
 - Verify: npm run verify -> OK (exit 0). e2e 103 passed / 29 skipped / 0 failed. vitest 76/76. i18n 684 keys x 4. vitals: LCP = hero poster (364-384 ms), CLS 0.0000 (/sr, /en at 390/1440).
+
+## Step 06 - Search, filters, map (2026-09-30 17:55)
+- Done:
+  - Task 0: 94 verified demo photos merged (184 in the pool; verifier 199/199) and dev re-seeded. Covers are now distinct (30/30, was 24/30) and the most any photo is reused dropped from 4 to 2.
+  - `/[locale]/properties` (`/sr/nekretnine`…) built on one URL contract, `lib/search-params.ts` (zod).
+  - SSR first page + count, then a client island on `usePaginatedQuery`. Filters update the URL through the History API: push for choices (Back undoes), replace for map moves.
+  - Every PRD A3 filter:
+    - desktop sticky bar with popovers;
+    - "Svi filteri" drawer;
+    - phone bottom sheet (draft + live "Prikaži N rezultata");
+    - active chips + "Obriši sve";
+    - sort.
+  - 3:2 cards: carousel, at most two badges, monthly rate from settings, 3D-tour marker, compare toggle.
+  - Skeletons; an empty state with per-filter suggestions and a prefilled contact CTA.
+  - MapLibre results map:
+    - clustered source, HTML price pins, GL fallback over 150;
+    - mini-card popup and hover sync both ways;
+    - search-as-move via `bbox`;
+    - Belgrade-first framing;
+    - locale map labels.
+  - SEO: filter-aware titles; curated canonical vs `noindex` deep combinations; BreadcrumbList.
+  - Shared favorites/compare store; compare tray → `/uporedi`.
+  - Convex:
+    - OR-ed location multi-select, `outdoor` and `bbox` filters;
+    - one `.paginate()` per call (fixes a step-03 crash on selective filters);
+    - index order = sort;
+    - map/list/count agree, including text search.
+- Files: `app/[locale]/properties/(results)/*`, `components/site/search/*` (15 files), `components/map/{SearchMap,SearchMapLoader,maplibre,style}.ts(x)`, `components/site/{PropertyCard,Header,LocaleSwitcher}.tsx`, `lib/{search-params,search-locations,search-text,search-data}.ts`, `lib/stores/{id-list,favorites,compare}.ts`, `convex/{listings.ts,lib/search.ts,lib/validators.ts,lib/dto.ts,lib/geo.ts}`, `messages/*.json` (+97 keys), `tests/e2e/search.spec.ts`, `docs/assets/*`.
+- Decisions: photo pool; OR-ed locations; `outdoor`/`bbox`; single paginate + exact pages; index order = sort; the History API instead of `router.replace`; the URL contract; SEO rules; card badges; Belgrade-first map; whole titles on 3:2 cards; compact header on the split; one ink "on" state; short page ≠ empty search. Details in DECISIONS.md.
+- Critique:
+  - design-critic 6/10 → 7/10. All pass-1 Highs fixed; pass-2 Highs (phone bar overlap, next-photo sliver) fixed and re-shot.
+  - convex-auditor: 3 High / 3 Medium fixed, each High reproduced by a new test. No data exposure found.
+- Known issues / follow-ups: see night-run/state/steps/06.done.md (scale ceiling ~500 listings per scope → slim projection table; `/uporedi` and `/kontakt?message=` are step 10).
+- Verify: npm run verify -> OK (exit 0). e2e 121 passed / 39 skipped / 0 failed. vitest 98/98. i18n 781 keys x 4. audit-convex 144 functions, no problems. vitals /sr/nekretnine + /ru/nedvizhimost at 390/1440: LCP = first card image (584-616 ms), CLS 0.0000.

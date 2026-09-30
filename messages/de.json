@@ -215,7 +215,7 @@
       "viewListing": "Immobilie ansehen",
       "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus.",
       "attribution": "Quellen der Kartendaten",
-      "outsideBelgrade": "+{count} außerhalb Belgrads",
+      "outsideBelgrade": "{count} weitere außerhalb Belgrads zeigen",
       "showAll": "Alle {count} Ergebnisse auf der Karte zeigen"
     },
     "chips": {
@@ -228,7 +228,9 @@
       "floor": "Etage: {range}",
       "query": "„{q}“",
       "bbox": "Kartenausschnitt"
-    }
+    },
+    "placePair": "{first} und {second}",
+    "placeCount": "{count, plural, one {# Lage} other {# Lagen}}"
   },
   "filters": {
     "heading": "Filter",

@@ -166,7 +166,11 @@ export function PropertyCard({
         />
 
         {/* At most two badges, most decisive first. Text, not colour, carries the meaning. */}
-        <div className="pointer-events-none absolute left-4 right-16 top-4 z-10 flex flex-wrap gap-2">{badges}</div>
+        {/* One row only: a badge that would wrap (long Russian or German
+            words) falls onto a clipped second row and disappears whole. */}
+        <div className="pointer-events-none absolute left-4 right-16 top-4 z-10 flex max-h-[1.625rem] flex-wrap gap-2 overflow-hidden">
+          {badges}
+        </div>
 
         <div className="absolute right-4 top-4 z-20">
           <FavoriteButton
@@ -495,7 +499,9 @@ function Gallery({
             return (
               <div
                 key={frame.id}
-                className="relative h-full min-w-0 flex-[0_0_100%]"
+                // Clips its own photo: the 1.04 hover scale must not show a
+                // sliver of the next slide at the card's edge.
+                className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden"
                 role={single ? undefined : "group"}
                 aria-roledescription={single ? undefined : "slide"}
                 aria-label={single ? undefined : `${i + 1} / ${frames.length}`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Popover } from "radix-ui";
 import { useState, type ComponentPropsWithRef, type ReactNode } from "react";
@@ -127,7 +127,7 @@ export function FilterBar({ state, onChange, onSheetApply, index, now, countText
       </div>
 
       {/* ------------------------------------------------------- phone bar */}
-      <div className="flex min-w-0 flex-1 items-center gap-3 lg:hidden">
+      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden lg:hidden">
         {transactionSwitch("transaction-phone-bar", "hidden flex-nowrap sm:flex")}
         <FilterDialog
           mode="sheet"
@@ -143,7 +143,7 @@ export function FilterBar({ state, onChange, onSheetApply, index, now, countText
             </BarButton>
           }
         />
-        <p data-numeric aria-hidden="true" className="shrink-0 whitespace-nowrap font-sans text-small text-stone-text">
+        <p data-numeric aria-hidden="true" className="min-w-0 truncate font-sans text-small text-stone-text">
           {countText}
         </p>
       </div>
@@ -251,8 +251,11 @@ function SortSelect({ state, onChange }: { state: SearchState; onChange: (next: 
   const current = effectiveSort(state);
   const options: SortOption[] = state.q !== undefined ? ["relevance", ...SORT_OPTIONS] : [...SORT_OPTIONS];
   return (
-    <label className="relative ml-auto flex shrink-0 items-center gap-3">
-      <span className="hidden font-sans text-label uppercase tracking-[0.12em] text-stone-text sm:inline">
+    // Below 640 px the sort is a 44 px icon with the native select laid over
+    // it: the result count keeps the room, and the picker is still native.
+    <label className="relative ml-auto flex shrink-0 items-center gap-3 max-sm:size-11 max-sm:justify-center max-sm:border max-sm:border-ink/30">
+      <ArrowUpDown aria-hidden="true" strokeWidth={1.25} className="size-4 sm:hidden" />
+      <span className="hidden font-sans text-label uppercase tracking-[0.12em] text-stone-text lg:inline">
         {t("sortLabel")}
       </span>
       <select
@@ -260,8 +263,7 @@ function SortSelect({ state, onChange }: { state: SearchState; onChange: (next: 
         aria-label={t("sortLabel")}
         data-testid="sort-select"
         onChange={(event) => onChange({ ...state, sort: event.target.value as SortOption })}
-        // Capped on phones so the sticky result count beside it stays whole.
-        className="h-11 max-w-[8.5rem] appearance-none truncate border-0 border-b border-ink/30 bg-transparent pr-7 font-sans text-small text-ink focus:border-ink focus-visible:outline-none sm:max-w-none"
+        className="h-11 appearance-none border-0 border-b border-ink/30 bg-transparent pr-7 font-sans text-small text-ink focus:border-ink focus-visible:outline-none max-sm:absolute max-sm:inset-0 max-sm:size-full max-sm:cursor-pointer max-sm:opacity-0"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -271,7 +273,7 @@ function SortSelect({ state, onChange }: { state: SearchState; onChange: (next: 
       </select>
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute right-1 top-1/2 size-2 -translate-y-3/4 rotate-45 border-b border-r border-stone-text"
+        className="pointer-events-none absolute right-1 top-1/2 size-2 -translate-y-3/4 rotate-45 border-b border-r border-stone-text max-sm:hidden"
       />
     </label>
   );

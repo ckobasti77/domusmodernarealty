@@ -220,7 +220,7 @@ function belgradeFocus(points: readonly MapPoint[]): MapPoint[] | null {
  * chrome the host declares over the bottom edge as `--map-inset-bottom` (px),
  * e.g. the phone List/Mapa switch.
  */
-function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number) {
+function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number, first: boolean) {
   const container = map.getContainer();
   const width = container.clientWidth;
   const height = container.clientHeight;
@@ -228,10 +228,17 @@ function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number) 
   // Scaled down on a small map, where full padding would leave no room.
   const pad = Math.min(48, Math.floor(Math.min(width, height) / 8));
   const inset = Number.parseFloat(getComputedStyle(container).getPropertyValue("--map-inset-bottom")) || 0;
+  // The sticky panel starts under the page header band, so on first paint
+  // its lower part can sit below the fold: the FIRST frame keeps the pins in
+  // the part a visitor can see (at most 35% of the panel). Later frames run
+  // with the panel stuck and fully visible.
+  const fold = first
+    ? Math.min(Math.max(0, container.getBoundingClientRect().bottom - window.innerHeight), Math.floor(height * 0.35))
+    : 0;
   const padding = {
     top: Math.min(pad + 64, Math.floor(height / 4)),
     right: pad + Math.min(24, Math.floor(width / 16)),
-    bottom: pad + inset,
+    bottom: pad + inset + fold,
     left: pad,
   };
   if (points.length === 1) {
@@ -430,7 +437,7 @@ export default function SearchMap({
     fitted.current = frameKey;
     if (searchAsMove || (first && restored)) return;
     const framed = scope.all ? null : belgradeFocus(result.points);
-    frame(map, framed ?? result.points, first || reduced ? 0 : EASE_MS);
+    frame(map, framed ?? result.points, first || reduced ? 0 : EASE_MS, first);
   }, [active, frameKey, loaded, reduced, restored, result, scope.all, searchAsMove]);
 
   function handleStyleData(event: MapStyleDataEvent) {
@@ -613,9 +620,11 @@ export default function SearchMap({
           onClick={() => setScope({ key: filtersKey, all: true })}
           aria-label={t("showAll", { count: points.length })}
           data-testid="map-show-all"
-          className="absolute left-3 top-[4.25rem] z-[3] inline-flex min-h-11 items-center border border-ink bg-ink px-3.5 font-sans text-small text-paper transition-colors duration-150 hover:bg-bronze-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep"
+          // A paper control like the toggle above it: ink is reserved for pins.
+          className="absolute left-3 top-[4.25rem] z-[3] inline-flex min-h-11 items-center gap-2 border border-hairline-light bg-paper px-3.5 font-sans text-small text-ink transition-colors duration-150 hover:bg-ivory focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-deep"
         >
           {t("outsideBelgrade", { count: outside })}
+          <span aria-hidden="true">→</span>
         </button>
       ) : null}
 

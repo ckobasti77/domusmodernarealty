@@ -35,6 +35,9 @@ const FILL_TINTS = new Map<string, string>([
 
 const WATER_LABEL_SOURCES = new Set(["water_name", "waterway"]);
 
+/** City and district names: stone type on an ivory halo, so the price pins stay the loudest thing on the map. */
+const PLACE_LABEL = "#5C564D";
+
 /** Icon-led symbol layers: shops, transit stops, airports. */
 const CLUTTER_SOURCES = new Set(["poi", "aerodrome_label"]);
 
@@ -80,6 +83,11 @@ function applyHouseStyle(map: MapLibreMap, locale: string) {
       }
       if (sourceLayer !== undefined && WATER_LABEL_SOURCES.has(sourceLayer)) {
         map.setPaintProperty(layer.id, "text-color", WATER_LABEL);
+      }
+      if (sourceLayer === "place") {
+        map.setPaintProperty(layer.id, "text-color", PLACE_LABEL);
+        map.setPaintProperty(layer.id, "text-halo-color", LAND);
+        map.setPaintProperty(layer.id, "text-halo-width", 1.5);
       }
     } else if (layer.type === "fill" && sourceLayer !== undefined) {
       const tint = FILL_TINTS.get(sourceLayer);

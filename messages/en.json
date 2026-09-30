@@ -215,7 +215,7 @@
       "viewListing": "View property",
       "emptyArea": "No results in this part of the map. Try moving the map or zooming out.",
       "attribution": "Map data sources",
-      "outsideBelgrade": "+{count} outside Belgrade",
+      "outsideBelgrade": "Show {count} more outside Belgrade",
       "showAll": "Show all {count} results on the map"
     },
     "chips": {
@@ -228,7 +228,9 @@
       "floor": "Floor: {range}",
       "query": "“{q}”",
       "bbox": "Map area"
-    }
+    },
+    "placePair": "{first} and {second}",
+    "placeCount": "{count, plural, one {# location} other {# locations}}"
   },
   "filters": {
     "heading": "Filters",

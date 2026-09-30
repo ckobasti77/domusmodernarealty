@@ -215,7 +215,7 @@
       "viewListing": "Смотреть объект",
       "emptyArea": "В этой части карты нет результатов. Переместите или отдалите карту.",
       "attribution": "Источники данных карты",
-      "outsideBelgrade": "+{count} за пределами Белграда",
+      "outsideBelgrade": "Показать ещё {count} вне Белграда",
       "showAll": "Показать все результаты на карте ({count})"
     },
     "chips": {
@@ -228,7 +228,9 @@
       "floor": "Этаж: {range}",
       "query": "«{q}»",
       "bbox": "Область на карте"
-    }
+    },
+    "placePair": "{first} и {second}",
+    "placeCount": "{count, plural, one {# локация} few {# локации} many {# локаций} other {# локации}}"
   },
   "filters": {
     "heading": "Фильтры",

@@ -64,7 +64,7 @@ export function ResultsGrid({
     ? "(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 92vw"
     : "(min-width: 1024px) 26vw, (min-width: 768px) 45vw, 92vw";
 
-  if (cards.length === 0 && status === "LoadingFirstPage") {
+  if (cards.length === 0 && (status === "LoadingFirstPage" || status === "LoadingMore")) {
     return (
       <div className={grid} aria-busy="true" aria-label={t("loadingResults")} data-testid="results-skeleton">
         {Array.from({ length: 4 }, (_, i) => (
@@ -74,7 +74,9 @@ export function ResultsGrid({
     );
   }
 
-  if (cards.length === 0) {
+  // "No results" only once the index is exhausted: an empty window with more
+  // index behind it is not an empty search.
+  if (cards.length === 0 && status === "Exhausted") {
     return <EmptyState state={state} onChange={onChange} placeName={placeName} />;
   }
 
@@ -163,7 +165,7 @@ function EmptyState({
   return (
     <div className="flex flex-col gap-12 border-t border-hairline-light pt-12" data-testid="results-empty">
       <div className="max-w-xl">
-        <h2 className="text-pretty font-display text-h2 font-normal">{t("noResults")}</h2>
+        <h2 className="text-balance font-display text-h2 font-normal">{t("noResults")}</h2>
         <p className="mt-4 text-body-l text-stone-text">{t("noResultsHelp")}</p>
         {chips.length > 0 ? (
           <div className="mt-8">
@@ -190,7 +192,8 @@ function EmptyState({
               type="button"
               onClick={() => onChange(clearFilters(state))}
               data-testid="empty-clear"
-              className={cn(buttonClasses({ variant: "primary", size: "compact" }), "mt-6")}
+              // Secondary: the filled button in this state is the "tell us" CTA.
+              className={cn(buttonClasses({ variant: "outline", size: "default" }), "mt-6")}
             >
               {tFilters("clearAll")}
             </button>

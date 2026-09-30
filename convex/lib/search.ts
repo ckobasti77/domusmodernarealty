@@ -32,7 +32,11 @@ import { FEATURE_KEYS } from "./validators";
 export const SEARCH_SCAN = 120;
 /** Documents `listings.count` reads (one `.take()`); beyond it the count is "N+". */
 export const COUNT_SCAN = 600;
-export const MAX_POINTS = 1000;
+/**
+ * Pins read by `listings.mapPoints` (one `.take()`). A listing document is
+ * ~13 KB, so 500 stays well inside a query's read budget.
+ */
+export const MAX_POINTS = 500;
 /** `withSearchIndex` cap; the Convex hard limit is 1024 scanned docs. */
 export const TEXT_TAKE = 200;
 
@@ -117,20 +121,22 @@ const PRICE_SORTS: readonly Sort[] = ["price_asc", "price_desc"];
 const PPM2_SORTS: readonly Sort[] = ["ppm2_asc", "ppm2_desc"];
 
 /**
- * Picks the index that does the most work. A range filter must sit on the last
- * indexed field, so a price/area range outranks the requested sort order.
+ * Picks the index. The index ORDER must be the requested sort — every page is
+ * one window of the index and cursors continue it, so an index in another
+ * order would show "the 24 most expensive, re-sorted by date" instead of the
+ * 24 newest. A range filter therefore drives its own index only when that
+ * index also serves the sort; otherwise the sort's index is read and the range
+ * is post-filtered (`matches`). Text search is relevance-ordered by Convex, so
+ * any other sort is applied in the window (`orderedInWindow`).
  */
-export function pickDriver(filters: SearchFilters, sort: Sort): DriverPlan {
+export function pickDriver(filters: SearchFilters, requested: Sort): DriverPlan {
   // `normalizeText("###")` is empty, and an empty search string is not a valid
   // search-index query — fall through to the normal drivers.
   if (filters.q !== undefined && normalizeText(filters.q).length > 0) {
-    return { driver: "text", orderedInWindow: sort !== "relevance" };
+    return { driver: "text", orderedInWindow: requested !== "relevance" };
   }
-
-  const hasPriceRange =
-    filters.priceMin !== undefined || filters.priceMax !== undefined;
-  const hasAreaRange =
-    filters.areaMin !== undefined || filters.areaMax !== undefined;
+  // "Relevance" means nothing without a query; newest is the default order.
+  const sort: Sort = requested === "relevance" ? "newest" : requested;
 
   // The location arrays are one OR-ed multi-select (see `searchFiltersV`), so a
   // location-specific index is only exact when exactly ONE place is selected.
@@ -144,43 +150,35 @@ export function pickDriver(filters: SearchFilters, sort: Sort): DriverPlan {
   const singleNeighborhood =
     locationCount === 1 && filters.neighborhoodId?.length === 1;
 
-  if (hasPriceRange) {
-    if (singleCity) {
-      return {
-        driver: "cityPrice",
-        orderedInWindow: !PRICE_SORTS.includes(sort),
-      };
-    }
-    if (singleMunicipality) {
-      return {
-        driver: "municipalityPrice",
-        orderedInWindow: !PRICE_SORTS.includes(sort),
-      };
-    }
-    return { driver: "price", orderedInWindow: !PRICE_SORTS.includes(sort) };
+  if (PRICE_SORTS.includes(sort)) {
+    if (singleCity) return { driver: "cityPrice", orderedInWindow: false };
+    if (singleMunicipality) return { driver: "municipalityPrice", orderedInWindow: false };
+    return { driver: "price", orderedInWindow: false };
   }
-
-  if (hasAreaRange) {
-    return { driver: "areaM2", orderedInWindow: sort !== "area_desc" };
-  }
-
-  if (singleNeighborhood) {
-    return {
-      driver: "neighborhoodPublishedAt",
-      orderedInWindow: sort !== "newest",
-    };
-  }
-
-  if (singleCity && PRICE_SORTS.includes(sort)) {
-    return { driver: "cityPrice", orderedInWindow: false };
-  }
-
-  if (PRICE_SORTS.includes(sort)) return { driver: "price", orderedInWindow: false };
-  if (PPM2_SORTS.includes(sort)) {
-    return { driver: "pricePerM2", orderedInWindow: false };
-  }
+  if (PPM2_SORTS.includes(sort)) return { driver: "pricePerM2", orderedInWindow: false };
   if (sort === "area_desc") return { driver: "areaM2", orderedInWindow: false };
+  if (singleNeighborhood) return { driver: "neighborhoodPublishedAt", orderedInWindow: false };
   return { driver: "publishedAt", orderedInWindow: false };
+}
+
+/**
+ * The index for UNORDERED reads (`count`, `mapPoints`): order is irrelevant
+ * there, so a price or area range may drive its own index and read only the
+ * documents inside the range.
+ */
+export function rangeDriver(filters: SearchFilters): DriverPlan {
+  const text = pickDriver(filters, "relevance");
+  if (text.driver === "text") return text;
+  const hasPriceRange = filters.priceMin !== undefined || filters.priceMax !== undefined;
+  const hasAreaRange = filters.areaMin !== undefined || filters.areaMax !== undefined;
+  if (hasPriceRange) return pickDriver(filters, "price_asc");
+  if (hasAreaRange) return { driver: "areaM2", orderedInWindow: false };
+  return pickDriver(filters, "newest");
+}
+
+/** The sort a query actually runs in (relevance needs a text query). */
+export function effectiveSort(filters: SearchFilters, requested: Sort): Sort {
+  return requested === "relevance" && pickDriver(filters, requested).driver !== "text" ? "newest" : requested;
 }
 
 /** The filter keys each driver's index range expresses by itself. */
@@ -205,8 +203,16 @@ export function coveredByDriver(filters: SearchFilters, plan: DriverPlan): boole
   const covered = new Set<string>(["transaction", ...DRIVER_COVERS[plan.driver]]);
   return Object.entries(filters).every(
     ([key, value]) =>
-      value === undefined || (Array.isArray(value) && value.length === 0) || covered.has(key),
+      !isActive(key, value) || covered.has(key),
   );
+}
+
+/** A filter value that constrains anything (a `false` toggle or an empty query does not). */
+function isActive(key: string, value: unknown): boolean {
+  if (value === undefined || value === false) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (key === "q" && typeof value === "string") return normalizeText(value).length > 0;
+  return true;
 }
 
 /** Descending for the "biggest/newest first" sorts. */

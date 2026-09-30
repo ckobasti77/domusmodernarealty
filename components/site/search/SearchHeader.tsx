@@ -62,8 +62,11 @@ export function SearchHeader({
                       {tNav("properties")}
                     </Link>
                   </li>
-                  <li aria-hidden="true">/</li>
-                  <li aria-current="page" className="text-ivory">
+                  {/* On phones the leaf would only repeat the H1 right below it. */}
+                  <li aria-hidden="true" className="max-md:hidden">
+                    /
+                  </li>
+                  <li aria-current="page" className="text-ivory max-md:hidden">
                     {title}
                   </li>
                 </>

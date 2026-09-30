@@ -1,4 +1,4 @@
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import type { NamedTableInfo, OrderedQuery } from "convex/server";
 import { v } from "convex/values";
 import type { DataModel, Doc } from "./_generated/dataModel";
@@ -21,11 +21,13 @@ import {
   compareListings,
   coveredByDriver,
   driverDescending,
+  effectiveSort,
   isPublicScope,
   listedScope,
   matches,
   normalizeText,
   pickDriver,
+  rangeDriver,
 } from "./lib/search";
 import type { DriverPlan } from "./lib/search";
 import { searchFiltersV, sortV } from "./lib/validators";
@@ -154,12 +156,36 @@ function driverQuery(
 
 /** Relevance-ordered text matches: one bounded read, never a cursor walk. */
 async function textMatches(ctx: QueryCtx, scope: string, filters: SearchFilters) {
-  const normalized = normalizeText(filters.q ?? "");
+  // Bounded input: the search index matches on terms, and a pasted paragraph
+  // must not become an expensive query.
+  const normalized = normalizeText(filters.q ?? "").split(" ").slice(0, MAX_QUERY_TERMS).join(" ");
+  // Every equality the search index declares narrows BEFORE the relevance cap,
+  // so "stan" in Novi Sad is not crowded out by 200 Belgrade matches.
+  const city = onlyCity(filters);
+  const type = filters.propertyType?.length === 1 ? filters.propertyType[0] : undefined;
   return await ctx.db
     .query("listings")
-    .withSearchIndex("search_text", (q) => q.search("searchText", normalized).eq("scope", scope))
+    .withSearchIndex("search_text", (q) => {
+      let query = q.search("searchText", normalized).eq("scope", scope);
+      if (city !== undefined) query = query.eq("cityId", city);
+      if (type !== undefined) query = query.eq("propertyType", type);
+      if (filters.hasTour === true) query = query.eq("hasTour", true);
+      return query;
+    })
     .take(TEXT_TAKE);
 }
+
+/** The one selected place, when it is a city and nothing else is selected. */
+function onlyCity(filters: SearchFilters) {
+  const municipalities = filters.municipalityId?.length ?? 0;
+  const neighborhoods = filters.neighborhoodId?.length ?? 0;
+  return filters.cityId?.length === 1 && municipalities + neighborhoods === 0 ? filters.cityId[0] : undefined;
+}
+
+/** Terms kept from a text query. */
+const MAX_QUERY_TERMS = 8;
+/** Largest page a client may ask for (`usePaginatedQuery` asks for 24). */
+const MAX_PAGE = 100;
 
 /* ------------------------------------------------------------------- queries */
 
@@ -181,31 +207,37 @@ export const search = query({
     sort: sortV,
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(listingCardV),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
+  // `splitCursor`/`pageStatus` are passed through, so `usePaginatedQuery` can
+  // split a page Convex reports as incomplete instead of skipping its rest.
+  returns: paginationResultValidator(listingCardV).extend({
     /** Documents read from the index, for the "approximate" UI hint. */
     scanned: v.number(),
-    /** True when the driver index could not honour `sort` on its own. */
+    /** True when the driver index could not honour `sort` on its own (text search). */
     orderedInWindow: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const plan = pickDriver(args.filters, args.sort);
+    const sort = effectiveSort(args.filters, args.sort);
     const scope = listedScope(args.filters.transaction);
+    const numItems = Math.min(Math.max(Math.floor(args.paginationOpts.numItems) || 1, 1), MAX_PAGE);
 
     const window =
       plan.driver === "text"
-        ? { page: await textMatches(ctx, scope, args.filters), isDone: true, continueCursor: "" }
-        : await driverQuery(ctx, scope, args.filters, plan, args.sort).paginate(
-            coveredByDriver(args.filters, plan)
-              ? args.paginationOpts
-              : { ...args.paginationOpts, numItems: Math.max(args.paginationOpts.numItems, SEARCH_SCAN) },
-          );
+        ? {
+            page: await textMatches(ctx, scope, args.filters),
+            isDone: true,
+            continueCursor: "",
+            splitCursor: null,
+            pageStatus: null,
+          }
+        : await driverQuery(ctx, scope, args.filters, plan, sort).paginate({
+            ...args.paginationOpts,
+            numItems: coveredByDriver(args.filters, plan) ? numItems : Math.max(numItems, SEARCH_SCAN),
+          });
 
     const matched = window.page.filter((doc) => matches(doc, args.filters));
     const ordered = plan.orderedInWindow
-      ? matched.sort((a, b) => compareListings(a, b, args.sort))
+      ? matched.sort((a, b) => compareListings(a, b, sort))
       : matched;
 
     const cards: ListingCard[] = [];
@@ -217,6 +249,8 @@ export const search = query({
       page: cards,
       isDone: window.isDone,
       continueCursor: window.continueCursor,
+      splitCursor: window.splitCursor ?? null,
+      pageStatus: window.pageStatus ?? null,
       scanned: window.page.length,
       orderedInWindow: plan.orderedInWindow,
     };
@@ -232,7 +266,7 @@ export const count = query({
   args: { filters: searchFiltersV },
   returns: v.object({ count: v.number(), exact: v.boolean() }),
   handler: async (ctx, args) => {
-    const plan = pickDriver(args.filters, "newest");
+    const plan = rangeDriver(args.filters);
     const scope = listedScope(args.filters.transaction);
     if (plan.driver === "text") {
       const found = await textMatches(ctx, scope, args.filters);
@@ -262,12 +296,15 @@ export const mapPoints = query({
     truncated: v.boolean(),
   }),
   handler: async (ctx, args) => {
+    // The same driver as `search` and `count` (text search included), so a
+    // text query puts the same listings on the map as in the list.
+    const plan = rangeDriver(args.filters);
     const scope = listedScope(args.filters.transaction);
-    const found = await ctx.db
-      .query("listings")
-      .withIndex("by_scope_and_publishedAt", (q) => q.eq("scope", scope))
-      .order("desc")
-      .take(MAX_POINTS);
+    const limit = plan.driver === "text" ? TEXT_TAKE : MAX_POINTS;
+    const found =
+      plan.driver === "text"
+        ? await textMatches(ctx, scope, args.filters)
+        : await driverQuery(ctx, scope, args.filters, plan, "newest").take(MAX_POINTS);
 
     const points = [];
     for (const doc of found) {
@@ -275,7 +312,7 @@ export const mapPoints = query({
       points.push(await toMapPoint(ctx, doc));
     }
 
-    return { points, truncated: found.length === MAX_POINTS };
+    return { points, truncated: found.length === limit };
   },
 });
 

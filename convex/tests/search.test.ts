@@ -266,7 +266,7 @@ describe("listings.search filters", () => {
     expect(
       pickDriver(
         { transaction: "sale", cityId: [ids.otherCity], municipalityId: [ids.municipality], priceMin: 1 },
-        "newest",
+        "price_asc",
       ).driver,
     ).toBe("price");
   });
@@ -313,6 +313,53 @@ describe("listings.search filters", () => {
     const counted = await t.query(api.listings.count, { filters: { transaction: "sale", features: ["elevator"] } });
     expect(seen).toHaveLength(counted.count);
     expect(new Set(seen).size).toBe(seen.length);
+  });
+
+  test("a range filter never changes the order: price range + newest = newest", async () => {
+    const { t } = await fixture();
+    const newest = await t.query(api.listings.search, {
+      filters: { transaction: "sale" },
+      sort: "newest",
+      paginationOpts: { cursor: null, numItems: 3 },
+    });
+    const ranged = await t.query(api.listings.search, {
+      filters: { transaction: "sale", priceMax: 10_000_000 },
+      sort: "newest",
+      paginationOpts: { cursor: null, numItems: 3 },
+    });
+    // The first three NEWEST listings, not the three most expensive re-sorted.
+    expect(ranged.page.slice(0, 3).map((card) => card._id)).toEqual(newest.page.map((card) => card._id));
+    expect(ranged.orderedInWindow).toBe(false);
+
+    const byArea = await t.query(api.listings.search, {
+      filters: { transaction: "sale", areaMin: 1 },
+      sort: "price_asc",
+      paginationOpts: PAGE,
+    });
+    const prices = byArea.page.map((card) => card.price);
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+  });
+
+  test("the map, the list and the count agree on a text query", async () => {
+    const { t } = await fixture();
+    const filters = { transaction: "sale" as const, q: "penthaus" };
+    const list = await t.query(api.listings.search, { filters, sort: "relevance", paginationOpts: PAGE });
+    const map = await t.query(api.listings.mapPoints, { filters });
+    const counted = await t.query(api.listings.count, { filters });
+    expect(list.page.length).toBeGreaterThan(0);
+    expect(map.points.map((point) => point._id).sort()).toEqual(list.page.map((card) => card._id).sort());
+    expect(counted.count).toBe(list.page.length);
+  });
+
+  test("relevance without a query means newest first", async () => {
+    const { t } = await fixture();
+    const relevance = await t.query(api.listings.search, {
+      filters: { transaction: "sale" },
+      sort: "relevance",
+      paginationOpts: PAGE,
+    });
+    const newest = await t.query(api.listings.search, { filters: { transaction: "sale" }, sort: "newest", paginationOpts: PAGE });
+    expect(relevance.page.map((card) => card._id)).toEqual(newest.page.map((card) => card._id));
   });
 
   test("the outdoor toggle accepts a terrace, loggia or balcony", async () => {
@@ -486,7 +533,7 @@ describe("listings.search filters", () => {
     expect(redirect).toEqual({ kind: "redirect", slug: published.slug });
   });
 
-  test("area-level coordinates are jittered but stable, exact ones are not", async () => {
+  test("area-level coordinates are snapped but stable, exact ones are not", async () => {
     const { t } = await fixture();
     const first = await t.query(api.listings.search, {
       filters: { transaction: "sale" },

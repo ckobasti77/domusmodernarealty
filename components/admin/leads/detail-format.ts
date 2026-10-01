@@ -3,7 +3,7 @@
  * timeline's action keys. Unknown keys fall back to the raw key, so a new form
  * field never disappears from the sheet.
  */
-import type { ViewingMode, ViewingStatus } from "@/convex/lib/validators";
+import type { OnsiteWindow, ViewingMode, ViewingStatus } from "@/convex/lib/validators";
 import { formatDate, formatDateTime, formatEur, formatM2 } from "@/lib/admin/format";
 import {
   CONDITION_LABEL,
@@ -35,6 +35,16 @@ const ANSWER_LABEL: Record<string, string> = {
   expectedPrice: "Očekivana cena",
   start: "Željeni termin",
   mode: "Način razgledanja",
+  onsiteRequested: "Procena na terenu",
+  onsiteDate: "Željeni dan obilaska",
+  onsiteWindow: "Doba dana",
+  onsiteNote: "Napomena za obilazak",
+};
+
+const ONSITE_WINDOW_LABEL: Record<OnsiteWindow, string> = {
+  morning: "Pre podne (9–12 h)",
+  midday: "Oko podneva (12–15 h)",
+  afternoon: "Popodne (15–18 h)",
 };
 
 /** Internal ids and the viewing's end time (shown with its start) stay out. */
@@ -55,6 +65,14 @@ function answerValue(key: string, value: AnswerValue): string {
       return typeof value === "number" ? formatEur(value) : String(value);
     case "start":
       return typeof value === "number" ? formatDateTime(value) : String(value);
+    case "onsiteWindow":
+      return label(ONSITE_WINDOW_LABEL, value) ?? String(value);
+    case "onsiteDate": {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+      return match === null
+        ? String(value)
+        : formatDate(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 10));
+    }
     case "floor": {
       const named = label(FLOOR_LABEL, value);
       if (named !== undefined) return named;
@@ -84,6 +102,7 @@ const ACTION_LABEL: Record<string, string> = {
   "lead.note": "Beleška",
   "lead.nextAction": "Sledeći korak",
   "lead.responded": "Označeno kao odgovoreno",
+  "lead.onsiteRequested": "Zatražena procena na terenu",
 };
 
 export function timelineLabel(action: string): string {

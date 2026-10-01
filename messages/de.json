@@ -20,7 +20,8 @@
     "phone": "Telefon",
     "email": "E-Mail",
     "viber": "Viber",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "breadcrumb": "Brotkrumen-Navigation"
   },
   "nav": {
     "home": "Start",

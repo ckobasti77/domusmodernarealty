@@ -20,7 +20,8 @@
     "phone": "Телефон",
     "email": "Эл. почта",
     "viber": "Viber",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "breadcrumb": "Навигационная цепочка"
   },
   "nav": {
     "home": "Главная",

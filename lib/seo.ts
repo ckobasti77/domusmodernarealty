@@ -30,3 +30,54 @@ export function localizedAlternates(href: Href, locale: Locale): NonNullable<Met
     languages,
   };
 }
+
+/**
+ * Metadata for a localized content page: title, description, canonical +
+ * hreflang, and Open Graph (the root layout's `title.template` adds the brand).
+ * `image` is an absolute URL when the page has its own share picture.
+ */
+export function pageMetadata({
+  locale,
+  href,
+  title,
+  description,
+  image,
+  type = "website",
+  publishedTime,
+  noindex = false,
+}: {
+  locale: Locale;
+  href: Href;
+  title: string;
+  description: string;
+  image?: string;
+  type?: "website" | "article";
+  publishedTime?: number;
+  /** Visitor-specific pages (favorites, compare) are followed but not indexed. */
+  noindex?: boolean;
+}): Metadata {
+  const alternates = localizedAlternates(href, locale);
+  return {
+    title,
+    description,
+    alternates,
+    ...(noindex ? { robots: { index: false, follow: true } } : {}),
+    openGraph: {
+      type,
+      url: alternates.canonical as string,
+      title,
+      description,
+      locale: htmlLang[locale],
+      siteName: "Mihajlo Estate",
+      ...(image !== undefined ? { images: [{ url: image }] } : {}),
+      ...(type === "article" && publishedTime !== undefined
+        ? { publishedTime: new Date(publishedTime).toISOString() }
+        : {}),
+    },
+  };
+}
+
+/** The absolute URL of a localized route (for JSON-LD and share links). */
+export function localizedUrl(href: Href, locale: Locale): string {
+  return absoluteUrl(getPathname({ locale, href }));
+}

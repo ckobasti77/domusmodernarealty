@@ -439,6 +439,14 @@ export const utmV = v.object({
 });
 export type Utm = Infer<typeof utmV>;
 
+/** Part of the day a visitor proposes for the on-site valuation visit. */
+export const onsiteWindowV = v.union(
+  v.literal("morning"),
+  v.literal("midday"),
+  v.literal("afternoon"),
+);
+export type OnsiteWindow = Infer<typeof onsiteWindowV>;
+
 export const valuationResultV = v.object({
   low: v.number(),
   high: v.number(),

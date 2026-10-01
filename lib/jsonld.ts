@@ -142,3 +142,67 @@ export function listingJsonLd(input: ListingJsonLdInput): JsonLd {
     offers: offer,
   };
 }
+
+/** A neighborhood / city page (PRD A8): what the page shows, nothing more. */
+export function placeJsonLd(input: {
+  url: string;
+  name: string;
+  description?: string;
+  inLanguage: string;
+  image?: string;
+  geo: { lat: number; lng: number };
+  containedIn?: { name: string; url: string };
+}): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Place",
+    "@id": `${input.url}#place`,
+    name: input.name,
+    url: input.url,
+    ...(input.description !== undefined && input.description.length > 0
+      ? { description: input.description }
+      : {}),
+    ...(input.image !== undefined ? { image: input.image } : {}),
+    geo: { "@type": "GeoCoordinates", latitude: input.geo.lat, longitude: input.geo.lng },
+    ...(input.containedIn !== undefined
+      ? { containedInPlace: { "@type": "Place", name: input.containedIn.name, url: input.containedIn.url } }
+      : {}),
+    address: { "@type": "PostalAddress", addressLocality: input.name, addressCountry: "RS" },
+  };
+}
+
+/** A journal article (PRD A11). The author is an agent profile when the post has one, else the agency. */
+export function articleJsonLd(input: {
+  url: string;
+  headline: string;
+  description: string;
+  inLanguage: string;
+  image?: string;
+  datePublished?: number;
+  author?: { name: string; url: string };
+  publisher: { name: string; url: string; logo: string };
+}): JsonLd {
+  const publisher = {
+    "@type": "Organization",
+    name: input.publisher.name,
+    url: input.publisher.url,
+    logo: { "@type": "ImageObject", url: input.publisher.logo },
+  };
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    mainEntityOfPage: { "@type": "WebPage", "@id": input.url },
+    headline: input.headline.slice(0, 110),
+    description: input.description,
+    inLanguage: input.inLanguage,
+    ...(input.image !== undefined ? { image: [input.image] } : {}),
+    ...(input.datePublished !== undefined
+      ? { datePublished: new Date(input.datePublished).toISOString() }
+      : {}),
+    author:
+      input.author !== undefined
+        ? { "@type": "Person", name: input.author.name, url: input.author.url }
+        : publisher,
+    publisher,
+  };
+}

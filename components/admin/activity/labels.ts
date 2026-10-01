@@ -47,6 +47,7 @@ const ACTION_LABEL: Record<string, string> = {
   "lead.responded": "Odgovoreno na upit",
   "lead.note": "Beleška uz upit",
   "lead.nextAction": "Zakazan sledeći korak",
+  "lead.onsiteRequested": "Zatražena procena na terenu",
   "viewing.requested": "Zatraženo razgledanje",
   "viewing.created": "Zakazano razgledanje",
   "viewing.feedback": "Utisak sa razgledanja",

@@ -16,10 +16,12 @@ import {
   requireText,
 } from "./lib/rateLimit";
 import { isListedScope } from "./lib/search";
+import { belgradeWall, DAY_MS } from "./lib/belgradeTime";
 import {
   conditionV,
   floorV,
   localeV,
+  onsiteWindowV,
   propertyTypeV,
   utmV,
   valuationResultV,
@@ -357,6 +359,90 @@ export const createValuation = mutation({
     });
 
     return { leadId, valuation };
+  },
+});
+
+/* ----------------------------------------------------- on-site valuation ask */
+
+/** The funnel's result screen offers the follow-up for this long. */
+const ONSITE_REQUEST_WINDOW_MS = 6 * 60 * 60_000;
+/** How far ahead a visitor may propose the visit. */
+const ONSITE_MAX_DAYS = 30;
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** `YYYY-MM-DD` of the Belgrade calendar day containing `at`. */
+function belgradeIsoDate(at: number): string {
+  return new Date(belgradeWall(at)).toISOString().slice(0, 10);
+}
+
+/**
+ * The CTA on the valuation result (PRD A6 step 3): the visitor asks for the
+ * free on-site valuation and proposes a day and a part of the day. It
+ * annotates the valuation lead they just created instead of opening a second
+ * one, so the agent sees the indicative range and the request together.
+ *
+ * Only a fresh valuation lead qualifies (the id comes back from
+ * `createValuation` to the submitting browser and is useless hours later),
+ * only once, and through the same per-session bucket as every other form.
+ */
+export const requestOnsiteValuation = mutation({
+  args: {
+    sessionKey: v.string(),
+    leadId: v.id("leads"),
+    preferredDate: v.string(),
+    preferredWindow: onsiteWindowV,
+    note: v.optional(v.string()),
+    /** Honeypot, as on every public form. */
+    hp: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    assertHoneypotEmpty(args.hp);
+    await consumeLimit(ctx, "leadPerSession", args.sessionKey);
+
+    const lead = await ctx.db.get("leads", args.leadId);
+    const now = Date.now();
+    if (
+      lead === null ||
+      lead.type !== "valuation" ||
+      lead.source !== "web" ||
+      now - lead._creationTime > ONSITE_REQUEST_WINDOW_MS
+    ) {
+      appError("NOT_FOUND", "Zahtev za procenu nije pronađen.");
+    }
+    if (lead.answers?.onsiteRequested === true) {
+      appError("ALREADY_REQUESTED", "Procena na terenu je već zatražena.");
+    }
+
+    const today = belgradeIsoDate(now);
+    const last = belgradeIsoDate(now + ONSITE_MAX_DAYS * DAY_MS);
+    if (
+      !ISO_DATE_RE.test(args.preferredDate) ||
+      Number.isNaN(Date.parse(`${args.preferredDate}T12:00:00Z`)) ||
+      args.preferredDate < today ||
+      args.preferredDate > last
+    ) {
+      invalidInput("Izaberite dan u narednih 30 dana.");
+    }
+    const note = optionalText(args.note, "Napomena", 600);
+
+    await ctx.db.patch("leads", lead._id, {
+      answers: {
+        ...(lead.answers ?? {}),
+        onsiteRequested: true,
+        onsiteDate: args.preferredDate,
+        onsiteWindow: args.preferredWindow,
+        ...(note !== undefined ? { onsiteNote: note } : {}),
+      },
+    });
+
+    await logActivity(ctx, {
+      entity: "lead",
+      entityId: lead._id,
+      action: "lead.onsiteRequested",
+      summary: "Sa sajta: zatražena procena na terenu",
+    });
+    return null;
   },
 });
 

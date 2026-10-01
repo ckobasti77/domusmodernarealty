@@ -20,7 +20,8 @@
     "phone": "Telephone",
     "email": "Email",
     "viber": "Viber",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "breadcrumb": "Breadcrumb"
   },
   "nav": {
     "home": "Home",

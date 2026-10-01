@@ -25,7 +25,9 @@ function flatten(value, prefix = "", out = new Map()) {
 /** Simple `{name}` placeholders, ignoring ICU plural/select category bodies. */
 function placeholders(message) {
   const found = new Set();
-  for (const match of message.matchAll(/\{\s*([a-zA-Z0-9_]+)\s*[,}]/g)) {
+  // A brace right after a plural/select category (`one {Grad}`) opens that
+  // category's body, not a placeholder, even when the body is a single word.
+  for (const match of message.matchAll(/(?<!(?:zero|one|two|few|many|other|=\d+)\s*)\{\s*([a-zA-Z0-9_]+)\s*[,}]/g)) {
     found.add(match[1]);
   }
   return found;

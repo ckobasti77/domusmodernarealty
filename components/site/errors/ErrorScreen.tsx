@@ -132,9 +132,10 @@ export function ErrorScreen({
                 />
                 <button
                   type="submit"
-                  className="group/submit inline-flex min-h-11 shrink-0 items-center gap-2 font-sans text-small font-medium uppercase tracking-[0.12em] text-ivory transition-colors duration-200 pointer-fine:hover:text-bronze focus-visible:outline-bronze"
+                  className="group/submit inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 font-sans text-small font-medium uppercase tracking-[0.12em] text-ivory transition-colors duration-200 pointer-fine:hover:text-bronze focus-visible:outline-bronze"
                 >
-                  {search.submit}
+                  {/* Arrow only on a phone, so the placeholder is not cut off; the word stays for screen readers. */}
+                  <span className="max-sm:sr-only">{search.submit}</span>
                   <ArrowRight
                     aria-hidden="true"
                     strokeWidth={1.25}

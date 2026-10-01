@@ -153,7 +153,7 @@ export default async function ContactPage({ params }: Props) {
                 </div>
               </div>
               {geo !== undefined ? (
-                <figure className="col-span-4 lg:col-span-7 lg:col-start-6">
+                <figure className="col-span-4 self-start border border-hairline-light lg:col-span-7 lg:col-start-6">
                   <ListingMapLoader lat={geo.lat} lng={geo.lng} precision="exact" locale={locale} />
                   <figcaption className="sr-only">{t("mapLabel")}</figcaption>
                 </figure>

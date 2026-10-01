@@ -37,8 +37,14 @@ export async function Breadcrumbs({
       >
         {trail.map((crumb, index) => {
           const last = index === trail.length - 1;
+          // On a phone a deep trail wraps to three uppercase lines and its last
+          // crumb only repeats the h1 below it: keep it for screen readers only.
+          const deep = trail.length > 2;
           return (
-            <li key={`${crumb.label}-${index}`} className="flex items-center gap-x-2">
+            <li
+              key={`${crumb.label}-${index}`}
+              className={cn("flex items-center gap-x-2", deep && last && "max-md:sr-only")}
+            >
               {last || crumb.href === undefined ? (
                 <span aria-current={last ? "page" : undefined} className={tone === "dark" ? "text-ivory" : "text-ink"}>
                   {crumb.label}
@@ -54,7 +60,11 @@ export async function Breadcrumbs({
                   {crumb.label}
                 </Link>
               )}
-              {last ? null : <span aria-hidden="true">/</span>}
+              {last ? null : (
+                <span aria-hidden="true" className={cn(deep && index === trail.length - 2 && "max-md:hidden")}>
+                  /
+                </span>
+              )}
             </li>
           );
         })}

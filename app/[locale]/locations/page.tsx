@@ -86,9 +86,9 @@ export default async function LocationsPage({ params }: PageProps<"/[locale]/loc
             <HeroFigures
               label={t("summaryLabel")}
               items={[
-                { value: formatCount(roots.length, locale), label: t("summaryCities") },
+                { value: formatCount(roots.length, locale), label: t("summaryCities", { count: roots.length }) },
                 { value: formatCount(areaCount, locale), label: t("summaryAreas") },
-                { value: formatCount(listingCount, locale), label: t("summaryListings") },
+                { value: formatCount(listingCount, locale), label: t("summaryListings", { count: listingCount }) },
               ]}
             />
           ) : undefined

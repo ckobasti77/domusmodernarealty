@@ -74,7 +74,7 @@ export function CompareTable({
           {t("caption", { count: items.length })}
         </caption>
         <colgroup>
-          <col className="w-28 md:w-44 lg:w-56" />
+          <col className="w-32 md:w-44 lg:w-56" />
           {items.map((item) => (
             <col key={item._id} />
           ))}
@@ -139,7 +139,9 @@ export function CompareTable({
                   scope="row"
                   className={cn(
                     STICKY_COLUMN,
-                    "hairline-t py-4 pr-3 align-top font-sans text-label font-medium uppercase tracking-[0.1em] text-stone-text",
+                    // Long ru/de labels (GRUNDBUCHEINTRAG, ЭНЕРГЕТИЧЕСКИЙ) break inside the narrow
+                    // phone column instead of running into the first value.
+                    "hairline-t py-4 pr-3 align-top font-sans text-label font-medium uppercase tracking-[0.06em] text-stone-text hyphens-auto [overflow-wrap:anywhere] md:tracking-[0.1em]",
                   )}
                 >
                   {row.label}
@@ -193,7 +195,7 @@ function ValueCell({ cell, best }: { cell: CompareCell | null; best: boolean }) 
   return (
     <td
       data-testid={best ? "compare-best" : undefined}
-      className={cn(CELL_X, "relative py-4 align-top", best ? "border-t-2 border-bronze" : "hairline-t")}
+      className={cn(CELL_X, "hairline-t relative py-4 align-top")}
     >
       {cell === null ? (
         <>

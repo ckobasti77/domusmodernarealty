@@ -25,6 +25,14 @@ describe("fixTypography", () => {
   it("leaves a digit followed by an ordinary word alone", () => {
     expect(fixTypography("zgrada iz 1938 godine")).toBe(`zgrada iz${NBSP}1938 godine`);
   });
+
+  it("never ends a line on a numeric prefix and its hyphen", () => {
+    const WJ = "⁠";
+    expect(fixTypography("Grundriss und 360°-Tour")).toBe(`Grundriss und 360°-${WJ}Tour`);
+    expect(fixTypography("Wer zahlt die 3D-Tour?")).toBe(`Wer zahlt die 3D-${WJ}Tour?`);
+    expect(fixTypography("планировку и 360°-тур")).toBe(`планировку и${NBSP}360°-${WJ}тур`);
+    expect(fixTypography("radno vreme 9-17")).toBe("radno vreme 9-17");
+  });
 });
 
 describe("fixWidows", () => {

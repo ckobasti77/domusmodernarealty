@@ -156,7 +156,11 @@ export default async function SellPage({ params }: Props) {
               {copy.more !== null ? (
                 <RichText html={copy.more.html} lang={copy.more.lang} size="body-l" className="mb-12" />
               ) : null}
-              <Reveal as="ul" lang={copy.benefits.lang} className="grid gap-x-8 sm:grid-cols-2">
+              <Reveal
+                as="ul"
+                lang={copy.benefits.lang}
+                className="grid gap-x-8 sm:grid-cols-2 sm:[&>:last-child:nth-child(odd)]:col-span-2"
+              >
                 {copy.benefits.items.map((item, index) => (
                   <li
                     key={`${index}-${item}`}
@@ -214,7 +218,7 @@ export default async function SellPage({ params }: Props) {
               />
             </div>
             <div className="col-span-4 lg:col-span-7 lg:col-start-6">
-              <Reveal as="dl" className="grid gap-x-8 md:grid-cols-2">
+              <Reveal as="dl" className="grid gap-x-8 md:grid-cols-2 md:[&>:last-child:nth-child(odd)]:col-span-2">
                 {DOCUMENT_KEYS.map((key) => (
                   <div key={key} className="flex flex-col gap-2 border-t border-hairline-light py-6">
                     <dt className="font-display text-[1.375rem] leading-snug text-ink">

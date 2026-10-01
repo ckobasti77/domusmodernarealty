@@ -392,7 +392,7 @@ function EmptyState({ headingRef }: { headingRef: RefObject<HTMLHeadingElement |
   return (
     <section aria-labelledby="favorites-empty-heading" className="bg-ivory" data-testid="favorites-empty">
       <Container className="py-section lg:py-32">
-        <div className="grid gap-12 lg:grid-cols-12 lg:items-end lg:gap-x-6">
+        <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-x-6">
           <div className="flex flex-col items-start gap-6 lg:col-span-7">
             <Eyebrow>{t("emptyEyebrow")}</Eyebrow>
             <h2

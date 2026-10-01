@@ -80,7 +80,7 @@ export default async function JournalPage(props: Props) {
   return (
     <>
       <JsonLdScript data={breadcrumbJsonLd(trail)} />
-      <PageHero crumbs={crumbs} title={t("heading")} lede={t("lede")} />
+      <PageHero crumbs={crumbs} eyebrow={t("eyebrow")} title={t("heading")} lede={t("lede")} />
 
       <div className="bg-ivory text-ink">
         <Container className="pb-section pt-10 lg:pb-section-lg lg:pt-14">

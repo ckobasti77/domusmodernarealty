@@ -176,13 +176,16 @@ const TWO_LETTER =
 
 /** A one-letter prefix and its hyphen ("e-mail", "e-pošta") never end a line. */
 const PREFIX_HYPHEN = /(^|[\s(])([eE])-(?=\S)/g;
+/** Nor does a numeric one ("3D-Tour", "360°-Tour", "360°-тур"): "360°-" alone at a line end reads as a typo. */
+const NUMERIC_PREFIX_HYPHEN = /(\d[\p{L}°]{0,2})-(?=\p{L})/gu;
 const WORD_JOINER = String.fromCharCode(0x2060);
 
 export function fixTypography(text: string): string {
   return fixOrphans(text)
     .replace(NUMBER_UNIT, "$1\u00A0")
     .replace(TWO_LETTER, "$1$2\u00A0")
-    .replace(PREFIX_HYPHEN, `$1$2-${WORD_JOINER}`);
+    .replace(PREFIX_HYPHEN, `$1$2-${WORD_JOINER}`)
+    .replace(NUMERIC_PREFIX_HYPHEN, `$1-${WORD_JOINER}`);
 }
 
 /** Grouped figure for an input's initial value ("430.000", "5,4"). */

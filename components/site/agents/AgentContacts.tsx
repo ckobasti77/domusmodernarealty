@@ -19,7 +19,7 @@ export async function AgentContacts({ agent, locale }: { agent: AgentPublic; loc
 
   const channels = [
     agent.phone !== undefined ? (
-      <a key="tel" href={telHref(agent.phone)} className={cn(buttonClasses({ variant: "inverse" }), "px-6")}>
+      <a key="tel" href={telHref(agent.phone)} className={cn(buttonClasses({ variant: "inverse" }), "col-span-2 px-6")}>
         <Phone aria-hidden="true" strokeWidth={1.25} className={icon} />
         <span>
           <span className="sr-only">{t("call")} </span>
@@ -53,7 +53,11 @@ export async function AgentContacts({ agent, locale }: { agent: AgentPublic; loc
 
   return (
     <div className="mt-4 flex flex-col gap-5">
-      <div className="flex flex-wrap gap-3">{channels}</div>
+      {/* Phones: the call button on its own row, the rest in even pairs (a lone
+          last button spans the row) instead of a ragged wrap. */}
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap [&>:last-child:nth-child(even)]:col-span-2">
+        {channels}
+      </div>
       <p className="max-w-[46ch] text-small text-mist">{t("replyPromise")}</p>
     </div>
   );

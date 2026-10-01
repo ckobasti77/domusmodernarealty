@@ -1002,9 +1002,9 @@
     "metaDescription": "Guides to Belgrade's municipalities and neighbourhoods and to other Serbian cities: average prices per square metre for sale and rent, and our current listings.",
     "eyebrow": "Locations",
     "summaryLabel": "At a glance",
-    "summaryCities": "Cities",
+    "summaryCities": "{count, plural, one {City} other {Cities}}",
     "summaryAreas": "Areas",
-    "summaryListings": "Properties on offer",
+    "summaryListings": "{count, plural, one {Property on offer} other {Properties on offer}}",
     "emptyIndex": "No locations have been published yet.",
     "primaryEyebrow": "Our main market",
     "districtsHeading": "Municipalities and neighbourhoods",
@@ -1140,6 +1140,7 @@
     "faqHeading": "Frequently asked questions"
   },
   "journal": {
+    "eyebrow": "Market and advice",
     "heading": "Journal",
     "lede": "Market analysis, guides for buyers and sellers, and stories about Belgrade.",
     "readingTime": "{minutes} min read",

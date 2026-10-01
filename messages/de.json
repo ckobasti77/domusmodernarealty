@@ -1002,9 +1002,9 @@
     "metaDescription": "Überblick über Belgrader Stadtgemeinden und Viertel sowie Städte in Serbien: durchschnittliche Quadratmeterpreise für Kauf und Miete und unser aktuelles Angebot.",
     "eyebrow": "Lagen",
     "summaryLabel": "Auf einen Blick",
-    "summaryCities": "Städte",
+    "summaryCities": "{count, plural, one {Stadt} other {Städte}}",
     "summaryAreas": "Stadtteile",
-    "summaryListings": "Immobilien im Angebot",
+    "summaryListings": "{count, plural, one {Immobilie im Angebot} other {Immobilien im Angebot}}",
     "emptyIndex": "Es sind noch keine Lagen veröffentlicht.",
     "primaryEyebrow": "Unser Hauptmarkt",
     "districtsHeading": "Stadtgemeinden und Viertel",
@@ -1140,6 +1140,7 @@
     "faqHeading": "Häufige Fragen"
   },
   "journal": {
+    "eyebrow": "Markt und Ratgeber",
     "heading": "Magazin",
     "lede": "Marktanalysen, Ratgeber für Käufer und Verkäufer und Geschichten über Belgrad.",
     "readingTime": "{minutes} Min. Lesezeit",

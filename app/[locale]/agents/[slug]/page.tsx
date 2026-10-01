@@ -115,7 +115,8 @@ export default async function AgentPage({ params }: { params: Params }) {
             tone="dark"
             priority
             sizes="(min-width: 1024px) 30vw, 92vw"
-            className="aspect-[4/5] w-full max-lg:max-w-sm lg:ml-auto lg:max-w-[26rem]"
+            // A monogram is two letters: on a phone it gets a band, not a whole screen.
+            className={`${agent.photoUrl !== undefined ? "aspect-[4/5]" : "aspect-[2/1]"} w-full max-lg:max-w-sm lg:ml-auto lg:aspect-[4/5] lg:max-w-[26rem]`}
           />
         }
       >

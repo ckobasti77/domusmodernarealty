@@ -1,7 +1,7 @@
 import { Accordion, type AccordionItem } from "@/components/site/Accordion";
 import { Container, Grid, Section } from "@/components/site/Container";
 import { SectionHeading } from "@/components/site/SectionHeading";
-import { fixOrphans, fixTypography } from "@/lib/format";
+import { fixTypography } from "@/lib/format";
 import type { FaqEntry } from "./managed";
 
 /**
@@ -26,7 +26,7 @@ export function FaqSection({
 
   const entries: AccordionItem[] = items.map((item) => ({
     id: item.id,
-    question: <span lang={item.question.lang}>{fixOrphans(item.question.text)}</span>,
+    question: <span lang={item.question.lang}>{fixTypography(item.question.text)}</span>,
     answer: (
       <p lang={item.answer.lang} className="text-pretty">
         {fixTypography(item.answer.text)}

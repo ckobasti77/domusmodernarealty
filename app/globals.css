@@ -244,6 +244,14 @@
     @apply font-sans;
   }
 
+  /* A field scrolled into view (focus after a failed submit, an anchor) stops
+     below the fixed header instead of under it. */
+  input,
+  select,
+  textarea {
+    scroll-margin-top: calc(var(--header-h, 85px) + 1.5rem);
+  }
+
   body {
     overflow-x: clip;
     /* The consent banner is fixed to the bottom of the viewport and publishes
@@ -562,7 +570,9 @@ html[data-consent="pending"] {
 --------------------------------------------------------------------------- */
 @layer components {
   .rich-text {
-    max-width: 68ch;
+    /* In em, not ch: Manrope's "0" is narrow for its width, so 68ch came out
+       at ~90 characters a line. 32em holds ~70 at both body sizes. */
+    max-width: 32em;
     color: var(--color-ink);
     font-size: var(--text-body);
     line-height: 1.7;

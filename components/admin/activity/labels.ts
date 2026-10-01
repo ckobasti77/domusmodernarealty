@@ -83,6 +83,7 @@ const ACTION_LABEL: Record<string, string> = {
   "page.created": "Kreirana stranica",
   "page.updated": "Izmenjen sadržaj stranice",
   "page.seedRefreshed": "Osvežen početni sadržaj stranica",
+  "demo.copyRefreshed": "Osveženi prevodi demo sadržaja",
   "testimonial.created": "Dodat utisak",
   "testimonial.updated": "Izmenjen utisak",
   "testimonial.deleted": "Obrisan utisak",

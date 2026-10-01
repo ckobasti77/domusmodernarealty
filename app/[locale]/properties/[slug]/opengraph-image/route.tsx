@@ -1,7 +1,4 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import sharp from "sharp";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { defaultLocale, routing, type Locale } from "@/i18n/routing";
@@ -9,13 +6,13 @@ import { formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { getListingBySlug } from "@/lib/listing-data";
 import { structureTitle } from "@/lib/listing-text";
+import { asJpeg, INK, IVORY, MIST, OG_SIZE as size, ogFonts as fonts, Wordmark } from "@/lib/og";
 import { isUnsplash, unsplashAt } from "@/components/site/listing/media";
 
 /**
  * Per-listing share image (PRD A5): the cover photo, the price, m² and €/m²,
- * the neighbourhood and the wordmark. Satori needs TTF/OTF (not WOFF2), so the
- * two static OFL fonts in `assets/fonts/` — EB Garamond and Manrope, both with
- * Latin-Ext and Cyrillic — are read from disk; together they are under 500 KB.
+ * the neighbourhood and the wordmark, drawn with the shared share-image kit
+ * (`lib/og.tsx`: fonts with Cyrillic, JPEG re-encode, wordmark).
  *
  * A Route Handler rather than the `opengraph-image.tsx` file convention: the
  * convention writes its own `og:image` URL from the INTERNAL route
@@ -23,50 +20,10 @@ import { isUnsplash, unsplashAt } from "@/components/site/listing/media";
  * file-based metadata cannot be overridden. Here the image lives at the
  * localized public path (`/sr/nekretnine/<slug>/opengraph-image`, mapped in
  * `i18n/routing.ts`) and the page points `og:image` at exactly that URL.
- *
- * Satori only writes PNG, which for a photograph is ~800 KB. WhatsApp and Viber,
- * the channels Serbian buyers share on, drop the preview above ~300 KB, so the
- * PNG is re-encoded to a ~100 KB progressive JPEG before it is sent.
  */
 
-const size = { width: 1200, height: 630 };
 /** Prices change; the page adds `?v=<price>` to the URL, so an hour is enough here. */
-const HEADERS = {
-  "Content-Type": "image/jpeg",
-  "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
-};
-
-async function asJpeg(image: ImageResponse): Promise<Response> {
-  const png = Buffer.from(await image.arrayBuffer());
-  const jpeg = await sharp(png).jpeg({ quality: 82, mozjpeg: true, progressive: true }).toBuffer();
-  return new Response(new Uint8Array(jpeg), { headers: HEADERS });
-}
-
-const INK = "#0e0d0b";
-const IVORY = "#f4efe6";
-const MIST = "#b9b0a2";
-const BRONZE = "#b08d57";
-
-async function fonts() {
-  const dir = join(process.cwd(), "assets", "fonts");
-  const [serif, sans] = await Promise.all([
-    readFile(join(dir, "EBGaramond-Regular.ttf")),
-    readFile(join(dir, "Manrope-Medium.ttf")),
-  ]);
-  return [
-    { name: "Serif", data: serif, weight: 400 as const, style: "normal" as const },
-    { name: "Sans", data: sans, weight: 500 as const, style: "normal" as const },
-  ];
-}
-
-function Wordmark() {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ fontFamily: "Serif", fontSize: 26, letterSpacing: 7, color: IVORY }}>MIHAJLO ESTATE</div>
-      <div style={{ width: 56, height: 1, backgroundColor: BRONZE }} />
-    </div>
-  );
-}
+const CACHE = "public, max-age=3600, stale-while-revalidate=86400";
 
 export async function GET(_request: Request, { params }: RouteContext<"/[locale]/properties/[slug]/opengraph-image">) {
   const { locale: raw, slug } = await params;
@@ -83,6 +40,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
         ),
         { ...size, fonts: fontList },
       ),
+      CACHE,
     );
   }
 
@@ -163,5 +121,5 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
     </div>
   );
 
-  return asJpeg(new ImageResponse(card, { ...size, fonts: fontList }));
+  return asJpeg(new ImageResponse(card, { ...size, fonts: fontList }), CACHE);
 }

@@ -21,7 +21,7 @@
     "email": "E-Mail",
     "viber": "Viber",
     "whatsapp": "WhatsApp",
-    "breadcrumb": "Brotkrumen-Navigation"
+    "breadcrumb": "Navigationspfad"
   },
   "nav": {
     "home": "Start",
@@ -43,14 +43,14 @@
     "exploreHeading": "Entdecken",
     "legalHeading": "Rechtliches",
     "contactHeading": "Kontakt",
-    "registryNumber": "Maklerregister Nr. {number}",
+    "registryNumber": "Maklerregister-Nr. {number}",
     "companyId": "Steuer-Nr. (PIB) {pib} · Reg.-Nr. (MB) {mb}",
     "rights": "© {year} {brand}. Alle Rechte vorbehalten.",
     "madeIn": "Belgrad, Serbien",
     "newsletterHeading": "Neue Immobilien in Ihrem Postfach",
-    "newsletterCta": "Anmelden",
+    "newsletterCta": "Abonnieren",
     "settingsMissing": "Die Angaben zur Agentur fehlen. Tragen Sie sie im Admin-Bereich ein, bevor die Website online geht.",
-    "demoDataWarning": "Es werden Demodaten angezeigt. Steuernummer, Handelsregisternummer und die Nummer im Maklerregister sind noch nicht eingetragen."
+    "demoDataWarning": "Es werden Demodaten angezeigt. Steuernummer, Registernummer und Maklerregisternummer sind noch nicht eingetragen."
   },
   "home": {
     "featuredAll": "Alle Immobilien",
@@ -101,7 +101,7 @@
     "processStep3Title": "Vermarktung und 3D-Tour",
     "processStep4Body": "Wir führen jede Besichtigung durch, treffen eine Vorauswahl ernsthafter Interessenten und verhandeln in Ihrem Namen.",
     "processStep4Title": "Besichtigungen und Verhandlungen",
-    "processStep5Body": "Gemeinsam mit einem Anwalt bereiten wir den Vertrag vor und begleiten die Beurkundung, die Steuererklärung und die Übergabe der Schlüssel.",
+    "processStep5Body": "Gemeinsam mit einem Anwalt bereiten wir den Vertrag vor und begleiten die notarielle Beurkundung, die Meldung beim Finanzamt und die Schlüsselübergabe.",
     "processStep5Title": "Vertrag und Übergabe",
     "scrollCue": "Scrollen",
     "searchBudget": "Budget",
@@ -186,7 +186,7 @@
       "garage": "{transaction, select, rent {Garagen zur Miete} other {Garagen zum Kauf}}",
       "cottage": "{transaction, select, rent {Ferienhäuser zur Miete} other {Ferienhäuser zum Kauf}}"
     },
-    "titleWithPlace": "{title} — {place}",
+    "titleWithPlace": "{title} – {place}",
     "metaDescription": "{title}. Suchen Sie nach Lage, Preis, Wohnfläche und Zimmerzahl – als Liste oder auf der Karte, mit Fotos und 3D-Touren.",
     "breadcrumbLabel": "Navigationspfad",
     "showResults": "{count, plural, one {# Ergebnis anzeigen} other {# Ergebnisse anzeigen}}",
@@ -211,13 +211,13 @@
       "searchAsMove": "Beim Verschieben der Karte suchen",
       "loading": "Karte wird geladen…",
       "cluster": "{count, plural, one {# Immobilie} other {# Immobilien}} an dieser Stelle – zum Anzeigen hineinzoomen",
-      "pin": "{price} — {title}",
+      "pin": "{price} – {title}",
       "truncated": "Die Karte zeigt die ersten {count} Ergebnisse.",
       "viewListing": "Immobilie ansehen",
       "emptyArea": "In diesem Kartenausschnitt gibt es keine Ergebnisse. Verschieben Sie die Karte oder zoomen Sie heraus.",
       "attribution": "Quellen der Kartendaten",
-      "outsideBelgrade": "{count} weitere außerhalb Belgrads zeigen",
-      "showAll": "Alle {count} Ergebnisse auf der Karte zeigen",
+      "outsideBelgrade": "{count} weitere außerhalb Belgrads anzeigen",
+      "showAll": "Alle {count} Ergebnisse auf der Karte anzeigen",
       "offline": "Die Karte kann gerade nicht geladen werden. Alle Ergebnisse stehen in der Liste."
     },
     "chips": {
@@ -232,7 +232,7 @@
       "bbox": "Kartenausschnitt"
     },
     "placePair": "{first} und {second}",
-    "placeCount": "{count, plural, one {# Lage} other {# Lagen}}"
+    "placeCount": "{count, plural, one {# Gebiet} other {# Gebiete}}"
   },
   "filters": {
     "heading": "Filter",
@@ -248,8 +248,8 @@
     "floor": "Etage",
     "heating": "Heizung",
     "features": "Ausstattung",
-    "parking": "Parkplatz",
-    "construction": "Bauart",
+    "parking": "Parken",
+    "construction": "Neu- oder Altbau",
     "condition": "Zustand",
     "furnishing": "Möblierung",
     "energyClass": "Energieklasse",
@@ -282,7 +282,7 @@
     "toggle": {
       "elevator": "Aufzug",
       "outdoor": "Terrasse, Loggia oder Balkon",
-      "parking": "Parkplatz oder Garage",
+      "parking": "Stellplatz oder Garage",
       "registered": "Im Grundbuch eingetragen",
       "moveIn": "Bezugsfertig",
       "furnished": "Möbliert",
@@ -308,18 +308,18 @@
     "floor": "Etage",
     "yearBuilt": "Baujahr",
     "heating": "Heizung",
-    "parking": "Parkplatz",
+    "parking": "Parken",
     "energyClass": "Energieklasse",
     "furnishing": "Möblierung",
     "description": "Beschreibung",
     "features": "Ausstattung",
-    "legal": "Rechtlicher Status",
+    "legal": "Rechtsstatus",
     "location": "Lage",
     "nearby": "In der Umgebung",
     "priceHistory": "Preisentwicklung",
     "similar": "Ähnliche Immobilien",
     "agent": "Ihr Ansprechpartner",
-    "tour360": "360°-Besichtigung",
+    "tour360": "360°-Tour",
     "walk3d": "3D-Rundgang",
     "floorPlan": "Grundriss",
     "gallery": "Galerie",
@@ -331,14 +331,14 @@
     "addToCompare": "Zum Vergleich hinzufügen",
     "statusReserved": "Reserviert",
     "statusSold": "Verkauft",
-    "previewBanner": "Vorschau für das Team — dieses Objekt ist noch nicht veröffentlicht",
+    "previewBanner": "Vorschau für das Team – dieses Objekt ist noch nicht veröffentlicht",
     "statusRented": "Vermietet",
     "exclusive": "Exklusiv",
     "new": "Neu",
     "breadcrumbLabel": "Navigationspfad",
     "verifiedDocs": "Unterlagen geprüft",
     "refCode": "Objektnummer {ref}",
-    "compliance": "{company} · Maklerregister Nr. {registryNo}",
+    "compliance": "{company} · Maklerregister-Nr. {registryNo}",
     "propertyType": {
       "apartment": "Wohnung",
       "house": "Haus",
@@ -439,18 +439,18 @@
       "roomsCount": "Zimmer",
       "floorOf": "{floor} von {total}",
       "renovated": "Renoviert",
-      "construction": "Bauart",
+      "construction": "Neu- oder Altbau",
       "condition": "Zustand",
       "elevator": "Aufzug",
       "outdoor": "Außenbereich",
       "orientation": "Ausrichtung",
       "bills": "Monatliche Nebenkosten",
-      "billsValue": "Infostan ca. {infostan}, Hausgeld ca. {maintenance}",
-      "availableFrom": "Bezugsfertig ab",
+      "billsValue": "Nebenkosten (Infostan) ca. {infostan}, Hausgeld ca. {maintenance}",
+      "availableFrom": "Verfügbar ab",
       "completion": "Fertigstellung",
       "minLease": "Mindestmietdauer",
       "minLeaseValue": "{count, plural, one {# Monat} other {# Monate}}",
-      "pets": "Haustiere",
+      "pets": "Haustiere erlaubt",
       "utilitiesIncluded": "Nebenkosten inklusive",
       "yes": "Ja",
       "no": "Nein"
@@ -479,14 +479,14 @@
       "floor": "Fußbodenheizung",
       "heat_pump": "Wärmepumpe",
       "AC": "Klimaanlage",
-      "pellet": "Pellets",
+      "pellet": "Pelletheizung",
       "other": "Sonstige"
     },
     "parkingValue": {
       "garage": "Garage",
       "garage_spot": "Garagenstellplatz",
       "parking_spot": "Stellplatz",
-      "street_zone": "Straßenparken (Parkzone)"
+      "street_zone": "Parken an der Straße (Parkzone)"
     },
     "orientationValue": {
       "N": "Nord",
@@ -523,7 +523,7 @@
       "alarm": "Alarmanlage",
       "pool": "Pool",
       "fireplace": "Kamin",
-      "parking": "Parkplatz",
+      "parking": "Stellplatz",
       "registered": "Im Grundbuch eingetragen",
       "occupancyPermit": "Nutzungsgenehmigung",
       "vatRefund": "MwSt.-Rückerstattung",
@@ -625,7 +625,7 @@
     "closed": {
       "sold": "Diese Immobilie ist verkauft. Sehen Sie sich ähnliche Angebote an oder schreiben Sie uns, wonach Sie suchen – wir finden es für Sie.",
       "rented": "Diese Immobilie ist vermietet. Sehen Sie sich ähnliche Angebote an oder schreiben Sie uns, wonach Sie suchen – wir finden es für Sie.",
-      "reserved": "Diese Immobilie ist reserviert. Senden Sie uns eine Anfrage, wenn wir Sie benachrichtigen sollen, falls der Kauf nicht zustande kommt.",
+      "reserved": "Diese Immobilie ist reserviert. Schicken Sie uns eine Anfrage – kommt der Kauf nicht zustande, melden wir uns bei Ihnen.",
       "browse": "Angebote ansehen"
     },
     "contactHeading": "Haben Sie Interesse?",
@@ -671,7 +671,7 @@
     "newBuild": "Neubau",
     "mortgage": "Finanzierbar",
     "monthlyRate": "Rate ab ca. {amount} mtl.",
-    "monthlyRateDetails": "Unverbindlich berechnete Monatsrate bei {down} % Eigenkapital, {years} Jahren Laufzeit und einem Sollzins von {rate} %. Kein Angebot einer Bank.",
+    "monthlyRateDetails": "Unverbindliche Beispielrate bei {down} % Eigenkapital, einer Laufzeit von {years, plural, one {# Jahr} other {# Jahren}} und einem Sollzins von {rate} %. Kein Angebot einer Bank.",
     "compare": "Vergleichen",
     "compareLabel": "Vergleichen: {title}"
   },
@@ -721,7 +721,7 @@
     "necessaryOnly": "Nur notwendige",
     "settings": "Einstellungen",
     "necessary": "Notwendig",
-    "necessaryHelp": "Für die Grundfunktionen der Website erforderlich. Nicht abwählbar.",
+    "necessaryHelp": "Für die Grundfunktionen der Website erforderlich. Sie lassen sich nicht deaktivieren.",
     "analytics": "Analyse",
     "analyticsHelp": "Hilft uns zu verstehen, wie die Website genutzt wird.",
     "marketing": "Marketing",
@@ -732,8 +732,8 @@
     "marketingOptIn": "Ich möchte Immobilienangebote per E-Mail erhalten."
   },
   "valuation": {
-    "heading": "Wertermittlung",
-    "lede": "In drei kurzen Schritten zu einer Orientierungsspanne, berechnet aus den Durchschnittspreisen in Ihrem Viertel. Unverbindlich und ohne unerwünschte Anrufe.",
+    "heading": "Immobilienbewertung",
+    "lede": "In drei kurzen Schritten zu einer groben Wertspanne, berechnet aus den Durchschnittspreisen in Ihrem Viertel. Unverbindlich und ohne unerwünschte Anrufe.",
     "step": "Schritt {current} von {total}",
     "stepProperty": "Immobilie",
     "stepContact": "Kontakt",
@@ -741,7 +741,7 @@
     "previous": "Zurück",
     "resultHeading": "Geschätzter Wert",
     "resultRange": "{min} – {max}",
-    "resultDisclaimer": "Dies ist ein Richtwert. Er wird aus dem durchschnittlichen Quadratmeterpreis im gewählten Viertel berechnet und um Zustand, Etage und Aufzug korrigiert. Er beruht nicht auf tatsächlichen Verkäufen und ersetzt kein offizielles Wertgutachten.",
+    "resultDisclaimer": "Dies ist ein Richtwert. Er wird aus dem durchschnittlichen Quadratmeterpreis im gewählten Viertel berechnet und an Zustand, Etage und Aufzug angepasst. Er beruht nicht auf tatsächlichen Verkäufen und ersetzt kein offizielles Wertgutachten.",
     "metaTitle": "Immobilienbewertung",
     "metaDescription": "Ein Richtwert für Ihre Wohnung oder Ihr Haus in zwei Minuten, auf Basis der Durchschnittspreise in Ihrem Viertel. Kostenlos und unverbindlich, auf Wunsch mit Bewertung vor Ort.",
     "eyebrow": "Online-Bewertung",
@@ -751,7 +751,7 @@
       "costLabel": "Kosten",
       "costValue": "Kostenlos",
       "resultLabel": "Ergebnis",
-      "resultValue": "Sofort eine Orientierungsspanne"
+      "resultValue": "Grobe Wertspanne, sofort"
     },
     "funnelLabel": "Online-Immobilienbewertung",
     "progressLabel": "Schritte der Bewertung",
@@ -759,7 +759,7 @@
     "stepDone": "abgeschlossen",
     "propertyHeading": "Beschreiben Sie die Immobilie",
     "contactHeading": "Ihre Kontaktdaten",
-    "contactLede": "Die Spanne erscheint sofort, auf dieser Seite. Unverbindlich und ohne unerwünschte Anrufe.",
+    "contactLede": "Die Wertspanne sehen Sie sofort auf dieser Seite. Unverbindlich und ohne unerwünschte Anrufe.",
     "submit": "Bewertung anzeigen",
     "submitting": "Wird berechnet…",
     "fields": {
@@ -792,13 +792,13 @@
     "rangeLow": "Untergrenze",
     "rangeMid": "Mitte",
     "rangeHigh": "Obergrenze",
-    "basisPricePerM2": "Durchschnittspreis pro m², korrigiert",
+    "basisPricePerM2": "Durchschnittspreis pro m², angepasst",
     "basisArea": "Wohnfläche",
     "restart": "Weitere Immobilie bewerten",
     "onsite": {
       "eyebrow": "Nächster Schritt",
       "heading": "Kostenlose Bewertung vor Ort",
-      "lede": "Eine belastbare Zahl folgt nach der Besichtigung. Ein Makler sieht sich die Immobilie und die Unterlagen an und vergleicht sie mit tatsächlichen Verkäufen in Ihrem Viertel aus dem Immobilienpreisregister der RGZ. Wählen Sie einen passenden Tag und eine Tageszeit; wir rufen Sie an, um den Termin zu bestätigen.",
+      "lede": "Eine belastbare Zahl folgt nach der Besichtigung. Ein Makler sieht sich die Immobilie und die Unterlagen an und vergleicht sie mit tatsächlichen Verkäufen in Ihrem Viertel aus dem Immobilienpreisregister der serbischen Vermessungsbehörde (RGZ). Wählen Sie einen passenden Tag und eine Tageszeit; wir rufen Sie an, um den Termin zu bestätigen.",
       "day": "Wunschtag",
       "window": "Tageszeit",
       "morning": "Vormittags",
@@ -819,29 +819,29 @@
     },
     "unavailable": {
       "heading": "Die Online-Bewertung ist derzeit nicht verfügbar",
-      "body": "Uns fehlen noch die Durchschnittspreise, auf denen die Orientierungsspanne beruht. Schreiben Sie uns, und wir vereinbaren eine Bewertung vor Ort. Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
+      "body": "Uns fehlen noch die Durchschnittspreise, auf denen die Wertspanne beruht. Schreiben Sie uns, und wir vereinbaren eine Bewertung vor Ort. Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
       "cta": "Kontakt aufnehmen"
     },
     "aboutEyebrow": "Methode",
     "aboutHeading": "So rechnen wir",
     "about": {
-      "p1": "Die Orientierungsspanne wird aus dem durchschnittlichen Quadratmeterpreis in Ihrem Viertel berechnet und um Zustand, Etage und Aufzug korrigiert. Sie ist eine Einschätzung, kein offizielles Wertgutachten, und lässt sich gegenüber Bank, Gericht oder Steuerbehörde nicht verwenden.",
-      "p2": "Eine belastbare Zahl folgt nach der Besichtigung. Vor Ort betrachten wir Licht, Ausrichtung, Installationen, Haus und Unterlagen und vergleichen die Immobilie mit tatsächlichen Verkäufen in Ihrem Viertel aus dem Immobilienpreisregister der RGZ."
+      "p1": "Die grobe Wertspanne wird aus dem durchschnittlichen Quadratmeterpreis in Ihrem Viertel berechnet und an Zustand, Etage und Aufzug angepasst. Sie dient der Orientierung und ist kein offizielles Wertgutachten; gegenüber Bank, Gericht oder Finanzamt lässt sie sich nicht verwenden.",
+      "p2": "Eine belastbare Zahl folgt nach der Besichtigung. Vor Ort betrachten wir Licht, Ausrichtung, Installationen, Haus und Unterlagen und vergleichen die Immobilie mit tatsächlichen Verkäufen in Ihrem Viertel aus dem Immobilienpreisregister der serbischen Vermessungsbehörde (RGZ)."
     },
     "onsiteSectionEyebrow": "Bewertung vor Ort",
     "book": {
       "heading": "Bewertung vor Ort, ohne Verpflichtung.",
-      "sub": "Wir kommen zum vereinbarten Termin, sehen Immobilie und Unterlagen durch und lassen Ihnen die Spanne schriftlich.",
+      "sub": "Wir kommen zum vereinbarten Termin, sehen uns Immobilie und Unterlagen an, und Sie erhalten die Wertspanne schriftlich.",
       "label": "Termin vereinbaren"
     },
     "lookAtTitle": "Worauf wir achten",
     "lookAt": {
-      "location": "Lage und Mikrolage — Straße, Verkehr, Schulen, Grün, Lärm.",
-      "size": "Wohnfläche und Grundriss — Zimmerzahl, Anordnung, Nutzbarkeit.",
-      "floor": "Etage, Aufzug und Ausrichtung — Tageslicht, Ausblick, Straßenlärm.",
-      "condition": "Baujahr und Zustand — Installationen, Fenster, Fassade, Dach, Gemeinschaftsflächen.",
-      "heating": "Heizung und Energieeffizienz — Fernwärme, Etagenheizung, Wärmepumpe, monatliche Kosten.",
-      "documents": "Unterlagen — Grundbucheintrag, Legalisierung, Nutzungsgenehmigung, Lasten und Miteigentum."
+      "location": "Lage und Mikrolage – Straße, Verkehr, Schulen, Grün, Lärm.",
+      "size": "Wohnfläche und Grundriss – Zimmerzahl, Anordnung, Nutzbarkeit.",
+      "floor": "Etage, Aufzug und Ausrichtung – Tageslicht, Ausblick, Straßenlärm.",
+      "condition": "Baujahr und Zustand – Installationen, Fenster, Fassade, Dach, Gemeinschaftsflächen.",
+      "heating": "Heizung und Energieeffizienz – Fernwärme, Etagenheizung, Wärmepumpe, monatliche Kosten.",
+      "documents": "Unterlagen – Grundbucheintrag, Legalisierung, Nutzungsgenehmigung, Belastungen und Miteigentum."
     },
     "replyPromise": "Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
     "mediaAlt": "Wohnungsgrundriss auf einem Schreibtisch mit Messinglineal, im Nachmittagslicht",
@@ -850,29 +850,29 @@
     "faq": {
       "free": {
         "q": "Ist die Bewertung kostenlos?",
-        "a": "Die Online-Bewertung ist kostenlos und dauert etwa zwei Minuten. Auch die Bewertung vor Ort ist kostenfrei und verpflichtet Sie nicht, uns den Verkauf zu übertragen: wir kommen zum vereinbarten Termin und lassen Ihnen die Spanne schriftlich."
+        "a": "Die Online-Bewertung ist kostenlos und dauert etwa zwei Minuten. Auch die Bewertung vor Ort ist kostenfrei und verpflichtet Sie nicht, uns den Verkauf zu übertragen: Wir kommen zum vereinbarten Termin, und Sie erhalten die Wertspanne schriftlich."
       },
       "accuracy": {
         "q": "Wie genau ist die Bewertung?",
-        "a": "Bei einer üblichen Wohnung in einem Viertel mit ausreichend Preisdaten liegt die Spanne nah am Markt. Bei besonderen Objekten — Dachgeschossausbauten, Umnutzungen, nicht eingetragenen Teilen, Häusern mit großem Grundstück — wird sie breiter und sollte vor Ort geprüft werden. Deshalb nennen wir immer ein Intervall und keine einzelne Zahl."
+        "a": "Bei einer üblichen Wohnung in einem Viertel mit ausreichend Preisdaten liegt die Spanne nah am Markt. Bei besonderen Objekten – Dachgeschossausbauten, Umnutzungen, nicht eingetragenen Teilen, Häusern mit großem Grundstück – wird sie breiter und sollte vor Ort geprüft werden. Deshalb nennen wir immer eine Spanne und keinen Einzelwert."
       },
       "data": {
         "q": "Was geschieht mit meinen Daten?",
-        "a": "Die Angaben aus dem Formular nutzen wir ausschließlich, um die Spanne zu berechnen und Ihnen zu antworten. Wir verkaufen sie nicht und geben sie nicht an Dritte weiter. Unsere Auswahl neuer Immobilien erhalten Sie nur, wenn Sie dies ausdrücklich wünschen; eine Löschung können Sie jederzeit an die in der Datenschutzerklärung genannte Adresse verlangen."
+        "a": "Die Angaben aus dem Formular nutzen wir ausschließlich, um die Spanne zu berechnen und Ihnen zu antworten. Wir verkaufen sie nicht und geben sie nicht an Dritte weiter. Unsere Auswahl neuer Immobilien erhalten Sie nur, wenn Sie dies ausdrücklich wünschen; eine Löschung können Sie jederzeit über die in der Datenschutzerklärung genannte Adresse verlangen."
       }
     }
   },
   "sell": {
-    "heading": "Verkaufen mit uns",
-    "lede": "Wir bereiten Ihre Immobilie vor, fotografieren sie und präsentieren sie den richtigen Käufern — und Sie wissen jederzeit, wie es steht.",
-    "formHeading": "Immobilie anmelden",
+    "heading": "Mit uns verkaufen",
+    "lede": "Wir bereiten Ihre Immobilie vor, fotografieren sie und präsentieren sie den richtigen Käufern – und Sie wissen jederzeit, wie es steht.",
+    "formHeading": "Immobilie anbieten",
     "benefitsHeading": "Was Sie erhalten",
     "processHeading": "So arbeiten wir zusammen",
     "metaTitle": "Immobilie mit uns verkaufen",
     "metaDescription": "Verkauf von Wohnung, Haus oder Gewerbefläche in Belgrad und ganz Serbien: Besichtigung und Preisvorschlag, Prüfung der Unterlagen, professionelle Fotos und Begleitung bis zur Übergabe.",
     "eyebrow": "Für Eigentümer",
-    "heroCta": "Immobilie anmelden",
-    "heroValuationCta": "Orientierungswert in zwei Minuten",
+    "heroCta": "Immobilie anbieten",
+    "heroValuationCta": "Richtwert in zwei Minuten",
     "mediaAlt": "Eingangshalle mit zweiflügeliger Tür und Schlüsseln auf einer Steinkonsole",
     "benefitsEyebrow": "Leistung",
     "benefitsLede": "Ein Verkauf ohne Improvisation: geprüfte Unterlagen, eine gut vorbereitete Immobilie und ein Preis, der auf Daten beruht.",
@@ -880,11 +880,11 @@
       "b1": "Ein Preisvorschlag nach der Besichtigung, abgeglichen mit tatsächlichen Verkäufen in Ihrer Gegend.",
       "b2": "Prüfung der Unterlagen vor der Veröffentlichung, mit einer Liste der offenen Punkte.",
       "b3": "Professionelle Fotos, für ausgewählte Immobilien zusätzlich Grundriss und 360°-Tour.",
-      "b4": "Ein Angebot auf Serbisch, Englisch, Russisch und Deutsch.",
-      "b5": "Besichtigungen nur nach Termin und ein schriftlicher Bericht über die Reaktionen der Käufer.",
+      "b4": "Ihr Inserat auf Serbisch, Englisch, Russisch und Deutsch.",
+      "b5": "Besichtigungen nach Vereinbarung und ein schriftlicher Bericht über die Rückmeldungen der Interessenten.",
       "b6": "Koordination mit Anwalt und Notar bis zur Schlüsselübergabe."
     },
-    "valuationPrompt": "Möchten Sie zuerst eine Orientierungsspanne? Die Online-Bewertung beruht auf Durchschnittspreisen in Ihrer Gegend und dauert zwei Minuten.",
+    "valuationPrompt": "Möchten Sie zuerst eine grobe Preisspanne? Die Online-Bewertung beruht auf Durchschnittspreisen in Ihrer Gegend und dauert zwei Minuten.",
     "valuationLink": "Bewertung starten",
     "processEyebrow": "Ablauf",
     "processLede": "Fünf Schritte von der ersten Besichtigung bis zur Schlüsselübergabe. Nach jedem wissen Sie, was folgt und was wir von Ihnen brauchen.",
@@ -895,15 +895,15 @@
       },
       "s2": {
         "title": "Vorbereitung und Fotografie",
-        "body": "Wir empfehlen kleine Ausbesserungen vor dem Termin, danach kommt der Fotograf; bei ausgewählten Immobilien erstellen wir auch Grundriss und 360°-Tour."
+        "body": "Wir empfehlen kleine Ausbesserungen vor dem Fototermin, danach kommt der Fotograf; bei ausgewählten Immobilien erstellen wir auch Grundriss und 360°-Tour."
       },
       "s3": {
         "title": "Marketing und 3D-Tour",
-        "body": "Wir verfassen das Angebot in vier Sprachen und veröffentlichen es auf unserer Website, auf den Portalen und in unserer Käuferdatei."
+        "body": "Wir verfassen das Inserat in vier Sprachen, veröffentlichen es auf unserer Website und auf Immobilienportalen und stellen es den Interessenten in unserer Kartei vor."
       },
       "s4": {
         "title": "Besichtigungen und Verhandlung",
-        "body": "Besichtigungen führen wir nach Termin, nach jeder erhalten Sie eine Notiz, Angebote verhandeln wir schriftlich. Die Entscheidung liegt immer bei Ihnen."
+        "body": "Besichtigungen finden nach Vereinbarung statt, nach jeder erhalten Sie eine kurze Rückmeldung, und Angebote verhandeln wir schriftlich. Die Entscheidung liegt immer bei Ihnen."
       },
       "s5": {
         "title": "Vertrag und Übergabe",
@@ -928,7 +928,7 @@
       },
       "d4": {
         "title": "Nutzungsgenehmigung oder Legalisierungsbescheid",
-        "note": "Sofern zutreffend — meist bei Neubauten, Anbauten und legalisierten Objekten."
+        "note": "Sofern zutreffend – meist bei Neubauten, Anbauten und legalisierten Objekten."
       },
       "d5": {
         "title": "Nachweis beglichener Rechnungen",
@@ -936,11 +936,11 @@
       },
       "d6": {
         "title": "Zustimmung des Ehepartners",
-        "note": "Wird meist verlangt, wenn die Immobilie während der Ehe erworben wurde — auch wenn nur ein Ehepartner eingetragen ist."
+        "note": "Wird meist verlangt, wenn die Immobilie während der Ehe erworben wurde – auch wenn nur ein Ehepartner eingetragen ist."
       },
       "d7": {
         "title": "Energieausweis",
-        "note": "Falls vorhanden — in der Regel bei neueren Gebäuden."
+        "note": "Falls vorhanden – in der Regel bei neueren Gebäuden."
       }
     },
     "documentsNote": "Die Liste dient der Orientierung und ersetzt keine Rechtsberatung. Fehlt etwas, sagen wir Ihnen, was nötig ist und wo Sie es erhalten.",
@@ -960,9 +960,9 @@
         "a": "Das hängt von Preis, Lage und Unterlagen ab. Eine Einschätzung der Dauer erhalten Sie im schriftlichen Vorschlag nach der Besichtigung."
       }
     },
-    "formEyebrow": "Anmeldung",
-    "formLede": "Hinterlassen Sie die wichtigsten Angaben — wir melden uns, um einen Besichtigungstermin zu vereinbaren. Kostenlos und ohne Verpflichtung, uns den Verkauf zu übertragen.",
-    "formPhonePrompt": "Lieber persönlich sprechen?",
+    "formEyebrow": "Verkaufsanfrage",
+    "formLede": "Hinterlassen Sie die wichtigsten Angaben – wir melden uns, um einen Besichtigungstermin zu vereinbaren. Kostenlos und ohne Verpflichtung, uns den Verkauf zu übertragen.",
+    "formPhonePrompt": "Lieber am Telefon besprechen?",
     "form": {
       "propertyLegend": "Die Immobilie",
       "contactLegend": "Ihre Angaben",
@@ -984,17 +984,17 @@
       "priceHint": "Falls Sie bereits eine haben. Unseren Preisvorschlag erhalten Sie nach der Besichtigung.",
       "priceInvalid": "Geben Sie einen Betrag in Euro ein, z. B. {example}.",
       "message": "Anmerkungen",
-      "messageHint": "Zustand, Etage, Heizung, gewünschter Zeitrahmen — alles, was Ihnen wichtig ist.",
-      "submit": "Anmeldung senden",
-      "successHeading": "Ihre Immobilie wurde angemeldet",
+      "messageHint": "Zustand, Etage, Heizung, gewünschter Zeitrahmen – alles, was Ihnen wichtig ist.",
+      "submit": "Angaben senden",
+      "successHeading": "Ihre Angaben sind bei uns eingegangen",
       "successDetail": "Ein Makler meldet sich bei Ihnen, um einen Besichtigungstermin zu vereinbaren.",
-      "sendAnother": "Weitere Immobilie anmelden"
+      "sendAnother": "Weitere Immobilie anbieten"
     }
   },
   "locations": {
     "heading": "Erst die Lage, dann die Wohnung.",
     "lede": "Kurze Porträts der Gegenden, in denen wir tätig sind, mit durchschnittlichen Quadratmeterpreisen und dem aktuellen Angebot.",
-    "listingsHeading": "Angebot — {name}",
+    "listingsHeading": "Angebot – {name}",
     "nearbyHeading": "In der Nähe",
     "metaTitle": "Lagen: Belgrader Viertel und Städte in Serbien",
     "metaDescription": "Überblick über Belgrader Stadtgemeinden und Viertel sowie Städte in Serbien: durchschnittliche Quadratmeterpreise für Kauf und Miete und unser aktuelles Angebot.",
@@ -1028,14 +1028,14 @@
     "avgRent": "Durchschnittspreis Miete",
     "onOffer": "Im Angebot",
     "detailMetaTitle": "{name}: Immobilienpreise und Angebot",
-    "detailMetaFallback": "Durchschnittliche Quadratmeterpreise für Kauf und Miete und das aktuelle Angebot — {name}.",
+    "detailMetaFallback": "Durchschnittliche Quadratmeterpreise für Kauf und Miete und das aktuelle Angebot – {name}.",
     "detailLedeFallback": "Durchschnittliche Quadratmeterpreise und das aktuelle Angebot an diesem Ort.",
     "factsEyebrow": "Kurz gesagt",
     "factsHeading": "Auf einen Blick",
     "partOf": "Gehört zu",
     "forSale": "Zum Kauf",
     "forRent": "Zur Miete",
-    "mapCaption": "Die Karte zeigt den ungefähren Mittelpunkt.",
+    "mapCaption": "Die Karte zeigt den ungefähren Mittelpunkt des Gebiets.",
     "listingsShown": "{shown} von {total} angezeigt; alle finden Sie in der Suche.",
     "searchSale": "Alle Kaufangebote",
     "searchRent": "Alle Mietangebote",
@@ -1052,7 +1052,7 @@
   },
   "agents": {
     "heading": "Die Menschen, die Sie kennenlernen werden.",
-    "lede": "Jeder Makler betreut eigene Gebiete und eigene Objekte. Schreiben Sie direkt dem, der die Gegend kennt, die Sie interessiert.",
+    "lede": "Jeder Makler betreut eigene Gebiete und eigene Objekte. Wenden Sie sich direkt an den Makler, der Ihre Wunschgegend kennt.",
     "languages": "Sprachen",
     "areas": "Gebiete",
     "listingsHeading": "Aktuelles Angebot",
@@ -1061,7 +1061,7 @@
     "eyebrow": "Team",
     "empty": "Die Profile unserer Makler sind noch nicht veröffentlicht.",
     "ctaHeading": "Nicht sicher, an wen Sie sich wenden sollen?",
-    "ctaBody": "Schreiben Sie dem Büro, und wir verbinden Sie mit dem Makler, der Ihre Gegend betreut.",
+    "ctaBody": "Schreiben Sie unserem Büro – wir stellen den Kontakt zu dem Makler her, der Ihre Gegend betreut.",
     "ctaLink": "Kontakt aufnehmen",
     "replyPromise": "Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
     "call": "Anrufen",
@@ -1080,11 +1080,11 @@
   },
   "about": {
     "heading": "Wer wir sind und wie wir arbeiten",
-    "lede": "Eine Immobilienagentur in Belgrad. Wir nehmen weniger Objekte an und prüfen jedes, bevor wir es anbieten.",
+    "lede": "Eine Immobilienagentur in Belgrad. Wir betreuen bewusst weniger Objekte und prüfen jedes, bevor wir es anbieten.",
     "valuesHeading": "Was uns wichtig ist",
     "complianceHeading": "Lizenzen und Registrierung",
     "metaTitle": "Über uns: Immobilienagentur in Belgrad",
-    "metaDescription": "Wer wir sind und wie wir arbeiten: Wir prüfen die Unterlagen vor der Veröffentlichung, stützen Preise auf abgeschlossene Verkäufe und antworten noch am selben Werktag.",
+    "metaDescription": "Wer wir sind und wie wir arbeiten: Wir prüfen die Unterlagen vor der Veröffentlichung, schlagen Preise auf Basis tatsächlicher Verkäufe vor und antworten noch am selben Werktag.",
     "eyebrow": "Über uns",
     "imageAlt": "Jugendstilfassade mit schmiedeeisernen Balkonen im Abendlicht",
     "storyEyebrow": "Die Agentur",
@@ -1100,13 +1100,13 @@
     "officeLede": "Melden Sie Ihren Besuch telefonisch oder per Nachricht an, dann nehmen wir uns Zeit für Sie.",
     "addressLabel": "Adresse",
     "contactLink": "Kontakt und Öffnungszeiten",
-    "complianceLede": "Angaben nach dem serbischen Gesetz über die Immobilienvermittlung und dem Gesetz über den elektronischen Geschäftsverkehr.",
+    "complianceLede": "Angaben nach dem serbischen Gesetz über die Vermittlung beim Verkauf und bei der Vermietung von Immobilien sowie dem Gesetz über den elektronischen Geschäftsverkehr.",
     "legalName": "Firmenname",
     "seat": "Sitz",
     "registryNo": "Nr. im Maklerregister (Registar posrednika)",
     "pib": "Steuernummer (PIB)",
-    "mb": "Firmennummer (MB)",
-    "complianceDemo": "Dies sind Demodaten. Steuernummer, Firmennummer und Maklerregisternummer sind noch nicht eingetragen."
+    "mb": "Registernummer (MB)",
+    "complianceDemo": "Dies sind Demodaten. Steuernummer, Registernummer und Maklerregisternummer sind noch nicht eingetragen."
   },
   "contact": {
     "heading": "Kontakt",
@@ -1156,7 +1156,7 @@
     "featured": "Empfohlen",
     "readMore": "Artikel lesen",
     "loadMore": "Ältere Artikel anzeigen",
-    "loadingMore": "Artikel werden geladen …",
+    "loadingMore": "Artikel werden geladen…",
     "loadedMore": "{count, plural, one {# weiterer Artikel wird angezeigt.} other {# weitere Artikel werden angezeigt.}}",
     "loadError": "Die Artikel konnten gerade nicht geladen werden. Bitte versuchen Sie es erneut.",
     "emptyCategory": "Zu diesem Thema gibt es noch keine Artikel.",
@@ -1192,16 +1192,16 @@
     "clearYes": "Ja, alle entfernen",
     "clearNo": "Abbrechen",
     "emptyEyebrow": "Noch leer",
-    "emptyBody": "Tippen Sie auf das Herz auf einer Karte oder einer Objektseite, und die Immobilie wartet hier auf Sie. Die Liste wird nur in diesem Browser gespeichert, ohne Konto und ohne Registrierung.",
+    "emptyBody": "Tippen Sie auf einer Karte oder Objektseite auf das Herz – die Immobilie wartet dann hier auf Sie. Die Liste wird nur in diesem Browser gespeichert, ohne Konto und ohne Registrierung.",
     "emptyHow": "Herz antippen, um eine Immobilie zu merken",
     "loading": "Ihre Favoriten werden geladen…"
   },
   "compare": {
     "heading": "Vergleich",
     "lede": "Vergleichen Sie bis zu vier Immobilien nebeneinander.",
-    "empty": "Markieren Sie in der Übersicht „Vergleichen“ auf den Karten der Immobilien, die Sie interessieren, bis zu vier gleichzeitig. Ihre Auswahl wird auf diesem Gerät gespeichert.",
+    "empty": "Markieren Sie in der Übersicht bis zu vier Immobilien, die Sie interessieren, mit „Vergleichen“. Ihre Auswahl wird auf diesem Gerät gespeichert.",
     "limitReached": "{max, plural, one {Sie können höchstens # Immobilie vergleichen.} other {Sie können höchstens # Immobilien vergleichen.}}",
-    "bestValue": "Bester Wert",
+    "bestValue": "Bestwert",
     "shareCta": "Vergleich teilen",
     "trayLabel": "Zum Vergleich ausgewählt",
     "traySelected": "{count, plural, one {# Immobilie ausgewählt} other {# Immobilien ausgewählt}}",
@@ -1210,8 +1210,8 @@
     "trayRemove": "Aus dem Vergleich entfernen: {title}",
     "eyebrow": "Im direkten Vergleich",
     "metaDescription": "Vergleichen Sie bis zu vier Immobilien nebeneinander: Preis, Preis pro m², Wohnfläche, Zimmer, Etage, Baujahr, Heizung und laufende Kosten.",
-    "caption": "{count, plural, one {Vergleich von # Immobilie} other {Vergleich von # Immobilien}} nach Preis, Fläche, Gebäude und Rechtsstatus. Der beste Wert jeder Zeile ist mit einer Raute und dem Hinweis „Bester Wert“ markiert.",
-    "legend": "Bester Wert der Zeile",
+    "caption": "{count, plural, one {Vergleich von # Immobilie} other {Vergleich von # Immobilien}} nach Preis, Fläche, Gebäude und Rechtsstatus. Der Bestwert jeder Zeile ist mit einer Raute und dem Hinweis „Bestwert“ markiert.",
+    "legend": "Bestwert der Zeile",
     "notStated": "Keine Angabe",
     "count": "{count, plural, one {# Immobilie im Vergleich} other {# Immobilien im Vergleich}}",
     "view": "Immobilie ansehen",
@@ -1228,13 +1228,13 @@
     "sharedSomeUnavailable": "{count, plural, one {# Immobilie aus diesem Link ist nicht mehr im Angebot.} other {# Immobilien aus diesem Link sind nicht mehr im Angebot.}}",
     "sharedUnavailable": "Die Immobilien aus diesem Link sind nicht mehr im Angebot.",
     "needMoreEyebrow": "Ihr Vergleich",
-    "needMoreTitle": "Für einen Vergleich braucht es mindestens zwei Immobilien.",
+    "needMoreTitle": "Für einen Vergleich sind mindestens zwei Immobilien nötig.",
     "browse": "Angebot ansehen",
     "fromFavorites": "Aus den Favoriten wählen ({count})",
     "ownSelection": "Eigene Auswahl ansehen ({count})",
     "rowPrice": "Preis",
     "billsTotal": "ca. {amount} monatlich",
-    "billsInfostan": "Infostan {amount}",
+    "billsInfostan": "Nebenkosten (Infostan) {amount}",
     "billsMaintenance": "Hausgeld {amount}",
     "groups": {
       "price": "Preis und laufende Kosten",
@@ -1263,7 +1263,7 @@
     },
     "agency": {
       "heading": "Angaben zum Makler",
-      "legalName": "Firma",
+      "legalName": "Firmenname",
       "address": "Sitz",
       "pib": "Steuernummer (PIB)",
       "mb": "Registernummer (MB)",
@@ -1374,9 +1374,9 @@
     "digest": "Fehlerreferenz: {digest}"
   },
   "seo": {
-    "defaultTitle": "Mihajlo Estate — Immobilien in Belgrad und Serbien",
-    "defaultDescription": "Sorgfältig ausgewählte Wohnungen, Häuser und Gewerbeflächen in Belgrad und Serbien. Bewertung, Verkauf, Vermietung und 3D-Besichtigungen.",
-    "titleTemplate": "{title} — Mihajlo Estate",
+    "defaultTitle": "Mihajlo Estate – Immobilien in Belgrad und Serbien",
+    "defaultDescription": "Sorgfältig ausgewählte Wohnungen, Häuser und Gewerbeflächen in Belgrad und Serbien. Bewertung, Verkauf, Vermietung und 3D-Rundgänge.",
+    "titleTemplate": "{title} – Mihajlo Estate",
     "propertiesTitle": "Immobilien zum Kauf und zur Miete",
     "propertiesDescription": "Suchen Sie Wohnungen, Häuser und Gewerbeflächen nach Lage, Preis und Wohnfläche.",
     "notFoundTitle": "Seite nicht gefunden"
@@ -1390,8 +1390,8 @@
     "bathrooms": "{count, plural, one {# Bad} other {# Bäder}}",
     "floorGround": "EG",
     "floorHighGround": "Hochparterre",
-    "floorBasement": "Keller",
-    "floorSemiBasement": "Souterrain",
+    "floorBasement": "Souterrain",
+    "floorSemiBasement": "Hochsouterrain",
     "distanceM": "{meters} m",
     "minutesWalk": "{minutes} Min. zu Fuß"
   },
@@ -1401,7 +1401,7 @@
     "buttons": "Schaltflächen",
     "cards": "Objektkarten",
     "cardsEmpty": "Keine Demo-Objekte vorhanden. Führen Sie den Seed aus und laden Sie die Seite neu.",
-    "compactNote": "Die kompakte Höhe (44px) gilt nur für Werkzeugleisten in Karten und Filtern; Standard sind 52px.",
+    "compactNote": "Die kompakte Höhe (44 px) gilt nur für Werkzeugleisten in Karten und Filtern; Standard sind 52 px.",
     "contrast": "Kontrast",
     "contrastPass": "Alle Paare erfüllen WCAG AA für Text in normaler Größe.",
     "counter": "Zähler",
@@ -1421,7 +1421,7 @@
     "progress": "Scroll-Fortschritt",
     "reveal": "Bildenthüllung",
     "sampleAnswer1": "Bei vollständigen Unterlagen durchschnittlich 45 bis 90 Tage, je nach Preis und Lage. Die erste Bewertung erhalten Sie innerhalb von 24 Stunden.",
-    "sampleAnswer2": "Grunderwerbsteuer oder Mehrwertsteuer, die Notargebühr und die Eintragung im Kataster. Den genauen Betrag berechnen wir vor der Unterzeichnung des Vorvertrags.",
+    "sampleAnswer2": "Grunderwerbsteuer oder Mehrwertsteuer, die Notargebühr und die Grundbucheintragung. Den genauen Betrag berechnen wir vor der Unterzeichnung des Vorvertrags.",
     "sampleQuestion1": "Wie lange dauert der Verkauf einer Wohnung in Belgrad?",
     "sampleQuestion2": "Welche Kosten trägt der Käufer zusätzlich zum Preis?",
     "specimen": "Schriftmuster",

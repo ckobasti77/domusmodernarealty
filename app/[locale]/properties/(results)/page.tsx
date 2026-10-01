@@ -6,11 +6,11 @@ import { getTranslations } from "next-intl/server";
 import { SearchExperience } from "@/components/site/search/SearchExperience";
 import { api } from "@/convex/_generated/api";
 import { getPathname } from "@/i18n/navigation";
-import { htmlLang, routing, type Locale } from "@/i18n/routing";
+import { routing, type Locale } from "@/i18n/routing";
 import { breadcrumbJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n } from "@/lib/l10n";
 import { getPublicSettings } from "@/lib/listing-data";
-import { absoluteUrl, localizedAlternates } from "@/lib/seo";
+import { absoluteUrl, documentTitle, localizedAlternates, socialMetadata } from "@/lib/seo";
 import { getLocationTree } from "@/lib/search-data";
 import { effectiveSlugs, indexLocations, resolveLocations, type LocationIndex } from "@/lib/search-locations";
 import {
@@ -75,17 +75,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     locale,
   );
   return {
-    title,
+    title: documentTitle(title),
     description,
     alternates,
-    openGraph: {
-      type: "website",
-      url: alternates.canonical as string,
-      title,
-      description,
-      locale: htmlLang[locale],
-      siteName: "Mihajlo Estate",
-    },
+    ...socialMetadata({ locale, url: alternates.canonical as string, title, description }),
   };
 }
 

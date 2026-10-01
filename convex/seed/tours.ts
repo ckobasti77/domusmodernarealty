@@ -35,7 +35,7 @@ type PanoId =
 
 /** Scene titles describe what each panorama actually shows. */
 const PANO_TITLE: Record<PanoId, L10n> = {
-  brown_photostudio_04: { sr: "Soba sa kuhinjom", en: "Room with kitchenette", ru: "Комната с кухней", de: "Zimmer mit Küchenzeile" },
+  brown_photostudio_04: { sr: "Soba sa kuhinjom", en: "Room with kitchenette", ru: "Комната с кухонной зоной", de: "Zimmer mit Küchenzeile" },
   relax_inn_seaview_suite: { sr: "Spavaća soba", en: "Bedroom", ru: "Спальня", de: "Schlafzimmer" },
   modern_bathroom: { sr: "Kupatilo", en: "Bathroom", ru: "Ванная", de: "Badezimmer" },
   photo_studio_loft_hall: { sr: "Radna soba", en: "Study", ru: "Кабинет", de: "Arbeitszimmer" },

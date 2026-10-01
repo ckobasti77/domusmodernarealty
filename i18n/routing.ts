@@ -23,6 +23,8 @@ export const htmlLang: Record<Locale, string> = {
 
 export const pathnames = {
   "/": "/",
+  // The site's default share image (a Route Handler, like the two below).
+  "/opengraph-image": "/opengraph-image",
   "/properties": {
     "sr-Latn": "/nekretnine",
     en: "/properties",
@@ -101,6 +103,12 @@ export const pathnames = {
     en: "/journal/[slug]",
     ru: "/zhurnal/[slug]",
     de: "/magazin/[slug]",
+  },
+  "/journal/[slug]/opengraph-image": {
+    "sr-Latn": "/magazin/[slug]/opengraph-image",
+    en: "/journal/[slug]/opengraph-image",
+    ru: "/zhurnal/[slug]/opengraph-image",
+    de: "/magazin/[slug]/opengraph-image",
   },
   "/favorites": {
     "sr-Latn": "/omiljeno",

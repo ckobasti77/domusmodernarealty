@@ -21,11 +21,11 @@ import { Link } from "@/i18n/navigation";
 import { htmlLang, routing, type Locale } from "@/i18n/routing";
 import { findBlock, HOME_BLOCKS, localizedText, type PublicPage } from "@/lib/content/pages";
 import { fillPlaceholders, placeholderValues } from "@/lib/content/placeholders";
-import { breadcrumbJsonLd, type JsonLd } from "@/lib/jsonld";
+import { agencyRef, breadcrumbJsonLd, type JsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
 import { artImage, mediaImage } from "@/lib/media";
 import { getAgents, getPublicSettings, getSitePage } from "@/lib/page-data";
-import { absoluteUrl, localizedUrl, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, localizedUrl, pageMetadata, siteOrigin } from "@/lib/seo";
 
 /**
  * About (PRD A10). The story, values and method are the managed blocks of
@@ -140,19 +140,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
       inLanguage: htmlLang[locale],
       ...(settings !== null
         ? {
-            mainEntity: {
-              "@type": "RealEstateAgent",
-              name: settings.companyName,
-              legalName: settings.legalName,
-              url: localizedUrl("/", locale),
-              email: settings.email,
-              address: { "@type": "PostalAddress", streetAddress: settings.address, addressCountry: "RS" },
-              taxID: settings.pib,
-              identifier: { "@type": "PropertyValue", propertyID: "Registar posrednika", value: settings.registryNo },
-              ...(settings.officeLat !== undefined && settings.officeLng !== undefined
-                ? { geo: { "@type": "GeoCoordinates", latitude: settings.officeLat, longitude: settings.officeLng } }
-                : {}),
-            },
+            mainEntity: agencyRef(siteOrigin(), settings.companyName),
           }
         : {}),
     },

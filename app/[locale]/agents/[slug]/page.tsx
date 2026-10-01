@@ -17,10 +17,10 @@ import { textLinkClasses } from "@/components/site/TextLink";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
-import { breadcrumbJsonLd, type JsonLd } from "@/lib/jsonld";
+import { agencyRef, breadcrumbJsonLd, type JsonLd } from "@/lib/jsonld";
 import { pickL10n } from "@/lib/l10n";
 import { getPublicSettings } from "@/lib/page-data";
-import { localizedUrl, pageMetadata } from "@/lib/seo";
+import { localizedUrl, pageMetadata, siteOrigin } from "@/lib/seo";
 
 /**
  * An agent's profile (PRD A9): bio, the channels they gave the agency, their
@@ -91,11 +91,7 @@ export default async function AgentPage({ params }: { params: Params }) {
       ...(agent.photoUrl !== undefined ? { image: agent.photoUrl } : {}),
       ...(agent.languages.length > 0 ? { knowsLanguage: agent.languages } : {}),
       ...(bioText !== null ? { description: bioText.text } : {}),
-      worksFor: {
-        "@type": "RealEstateAgent",
-        name: settings?.companyName ?? tCommon("brand"),
-        url: localizedUrl("/", locale),
-      },
+      worksFor: agencyRef(siteOrigin(), settings?.companyName ?? tCommon("brand")),
     },
   ];
 

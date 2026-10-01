@@ -32,9 +32,80 @@ export function localizedAlternates(href: Href, locale: Locale): NonNullable<Met
 }
 
 /**
+ * The layout's template appends " — Mihajlo Estate" (17 characters). A title
+ * that would end past ~67 characters with it drops the suffix instead of
+ * having search results cut it mid-word; the brand is still in `og:site_name`
+ * and in the sitewide JSON-LD.
+ */
+const MAX_TEMPLATED_TITLE = 50;
+
+export function documentTitle(title: string): NonNullable<Metadata["title"]> {
+  return title.length > MAX_TEMPLATED_TITLE ? { absolute: title } : title;
+}
+
+/** A share picture for `og:image` / `twitter:image`. */
+export type ShareImage = { url: string; width?: number; height?: number; alt?: string };
+
+/**
+ * The site's default share card for `locale` (`app/[locale]/opengraph-image`),
+ * used by every page without a picture of its own.
+ */
+export function defaultShareImage(locale: Locale): ShareImage {
+  return {
+    url: absoluteUrl(getPathname({ locale, href: "/opengraph-image" })),
+    width: 1200,
+    height: 630,
+    alt: "Mihajlo Estate",
+  };
+}
+
+/**
+ * Open Graph + Twitter card for one localized URL. Every public page gets
+ * both, so a link pasted into Viber, WhatsApp, Facebook, LinkedIn or X always
+ * unfurls with a title, a description and a picture.
+ */
+export function socialMetadata({
+  locale,
+  url,
+  title,
+  description,
+  image,
+  type = "website",
+  publishedTime,
+}: {
+  locale: Locale;
+  url: string;
+  title: string;
+  description: string;
+  image?: string | ShareImage;
+  type?: "website" | "article";
+  publishedTime?: number;
+}): Pick<Metadata, "openGraph" | "twitter"> {
+  const picture: ShareImage =
+    image === undefined ? defaultShareImage(locale) : typeof image === "string" ? { url: image } : image;
+  return {
+    openGraph: {
+      type,
+      url,
+      title,
+      description,
+      locale: htmlLang[locale],
+      alternateLocale: locales.filter((other) => other !== locale).map((other) => htmlLang[other]),
+      siteName: "Mihajlo Estate",
+      images: [picture],
+      ...(type === "article" && publishedTime !== undefined
+        ? { publishedTime: new Date(publishedTime).toISOString() }
+        : {}),
+    },
+    twitter: { card: "summary_large_image", title, description, images: [picture.url] },
+  };
+}
+
+/**
  * Metadata for a localized content page: title, description, canonical +
- * hreflang, and Open Graph (the root layout's `title.template` adds the brand).
- * `image` is an absolute URL when the page has its own share picture.
+ * hreflang, Open Graph and the Twitter card (the root layout's
+ * `title.template` adds the brand). `image` is an absolute URL when the page
+ * has its own share picture; otherwise the site's default card is used.
  */
 export function pageMetadata({
   locale,
@@ -50,7 +121,7 @@ export function pageMetadata({
   href: Href;
   title: string;
   description: string;
-  image?: string;
+  image?: string | ShareImage;
   type?: "website" | "article";
   publishedTime?: number;
   /** Visitor-specific pages (favorites, compare) are followed but not indexed. */
@@ -58,22 +129,19 @@ export function pageMetadata({
 }): Metadata {
   const alternates = localizedAlternates(href, locale);
   return {
-    title,
+    title: documentTitle(title),
     description,
     alternates,
     ...(noindex ? { robots: { index: false, follow: true } } : {}),
-    openGraph: {
-      type,
+    ...socialMetadata({
+      locale,
       url: alternates.canonical as string,
       title,
       description,
-      locale: htmlLang[locale],
-      siteName: "Mihajlo Estate",
-      ...(image !== undefined ? { images: [{ url: image }] } : {}),
-      ...(type === "article" && publishedTime !== undefined
-        ? { publishedTime: new Date(publishedTime).toISOString() }
-        : {}),
-    },
+      ...(image !== undefined ? { image } : {}),
+      type,
+      ...(publishedTime !== undefined ? { publishedTime } : {}),
+    }),
   };
 }
 

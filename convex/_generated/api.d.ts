@@ -72,6 +72,7 @@ import type * as seed_tours from "../seed/tours.js";
 import type * as seedStages from "../seedStages.js";
 import type * as settings from "../settings.js";
 import type * as settingsAdmin from "../settingsAdmin.js";
+import type * as sitemap from "../sitemap.js";
 import type * as stats from "../stats.js";
 import type * as testimonials from "../testimonials.js";
 import type * as testimonialsAdmin from "../testimonialsAdmin.js";
@@ -154,6 +155,7 @@ declare const fullApi: ApiFromModules<{
   seedStages: typeof seedStages;
   settings: typeof settings;
   settingsAdmin: typeof settingsAdmin;
+  sitemap: typeof sitemap;
   stats: typeof stats;
   testimonials: typeof testimonials;
   testimonialsAdmin: typeof testimonialsAdmin;

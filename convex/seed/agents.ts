@@ -65,8 +65,8 @@ export const SEED_AGENTS: SeedAgent[] = [
     },
     bio: {
       sr: "Pokriva Čukaricu, Voždovac i Zemun. Specijalizovan za stanove u starogradnji koje treba proveriti pre kupovine — uknjiženost, legalizaciju i stanje instalacija.",
-      en: "Covers Čukarica, Voždovac and Zemun. Specialises in older-building flats that need checking before purchase: cadastre registration, legalisation and the state of the services.",
-      ru: "Работает по Чукарице, Вождовцу и Земуну. Специализируется на квартирах во вторичном фонде, которые нужно проверить до покупки: регистрация, узаконение и состояние коммуникаций.",
+      en: "Covers Čukarica, Voždovac and Zemun. Specialises in older-building flats that need checking before purchase: cadastre registration, legalization and the state of the services.",
+      ru: "Работает по Чукарице, Вождовцу и Земуну. Специализируется на квартирах во вторичном фонде, которые нужно проверить до покупки: регистрация права собственности, узаконение и состояние коммуникаций.",
       de: "Betreut Čukarica, Voždovac und Zemun. Spezialisiert auf Altbauwohnungen, die vor dem Kauf geprüft werden müssen: Grundbuch, Legalisierung und Zustand der Installationen.",
     },
     languages: ["sr", "en"],
@@ -88,9 +88,9 @@ export const SEED_AGENTS: SeedAgent[] = [
     },
     bio: {
       sr: "Vodi kuće i vile na Senjaku, Dedinju i u Profesorskoj koloniji, kao i penthause na Zvezdari. Priprema nekretnine za tržište: fotografija, 360° tura i dokumentacija pre prve objave.",
-      en: "Handles houses and villas in Senjak, Dedinje and the Professors' Colony, plus penthouses on Zvezdara. Prepares properties for the market: photography, a 360° tour and the paperwork before the first listing goes live.",
-      ru: "Ведёт дома и виллы в Сеньяке, Дедине и Профессорской колонии, а также пентхаусы на Звездаре. Готовит объекты к выходу на рынок: фотосъёмка, 360°-тур и документы до первой публикации.",
-      de: "Betreut Häuser und Villen in Senjak, Dedinje und der Professorenkolonie sowie Penthäuser in Zvezdara. Bereitet Objekte für den Markt vor: Fotografie, 360°-Tour und Unterlagen vor der ersten Veröffentlichung.",
+      en: "Handles houses and villas in Senjak, Dedinje and Profesorska kolonija, plus penthouses on Zvezdara. Prepares properties for the market: photography, a 360° tour and the paperwork before the first listing goes live.",
+      ru: "Ведёт дома и виллы в Сеньяке, Дедине и Профессорской колонии, а также пентхаусы на Звездаре. Готовит объекты к выходу на рынок: фотосъёмка, тур 360° и документы до первой публикации.",
+      de: "Betreut Häuser und Villen in Senjak, Dedinje und in der Profesorska kolonija sowie Penthouses in Zvezdara. Bereitet Objekte für den Markt vor: Fotografie, 360°-Tour und Unterlagen vor der ersten Veröffentlichung.",
     },
     languages: ["sr", "en", "ru"],
     phone: "+381 11 000 0013",

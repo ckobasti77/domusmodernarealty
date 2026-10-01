@@ -5,7 +5,7 @@
     "lede": "Agencija za nekretnine u Beogradu. Radimo sa manjim brojem nekretnina i svaku proveravamo pre nego što je oglasimo.",
     "valuesHeading": "Šta nam je važno",
     "metaTitle": "O nama: agencija za nekretnine u Beogradu",
-    "metaDescription": "Ko smo i kako radimo: proveravamo dokumentaciju pre oglasa, cenu predlažemo na osnovu ostvarenih transakcija i odgovaramo istog radnog dana.",
+    "metaDescription": "Ko smo i kako radimo: proveravamo dokumentaciju pre oglasa, cenu predlažemo posle obilaska, na osnovu ostvarenih transakcija u kraju, i odgovaramo istog radnog dana.",
     "eyebrow": "O nama",
     "imageAlt": "Secesijska fasada sa kovanim balkonima u zlatnom satu",
     "storyEyebrow": "Agencija",
@@ -344,8 +344,8 @@
     "submitting": "Šaljemo…",
     "success": "Hvala. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
     "successViewing": "Zahtev je poslat. Potvrdićemo termin telefonom.",
-    "tooLong": "Najviše {max} znakova",
-    "tooShort": "Unesite najmanje {min} znakova",
+    "tooLong": "Najviše {max, plural, one {# znak} few {# znaka} other {# znakova}}",
+    "tooShort": "Unesite najmanje {min, plural, one {# znak} few {# znaka} other {# znakova}}",
     "inquiryMessageDefault": "Zanima me nekretnina {ref}. Molim Vas za više informacija.",
     "purpose": "Podatke koristimo samo da bismo odgovorili na Vaš upit. Pravni osnov je Vaša saglasnost, koju možete povući u svakom trenutku.",
     "consentPrivacy": "Saglasan/na sam sa obradom podataka o ličnosti u svrhu odgovora na upit, u skladu sa <link>Politikom privatnosti</link>.",
@@ -620,7 +620,7 @@
     },
     "typeWithArea": "{type}, {area}",
     "tabs": {
-      "label": "Fotografije, planovi i obilasci",
+      "label": "Fotografije, planovi i ture",
       "photos": "Fotografije",
       "floorPlans": "Tlocrt",
       "video": "Video",
@@ -1029,12 +1029,12 @@
       "loading": "Učitavanje mape…",
       "cluster": "{count, plural, one {# nekretnina} few {# nekretnine} other {# nekretnina}} na ovom mestu — uvećajte mapu",
       "pin": "{price} — {title}",
-      "truncated": "Mapa prikazuje prvih {count} rezultata.",
+      "truncated": "Mapa prikazuje {count, plural, one {prvi # rezultat} few {prva # rezultata} other {prvih # rezultata}}.",
       "viewListing": "Pogledajte nekretninu",
       "emptyArea": "U ovoj oblasti mape nema rezultata. Pomerite ili umanjite mapu.",
       "attribution": "Izvori podataka mape",
       "outsideBelgrade": "Prikaži i {count} van Beograda",
-      "showAll": "Prikaži svih {count} rezultata na mapi",
+      "showAll": "Prikaži sve rezultate na mapi ({count})",
       "offline": "Mapa trenutno ne može da se učita. Svi rezultati su u listi."
     },
     "chips": {
@@ -1125,7 +1125,7 @@
       },
       "d6": {
         "title": "Saglasnost bračnog druga",
-        "note": "Obično se traži ako je nekretnina stečena u braku, i kada je upisana samo na jednog supružnika."
+        "note": "Obično se traži ako je nekretnina stečena u braku, čak i kada je upisana samo na jednog supružnika."
       },
       "d7": {
         "title": "Energetski pasoš",
@@ -1181,7 +1181,7 @@
     }
   },
   "seo": {
-    "defaultDescription": "Pažljivo odabrani stanovi, kuće i poslovni prostori u Beogradu i Srbiji. Procena, prodaja, zakup i 3D obilasci.",
+    "defaultDescription": "Pažljivo odabrani stanovi, kuće i poslovni prostori u Beogradu i Srbiji. Procena, prodaja, zakup i 3D ture.",
     "defaultTitle": "Mihajlo Estate — nekretnine u Beogradu i Srbiji",
     "notFoundTitle": "Stranica nije nađena",
     "propertiesDescription": "Pretražite stanove, kuće i poslovne prostore po lokaciji, ceni i kvadraturi.",
@@ -1213,7 +1213,7 @@
     "parallax": "Paralaks",
     "progress": "Napredak skrolovanja",
     "reveal": "Otkrivanje slike",
-    "sampleAnswer1": "Za stanove sa uređenom dokumentacijom prosečno 45 do 90 dana, zavisno od cene i lokacije. Prvu procenu dobijate u roku od 24 sata.",
+    "sampleAnswer1": "Za stanove sa uređenom dokumentacijom prosečno 45 do 90 dana, zavisno od cene i lokacije. Okvirnu procenu onlajn dobijate odmah.",
     "sampleAnswer2": "Porez na prenos apsolutnih prava ili PDV, taksu za overu kod notara i upis u katastar. Tačan iznos računamo pre potpisivanja predugovora.",
     "sampleQuestion1": "Koliko traje prodaja stana u Beogradu?",
     "sampleQuestion2": "Koje troškove kupac plaća pored cene?",

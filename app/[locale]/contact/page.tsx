@@ -4,7 +4,6 @@ import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { ListingMapLoader } from "@/components/map/ListingMapLoader";
 import { Reveal } from "@/components/motion/Reveal";
-import { agencyJsonLd } from "@/components/site/contact/agency-jsonld";
 import { ContactChannels } from "@/components/site/contact/ContactChannels";
 import { ContactForm } from "@/components/site/contact/ContactForm";
 import { FaqSection } from "@/components/site/contact/FaqSection";
@@ -15,10 +14,10 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { JsonLdScript } from "@/components/site/page/JsonLd";
 import { PageHero } from "@/components/site/page/PageHero";
 import { RichText } from "@/components/site/page/RichText";
-import { routing } from "@/i18n/routing";
+import { htmlLang, routing } from "@/i18n/routing";
 import { placeholderValues } from "@/lib/content/placeholders";
 import { fixTypography } from "@/lib/format";
-import { breadcrumbJsonLd } from "@/lib/jsonld";
+import { agencyRef, breadcrumbJsonLd } from "@/lib/jsonld";
 import { getPublicSettings, getSitePage } from "@/lib/page-data";
 import { localizedUrl, pageMetadata, siteOrigin } from "@/lib/seo";
 
@@ -68,23 +67,16 @@ export default async function ContactPage({ params }: Props) {
       { name: tNav("home"), url: localizedUrl("/", locale) },
       { name: title.text, url: localizedUrl("/contact", locale) },
     ]),
-    ...(settings !== null
-      ? [
-          agencyJsonLd({
-            id: `${siteOrigin()}/#agency`,
-            url: localizedUrl("/", locale),
-            name: settings.companyName,
-            legalName: settings.legalName,
-            address: settings.address,
-            ...(settings.phones[0] !== undefined ? { phone: settings.phones[0] } : {}),
-            email: settings.email,
-            ...(geo !== undefined ? { geo } : {}),
-            hours: settings.officeHours,
-            registryNo: settings.registryNo,
-            pib: settings.pib,
-          }),
-        ]
-      : []),
+    {
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      url: localizedUrl("/contact", locale),
+      name: title.text,
+      inLanguage: htmlLang[locale],
+      // The agency node itself (address, hours, registry number) is the
+      // sitewide block the locale layout renders on every page.
+      ...(settings !== null ? { mainEntity: agencyRef(siteOrigin(), settings.companyName) } : {}),
+    },
   ];
 
   return (

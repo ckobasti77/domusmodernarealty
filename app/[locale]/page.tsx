@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -16,6 +17,36 @@ import { ValuationCta } from "@/components/site/home/ValuationCta";
 import { buildHomeCopy } from "@/components/site/home/copy";
 import { loadHomeData, locationOptions, neighborhoodItems, tourListing } from "@/components/site/home/data";
 import { routing } from "@/i18n/routing";
+import { localizedText } from "@/lib/content/pages";
+import { getSitePage } from "@/lib/page-data";
+import { localizedAlternates, socialMetadata } from "@/lib/seo";
+
+/**
+ * The landing's title is the brand line itself, so it opts out of the
+ * layout's "… — Mihajlo Estate" template. The admin's SEO fields on the home
+ * page (Sadržaj sajta → Početna) win over the built-in copy.
+ */
+export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  const [t, page] = await Promise.all([getTranslations({ locale, namespace: "seo" }), getSitePage("home")]);
+  const title = localizedText(page?.seo?.metaTitle, locale)?.text ?? t("defaultTitle");
+  const description = localizedText(page?.seo?.metaDescription, locale)?.text ?? t("defaultDescription");
+  const ogImage = page?.seo?.ogImage;
+  const alternates = localizedAlternates("/", locale);
+  return {
+    title: { absolute: title },
+    description,
+    alternates,
+    ...socialMetadata({
+      locale,
+      url: alternates.canonical as string,
+      title,
+      description,
+      ...(ogImage !== undefined && ogImage.kind === "url" ? { image: ogImage.url } : {}),
+    }),
+  };
+}
 
 /**
  * The landing (PRD A2, DESIGN §6): thirteen sections, the preloader and the

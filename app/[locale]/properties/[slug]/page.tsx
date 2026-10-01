@@ -31,7 +31,7 @@ import { Tour360Slot, Walk3DSlot } from "@/components/tours/TourSlot";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { ListingDetail } from "@/convex/lib/dto";
 import { getPathname, Link, permanentRedirect } from "@/i18n/navigation";
-import { htmlLang, routing, type Locale } from "@/i18n/routing";
+import { routing, type Locale } from "@/i18n/routing";
 import { fixTypography, fixWidows, formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
 import { breadcrumbJsonLd, listingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
@@ -44,7 +44,7 @@ import {
   getWalk3d,
 } from "@/lib/listing-data";
 import { floorLabel, placeLine, placeShort, structureShort, structureTitle } from "@/lib/listing-text";
-import { absoluteUrl, localizedAlternates } from "@/lib/seo";
+import { absoluteUrl, documentTitle, localizedAlternates, socialMetadata } from "@/lib/seo";
 
 type Params = PageProps<"/[locale]/properties/[slug]">["params"];
 type Search = PageProps<"/[locale]/properties/[slug]">["searchParams"];
@@ -139,19 +139,10 @@ export async function generateMetadata({
   };
 
   return {
-    title,
+    title: documentTitle(title),
     description,
     alternates,
-    openGraph: {
-      type: "website",
-      url: alternates.canonical as string,
-      title,
-      description,
-      locale: htmlLang[locale],
-      siteName: "Mihajlo Estate",
-      images: [image],
-    },
-    twitter: { card: "summary_large_image", title, description, images: [image.url] },
+    ...socialMetadata({ locale, url: alternates.canonical as string, title, description, image }),
   };
 }
 

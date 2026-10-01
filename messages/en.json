@@ -50,7 +50,7 @@
     "newsletterHeading": "New properties, straight to your inbox",
     "newsletterCta": "Subscribe",
     "settingsMissing": "Agency details are unavailable. Enter them in the admin panel before the site goes live.",
-    "demoDataWarning": "Demo data is shown. The tax number, company number and broker-registry number have not been entered yet."
+    "demoDataWarning": "These are demo details. The tax ID, company number and Register of Real Estate Brokers number have not been entered yet."
   },
   "home": {
     "featuredAll": "All properties",
@@ -129,7 +129,7 @@
     "servicesSellBody": "The right price, the right buyers, without the stress. We prepare the property, photograph it and see negotiations through to signing.",
     "servicesSellCta": "Sell with us",
     "servicesSellTitle": "Selling",
-    "servicesToursBody": "Open to everyone, around the clock. 360° tours and 3D walkthroughs of selected properties.",
+    "servicesToursBody": "A property anyone can visit, at any hour. 360° tours and 3D walkthroughs of selected properties.",
     "servicesToursCta": "Properties with a 3D tour",
     "servicesToursTitle": "3D tours",
     "servicesValuationBody": "An indicative online estimate in two minutes, and a detailed on-site analysis drawing on comparable sales in your neighbourhood.",
@@ -140,7 +140,7 @@
     "toursCta": "Take the 3D tour",
     "toursCtaAll": "Properties with a tour",
     "toursEyebrow": "3D tours",
-    "toursHeading": "Walk through before you arrive.",
+    "toursHeading": "Step inside before you arrive.",
     "toursLede": "Virtual 360° tours and 3D walkthroughs of selected properties.",
     "toursMediaAlt": "Interior dissolving into a bronze point cloud, showing a 3D scan of an apartment",
     "toursFilmPause": "Pause the film",
@@ -270,7 +270,7 @@
     "locationSearch": "Search locations",
     "locationEmpty": "No locations match your search.",
     "locationCount": "{count, plural, one {# location} other {# locations}}",
-    "locationIncluded": "Included with {name}",
+    "locationIncluded": "Already included in {name}",
     "showChildren": "Show areas within {name}",
     "hideChildren": "Hide areas within {name}",
     "roomsPlus": "5+",
@@ -286,7 +286,7 @@
       "registered": "Registered title",
       "moveIn": "Ready to move in",
       "furnished": "Furnished",
-      "vatRefund": "Eligible for VAT refund",
+      "vatRefund": "VAT refund",
       "mortgage": "Mortgage possible",
       "exclusive": "Exclusive",
       "hasTour": "3D or 360° tour"
@@ -540,7 +540,7 @@
       "noEncumbrance": "No registered encumbrances",
       "ownershipShare": "Ownership share",
       "commission": "Commission",
-      "verifiedNote": "Our agent checked the ownership documents on {date}, in accordance with Article 16 of the Law on Brokerage in Real Estate Transactions and Leases.",
+      "verifiedNote": "Our agent checked the ownership documents on {date}, in accordance with Article 16 of the Law on Real Estate Brokerage and Leasing.",
       "unverifiedNote": "We check the documents before any contract is signed. You can ask the agent to see them.",
       "termsLink": "Terms of business"
     },
@@ -584,14 +584,14 @@
       "loan": "Loan amount",
       "downPayment": "Deposit",
       "totalInterest": "Total interest",
-      "term": "{years}-year term · {months} repayments",
+      "term": "{years}-year term · {months, plural, one {# repayment} other {# repayments}}",
       "youngNote": "Buyers aged 35 or under purchasing their first home can use the state housing loan scheme, which requires a lower deposit. Check the terms with your bank.",
       "disclaimer": "An indicative calculation using the annuity (equal repayments) method. The effective interest rate (EIR) and final terms depend on the bank, insurance and your creditworthiness."
     },
     "costs": {
       "heading": "Total purchase costs",
       "transferTax": "Property transfer tax ({rate}%)",
-      "transferTaxNote": "By law the transfer tax is the seller's, but contracts often pass it on to the buyer.",
+      "transferTaxNote": "By law the transfer tax is payable by the seller, but contracts often shift it to the buyer.",
       "firstHome": "A first-time buyer may be exempt from this tax on 40 m² for themselves and 15 m² for each household member. The exemption is claimed from the tax office, so we do not deduct it here.",
       "vat": "VAT ({rate}%)",
       "vatIncluded": "included in the price",
@@ -615,7 +615,7 @@
     "actionBar": {
       "label": "Quick actions",
       "call": "Call",
-      "book": "Viewing"
+      "book": "Book"
     },
     "share": {
       "heading": "Share",
@@ -670,8 +670,8 @@
     "registered": "Registered title",
     "newBuild": "New build",
     "mortgage": "Mortgage possible",
-    "monthlyRate": "Mortgage from ~{amount}/mo.",
-    "monthlyRateDetails": "Indicative monthly repayment with a {down}% deposit over {years} years at a nominal interest rate of {rate}%. Not an offer from a bank.",
+    "monthlyRate": "Mortgage from ~{amount}/month",
+    "monthlyRateDetails": "Indicative monthly repayment with a {down}% deposit over {years, plural, one {# year} other {# years}} at a nominal interest rate of {rate}%. Not an offer from a bank.",
     "compare": "Compare",
     "compareLabel": "Compare: {title}"
   },
@@ -743,7 +743,7 @@
     "resultRange": "{min} – {max}",
     "resultDisclaimer": "This is an indicative estimate. It is calculated from the average price per square metre in the selected area and adjusted for condition, floor and lift. It is not based on actual sales and is not a formal appraisal.",
     "metaTitle": "Property valuation",
-    "metaDescription": "An indicative valuation of your flat or house in two minutes, based on average prices in your neighbourhood. Free and with no obligation, with an on-site valuation if you would like one.",
+    "metaDescription": "An indicative valuation of your apartment or house in two minutes, based on average prices in your neighbourhood. Free and with no obligation, with an on-site valuation if you would like one.",
     "eyebrow": "Online valuation",
     "facts": {
       "durationLabel": "Time",
@@ -798,7 +798,7 @@
     "onsite": {
       "eyebrow": "Next step",
       "heading": "A free on-site valuation",
-      "lede": "A firmer figure follows once we have seen the property. An agent visits, reviews the paperwork and compares the property with actual sales in your area from the RGZ real estate price register. Choose a day and a time of day that suit you, and we will call to confirm the appointment.",
+      "lede": "A firmer figure follows once we have seen the property. An agent visits, reviews the paperwork and compares the property with actual sales in your area from the property price register of the Republic Geodetic Authority (RGZ). Choose a day and a time of day that suit you, and we will call to confirm the appointment.",
       "day": "Preferred day",
       "window": "Time of day",
       "morning": "Morning",
@@ -825,8 +825,8 @@
     "aboutEyebrow": "Method",
     "aboutHeading": "How we calculate",
     "about": {
-      "p1": "The indicative range is calculated from the average price per square metre in your area, adjusted for condition, floor and lift. It is an informative estimate, not a formal appraisal: it cannot be used with a bank, a court or the tax authority.",
-      "p2": "A firmer figure follows once we have seen the property. On site we look at the light, the orientation, the services, the building and the paperwork, and compare the property with actual sales in your area from the RGZ real estate price register."
+      "p1": "The indicative range is calculated from the average price per square metre in your area, adjusted for condition, floor and lift. It is an indicative estimate, not a formal appraisal: it cannot be used with a bank, a court or the tax authority.",
+      "p2": "A firmer figure follows once we have seen the property. On site we look at the light, the orientation, the services, the building and the paperwork, and compare the property with actual sales in your area from the property price register of the Republic Geodetic Authority (RGZ)."
     },
     "onsiteSectionEyebrow": "On-site valuation",
     "book": {
@@ -841,7 +841,7 @@
       "floor": "Floor, lift and orientation — daylight, outlook, street noise.",
       "condition": "Year of construction and condition — services, windows, façade, roof, common areas.",
       "heating": "Heating and energy efficiency — district or individual heating, heat pump, monthly bills.",
-      "documents": "Paperwork — cadastral registration, legalisation, occupancy permit, charges and co-ownership."
+      "documents": "Paperwork — cadastral registration, legalization, occupancy permit, encumbrances and co-ownership."
     },
     "replyPromise": "We reply the same working day, and within 24 hours at the latest.",
     "mediaAlt": "Apartment floor plan on a desk with a brass ruler, in afternoon light",
@@ -850,11 +850,11 @@
     "faq": {
       "free": {
         "q": "Is the valuation free?",
-        "a": "The online valuation is free and takes about two minutes. A valuation in person is free as well, with no obligation to instruct us: we come at a time that suits you and leave you the range in writing."
+        "a": "The online valuation is free and takes about two minutes. An on-site valuation is free as well, with no obligation to instruct us: we come at a time that suits you and leave you the range in writing."
       },
       "accuracy": {
         "q": "How accurate is the valuation?",
-        "a": "For a standard flat in an area with plenty of price data, the range sits close to the market. For unusual properties — attic conversions, adapted spaces, unregistered extensions, houses on large plots — the margin widens, so the figure should be checked on site. That is why the result is always an interval rather than a single number."
+        "a": "For a standard apartment in an area with plenty of price data, the range sits close to the market. For unusual properties — attic apartments, conversions, unregistered extensions, houses on large plots — the margin widens, so the figure should be checked on site. That is why the result is always an interval rather than a single number."
       },
       "data": {
         "q": "What happens to my data?",
@@ -869,7 +869,7 @@
     "benefitsHeading": "What you receive",
     "processHeading": "How we work together",
     "metaTitle": "Sell your property with us",
-    "metaDescription": "Selling an apartment, house or commercial property in Belgrade or elsewhere in Serbia: a visit and price proposal, a documents check, professional photography and guidance through to handover.",
+    "metaDescription": "Selling an apartment, house or commercial property in Belgrade or elsewhere in Serbia: a visit and price proposal, a paperwork check, professional photography and guidance through to handover.",
     "eyebrow": "For owners",
     "heroCta": "Submit your property",
     "heroValuationCta": "Indicative valuation in two minutes",
@@ -878,11 +878,11 @@
     "benefitsLede": "A sale without improvisation: verified paperwork, a well-prepared property and a price grounded in data.",
     "benefits": {
       "b1": "A price proposal after a visit, compared with completed sales in your area.",
-      "b2": "A documents check before the listing goes live, with a list of anything that needs resolving.",
+      "b2": "A paperwork check before the listing goes live, with a list of anything that needs resolving.",
       "b3": "Professional photography, plus a floor plan and a 360° tour for selected properties.",
       "b4": "A listing in Serbian, English, Russian and German.",
       "b5": "Viewings by appointment, and a written report on buyers' reactions.",
-      "b6": "Coordination with a solicitor and a notary through to the handover of the keys."
+      "b6": "Coordination with a lawyer and a notary through to the handover of the keys."
     },
     "valuationPrompt": "Would you like an indicative range first? The online valuation is based on average prices in your area and takes two minutes.",
     "valuationLink": "Start the valuation",
@@ -890,7 +890,7 @@
     "processLede": "Five steps from the first visit to handing over the keys. After each one you know what comes next and what we need from you.",
     "processSteps": {
       "s1": {
-        "title": "Introduction and valuation",
+        "title": "First meeting and valuation",
         "body": "We visit the property, review the paperwork and give you a written price proposal and a sales plan."
       },
       "s2": {
@@ -898,8 +898,8 @@
         "body": "We suggest small fixes before the shoot, then the photographer comes in; for selected properties we also produce a floor plan and a 360° tour."
       },
       "s3": {
-        "title": "Marketing and the 3D tour",
-        "body": "We write the listing in four languages and publish it on our site, on the portals and to our buyer database."
+        "title": "Marketing and 3D tour",
+        "body": "We write the listing in four languages, publish it on our website and on property portals, and send it to our database of buyers."
       },
       "s4": {
         "title": "Viewings and negotiation",
@@ -907,7 +907,7 @@
       },
       "s5": {
         "title": "Contract and handover",
-        "body": "We prepare the contract with a solicitor, coordinate notarisation and payment, and attend the handover."
+        "body": "We prepare the contract with a lawyer, coordinate notarisation and payment, and attend the handover."
       }
     },
     "documentsEyebrow": "Paperwork",
@@ -927,8 +927,8 @@
         "note": "An ID card or passport for each owner; a certified power of attorney if someone represents you."
       },
       "d4": {
-        "title": "Occupancy permit or legalisation decision",
-        "note": "Where applicable — most often for newer buildings, extensions and legalised properties."
+        "title": "Occupancy permit or legalization decision",
+        "note": "Where applicable — most often for newer buildings, extensions and legalized properties."
       },
       "d5": {
         "title": "Proof of settled bills",
@@ -962,7 +962,7 @@
     },
     "formEyebrow": "Submission",
     "formLede": "Leave the basic details and we will be in touch to arrange a visit — free of charge and with no obligation to instruct us.",
-    "formPhonePrompt": "Prefer to talk it through?",
+    "formPhonePrompt": "Prefer to talk on the phone?",
     "form": {
       "propertyLegend": "The property",
       "contactLegend": "Your details",
@@ -985,14 +985,14 @@
       "priceInvalid": "Enter an amount in euros, e.g. {example}.",
       "message": "Notes",
       "messageHint": "Condition, floor, heating, your timeframe — anything you consider important.",
-      "submit": "Submit the property",
+      "submit": "Submit your property",
       "successHeading": "Your property has been submitted",
       "successDetail": "An agent will contact you to arrange a visit.",
       "sendAnother": "Submit another property"
     }
   },
   "locations": {
-    "heading": "First the neighbourhood, then the flat.",
+    "heading": "First the neighbourhood, then the apartment.",
     "lede": "Short guides to the areas we work in, with average prices per square metre and what is on offer now.",
     "listingsHeading": "Listings — {name}",
     "nearbyHeading": "Nearby",
@@ -1036,7 +1036,7 @@
     "forSale": "For sale",
     "forRent": "To rent",
     "mapCaption": "The map shows the approximate centre of the location.",
-    "listingsShown": "Showing {shown} of {total}; the search shows them all.",
+    "listingsShown": "Showing {shown} of {total}. Search to see them all.",
     "searchSale": "All for sale",
     "searchRent": "All to rent",
     "emptyTitle": "We have no properties on offer here at the moment.",
@@ -1052,7 +1052,7 @@
   },
   "agents": {
     "heading": "The people you will meet.",
-    "lede": "Each agent covers their own areas and their own properties. Write directly to the one who knows the area you are interested in.",
+    "lede": "Each agent looks after their own areas and listings. Write directly to the agent who knows the area you are interested in.",
     "languages": "Languages",
     "areas": "Areas",
     "listingsHeading": "Current listings",
@@ -1076,7 +1076,7 @@
     "listingsAll": "All properties",
     "closedEyebrow": "Completed",
     "closedHeading": "Sold and let",
-    "closedLede": "Properties from these listings that have already been sold or let."
+    "closedLede": "Properties from this portfolio that have already been sold or let."
   },
   "about": {
     "heading": "Who we are and how we work",
@@ -1084,7 +1084,7 @@
     "valuesHeading": "What matters to us",
     "complianceHeading": "Licences and registration",
     "metaTitle": "About us: an estate agency in Belgrade",
-    "metaDescription": "Who we are and how we work: we check the paperwork before listing, base prices on completed transactions and reply the same working day.",
+    "metaDescription": "Who we are and how we work: we check the paperwork before listing, propose prices based on completed sales and reply the same working day.",
     "eyebrow": "About us",
     "imageAlt": "An Art Nouveau facade with wrought-iron balconies at golden hour",
     "storyEyebrow": "The agency",
@@ -1103,10 +1103,10 @@
     "complianceLede": "The details required by Serbia's Law on Real Estate Brokerage and Leasing and its Law on Electronic Commerce.",
     "legalName": "Registered name",
     "seat": "Registered office",
-    "registryNo": "Register of Brokers no. (Registar posrednika)",
+    "registryNo": "Register of Real Estate Brokers no.",
     "pib": "Tax ID (PIB)",
-    "mb": "Company reg. no. (MB)",
-    "complianceDemo": "These are demo details. The tax ID, company number and Register of Brokers number have not been entered yet."
+    "mb": "Company number (MB)",
+    "complianceDemo": "These are demo details. The tax ID, company number and Register of Real Estate Brokers number have not been entered yet."
   },
   "contact": {
     "heading": "Contact",
@@ -1125,7 +1125,7 @@
     "formEyebrow": "Message",
     "formLede": "If your question concerns a specific property, please include its reference code or the listing link.",
     "form": {
-      "subjectHint": "For example: buying, renting, working with us.",
+      "subjectHint": "For example: buying, renting, partnerships.",
       "successHeading": "Your message has been sent",
       "sendAnother": "Send another message"
     },
@@ -1138,7 +1138,7 @@
     "faqHeading": "Frequently asked questions"
   },
   "journal": {
-    "eyebrow": "Market and advice",
+    "eyebrow": "Market insight and advice",
     "heading": "Journal",
     "lede": "Market analysis, guides for buyers and sellers, and stories about Belgrade.",
     "readingTime": "{minutes} min read",
@@ -1188,7 +1188,7 @@
     "pruned": "{count, plural, one {# property no longer on the market has been removed.} other {# properties no longer on the market have been removed.}}",
     "undo": "Undo",
     "undoLabel": "Save again: {title}",
-    "clearConfirm": "Remove every saved property?",
+    "clearConfirm": "Remove all saved properties?",
     "clearYes": "Yes, remove all",
     "clearNo": "Cancel",
     "emptyEyebrow": "Your list is empty",
@@ -1217,7 +1217,7 @@
     "view": "View property",
     "addMore": "Add a property",
     "save": "Save this comparison",
-    "saved": "This comparison is now your selection on this device.",
+    "saved": "Comparison saved as your selection on this device.",
     "sharedNote": "You opened a shared comparison. Save it to keep working with this selection.",
     "sharedNoteReplace": "You opened a shared comparison. Saving it will replace your current selection.",
     "shareFallback": "Copy the link to this comparison:",
@@ -1231,7 +1231,7 @@
     "needMoreTitle": "A comparison needs at least two properties.",
     "browse": "Browse properties",
     "fromFavorites": "Choose from saved ({count})",
-    "ownSelection": "View your own selection ({count})",
+    "ownSelection": "View your selection ({count})",
     "rowPrice": "Price",
     "billsTotal": "~{amount} a month",
     "billsInfostan": "Infostan utilities {amount}",
@@ -1267,12 +1267,12 @@
       "address": "Registered office",
       "pib": "Tax ID (PIB)",
       "mb": "Company number (MB)",
-      "registryNo": "Broker registry number",
+      "registryNo": "Register of Real Estate Brokers no.",
       "email": "Email"
     },
     "cookieChoices": {
       "heading": "Categories and your consent",
-      "lede": "These are the same categories the cookie banner offers. Everything except the essential ones stays off until you switch it on.",
+      "lede": "These are the same categories the cookie banner offers. All except the essential cookies stay off until you switch them on.",
       "default": "Default",
       "current": "Your choice",
       "alwaysOn": "Always on",
@@ -1359,7 +1359,7 @@
     "SLOT_TAKEN": "That time is already taken. Please choose another.",
     "PUBLISH_BLOCKED": "Publishing is blocked because required details are missing.",
     "INVITE_INVALID": "This invitation has expired or has already been used.",
-    "UPLOAD_REJECTED": "The file was not accepted. Check the format and the size.",
+    "UPLOAD_REJECTED": "The file was not accepted. Please check its format and size.",
     "INVALID_INPUT": "Please check the details you entered and try again.",
     "SPAM": "Your request was not accepted. Please try again.",
     "offline": "We could not reach the server. Check your internet connection and try again.",
@@ -1390,8 +1390,8 @@
     "bathrooms": "{count, plural, one {# bathroom} other {# bathrooms}}",
     "floorGround": "GF",
     "floorHighGround": "Raised GF",
-    "floorBasement": "Basement",
-    "floorSemiBasement": "Semi-basement",
+    "floorBasement": "Semi-basement",
+    "floorSemiBasement": "Lower ground",
     "distanceM": "{meters} m",
     "minutesWalk": "{minutes} min walk"
   },

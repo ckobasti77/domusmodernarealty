@@ -79,6 +79,7 @@ export function listingJsonLd(input: ListingJsonLdInput): JsonLd {
 
   const accommodation: JsonLd = {
     "@type": ACCOMMODATION[input.propertyType] ?? "Place",
+    name: input.name,
     floorSize: { "@type": "QuantitativeValue", value: input.areaM2, unitCode: "MTK" },
     address,
     ...(input.propertyType !== "land" && input.propertyType !== "garage"
@@ -95,6 +96,7 @@ export function listingJsonLd(input: ListingJsonLdInput): JsonLd {
 
   const seller = {
     "@type": "RealEstateAgent",
+    "@id": agencyId(new URL(input.agency.url).origin),
     name: input.agency.name,
     url: input.agency.url,
     identifier: {
@@ -205,4 +207,108 @@ export function articleJsonLd(input: {
         : publisher,
     publisher,
   };
+}
+
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+
+export type AgencyJsonLdInput = {
+  /** The site origin; `@id` is stable across pages and locales so other nodes can point at it. */
+  origin: string;
+  url: string;
+  inLanguage: string;
+  name: string;
+  legalName: string;
+  /** "Street 1, 11000 City" as stored in settings. */
+  address: string;
+  taxId: string;
+  companyId: string;
+  registryNo: string;
+  phone?: string;
+  email: string;
+  logo: string;
+  image: string;
+  geo?: { lat: number; lng: number };
+  /** Already validated office hours; weekday 0 = Sunday … 6 = Saturday. */
+  hours: ReadonlyArray<{ weekday: number; from: string; to: string }>;
+  sameAs: readonly string[];
+};
+
+/** `@id` of the agency node, shared by the sitewide block, the contact/about pages and every listing's seller. */
+export function agencyId(origin: string): string {
+  return `${origin}/#agency`;
+}
+
+/** "Njegoševa 1, 11000 Beograd" → street, postal code, locality; anything else stays one line. */
+function postalAddress(address: string): JsonLd {
+  const match = /^(.+?),\s*(\d{5})\s+(.+)$/.exec(address.trim());
+  return match !== null
+    ? {
+        "@type": "PostalAddress",
+        streetAddress: match[1],
+        postalCode: match[2],
+        addressLocality: match[3],
+        addressCountry: "RS",
+      }
+    : { "@type": "PostalAddress", streetAddress: address.trim(), addressCountry: "RS" };
+}
+
+/** Settings fields the owner has not filled in yet hold instructions, not numbers. */
+const hasDigits = (value: string) => /\d/.test(value);
+
+/**
+ * The agency itself (ARCHITECTURE §9), rendered once on every public page by
+ * the locale layout. Brokerage law Art. 18 asks every ad to name the agency
+ * and its broker-registry number, so the registry number is the node's
+ * `identifier`; the company number (MB) and PIB (`taxID`) follow e-commerce
+ * law Art. 6. Pages that talk about the agency (contact, about, an agent's
+ * employer, a listing's seller) point at this node by `@id`.
+ */
+export function agencyJsonLd(input: AgencyJsonLdInput): JsonLd {
+  const identifiers = [
+    hasDigits(input.registryNo)
+      ? { "@type": "PropertyValue", propertyID: "Registar posrednika", value: input.registryNo }
+      : null,
+    hasDigits(input.companyId) ? { "@type": "PropertyValue", propertyID: "Matični broj", value: input.companyId } : null,
+  ].filter((item) => item !== null);
+  return {
+    "@context": "https://schema.org",
+    "@type": "RealEstateAgent",
+    "@id": agencyId(input.origin),
+    name: input.name,
+    legalName: input.legalName,
+    url: input.url,
+    inLanguage: input.inLanguage,
+    logo: input.logo,
+    image: input.image,
+    ...(identifiers.length > 0 ? { identifier: identifiers.length === 1 ? identifiers[0] : identifiers } : {}),
+    ...(hasDigits(input.taxId) ? { taxID: input.taxId } : {}),
+    address: postalAddress(input.address),
+    ...(input.geo !== undefined
+      ? { geo: { "@type": "GeoCoordinates", latitude: input.geo.lat, longitude: input.geo.lng } }
+      : {}),
+    ...(input.phone !== undefined ? { telephone: input.phone.replace(/[^\d+]/g, "") } : {}),
+    email: input.email,
+    areaServed: [
+      { "@type": "City", name: "Beograd" },
+      { "@type": "Country", name: "Srbija" },
+    ],
+    knowsLanguage: ["sr", "en", "ru", "de"],
+    currenciesAccepted: "EUR, RSD",
+    ...(input.hours.length > 0
+      ? {
+          openingHoursSpecification: input.hours.map((slot) => ({
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: `https://schema.org/${DAYS[slot.weekday]}`,
+            opens: slot.from,
+            closes: slot.to,
+          })),
+        }
+      : {}),
+    ...(input.sameAs.length > 0 ? { sameAs: [...input.sameAs] } : {}),
+  };
+}
+
+/** A reference to the agency node for `mainEntity`, `worksFor`, `seller`… */
+export function agencyRef(origin: string, name: string): JsonLd {
+  return { "@type": "RealEstateAgent", "@id": agencyId(origin), name };
 }

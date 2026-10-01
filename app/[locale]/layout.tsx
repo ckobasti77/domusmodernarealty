@@ -10,8 +10,14 @@ import { ConvexClientProvider } from "@/components/providers/ConvexClientProvide
 import { CookieConsent } from "@/components/site/CookieConsent";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
+import { validSlots } from "@/components/site/contact/hours";
+import { JsonLdScript } from "@/components/site/page/JsonLd";
 import { SkipLink } from "@/components/site/SkipLink";
-import { htmlLang, locales, routing } from "@/i18n/routing";
+import { getPathname } from "@/i18n/navigation";
+import { htmlLang, locales, routing, type Locale } from "@/i18n/routing";
+import { agencyJsonLd } from "@/lib/jsonld";
+import { getPublicSettings } from "@/lib/page-data";
+import { absoluteUrl, defaultShareImage, siteOrigin } from "@/lib/seo";
 import "@/app/globals.css";
 
 /** Resting states for everything the motion layer starts hidden. */
@@ -34,13 +40,47 @@ export async function generateMetadata(props: LayoutProps<"/[locale]">): Promise
   const t = await getTranslations({ locale, namespace: "seo" });
 
   return {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+    metadataBase: new URL(siteOrigin()),
     title: {
       default: t("defaultTitle"),
       template: t("titleTemplate", { title: "%s" }),
     },
     description: t("defaultDescription"),
   };
+}
+
+/**
+ * The sitewide `RealEstateAgent` node (ARCHITECTURE §9) from the public
+ * settings; nothing is rendered until the settings exist.
+ */
+async function AgencyJsonLd({ locale }: { locale: Locale }) {
+  const settings = await getPublicSettings();
+  if (settings === null) return null;
+  const socials = Object.values(settings.socials).filter((url): url is string => url !== undefined && url.length > 0);
+  return (
+    <JsonLdScript
+      data={agencyJsonLd({
+        origin: siteOrigin(),
+        url: absoluteUrl(getPathname({ locale, href: "/" })),
+        inLanguage: htmlLang[locale],
+        name: settings.companyName,
+        legalName: settings.legalName,
+        address: settings.address,
+        taxId: settings.pib,
+        companyId: settings.mb,
+        registryNo: settings.registryNo,
+        ...(settings.phones[0] !== undefined ? { phone: settings.phones[0] } : {}),
+        email: settings.email,
+        logo: absoluteUrl("/apple-icon.png"),
+        image: settings.seo.ogImageUrl ?? defaultShareImage(locale).url,
+        ...(settings.officeLat !== undefined && settings.officeLng !== undefined
+          ? { geo: { lat: settings.officeLat, lng: settings.officeLng } }
+          : {}),
+        hours: validSlots(settings.officeHours),
+        sameAs: socials,
+      })}
+    />
+  );
 }
 
 /**
@@ -82,6 +122,7 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
               </PageTransition>
               <CookieConsent />
             </SmoothScroll>
+            <AgencyJsonLd locale={locale} />
           </ConvexClientProvider>
         </NextIntlClientProvider>
       </body>

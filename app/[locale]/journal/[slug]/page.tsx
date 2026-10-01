@@ -22,7 +22,7 @@ import { fixTypography } from "@/lib/format";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { pickL10n } from "@/lib/l10n";
 import { getPublicSettings } from "@/lib/page-data";
-import { absoluteUrl, localizedUrl, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, localizedUrl, pageMetadata, type ShareImage } from "@/lib/seo";
 
 type Props = PageProps<"/[locale]/journal/[slug]">;
 
@@ -48,13 +48,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (post === null) return {};
   const title = pickL10n(post.seo?.metaTitle ?? post.title, locale).text;
   const description = pickL10n(post.seo?.metaDescription ?? post.excerpt, locale).text;
-  const image = post.seo?.ogImageUrl ?? post.coverUrl;
+  // The editor's own share picture wins; otherwise the article card
+  // (`opengraph-image` next to this page) with the headline over the cover.
+  const image =
+    post.seo?.ogImageUrl ??
+    ({
+      url: localizedUrl({ pathname: "/journal/[slug]/opengraph-image", params: { slug: post.slug } }, locale),
+      width: 1200,
+      height: 630,
+      alt: title,
+    } satisfies ShareImage);
   return pageMetadata({
     locale,
     href: articleHref(post.slug),
     title,
     description,
-    ...(image !== undefined ? { image } : {}),
+    image,
     type: "article",
     ...(post.publishedAt !== undefined ? { publishedTime: post.publishedAt } : {}),
   });

@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { CheckboxField } from "@/components/site/Field";
 import { Link } from "@/i18n/navigation";
 
@@ -12,6 +12,10 @@ import { Link } from "@/i18n/navigation";
  * Pieces shared by every public lead form (PRD A5, CONTENT "Compliance"):
  * the localized contact schema, the required privacy consent with a separate,
  * UNTICKED marketing opt-in, the honeypot, and the success / error states.
+ *
+ * The form schemas use `zod/mini` (functional checks) rather than classic
+ * zod: the same validation for a fraction of the JavaScript every form page
+ * ships (step 12). Checks run in order, so `z.trim()` comes first.
  */
 
 /** Same patterns the server enforces in `convex/lib/rateLimit.ts`. */
@@ -24,16 +28,20 @@ export function contactFields(t: FormsT) {
   return {
     name: z
       .string()
-      .trim()
-      .min(1, t("requiredField"))
-      .min(2, t("tooShort", { min: 2 }))
-      .max(120, t("tooLong", { max: 120 })),
-    email: z.string().trim().min(1, t("requiredField")).regex(EMAIL_RE, t("invalidEmail")),
+      .check(
+        z.trim(),
+        z.minLength(1, t("requiredField")),
+        z.minLength(2, t("tooShort", { min: 2 })),
+        z.maxLength(120, t("tooLong", { max: 120 })),
+      ),
+    email: z.string().check(z.trim(), z.minLength(1, t("requiredField")), z.regex(EMAIL_RE, t("invalidEmail"))),
     phone: z
       .string()
-      .trim()
-      .refine((value) => value.length === 0 || PHONE_RE.test(value), t("invalidPhone")),
-    privacy: z.boolean().refine((value) => value, t("consentRequired")),
+      .check(
+        z.trim(),
+        z.refine((value) => value.length === 0 || PHONE_RE.test(value), t("invalidPhone")),
+      ),
+    privacy: z.boolean().check(z.refine((value) => value, t("consentRequired"))),
     marketing: z.boolean(),
     hp: z.string(),
   };

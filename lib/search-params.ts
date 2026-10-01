@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { Id } from "@/convex/_generated/dataModel";
 import type {
   ConstructionType,
@@ -189,13 +188,19 @@ function numberList(raw: string | undefined, allowed: readonly number[]): number
   return allowed.filter((value) => tokens.has(value));
 }
 
-const amountSchema = z.coerce.number().int().nonnegative();
+/*
+ * These parsers run in the browser on every filter change (the home search,
+ * the results page), so they are plain functions: pulling zod into those
+ * bundles cost ~90 KB of gzipped JavaScript for two checks (step 12).
+ */
 
+/** A non-negative integer amount ("125.000", "125 000" and "125_000" allowed), capped at `max`. */
 function amount(raw: string | undefined, max: number): number | undefined {
   if (raw === undefined || raw.trim().length === 0) return undefined;
-  const parsed = amountSchema.safeParse(raw.replace(/[.\s_]/g, ""));
-  if (!parsed.success) return undefined;
-  return Math.min(parsed.data, max);
+  const digits = raw.replace(/[.\s_]/g, "");
+  if (!/^\d+$/.test(digits)) return undefined;
+  const value = Number(digits);
+  return Number.isSafeInteger(value) ? Math.min(value, max) : undefined;
 }
 
 function floorValue(raw: string | undefined): FloorValue | undefined {
@@ -206,15 +211,15 @@ function floorValue(raw: string | undefined): FloorValue | undefined {
   return Number.isInteger(n) && n >= 1 && n <= MAX_FLOOR ? n : undefined;
 }
 
-const bboxSchema = z
-  .string()
-  .transform((raw) => raw.split(",").map(Number))
-  .pipe(z.tuple([z.number(), z.number(), z.number(), z.number()]))
-  .refine(
-    ([west, south, east, north]) =>
-      west >= -180 && east <= 180 && south >= -90 && north <= 90 && west < east && south < north,
-  )
-  .transform(([west, south, east, north]) => ({ west, south, east, north }));
+/** "west,south,east,north" in degrees, a non-empty box inside the world, or `undefined`. */
+function parseBbox(raw: string): { west: number; south: number; east: number; north: number } | undefined {
+  const parts = raw.split(",");
+  if (parts.length !== 4 || parts.some((part) => part.trim().length === 0)) return undefined;
+  const [west, south, east, north] = parts.map(Number) as [number, number, number, number];
+  if (![west, south, east, north].every(Number.isFinite)) return undefined;
+  const valid = west >= -180 && east <= 180 && south >= -90 && north <= 90 && west < east && south < north;
+  return valid ? { west, south, east, north } : undefined;
+}
 
 const flag = (raw: string | undefined) => raw === "1" || raw === "true";
 
@@ -248,7 +253,7 @@ export function parseSearchParams(input: RawParams): SearchState {
       : undefined;
   const addedRaw = readParam(input, "added");
   const bboxRaw = readParam(input, "bbox");
-  const bbox = bboxRaw !== undefined ? bboxSchema.safeParse(bboxRaw) : undefined;
+  const bbox = bboxRaw !== undefined ? parseBbox(bboxRaw) : undefined;
 
   const locations = (readParam(input, "location") ?? "")
     .split(",")
@@ -275,7 +280,7 @@ export function parseSearchParams(input: RawParams): SearchState {
     toggles: TOGGLE_KEYS.filter((key) => flag(readParam(input, key))),
     ...(addedRaw !== undefined && addedRaw in ADDED_WINDOWS ? { added: addedRaw as AddedWithin } : {}),
     ...(sort !== undefined ? { sort } : {}),
-    ...(bbox?.success === true ? { bbox: bbox.data } : {}),
+    ...(bbox !== undefined ? { bbox } : {}),
   };
 }
 

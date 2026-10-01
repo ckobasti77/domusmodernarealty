@@ -3,19 +3,19 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { CustomEase } from "gsap/CustomEase";
-import { Flip } from "gsap/Flip";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 
 /**
  * Single GSAP registration point for the public site. Importing this module
  * anywhere registers the plugins exactly once (ES modules are evaluated once)
- * and defines the brand ease.
+ * and defines the brand ease. Only the plugins the site uses are registered:
+ * every one of them ships in the JavaScript of every public page.
  *
  * Never import this from `app/admin/**` — the admin uses CSS transitions only
  * (see the motion house rule in CLAUDE.md).
  */
-gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, Flip, CustomEase);
+gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, CustomEase);
 
 /** "estate" mirrors --ease-estate in globals.css: cubic-bezier(.22,1,.36,1). */
 if (!CustomEase.get("estate")) {
@@ -25,7 +25,7 @@ if (!CustomEase.get("estate")) {
 /** Project-wide defaults: slow, confident, transform-only. */
 gsap.defaults({ ease: "estate", duration: 1 });
 
-export { gsap, ScrollTrigger, SplitText, Flip, CustomEase, useGSAP };
+export { gsap, ScrollTrigger, SplitText, CustomEase, useGSAP };
 
 /** Durations from DESIGN 6 "Motion rules", in seconds. */
 export const DURATION = {

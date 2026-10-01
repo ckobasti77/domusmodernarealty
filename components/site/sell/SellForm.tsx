@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { ConsentFields, contactFields, FormError, SuccessPanel } from "@/components/forms/shared";
 import { Button } from "@/components/site/Button";
 import { SelectField, TextAreaField, TextField } from "@/components/site/Field";
@@ -66,17 +66,15 @@ export function SellForm({ groups, phone }: { groups: readonly LocationGroup[]; 
       // A plain boolean check: a type-guard refine would narrow the form type to `PropertyType`.
       propertyType: z
         .string()
-        .refine((value) => (PROPERTY_TYPES as readonly string[]).includes(value), tForms("requiredField")),
-      locationId: z.string().refine((value) => value.length === 0 || locationIds.has(value), tForms("requiredField")),
-      addressNote: z
+        .check(z.refine((value) => (PROPERTY_TYPES as readonly string[]).includes(value), tForms("requiredField"))),
+      locationId: z
         .string()
-        .trim()
-        .max(300, tForms("tooLong", { max: 300 })),
-      area: z
-        .string()
-        .trim()
-        .min(1, tForms("requiredField"))
-        .refine(
+        .check(z.refine((value) => value.length === 0 || locationIds.has(value), tForms("requiredField"))),
+      addressNote: z.string().check(z.trim(), z.maxLength(300, tForms("tooLong", { max: 300 }))),
+      area: z.string().check(
+        z.trim(),
+        z.minLength(1, tForms("requiredField")),
+        z.refine(
           (value) => {
             const area = number(value);
             return area !== null && area >= AREA.min && area <= AREA.max;
@@ -86,11 +84,11 @@ export function SellForm({ groups, phone }: { groups: readonly LocationGroup[]; 
             max: formatInputNumber(AREA.max, locale),
           }),
         ),
+      ),
       rooms: z.string(),
-      price: z
-        .string()
-        .trim()
-        .refine(
+      price: z.string().check(
+        z.trim(),
+        z.refine(
           (value) => {
             if (value.length === 0) return true;
             const price = number(value);
@@ -98,16 +96,16 @@ export function SellForm({ groups, phone }: { groups: readonly LocationGroup[]; 
           },
           t("priceInvalid", { example: formatInputNumber(185_000, locale) }),
         ),
-      message: z
-        .string()
-        .trim()
-        .max(2000, tForms("tooLong", { max: 2000 })),
+      ),
+      message: z.string().check(z.trim(), z.maxLength(2000, tForms("tooLong", { max: 2000 }))),
       ...contactFields(tForms),
     })
-    .refine((values) => values.locationId.length > 0 || values.addressNote.length > 0, {
-      path: ["locationId"],
-      message: t("locationRequired"),
-    });
+    .check(
+      z.refine((values) => values.locationId.length > 0 || values.addressNote.length > 0, {
+        path: ["locationId"],
+        message: t("locationRequired"),
+      }),
+    );
   type Values = z.infer<typeof schema>;
 
   const defaults: Values = {

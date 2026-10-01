@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { Button } from "@/components/site/Button";
 import { TextAreaField, TextField } from "@/components/site/Field";
 import { api } from "@/convex/_generated/api";
@@ -32,9 +32,7 @@ export function InquiryForm({ listingId, refCode }: { listingId: Id<"listings">;
     ...contactFields(t),
     message: z
       .string()
-      .trim()
-      .min(10, t("tooShort", { min: 10 }))
-      .max(2000, t("tooLong", { max: 2000 })),
+      .check(z.trim(), z.minLength(10, t("tooShort", { min: 10 })), z.maxLength(2000, t("tooLong", { max: 2000 }))),
   });
   type Values = z.infer<typeof schema>;
 

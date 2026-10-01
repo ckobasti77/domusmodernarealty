@@ -35,6 +35,7 @@
 
   /* Faces (values come from next/font in app/fonts.ts) */
   --font-display: var(--font-display-family), "EB Garamond", Garamond, serif;
+  --font-display-italic: var(--font-display-italic-family), var(--font-display);
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-family), ui-monospace, monospace;
   /* Safety net: Tailwind ships `font-serif` as ui-serif/Georgia. It must never
@@ -652,7 +653,7 @@ html[data-consent="pending"] {
   .rich-text blockquote {
     border-left: 1px solid var(--color-bronze);
     padding-left: 1.5em;
-    font-family: var(--font-display);
+    font-family: var(--font-display-italic);
     font-size: 1.5rem;
     line-height: 1.35;
     font-style: italic;

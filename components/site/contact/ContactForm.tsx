@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { ConsentFields, contactFields, FormError, SuccessPanel } from "@/components/forms/shared";
 import { Button } from "@/components/site/Button";
 import { TextAreaField, TextField } from "@/components/site/Field";
@@ -32,13 +32,15 @@ export function ContactForm() {
 
   const schema = z.object({
     ...contactFields(t),
-    subject: z.string().trim().max(160, t("tooLong", { max: 160 })),
+    subject: z.string().check(z.trim(), z.maxLength(160, t("tooLong", { max: 160 }))),
     message: z
       .string()
-      .trim()
-      .min(1, t("requiredField"))
-      .min(10, t("tooShort", { min: 10 }))
-      .max(2000, t("tooLong", { max: 2000 })),
+      .check(
+        z.trim(),
+        z.minLength(1, t("requiredField")),
+        z.minLength(10, t("tooShort", { min: 10 })),
+        z.maxLength(2000, t("tooLong", { max: 2000 })),
+      ),
   });
   type Values = z.infer<typeof schema>;
 

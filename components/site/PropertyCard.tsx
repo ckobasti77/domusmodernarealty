@@ -193,9 +193,6 @@ export function PropertyCard({
               pathname: "/properties/[slug]",
               params: { slug: listing.slug },
             }}
-            // Grids show 12–24 cards: viewport prefetching every listing page
-            // would cost more than the click it saves.
-            prefetch={false}
             lang={title.lang === locale ? undefined : title.lang}
             className="after:absolute after:inset-0 after:z-10 after:content-[''] pointer-fine:group-hover/card:text-bronze-text transition-colors duration-200 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-4 focus-visible:after:outline-current"
           >

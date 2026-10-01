@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { preconnect } from "react-dom";
 import { fontVariables } from "@/app/fonts";
 import { PageTransition } from "@/components/motion/PageTransition";
 import { Preloader } from "@/components/motion/Preloader";
@@ -102,6 +103,12 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
   if (!hasLocale(routing.locales, locale)) notFound();
 
   const messages = await getMessages({ locale });
+
+  // Listing photos come from Unsplash (demo) and Convex storage, and the
+  // Convex client opens its websocket right after hydration: warming both
+  // connections saves a DNS + TLS round trip on the first card image.
+  preconnect("https://images.unsplash.com");
+  if (process.env.NEXT_PUBLIC_CONVEX_URL !== undefined) preconnect(new URL(process.env.NEXT_PUBLIC_CONVEX_URL).origin);
 
   return (
     // The preloader gate script writes `data-intro` onto <html> before React

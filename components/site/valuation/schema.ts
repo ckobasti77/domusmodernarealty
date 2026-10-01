@@ -1,5 +1,5 @@
 import type { FunctionArgs } from "convex/server";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { contactFields } from "@/components/forms/shared";
 import type { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -76,14 +76,6 @@ export function hasLayout(type: PropertyType): boolean {
   return type !== "land" && type !== "garage";
 }
 
-function isCondition(value: string): value is Condition {
-  return (CONDITIONS as readonly string[]).includes(value);
-}
-
-function isOnsiteWindow(value: string): value is OnsiteWindow {
-  return (ONSITE_WINDOWS as readonly string[]).includes(value);
-}
-
 /** An option value back to `floorV`: digits are a numbered floor, the rest are the named codes. */
 export function floorFromChoice(value: string): Floor | undefined {
   if (/^\d+$/.test(value)) return Number(value);
@@ -110,13 +102,12 @@ export function propertySchema({
   const yearMax = currentYear + YEAR_AHEAD;
   return z
     .object({
-      locationId: z.string().min(1, required),
+      locationId: z.string().check(z.minLength(1, required)),
       propertyType: z.enum(PROPERTY_TYPES),
-      area: z
-        .string()
-        .trim()
-        .min(1, required)
-        .refine(
+      area: z.string().check(
+        z.trim(),
+        z.minLength(1, required),
+        z.refine(
           (value) => {
             const area = parseLocaleNumber(value, locale);
             return area !== null && area >= AREA_LIMITS.min && area <= AREA_LIMITS.max;
@@ -126,21 +117,23 @@ export function propertySchema({
             max: formatCount(AREA_LIMITS.max, locale),
           }),
         ),
+      ),
       rooms: z.string(),
       floor: z.string(),
       totalFloors: z.string(),
       elevator: z.enum(["", "yes", "no"]),
-      condition: z.string().refine(isCondition, required),
-      yearBuilt: z
-        .string()
-        .trim()
-        .refine(
+      // The control holds a string ("" until chosen); a valid step hands on a `Condition`.
+      condition: z.pipe(z.string(), z.enum(CONDITIONS, required)),
+      yearBuilt: z.string().check(
+        z.trim(),
+        z.refine(
           (value) => value.length === 0 || (/^\d{4}$/.test(value) && Number(value) >= YEAR_MIN && Number(value) <= yearMax),
           t("yearInvalid", { min: YEAR_MIN, max: yearMax }),
         ),
-      addressNote: z.string().trim().max(ADDRESS_MAX, tForms("tooLong", { max: ADDRESS_MAX })),
+      ),
+      addressNote: z.string().check(z.trim(), z.maxLength(ADDRESS_MAX, tForms("tooLong", { max: ADDRESS_MAX }))),
     })
-    .superRefine((values, ctx) => {
+    .check(z.superRefine((values, ctx) => {
       // Rooms and floor are required only where they mean something.
       if (!hasLayout(values.propertyType)) return;
       if (values.rooms.length === 0) ctx.addIssue({ code: "custom", path: ["rooms"], message: required });
@@ -149,7 +142,7 @@ export function propertySchema({
       if (typeof floor === "number" && values.totalFloors.length > 0 && floor > Number(values.totalFloors)) {
         ctx.addIssue({ code: "custom", path: ["totalFloors"], message: t("floorAboveTotal") });
       }
-    });
+    }));
 }
 
 /** What the controls hold (strings) and what a valid step hands on (narrowed). */
@@ -161,7 +154,7 @@ export type PropertyValues = z.output<ReturnType<typeof propertySchema>>;
 export function contactSchema(tForms: Translate) {
   return z.object({
     ...contactFields(tForms),
-    message: z.string().trim().max(MESSAGE_MAX, tForms("tooLong", { max: MESSAGE_MAX })),
+    message: z.string().check(z.trim(), z.maxLength(MESSAGE_MAX, tForms("tooLong", { max: MESSAGE_MAX }))),
   });
 }
 
@@ -215,9 +208,9 @@ export function toValuationArgs(
 
 export function onsiteSchema({ tForms, t }: { tForms: Translate; t: Translate }) {
   return z.object({
-    day: z.string().min(1, t("onsite.dayRequired")),
-    window: z.string().refine(isOnsiteWindow, t("onsite.windowRequired")),
-    note: z.string().trim().max(NOTE_MAX, tForms("tooLong", { max: NOTE_MAX })),
+    day: z.string().check(z.minLength(1, t("onsite.dayRequired"))),
+    window: z.pipe(z.string(), z.enum(ONSITE_WINDOWS, t("onsite.windowRequired"))),
+    note: z.string().check(z.trim(), z.maxLength(NOTE_MAX, tForms("tooLong", { max: NOTE_MAX }))),
     hp: z.string(),
   });
 }

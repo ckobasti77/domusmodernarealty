@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { Button } from "@/components/site/Button";
 import { RadioField, TextAreaField, TextField } from "@/components/site/Field";
 import { api } from "@/convex/_generated/api";
@@ -80,7 +80,7 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
   const schema = z.object({
     ...contactFields(t),
     mode: z.enum(["in_person", "video"]),
-    message: z.string().trim().max(1000, t("tooLong", { max: 1000 })),
+    message: z.string().check(z.trim(), z.maxLength(1000, t("tooLong", { max: 1000 }))),
   });
   type Values = z.infer<typeof schema>;
 

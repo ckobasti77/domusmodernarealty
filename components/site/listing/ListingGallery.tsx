@@ -125,7 +125,9 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
               src={lead.url}
               alt={altOf(lead)}
               fill
-              preload
+              // The cover is the page's LCP: fetch it first, never lazily.
+              loading="eager"
+              fetchPriority="high"
               sizes={small.length > 0 ? "(min-width: 1600px) 800px, (min-width: 768px) 50vw, 100vw" : "100vw"}
               placeholder={lead.blurDataURL !== undefined ? "blur" : "empty"}
               blurDataURL={lead.blurDataURL}

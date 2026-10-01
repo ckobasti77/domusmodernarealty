@@ -98,7 +98,7 @@ export function ErrorScreen({
             <h1 className="max-w-[16ch] font-display text-display-l font-normal text-ivory">
               {title}
               {subtitle !== undefined ? (
-                <span lang={subtitle.lang} className="mt-3 block font-display text-h2 italic text-mist">
+                <span lang={subtitle.lang} className="mt-3 block font-display-italic text-h2 italic text-mist">
                   {subtitle.text}
                 </span>
               ) : null}

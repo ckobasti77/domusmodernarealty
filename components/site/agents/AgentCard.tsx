@@ -43,7 +43,6 @@ export async function AgentCard({
       <Heading className={cn("mt-6 font-display font-normal", grid ? "text-h2" : "text-h3")}>
         <Link
           href={{ pathname: "/agents/[slug]", params: { slug: agent.slug } }}
-          prefetch={false}
           className={cn(
             "transition-colors duration-200 ease-out pointer-fine:group-hover/agent:text-bronze-text",
             "after:absolute after:inset-0 after:content-['']",

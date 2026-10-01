@@ -116,7 +116,6 @@ export function CookieConsent() {
             {fixOrphans(t("bannerBody"))}{" "}
             <Link
               href="/privacy"
-              prefetch={false}
               className="text-bronze underline decoration-bronze/40 underline-offset-4 transition-colors duration-200 pointer-fine:hover:decoration-bronze"
             >
               {tLegal("privacyHeading")}

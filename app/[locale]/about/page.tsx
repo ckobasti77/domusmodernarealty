@@ -290,7 +290,6 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
               action={
                 <Link
                   href="/agents"
-                  prefetch={false}
                   className={textLinkClasses("light", "group/team inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
                 >
                   {t("teamAll")}

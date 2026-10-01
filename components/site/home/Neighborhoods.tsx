@@ -77,7 +77,6 @@ export async function Neighborhoods({
         <div className="mt-12 flex justify-end lg:mt-16">
           <Link
             href="/locations"
-            prefetch={false}
             className={textLinkClasses("dark", "group/all inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
           >
             {t("neighborhoodsAll")}

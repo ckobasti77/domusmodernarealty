@@ -8,7 +8,7 @@ import { agencyJsonLd } from "@/components/site/contact/agency-jsonld";
 import { ContactChannels } from "@/components/site/contact/ContactChannels";
 import { ContactForm } from "@/components/site/contact/ContactForm";
 import { FaqSection } from "@/components/site/contact/FaqSection";
-import { managedFaq, managedIntro, textOr } from "@/components/site/contact/managed";
+import { managedFaq, managedIntro } from "@/components/site/contact/managed";
 import { OfficeDetails } from "@/components/site/contact/OfficeDetails";
 import { Container, Grid, Section } from "@/components/site/Container";
 import { SectionHeading } from "@/components/site/SectionHeading";
@@ -52,7 +52,7 @@ export default async function ContactPage({ params }: Props) {
 
   const values = placeholderValues(settings);
   const intro = managedIntro(page, locale, values);
-  const title = textOr(intro?.title ?? null, locale, t("heading"));
+  const title = intro?.title ?? { text: t("heading") };
   // The managed opening paragraph carries the channels and the one reply-time
   // promise; without it the built-in lede says the same.
   const lede = intro?.lead ?? { text: t("lede") };

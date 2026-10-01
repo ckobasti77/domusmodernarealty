@@ -35,7 +35,6 @@ export async function PlaceIndex({
           <li key={node._id} className="border-b border-hairline-light">
             <Link
               href={{ pathname: "/locations/[slug]", params: { slug: node.slug } }}
-              prefetch={false}
               className="group/row flex min-h-11 items-center justify-between gap-6 py-5 focus-visible:outline-offset-4"
             >
               <span

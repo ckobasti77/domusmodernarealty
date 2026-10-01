@@ -65,7 +65,6 @@ async function Post({ post, size, locale }: { post: PostCard; size: Size; locale
         >
           <Link
             href={{ pathname: "/journal/[slug]", params: { slug: post.slug } }}
-            prefetch={false}
             className="transition-colors duration-200 before:absolute before:inset-0 pointer-fine:group-hover/post:text-bronze-text"
           >
             {fixTypography(title.text)}
@@ -100,7 +99,6 @@ export async function JournalTeaser({ locale, posts }: { locale: Locale; posts: 
           action={
             <Link
               href="/journal"
-              prefetch={false}
               className={textLinkClasses(
                 "light",
                 "group/all inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]",

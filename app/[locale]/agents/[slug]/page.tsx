@@ -140,7 +140,6 @@ export default async function AgentPage({ params }: { params: Params }) {
                       <li key={area._id}>
                         <Link
                           href={{ pathname: "/locations/[slug]", params: { slug: area.slug } }}
-                          prefetch={false}
                           className={textLinkClasses("light")}
                         >
                           <span lang={name.lang !== locale ? name.lang : undefined}>{name.text}</span>
@@ -189,7 +188,6 @@ export default async function AgentPage({ params }: { params: Params }) {
               <p className="text-pretty text-body-l text-stone-text">{fixTypography(t("listingsEmpty"))}</p>
               <Link
                 href="/properties"
-                prefetch={false}
                 className={textLinkClasses("light", "group/all mt-6 inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
               >
                 {t("listingsAll")}

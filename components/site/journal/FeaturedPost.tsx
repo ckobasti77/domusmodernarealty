@@ -51,7 +51,6 @@ export function FeaturedPost({ post }: { post: PostCard }) {
         >
           <Link
             href={{ pathname: "/journal/[slug]", params: { slug: post.slug } }}
-            prefetch={false}
             className={STRETCHED_LINK}
           >
             {fixTypography(title.text)}

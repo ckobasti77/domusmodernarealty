@@ -95,7 +95,6 @@ export async function Services({ locale, copy }: { locale: Locale; copy: HomeCop
                     )}{" "}
                     <Link
                       href={HREF[service.key]}
-                      prefetch={false}
                       className={cn(
                         "whitespace-nowrap font-medium text-ink underline decoration-bronze-text/60 decoration-1 underline-offset-[5px]",
                         "transition-colors duration-200 pointer-fine:hover:text-bronze-text",

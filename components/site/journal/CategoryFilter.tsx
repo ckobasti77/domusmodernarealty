@@ -35,7 +35,6 @@ export function CategoryFilter({
               <Link
                 href={item.category === undefined ? "/journal" : { pathname: "/journal", query: { category: item.category } }}
                 scroll={false}
-                prefetch={false}
                 aria-current={current ? "page" : undefined}
                 className={cn(
                   "relative inline-flex min-h-12 items-center whitespace-nowrap text-small uppercase tracking-[0.12em] transition-colors duration-200",

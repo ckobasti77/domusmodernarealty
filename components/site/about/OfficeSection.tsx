@@ -50,7 +50,6 @@ export async function OfficeSection({
           <p className="mt-6 max-w-[46ch] text-small text-stone-text">{fixTypography(tAgents("replyPromise"))}</p>
           <Link
             href="/contact"
-            prefetch={false}
             className={textLinkClasses("light", "group/contact mt-8 inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
           >
             {t("contactLink")}

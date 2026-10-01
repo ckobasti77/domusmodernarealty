@@ -109,7 +109,6 @@ export function CompareTable({
                 >
                   <Link
                     href={{ pathname: "/properties/[slug]", params: { slug: item.slug } }}
-                    prefetch={false}
                     lang={title.lang === locale ? undefined : title.lang}
                     className="line-clamp-3 font-display text-[1.25rem] leading-snug text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text lg:text-h3"
                   >
@@ -160,7 +159,6 @@ export function CompareTable({
               <td key={item._id} className={cn(CELL_X, "hairline-t pt-8 align-top")}>
                 <Link
                   href={{ pathname: "/properties/[slug]", params: { slug: item.slug } }}
-                  prefetch={false}
                   className={cn(buttonClasses({ variant: "outline", size: "compact" }), "w-full gap-2 px-3")}
                 >
                   {t("view")}

@@ -72,7 +72,6 @@ export async function PlaceCard({
           <h3 lang={name.lang} className="min-w-0 font-display text-h2 font-normal">
             <Link
               href={{ pathname: "/locations/[slug]", params: { slug: node.slug } }}
-              prefetch={false}
               className={cn(
                 "transition-colors duration-200 ease-out pointer-fine:group-hover/place:text-bronze-text",
                 "after:absolute after:inset-0 after:content-['']",
@@ -124,7 +123,6 @@ export async function PlaceCard({
               <li key={area._id} className="border-b border-hairline-light">
                 <Link
                   href={{ pathname: "/locations/[slug]", params: { slug: area.slug } }}
-                  prefetch={false}
                   className="group/area flex min-h-11 items-center justify-between gap-4 py-2 text-small transition-colors duration-200 pointer-fine:hover:text-bronze-text focus-visible:text-bronze-text"
                 >
                   <span lang={areaName.lang}>{areaName.text}</span>

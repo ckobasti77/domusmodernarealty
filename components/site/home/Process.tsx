@@ -43,7 +43,7 @@ export async function Process({ locale, copy }: { locale: Locale; copy: HomeCopy
               title={headingNode(copy.heading)}
               lede={ledeNode(copy.lede)}
             />
-            <Link href="/sell" prefetch={false} className={cn(buttonClasses({ variant: "primary" }), "mt-10")}>
+            <Link href="/sell" className={cn(buttonClasses({ variant: "primary" }), "mt-10")}>
               <span>{t("processCta")}</span>
             </Link>
 

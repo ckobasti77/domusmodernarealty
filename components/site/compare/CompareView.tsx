@@ -211,7 +211,6 @@ export function CompareView({ shared }: { shared: SharedComparison | null }) {
               {ownSelectionElsewhere ? (
                 <Link
                   href={{ pathname: "/compare", query: { ids: storeIds.join(",") } }}
-                  prefetch={false}
                   className={buttonClasses({ variant: "ghost" })}
                 >
                   {t("ownSelection", { count: storeIds.length })}

@@ -55,7 +55,6 @@ export function ArticleByline({
           {author !== undefined ? (
             <Link
               href={{ pathname: "/agents/[slug]", params: { slug: author.slug } }}
-              prefetch={false}
               className="relative font-display text-h3 leading-tight transition-colors duration-200 pointer-coarse:before:absolute pointer-coarse:before:inset-x-0 pointer-coarse:before:-inset-y-2 pointer-fine:hover:text-bronze-text"
             >
               {author.name}

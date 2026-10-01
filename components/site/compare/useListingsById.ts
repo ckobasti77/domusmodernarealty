@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries } from "convex/react";
-import type { FunctionReference, FunctionReturnType } from "convex/server";
+import { getFunctionName, makeFunctionReference, type FunctionReference, type FunctionReturnType } from "convex/server";
 import { useMemo } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -40,11 +40,14 @@ export function useListingsById<Q extends ByIdsQuery>(
 ): ReadonlyMap<string, ListingState<Item<Q>>> {
   // `useQueries` re-subscribes whenever this object changes identity, so it is
   // rebuilt only when the id list itself changes (the stores hand out a stable
-  // frozen array until a write happens).
-  const request = useMemo(
-    () => Object.fromEntries(ids.map((id) => [id, { query, args: { ids: [id] } }])),
-    [query, ids],
-  );
+  // frozen array until a write happens). The memo keys on the function NAME:
+  // `api.listings.byIds` is a fresh Proxy on every property access, and keying
+  // on it rebuilt the request on every render — a render loop in useQueries.
+  const name = getFunctionName(query);
+  const request = useMemo(() => {
+    const reference = makeFunctionReference<"query">(name);
+    return Object.fromEntries(ids.map((id) => [id, { query: reference, args: { ids: [id] } }]));
+  }, [name, ids]);
   const results = useQueries(request);
 
   return useMemo(() => {

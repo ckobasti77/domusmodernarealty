@@ -971,6 +971,7 @@
       "propertyType": "Art der Immobilie",
       "location": "Lage",
       "locationNone": "Aus der Liste wählen",
+      "locationRequired": "Wählen Sie eine Lage aus der Liste oder geben Sie die Straße ein.",
       "otherCities": "Weitere Städte",
       "address": "Straße oder genauere Lage",
       "addressHint": "Die genaue Adresse können Sie später nachreichen.",

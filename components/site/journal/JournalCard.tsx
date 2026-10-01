@@ -73,7 +73,6 @@ export function JournalCard({ post, level = 2 }: { post: PostCard; level?: 2 | 3
       >
         <Link
           href={{ pathname: "/journal/[slug]", params: { slug: post.slug } }}
-          prefetch={false}
           className={STRETCHED_LINK}
         >
           {fixTypography(title.text)}

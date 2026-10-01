@@ -200,7 +200,6 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
           <li key={item.id} data-hood-row="" data-id={item.id} data-phone={item.onPhone} className="relative">
             <Link
               href={{ pathname: "/locations/[slug]", params: { slug: item.slug } }}
-              prefetch={false}
               className="group/row block lg:grid lg:grid-cols-8 lg:items-baseline lg:gap-6 lg:py-5"
             >
               {item.image !== undefined ? (

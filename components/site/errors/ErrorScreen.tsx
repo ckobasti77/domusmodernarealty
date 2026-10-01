@@ -160,7 +160,6 @@ export function ErrorScreen({
                   <Link
                     href={link.href}
                     lang={link.lang}
-                    prefetch={false}
                     className={cn(
                       "group/link flex min-h-14 items-center justify-between gap-6 py-3",
                       "font-display text-[1.5rem] leading-tight text-ivory transition-colors duration-200",

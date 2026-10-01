@@ -109,7 +109,6 @@ export function Header() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    prefetch={false}
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "relative inline-flex min-h-11 items-center whitespace-nowrap font-sans text-small uppercase tracking-[0.12em]",
@@ -131,7 +130,6 @@ export function Header() {
         <div className="flex items-center gap-2 lg:gap-5">
           <Link
             href="/favorites"
-            prefetch={false}
             className="relative inline-flex size-11 items-center justify-center text-ivory transition-colors duration-200 pointer-fine:hover:text-bronze"
           >
             <Heart aria-hidden="true" strokeWidth={1.25} className="size-5" />
@@ -297,7 +295,6 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             <li key={item.href} data-menu-item className="hairline-b-dark">
               <Link
                 href={item.href}
-                prefetch={false}
                 onClick={onClose}
                 className="flex min-h-14 items-center py-3 font-display text-display-m font-normal text-ivory"
               >
@@ -308,7 +305,6 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           <li data-menu-item className="hairline-b-dark">
             <Link
               href="/favorites"
-              prefetch={false}
               onClick={onClose}
               className="flex min-h-14 items-center py-3 font-display text-display-m font-normal text-ivory"
             >

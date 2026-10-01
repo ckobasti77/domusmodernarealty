@@ -85,7 +85,7 @@ export async function FinalCta({
                 {fixTypography(copy.lede.text)}
               </p>
               <MagneticButton className="mt-10">
-                <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "inverse" })}>
+                <Link href="/contact" className={buttonClasses({ variant: "inverse" })}>
                   <span>{t("finalCta")}</span>
                 </Link>
               </MagneticButton>

@@ -1159,6 +1159,7 @@
       "propertyType": "Vrsta nekretnine",
       "location": "Lokacija",
       "locationNone": "Izaberite iz liste",
+      "locationRequired": "Izaberite lokaciju iz liste ili upišite ulicu.",
       "otherCities": "Ostali gradovi",
       "address": "Ulica ili bliža lokacija",
       "addressHint": "Tačnu adresu možete poslati i kasnije.",

@@ -59,7 +59,7 @@ export function ConsentFields<T extends ConsentValues>({
       <CheckboxField error={errors.privacy?.message} {...reg("privacy")}>
         {t.rich("consentPrivacy", {
           link: (chunks: ReactNode) => (
-            <Link href="/privacy" prefetch={false} className="underline decoration-bronze underline-offset-4">
+            <Link href="/privacy" className="underline decoration-bronze underline-offset-4">
               {chunks}
             </Link>
           ),

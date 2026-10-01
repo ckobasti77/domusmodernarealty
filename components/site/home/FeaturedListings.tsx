@@ -37,7 +37,7 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
         <Container className="flex flex-col items-start gap-8">
           <SectionHeading id="featured-title" title={t("featuredHeading")} />
           <p className="max-w-[52ch] text-body-l text-stone-text">{fixTypography(t("featuredEmpty"))}</p>
-          <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "primary" })}>
+          <Link href="/contact" className={buttonClasses({ variant: "primary" })}>
             <span>{t("featuredEmptyCta")}</span>
           </Link>
         </Container>
@@ -94,7 +94,6 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
               <div className="hidden lg:flex lg:shrink-0 lg:flex-col lg:items-start lg:pl-16 lg:pr-4">
                 <Link
                   href="/properties"
-                  prefetch={false}
                   className="group/all flex items-center gap-5 font-display text-display-m font-normal text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text"
                 >
                   <span className="whitespace-nowrap">{t("featuredAll")}</span>
@@ -138,7 +137,6 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
             </div>
             <Link
               href="/properties"
-              prefetch={false}
               className={textLinkClasses("light", "text-small uppercase tracking-[0.12em] lg:motion-safe:hidden")}
             >
               {t("featuredAll")}

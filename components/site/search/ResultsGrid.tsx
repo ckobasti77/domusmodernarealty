@@ -208,7 +208,6 @@ function EmptyState({
         </div>
         <Link
           href={{ pathname: "/contact", query: { message: t("empty.messagePrefix", { summary }) } }}
-          prefetch={false}
           data-testid="empty-cta"
           className={cn(buttonClasses({ variant: "primary", size: "default" }), "shrink-0")}
         >

@@ -306,7 +306,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
               </li>
               <li aria-hidden="true">/</li>
               <li>
-                <Link href="/properties" prefetch={false} className="transition-colors duration-200 pointer-fine:hover:text-ivory">
+                <Link href="/properties" className="transition-colors duration-200 pointer-fine:hover:text-ivory">
                   {tNav("properties")}
                 </Link>
               </li>
@@ -483,7 +483,7 @@ async function ClosedNotice({ status }: { status: string }) {
   const key = status === "sold" ? "sold" : status === "rented" ? "rented" : "reserved";
   const action: ReactNode =
     key === "reserved" ? null : (
-      <Link href="/properties" prefetch={false} className={buttonClasses({ variant: "primary", size: "compact" })}>
+      <Link href="/properties" className={buttonClasses({ variant: "primary", size: "compact" })}>
         {t("closed.browse")}
       </Link>
     );

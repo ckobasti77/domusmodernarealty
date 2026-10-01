@@ -139,7 +139,6 @@ export async function Footer() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    prefetch={false}
                     className="inline-flex min-h-9 items-center text-small text-mist transition-colors duration-200 pointer-fine:hover:text-ivory"
                   >
                     {tNav(item.key)}
@@ -158,7 +157,6 @@ export async function Footer() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    prefetch={false}
                     className="inline-flex min-h-9 items-center text-small text-mist transition-colors duration-200 pointer-fine:hover:text-ivory"
                   >
                     {tLegal(item.key)}

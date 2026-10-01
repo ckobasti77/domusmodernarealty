@@ -440,7 +440,7 @@ export default async function StyleguidePage({
               <CheckboxField name="sg-privacy" error={tForms("requiredField")}>
                 {tConsent.rich("privacyRequired", {
                   link: (chunks) => (
-                    <Link href="/privacy" prefetch={false} className={textLinkClasses("light")}>
+                    <Link href="/privacy" className={textLinkClasses("light")}>
                       {chunks}
                     </Link>
                   ),

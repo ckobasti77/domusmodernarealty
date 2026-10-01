@@ -72,7 +72,6 @@ export async function LocationBlock({ listing, locale }: { listing: ListingDetai
       {area !== undefined ? (
         <Link
           href={{ pathname: "/locations/[slug]", params: { slug: area.slug } }}
-          prefetch={false}
           className="group/teaser hairline-t hairline-b mt-10 flex items-center justify-between gap-6 py-6 text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text"
         >
           <span className="font-display text-h3">

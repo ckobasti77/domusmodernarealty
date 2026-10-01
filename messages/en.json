@@ -971,6 +971,7 @@
       "propertyType": "Property type",
       "location": "Location",
       "locationNone": "Choose from the list",
+      "locationRequired": "Choose a location from the list or type the street.",
       "otherCities": "Other cities",
       "address": "Street or more precise location",
       "addressHint": "You can send the exact address later.",

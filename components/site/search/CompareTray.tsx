@@ -79,7 +79,6 @@ export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard>
         </button>
         <Link
           href={{ pathname: "/compare", query: { ids: ids.join(",") } }}
-          prefetch={false}
           data-testid="compare-cta"
           className={cn(buttonClasses({ variant: "inverse", size: "compact" }), "shrink-0")}
         >

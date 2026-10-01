@@ -200,13 +200,12 @@ async function PrimaryPlace({
               className="mt-10"
             />
             <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
-              <Link href={href} prefetch={false} className={buttonClasses({ variant: "primary" })}>
+              <Link href={href} className={buttonClasses({ variant: "primary" })}>
                 {t("guideCta")}
               </Link>
               {listingTotal(node) > 0 ? (
                 <Link
                   href={{ pathname: "/properties", query: searchQuery({ transaction: "sale", location: node.slug }) }}
-                  prefetch={false}
                   className={textLinkClasses("light", "group/all inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
                 >
                   {t("searchCta")}

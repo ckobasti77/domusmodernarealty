@@ -844,7 +844,6 @@ function MiniCard({ point }: { point: MapPoint }) {
 
         <Link
           href={{ pathname: "/properties/[slug]", params: { slug: point.slug } }}
-          prefetch={false}
           className="mt-1 self-start font-medium text-bronze-text underline decoration-bronze/60 underline-offset-4 transition-colors duration-150 hover:text-ink hover:decoration-ink"
         >
           {t("viewListing")}

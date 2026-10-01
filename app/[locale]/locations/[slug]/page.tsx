@@ -174,7 +174,7 @@ export default async function LocationPage({ params }: { params: Params }) {
               <dl className="mt-10 border-t border-hairline-light text-body">
                 {parent !== undefined ? (
                   <FactRow label={t("partOf")}>
-                    <Link href={hrefOf(parent.slug)} prefetch={false} className={textLinkClasses("light")}>
+                    <Link href={hrefOf(parent.slug)} className={textLinkClasses("light")}>
                       <span lang={placeName(parent, locale).lang}>{context.join(", ")}</span>
                     </Link>
                   </FactRow>
@@ -245,10 +245,10 @@ export default async function LocationPage({ params }: { params: Params }) {
               <p className="font-display text-h3">{t("emptyTitle")}</p>
               <p className="mt-3 text-pretty text-body text-stone-text">{fixTypography(t("emptyBody"))}</p>
               <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "primary" })}>
+                <Link href="/contact" className={buttonClasses({ variant: "primary" })}>
                   {t("emptyContact")}
                 </Link>
-                <Link href="/properties" prefetch={false} className={buttonClasses({ variant: "outline" })}>
+                <Link href="/properties" className={buttonClasses({ variant: "outline" })}>
                   {t("emptyAll")}
                 </Link>
               </div>
@@ -259,7 +259,6 @@ export default async function LocationPage({ params }: { params: Params }) {
             <p className="max-w-[48ch] text-pretty text-body text-ink">{fixTypography(t("sellPrompt"))}</p>
             <Link
               href={{ pathname: "/valuation", query: valuationQuery({ location: location.slug }) }}
-              prefetch={false}
               className={textLinkClasses("light", "group/val inline-flex items-center gap-3 self-start text-small uppercase tracking-[0.12em] md:self-auto")}
             >
               {t("sellCta")}
@@ -336,7 +335,6 @@ async function SearchLinks({ location, locale }: { location: LocationNode; local
         <li key={link.key}>
           <Link
             href={{ pathname: "/properties", query: searchQuery({ transaction: link.transaction, location: location.slug }) }}
-            prefetch={false}
             className={textLinkClasses("light", "group/search inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
           >
             {link.label}

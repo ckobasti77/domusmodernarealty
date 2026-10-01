@@ -21,7 +21,6 @@ function BandHeading({ id, title, href, linkLabel }: { id: string; title: string
       </h2>
       <Link
         href={href}
-        prefetch={false}
         className={textLinkClasses("light", "group/all inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}
       >
         {linkLabel}

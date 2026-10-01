@@ -94,7 +94,7 @@ export async function LegalBlock({
           </h3>
           <p lang={commissionText.lang} className="mt-2 max-w-[65ch] text-small text-ink">
             {fixTypography(commissionText.text)}{" "}
-            <Link href="/terms" prefetch={false} className="underline decoration-bronze underline-offset-4">
+            <Link href="/terms" className="underline decoration-bronze underline-offset-4">
               {t("legalBlock.termsLink")}
             </Link>
           </p>

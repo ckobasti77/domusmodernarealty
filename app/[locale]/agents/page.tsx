@@ -80,7 +80,7 @@ export default async function AgentsPage({ params }: PageProps<"/[locale]/agents
             </p>
           </div>
           <div className="col-span-4 lg:col-span-4 lg:col-start-9 lg:justify-self-end">
-            <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "primary" })}>
+            <Link href="/contact" className={buttonClasses({ variant: "primary" })}>
               <span className="transition-transform duration-200 ease-out pointer-fine:group-hover/btn:-translate-y-[2px]">
                 {t("ctaLink")}
               </span>

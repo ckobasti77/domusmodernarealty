@@ -66,7 +66,6 @@ export async function ToursTeaser({
               ) : null}
               <Link
                 href={{ pathname: "/properties", query: searchQuery({ transaction: "sale", hasTour: true }) }}
-                prefetch={false}
                 className={textLinkClasses("dark", "text-small uppercase tracking-[0.12em]")}
               >
                 {t("toursCtaAll")}

@@ -1,9 +1,8 @@
 import { getTranslations } from "next-intl/server";
 import { ClipReveal } from "@/components/motion/ClipReveal";
 import { Reveal } from "@/components/motion/Reveal";
-import { Accordion } from "@/components/site/Accordion";
 import { buttonClasses } from "@/components/site/Button";
-import { Container, Grid, Section } from "@/components/site/Container";
+import { Container } from "@/components/site/Container";
 import { Eyebrow } from "@/components/site/Eyebrow";
 import { RichText } from "@/components/site/page/RichText";
 import { Picture } from "@/components/site/Picture";
@@ -16,8 +15,9 @@ import type { Copy, ValuationCopy } from "./content";
 
 /**
  * The server-rendered parts of the valuation page around the funnel island:
- * the hero's key facts, the "how we calculate" column beside the funnel, the
- * on-site valuation band (with the owner's "valuation" render) and the FAQ.
+ * the hero's key facts, the "how we calculate" column beside the funnel and
+ * the on-site valuation band (with the owner's "valuation" render). The FAQ is
+ * the shared `FaqSection` of the sell and contact pages.
  */
 
 /** "Sunny study with a long desk beneath a row of windows" (docs/assets/demo-media.json), the landing's fallback too. */
@@ -32,19 +32,27 @@ function headingNode(copy: Copy) {
 
 const FACTS = ["duration", "cost", "result"] as const;
 
-/** Three facts set like a specification, at the foot of the ink band. */
+/**
+ * Three facts set like a specification, at the foot of the ink band. On wide
+ * screens they skip the first of the hero's five aside columns, so they share
+ * a left edge with "how we calculate" (columns 9–12) just below the seam.
+ */
 export async function HeroFacts({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "valuation" });
   return (
     // Phones go straight to the funnel; the lede already says the same in a sentence.
-    <dl className="hidden hairline-t-dark sm:block">
-      {FACTS.map((fact) => (
-        <div key={fact} className="flex items-baseline justify-between gap-6 hairline-b-dark py-4">
-          <dt className="shrink-0 font-mono text-label uppercase text-mist">{t(`facts.${fact}Label`)}</dt>
-          <dd className="text-right font-display text-h3 font-normal text-ivory">{t(`facts.${fact}Value`)}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="hidden sm:block lg:grid lg:grid-cols-5 lg:gap-x-6">
+      <dl className="hairline-t-dark lg:col-span-4 lg:col-start-2">
+        {FACTS.map((fact) => (
+          <div key={fact} className="flex items-baseline justify-between gap-6 hairline-b-dark py-4">
+            <dt className="shrink-0 font-mono text-label uppercase text-mist">{t(`facts.${fact}Label`)}</dt>
+            <dd className="text-balance text-right font-display text-h3 font-normal text-ivory">
+              {t(`facts.${fact}Value`)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -92,7 +100,8 @@ function LookAtItem({ text }: { text: string }) {
   return (
     <span>
       <span className="text-ivory">{fixTypography(text.slice(0, split))}</span>
-      <span className="text-mist"> — {fixTypography(text.slice(split + 3))}</span>
+      {/* A no-break space before the dash, so a line never starts with it. */}
+      <span className="text-mist">{" — "}{fixTypography(text.slice(split + 3))}</span>
     </span>
   );
 }
@@ -159,38 +168,11 @@ export async function OnsiteSection({
                   <span lang={book.label.lang}>{book.label.text}</span>
                 </a>
               )}
-              <p className="max-w-[34ch] text-pretty text-small text-mist">{t("replyPromise")}</p>
+              <p className="max-w-[34ch] text-pretty text-small text-mist">{fixTypography(t("replyPromise"))}</p>
             </div>
           </div>
         </div>
       </Container>
     </section>
-  );
-}
-
-/* ------------------------------------------------------------------ FAQ */
-
-export async function ValuationFaq({ locale, items }: { locale: Locale; items: ValuationCopy["faq"] }) {
-  if (items.length === 0) return null;
-  const t = await getTranslations({ locale, namespace: "valuation" });
-  return (
-    <Section tone="ivory" aria-labelledby="valuation-faq-title">
-      <Container>
-        <Grid>
-          <div className="col-span-4 lg:col-span-4">
-            <SectionHeading id="valuation-faq-title" eyebrow={t("faqEyebrow")} title={t("faqHeading")} size="display-m" />
-          </div>
-          <Reveal skipInView className="col-span-4 lg:col-span-7 lg:col-start-6">
-            <Accordion
-              items={items.map((item) => ({
-                id: item.id,
-                question: <span lang={item.question.lang}>{fixTypography(item.question.text)}</span>,
-                answer: <p lang={item.answer.lang}>{fixTypography(item.answer.text)}</p>,
-              }))}
-            />
-          </Reveal>
-        </Grid>
-      </Container>
-    </Section>
   );
 }

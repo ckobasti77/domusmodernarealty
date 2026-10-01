@@ -231,7 +231,6 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
                       (methodTitle?.text ?? t("methodHeading"))
                     )
                   }
-                  size="h2"
                 />
               </div>
             </div>

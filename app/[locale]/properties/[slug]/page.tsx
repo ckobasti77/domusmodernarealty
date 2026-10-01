@@ -11,6 +11,7 @@ import type { CardMortgage } from "@/components/site/PropertyCard";
 import { buttonClasses } from "@/components/site/Button";
 import { Container } from "@/components/site/Container";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { FavoriteButton } from "@/components/site/FavoriteButton";
 import { AgentCard } from "@/components/site/listing/AgentCard";
 import { CostCalculator, MortgageCalculator } from "@/components/site/listing/Calculators";
 import { FeatureGroups } from "@/components/site/listing/FeatureGroups";
@@ -72,6 +73,19 @@ async function resolve(params: Params, searchParams: Search) {
 
 function href(slug: string) {
   return { pathname: "/properties/[slug]" as const, params: { slug } };
+}
+
+/** A short compound tail ("Save-Blick") stays with its hyphen: "Blick" alone on a line reads as an accident. */
+const COMPOUND_TAIL = /(\p{L})-(?=\p{L}{2,8}(?:[\s,.]|$))/gu;
+const WORD_JOINER = String.fromCharCode(0x2060);
+
+/**
+ * The H1 in the cards' house style (`fixTypography` keeps "na", "sa", "od" with
+ * the next word), with no lone last word at display size and no line break
+ * inside a short hyphenated compound.
+ */
+function displayTitle(text: string): string {
+  return fixWidows(fixTypography(text), 18).replace(COMPOUND_TAIL, `$1-${WORD_JOINER}`);
 }
 
 /** "430.000 €" / "1.200 € mesečno" / "Cena na upit" — shared by the title and description. */
@@ -284,10 +298,13 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
     ]),
   ];
 
+  // "Trosoban" / "3-комнатная" agree with "stan" / "квартира", so the structure
+  // word is for apartments; every other type states its area, as its
+  // structure title does ("Kancelarija, 145 m²").
   const eyebrow = [
     t(`transaction.${listing.transaction}`),
     t(`propertyType.${listing.propertyType}`),
-    listing.propertyType !== "land" && listing.propertyType !== "garage"
+    listing.propertyType === "apartment"
       ? structureShort(t, tUnits, listing.rooms)
       : formatArea(listing.areaM2, locale, m2),
   ].join(" · ");
@@ -347,7 +364,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
             <div className="min-w-0 lg:col-span-8 lg:row-start-1">
               <Eyebrow tone="accentDark">{eyebrow}</Eyebrow>
               <h1 lang={title.lang} className="mt-4 max-w-[22ch] font-display text-display-m text-ivory">
-                {fixWidows(title.text, 18)}
+                {displayTitle(title.text)}
               </h1>
               <p className="mt-4 text-body-l text-mist">{placeLine(listing, locale)}</p>
             </div>
@@ -381,6 +398,9 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
               {listing.constructionType !== "old" ? (
                 <Badge className="border-ivory/30 text-ivory">{t(`construction.${listing.constructionType}`)}</Badge>
               ) : null}
+              {/* The same saved-list heart as on the cards (the favorites page
+                  tells visitors they can tap it here too). */}
+              <FavoriteButton listingId={listing._id} title={title.text} tone="dark" className="ml-auto" />
             </div>
           </header>
         </Container>

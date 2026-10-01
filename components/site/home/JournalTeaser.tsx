@@ -41,7 +41,7 @@ async function Post({ post, size, locale }: { post: PostCard; size: Size; locale
           alt=""
           ratio={lead ? "aspect-[4/3]" : "aspect-[3/2]"}
           crop={lead ? 0.75 : 2 / 3}
-          sizes={lead ? "(min-width: 1024px) 56vw, 92vw" : "(min-width: 1024px) 30vw, 92vw"}
+          sizes={lead ? "(min-width: 1024px) 56vw, 92vw" : "(min-width: 1024px) 30vw, (min-width: 768px) 46vw, 92vw"}
           className="-z-10"
           imageClassName={`${photoGrade(post.coverUrl)} transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]`}
         />
@@ -118,8 +118,10 @@ export async function JournalTeaser({ locale, posts }: { locale: Locale; posts: 
           <div className="col-span-4 lg:col-span-7">
             <Post post={first} size="lead" locale={locale} />
           </div>
+          {/* From 768px the two smaller posts sit side by side under the lead, so
+              a tablet keeps "1 large + 2" instead of three equal full-width pictures. */}
           {rest.length > 0 ? (
-            <div className="col-span-4 flex flex-col gap-16 lg:col-span-4 lg:col-start-9">
+            <div className="col-span-4 flex flex-col gap-16 md:grid md:grid-cols-2 md:gap-6 lg:col-span-4 lg:col-start-9 lg:flex lg:gap-16">
               {rest.slice(0, 2).map((post) => (
                 <Post key={post._id} post={post} size="side" locale={locale} />
               ))}

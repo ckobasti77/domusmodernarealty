@@ -6,7 +6,7 @@ import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
-import { formatLongDate, isoDate, type PostCard } from "./shared";
+import { formatLongDate, isoDate, POST_CARD_SIZES, type PostCard } from "./shared";
 
 /**
  * A journal card: cover, the meta line (category, date, reading time), title
@@ -19,13 +19,24 @@ import { formatLongDate, isoDate, type PostCard } from "./shared";
  * pages with the same component in the browser.
  */
 
-/** Category · date · reading time, in the mono label face. */
-export function PostMeta({ post, className }: { post: PostCard; className?: string }) {
+/**
+ * Category · date · reading time, in the mono label face. `stacked` (the
+ * cards) gives the category a line of its own: on one line the meta wrapped on
+ * one card and not its neighbour ("PRAVO I POREZI" is longer than
+ * "KVARTOVI"), so titles side by side started at different heights.
+ */
+export function PostMeta({ post, stacked = false, className }: { post: PostCard; stacked?: boolean; className?: string }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("journal");
   return (
-    <p className={cn("flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-label uppercase", className)}>
-      <span className="text-bronze-text">{t(`categories.${post.category}`)}</span>
+    <p
+      className={cn(
+        "flex flex-wrap items-center gap-x-4 font-mono text-label uppercase",
+        stacked ? "gap-y-2" : "gap-y-1",
+        className,
+      )}
+    >
+      <span className={cn("text-bronze-text", stacked && "basis-full")}>{t(`categories.${post.category}`)}</span>
       {post.publishedAt !== undefined ? (
         <time dateTime={isoDate(post.publishedAt)} className="text-stone-text">
           {formatLongDate(post.publishedAt, locale)}
@@ -42,7 +53,16 @@ export function PostMeta({ post, className }: { post: PostCard; className?: stri
 export const STRETCHED_LINK =
   "transition-colors duration-200 before:absolute before:inset-0 before:z-10 before:content-[''] focus-visible:outline-none focus-visible:before:outline-2 focus-visible:before:outline-offset-4 focus-visible:before:outline-current pointer-fine:group-hover/post:text-bronze-text";
 
-export function JournalCard({ post, level = 2 }: { post: PostCard; level?: 2 | 3 }) {
+export function JournalCard({
+  post,
+  level = 2,
+  sizes = POST_CARD_SIZES,
+}: {
+  post: PostCard;
+  level?: 2 | 3;
+  /** The cover's `sizes` for the grid the card sits in (`POST_CARD_SIZES_PAIR` in a pair). */
+  sizes?: string;
+}) {
   const locale = useLocale() as Locale;
   const title = pickL10n(post.title, locale);
   const excerpt = pickL10n(post.excerpt, locale);
@@ -56,7 +76,7 @@ export function JournalCard({ post, level = 2 }: { post: PostCard; level?: 2 | 3
           alt=""
           ratio="aspect-[3/2]"
           crop={2 / 3}
-          sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 92vw"
+          sizes={sizes}
           imageClassName={cn(
             photoGrade(post.coverUrl),
             "transition-[scale] duration-700 ease-estate pointer-fine:group-hover/post:scale-[1.03]",
@@ -64,7 +84,7 @@ export function JournalCard({ post, level = 2 }: { post: PostCard; level?: 2 | 3
         />
       ) : null}
 
-      <PostMeta post={post} className={post.coverUrl !== undefined ? "mt-6" : "hairline-t pt-6"} />
+      <PostMeta post={post} stacked className={post.coverUrl !== undefined ? "mt-6" : "hairline-t pt-6"} />
 
       <Heading
         lang={title.lang !== locale ? title.lang : undefined}

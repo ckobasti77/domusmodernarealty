@@ -23,6 +23,18 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
 
   // Lists of enum values read as "Jug, zapad", like every other value.
   const sentence = (value: string) => value.charAt(0).toLocaleUpperCase(locale) + value.slice(1);
+  // ...and a list of capitalised labels as one phrase: "Toplotna pumpa, podno,
+  // klima uređaj". German nouns keep their capitals, and so does an acronym ("TA peć").
+  const phrase = (values: readonly string[]) =>
+    sentence(
+      values
+        .map((value, index) =>
+          index === 0 || locale === "de" || /^\p{Lu}{2}/u.test(value)
+            ? value
+            : value.charAt(0).toLocaleLowerCase(locale) + value.slice(1),
+        )
+        .join(", "),
+    );
   const hasRooms = listing.propertyType !== "land" && listing.propertyType !== "garage";
   const hasFloor = listing.propertyType !== "land";
 
@@ -64,10 +76,10 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
     push(t("furnishing"), t(`furnishingValue.${listing.furnishing}`));
   }
   if (listing.heating.length > 0) {
-    push(t("heating"), sentence(listing.heating.map((value) => t(`heatingValue.${value}`)).join(", ")));
+    push(t("heating"), phrase(listing.heating.map((value) => t(`heatingValue.${value}`))));
   }
   if (listing.parking.length > 0) {
-    push(t("parking"), sentence(listing.parking.map((value) => t(`parkingValue.${value}`)).join(", ")));
+    push(t("parking"), phrase(listing.parking.map((value) => t(`parkingValue.${value}`))));
   }
   if (listing.propertyType === "apartment" || listing.propertyType === "office") {
     push(t("facts.elevator"), yesNo(listing.features.elevator));
@@ -77,14 +89,21 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
     push(t("facts.orientation"), sentence(listing.orientation.map((value) => t(`orientationValue.${value}`)).join(", ")));
   }
   if (listing.energyClass !== undefined) push(t("energyClass"), listing.energyClass);
-  if (listing.costs !== undefined && (listing.costs.infostan !== undefined || listing.costs.maintenance !== undefined)) {
+  // Either cost may be entered on its own; a missing one is left out, never shown as "0 €".
+  const infostan = listing.costs?.infostan;
+  const maintenance = listing.costs?.maintenance;
+  if (infostan !== undefined && maintenance !== undefined) {
     push(
       t("facts.bills"),
       t("facts.billsValue", {
-        infostan: formatPrice(listing.costs.infostan ?? 0, locale),
-        maintenance: formatPrice(listing.costs.maintenance ?? 0, locale),
+        infostan: formatPrice(infostan, locale),
+        maintenance: formatPrice(maintenance, locale),
       }),
     );
+  } else if (infostan !== undefined) {
+    push(t("facts.bills"), t("facts.billsInfostan", { amount: formatPrice(infostan, locale) }));
+  } else if (maintenance !== undefined) {
+    push(t("facts.bills"), t("facts.billsMaintenance", { amount: formatPrice(maintenance, locale) }));
   }
   if (listing.rent !== undefined) {
     if (listing.rent.minLeaseMonths !== undefined) {
@@ -104,7 +123,10 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
       <h2 id="facts-heading" className="font-display text-h2">
         {t("facts.heading")}
       </h2>
-      <dl className="hairline-t hairline-b mt-8 grid grid-cols-2 gap-x-6 gap-y-8 py-8 md:grid-cols-4">
+      {/* Both grids share the column lines of the listing's other blocks
+          (gap-x-8): the details run in two columns, the 1st and 3rd of the
+          figures above, until there is room for all four. */}
+      <dl className="hairline-t hairline-b mt-8 grid grid-cols-2 gap-x-8 gap-y-8 py-8 md:grid-cols-4">
         {lead.map((item) => (
           <div key={item.label} className="flex min-w-0 flex-col gap-2">
             <dt className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{item.label}</dt>
@@ -114,7 +136,7 @@ export async function KeyFacts({ listing, locale }: { listing: ListingDetail; lo
           </div>
         ))}
       </dl>
-      <dl className="mt-2 grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+      <dl className="mt-2 grid grid-cols-2 gap-x-8 xl:grid-cols-4">
         {rows.map((row) => (
           <div key={row.label} className="hairline-b flex flex-col gap-1 py-4">
             <dt className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{row.label}</dt>

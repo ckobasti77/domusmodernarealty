@@ -6,10 +6,10 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
 import type { PublicImage } from "@/convex/lib/dto";
-import type { Floor } from "@/convex/lib/validators";
-import { Link } from "@/i18n/navigation";
+import type { Floor, PropertyType } from "@/convex/lib/validators";
+import { Link, useRouter } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { fixTypography, formatArea, formatPrice } from "@/lib/format";
+import { fixTypography, fixWidows, formatArea, formatPrice } from "@/lib/format";
 import { frameLoader } from "@/lib/image-loaders";
 import { clipTitle, floorName } from "@/lib/listing-text";
 import { pickL10n, type L10nValue } from "@/lib/l10n";
@@ -40,6 +40,7 @@ export type PropertyCardListing = {
   ref: string;
   status: string;
   transaction: "sale" | "rent";
+  propertyType: PropertyType;
   title: L10nValue;
   locationLabel: L10nValue;
   price: number;
@@ -110,6 +111,13 @@ export function PropertyCard({
   // 3:2 card shows the whole title and lets CSS end line two, since a
   // character count cut there left a one-line title over an empty line.
   const shown = ratio === "4/5" ? clipTitle(title.text) : { text: title.text, clipped: false };
+  // House style, as on the listing page: short prepositions stay with the next
+  // word and a short last word ("2023.") never sits alone on line two.
+  const shownText = fixWidows(fixTypography(shown.text), 16);
+  // The same guards as the key facts: a plot or a garage has no rooms (the
+  // schema stores 0), and a plot has no storey.
+  const hasRooms = listing.propertyType !== "land" && listing.propertyType !== "garage" && listing.rooms > 0;
+  const hasFloor = listing.propertyType !== "land";
   // Serbian portals write storeys as codes ("PR / 5"). Other locales get the
   // words the listing page uses, and Russian counts the ground floor as the first.
   const floor = displayFloor(listing.floor, locale);
@@ -146,9 +154,10 @@ export function PropertyCard({
         : [];
 
   return (
-    <Hoverable id={listing._id} enabled={hoverSync} className={cn("group/card relative flex flex-col", className)}>
+    <Hoverable id={listing._id} enabled={hoverSync} className={cn("group/card relative flex h-full flex-col", className)}>
       <div className="relative">
         <Gallery
+          slug={listing.slug}
           frames={frames}
           ratio={ratio}
           sizes={sizes}
@@ -167,12 +176,15 @@ export function PropertyCard({
 
         {/* At most two badges, most decisive first. Text, not colour, carries the meaning. */}
         {/* One row only: a badge that would wrap (long Russian or German
-            words) falls onto a clipped second row and disappears whole. */}
-        <div className="pointer-events-none absolute left-4 right-16 top-4 z-10 flex max-h-[1.625rem] flex-wrap gap-2 overflow-hidden">
+            words) falls onto a clipped second row and disappears whole. The
+            row stops 8px short of the favorite's plate. */}
+        <div className="pointer-events-none absolute left-4 right-14 top-4 z-10 flex max-h-[1.625rem] flex-wrap gap-2 overflow-hidden">
           {badges}
         </div>
 
-        <div className="absolute right-4 top-4 z-20">
+        {/* The 44px hit box is placed so its 32px plate is centred on the
+            badge row and its right edge keeps the badges' 16px inset. */}
+        <div className="absolute right-2.5 top-1.5 z-20">
           <FavoriteButton
             listingId={listing._id}
             title={title.text}
@@ -181,12 +193,19 @@ export function PropertyCard({
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3">
-        {/* Two lines reserved and clamped, so cards in a row keep their prices,
-            meta rows and references on the same baselines. */}
+      <div className="mt-5 flex flex-1 flex-col gap-3">
+        {/* Two lines reserved, so cards in a row keep their prices, meta rows
+            and references on the same baselines. The 4:5 card's title is
+            already clipped to two lines; the 3:2 card may take a third rather
+            than cut off the floor, the terrace or the VAT refund. The card
+            fills its grid cell (`h-full`) and a shorter title's spare height
+            sits under it (`mb-auto`), so the row's baselines still meet. */}
         <h3
           id={`card-title-${listing._id}`}
-          className="line-clamp-2 min-h-[2lh] text-pretty font-display text-h3 font-normal"
+          className={cn(
+            "mb-auto min-h-[2lh] text-pretty font-display text-h3 font-normal",
+            ratio === "4/5" ? "line-clamp-2" : "line-clamp-3",
+          )}
         >
           <Link
             href={{
@@ -199,11 +218,11 @@ export function PropertyCard({
             {shown.clipped ? (
               <>
                 {/* The clipped wording is for the eye; assistive technology gets the whole title. */}
-                <span aria-hidden="true">{fixTypography(shown.text)}</span>
+                <span aria-hidden="true">{shownText}</span>
                 <span className="sr-only">{title.text}</span>
               </>
             ) : (
-              fixTypography(shown.text)
+              shownText
             )}
           </Link>
         </h3>
@@ -244,17 +263,21 @@ export function PropertyCard({
             non-wrapping flex row to draw them, so the row scrolls rather than
             wraps on a narrow card. */}
         <dl className="mt-1 flex items-center divide-x divide-hairline-light text-small text-stone-text">
-          <MetaItem label={tListing("area")} className="pr-4">
+          <MetaItem label={tListing("area")}>
             {formatArea(listing.areaM2, locale, tUnits("m2"))}
           </MetaItem>
-          <MetaItem label={tListing("rooms")} className="px-4">
-            {t("rooms", { rooms: listing.rooms })}
-          </MetaItem>
-          <MetaItem label={tListing("floor")} className="pl-4">
-            {totalFloors !== undefined
-              ? t("floorOf", { floor: floorText, total: totalFloors })
-              : floorText}
-          </MetaItem>
+          {hasRooms ? (
+            <MetaItem label={tListing("rooms")}>
+              {t("rooms", { rooms: listing.rooms })}
+            </MetaItem>
+          ) : null}
+          {hasFloor ? (
+            <MetaItem label={tListing("floor")}>
+              {totalFloors !== undefined
+                ? t("floorOf", { floor: floorText, total: totalFloors })
+                : floorText}
+            </MetaItem>
+          ) : null}
         </dl>
 
         <div className="flex min-h-11 items-center justify-between gap-4">
@@ -265,7 +288,11 @@ export function PropertyCard({
             {listing.hasTour ? (
               <span className="inline-flex items-center gap-1.5 text-bronze-text">
                 <Box aria-hidden="true" strokeWidth={1.25} className="size-3.5" />
-                {t("hasTour")}
+                {/* Beside the "Uporedi" toggle the word would push a long
+                    reference ("Код объекта", "Objektnummer") onto a second
+                    line, so that card keeps the cube and names it for
+                    assistive technology only. */}
+                <span className={compare ? "sr-only" : undefined}>{t("hasTour")}</span>
               </span>
             ) : null}
           </p>
@@ -412,16 +439,14 @@ function CompareToggle({ id, title }: { id: string; title: string }) {
 function MetaItem({
   label,
   children,
-  className,
   srLabel = true,
 }: {
   label: string;
   children: React.ReactNode;
-  className?: string;
   srLabel?: boolean;
 }) {
   return (
-    <div className={cn("flex items-baseline gap-1 first:pl-0", className)}>
+    <div className="flex items-baseline gap-1 px-4 first:pl-0 last:pr-0">
       {srLabel ? <dt className="sr-only">{label}</dt> : null}
       <dd data-numeric>{children}</dd>
     </div>
@@ -429,6 +454,7 @@ function MetaItem({
 }
 
 function Gallery({
+  slug,
   frames,
   ratio,
   sizes,
@@ -436,6 +462,7 @@ function Gallery({
   locale,
   alt,
 }: {
+  slug: string;
   frames: readonly PublicImage[];
   ratio: "4/5" | "3/2";
   sizes: string;
@@ -443,8 +470,9 @@ function Gallery({
   locale: Locale;
   alt: string;
 }) {
-  const t = useTranslations("common");
+  const tLightbox = useTranslations("listing.lightbox");
   const tCard = useTranslations("card");
+  const router = useRouter();
   const groupId = useId();
   const [emblaRef, embla] = useEmblaCarousel({
     loop: frames.length > 2,
@@ -491,7 +519,17 @@ function Gallery({
       className={cn("relative overflow-hidden bg-ivory-2", aspect)}
       aria-roledescription={single ? undefined : "carousel"}
     >
-      <div ref={emblaRef} className="h-full overflow-hidden">
+      {/* The title's stretched link covers the card, so on a touch screen the
+          photos sit above it: a swipe reaches Embla, and a tap (Embla swallows
+          the click that ends a drag) still opens the listing. A mouse keeps the
+          link on top and uses the arrows. Keyboard users have the title link. */}
+      <div
+        ref={emblaRef}
+        className={cn("h-full overflow-hidden", !single && "relative pointer-coarse:z-[11]")}
+        onClick={
+          single ? undefined : () => router.push({ pathname: "/properties/[slug]", params: { slug } })
+        }
+      >
         <div className="flex h-full">
           {frames.map((frame, i) => {
             const frameAlt = pickL10n(frame.alt, locale);
@@ -545,7 +583,7 @@ function Gallery({
               type="button"
               onClick={prev}
               aria-controls={groupId}
-              aria-label={t("back")}
+              aria-label={tLightbox("prev")}
               // Touch swipes the photos; the arrows would only add targets.
               className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-coarse:invisible pointer-fine:hover:bg-ink"
             >
@@ -566,7 +604,7 @@ function Gallery({
               type="button"
               onClick={next}
               aria-controls={groupId}
-              aria-label={t("more")}
+              aria-label={tLightbox("next")}
               // Touch swipes the photos; the arrows would only add targets.
               className="inline-flex size-11 items-center justify-center bg-ink/70 text-ivory transition-colors duration-200 pointer-coarse:invisible pointer-fine:hover:bg-ink"
             >

@@ -127,6 +127,9 @@ export default async function ArticlePage({ params }: Props) {
             { label: title.text },
           ]}
           eyebrow={category}
+          // PageHero only binds one-letter words; a headline also keeps its
+          // two-letter prepositions with the next word ("vodič / za strane
+          // kupce"), as the index card sets the same title.
           title={title.text}
           titleLang={fallback(title)}
           size="display-m"

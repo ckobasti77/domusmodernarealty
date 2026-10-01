@@ -47,7 +47,7 @@ export async function OfficeSection({
             <span className="block font-mono text-label uppercase text-stone-text">{t("addressLabel")}</span>
             <span className="mt-3 block font-display text-h3">{settings.address}</span>
           </address>
-          <p className="mt-6 max-w-[46ch] text-small text-stone-text">{fixTypography(tAgents("replyPromise"))}</p>
+          <p className="mt-6 max-w-[46ch] text-pretty text-small text-stone-text">{fixTypography(tAgents("replyPromise"))}</p>
           <Link
             href="/contact"
             className={textLinkClasses("light", "group/contact mt-8 inline-flex items-center gap-3 text-small uppercase tracking-[0.12em]")}

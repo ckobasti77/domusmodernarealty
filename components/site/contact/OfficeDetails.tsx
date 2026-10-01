@@ -27,7 +27,7 @@ export async function OfficeDetails({
     <div className="flex flex-col gap-12">
       <div>
         <h3 className="font-mono text-label uppercase text-stone-text">{t("addressLabel")}</h3>
-        <address className="mt-4 font-display text-h3 font-normal not-italic text-ink lg:text-h2">{address}</address>
+        <address className="mt-4 font-display text-h3 font-normal not-italic text-ink">{address}</address>
         {geo !== undefined ? (
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${geo.lat},${geo.lng}`}

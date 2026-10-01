@@ -23,15 +23,17 @@ export function ValuesList({ items, lang }: { items: readonly string[]; lang?: s
   if (values.length === 0) return null;
 
   return (
-    <ol lang={lang} className="grid gap-x-6 md:grid-cols-2 lg:grid-cols-3">
+    // The rows are spaced by the grid's gap, not by padding under each item,
+    // so the last row ends on the section's own padding.
+    <ol lang={lang} className="grid gap-x-6 gap-y-12 md:grid-cols-2 lg:grid-cols-3 lg:gap-y-16">
       {values.map((item, index) => {
         const { title, body } = parts(item);
         return (
-          <li key={`${index}-${title}`} className="flex flex-col gap-4 border-t border-hairline-dark pb-12 pt-6 lg:pb-16">
+          <li key={`${index}-${title}`} className="flex flex-col gap-4 border-t border-hairline-dark pt-6">
             <span aria-hidden="true" data-numeric="" className="font-mono text-label text-bronze">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <h3 className="max-w-[22ch] font-display text-[clamp(1.5rem,2vw,1.875rem)] font-normal leading-tight text-ivory">
+            <h3 className="max-w-[30ch] text-pretty font-display text-[clamp(1.5rem,2vw,1.875rem)] font-normal leading-tight text-ivory">
               {fixTypography(title)}
             </h3>
             {body !== undefined ? (

@@ -104,6 +104,10 @@ export default async function AgentPage({ params }: { params: Params }) {
         title={agent.name}
         {...(bioText !== null ? { lede: bioText.text } : {})}
         {...(bioText !== null && bioText.lang !== locale ? { ledeLang: bioText.lang } : {})}
+        // Below lg the aside drops under the contact buttons. A photo is worth
+        // that place; a monogram only repeats the h1's initials there, so its
+        // whole cell (and the grid gap above it) is left out on narrow screens.
+        {...(agent.photoUrl === undefined ? { asideClassName: "max-lg:hidden" } : {})}
         aside={
           <AgentPortrait
             monogram={agent.monogram}
@@ -111,8 +115,7 @@ export default async function AgentPage({ params }: { params: Params }) {
             tone="dark"
             priority
             sizes="(min-width: 1024px) 30vw, 92vw"
-            // A monogram is two letters: on a phone it gets a band, not a whole screen.
-            className={`${agent.photoUrl !== undefined ? "aspect-[4/5]" : "aspect-[2/1]"} w-full max-lg:max-w-sm lg:ml-auto lg:aspect-[4/5] lg:max-w-[26rem]`}
+            className={`${agent.photoUrl !== undefined ? "aspect-[4/5] max-lg:max-w-sm" : ""} w-full lg:ml-auto lg:aspect-[4/5] lg:max-w-[26rem]`}
           />
         }
       >

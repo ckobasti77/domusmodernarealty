@@ -48,8 +48,10 @@ import { frameLoader } from "@/lib/image-loaders";
 import { pickL10n } from "@/lib/l10n";
 import type { Bbox } from "@/lib/search-params";
 import { cn } from "@/lib/utils";
+import { foldAttributionOnce, MAP_CHROME } from "./chrome";
 import { maplibregl } from "./maplibre";
 import { applyHouseStyleOnce } from "./style";
+import { useMapLocale } from "./useMapLocale";
 
 /**
  * The results map of the property search (PRD A3). It draws exactly the result
@@ -104,20 +106,7 @@ const POPUP_OFFSET: Offset = {
   right: [-36, -PIN_TOP_PX / 2],
 };
 
-/**
- * MapLibre's own stylesheet is unlayered, so it beats every Tailwind utility on
- * the elements it styles; the overrides of its chrome need `!`. Scoped to this
- * map, never global.
- */
-const MAP_CHROME = [
-  "[&_.maplibregl-ctrl-group]:rounded-none!",
-  "[&_.maplibregl-ctrl-group]:shadow-none!",
-  "[&_.maplibregl-ctrl-group]:bg-paper!",
-  "[&_.maplibregl-ctrl-group]:border",
-  "[&_.maplibregl-ctrl-group]:border-hairline-light",
-  "[&_.maplibregl-ctrl-attrib]:rounded-[2px]!",
-].join(" ");
-
+/** The card's chrome; see `MAP_CHROME` for why the overrides need `!`. */
 const POPUP_CHROME = [
   "z-[4]",
   "[&_.maplibregl-popup-tip]:hidden",
@@ -325,8 +314,6 @@ export default function SearchMap({
 }: SearchMapProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("search.map");
-  const tCommon = useTranslations("common");
-  const tZoom = useTranslations("listing.lightbox");
   const reduced = useReducedMotion();
 
   const mapRef = useRef<MapRef>(null);
@@ -349,13 +336,7 @@ export default function SearchMap({
         }
       : DEFAULT_VIEW,
   );
-  const [mapLocale] = useState(() => ({
-    "Map.Title": t("label"),
-    "Popup.Close": tCommon("close"),
-    "NavigationControl.ZoomIn": tZoom("zoomIn"),
-    "NavigationControl.ZoomOut": tZoom("zoomOut"),
-    "AttributionControl.ToggleAttribution": t("attribution"),
-  }));
+  const mapLocale = useMapLocale(t("label"));
 
   // While new filters load, `useQuery` returns undefined; the last result stays
   // on screen so the pins never flash off between two searches.
@@ -452,10 +433,6 @@ export default function SearchMap({
     // No compass is shown, so nothing may leave north-up.
     map.touchZoomRotate.disableRotation();
     map.keyboard.disableRotation();
-    // The compact OSM credit opens unfolded until the first pan, right where
-    // the phone List/Mapa switch floats; start it folded behind its "i" button,
-    // the state MapLibre itself returns to after any interaction.
-    map.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
     setLoaded(true);
     refresh(map);
     onReady(() => {
@@ -480,6 +457,7 @@ export default function SearchMap({
   }
 
   function handleSourceData(event: MapSourceDataEvent) {
+    foldAttributionOnce(event.target);
     if (event.sourceId === SOURCE_ID && event.isSourceLoaded) refresh(event.target);
   }
 

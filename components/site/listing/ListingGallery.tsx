@@ -21,11 +21,12 @@ const ListingLightbox = dynamic(() => import("./ListingLightbox"), { ssr: false 
  * that narrow both the grid and the lightbox. Every frame is a real `<button>`,
  * so the grid is keyboard-operable before the lightbox code has even loaded.
  *
- * Below 768px only the large frame is shown, edge to edge; the lightbox is
- * where a phone swipes through the set, and the room chips become one
- * horizontally scrolling row so the title and price still reach the first
- * screen. The grid is capped at ~48% of the viewport height for the same
- * reason on desktop.
+ * Below 1024px only the large frame is shown, at 3:2 (edge to edge on a
+ * phone); the lightbox is where a phone or a tablet swipes through the set,
+ * and the room chips become one horizontally scrolling row so the title and
+ * price still reach the first screen. A tablet-wide mosaic cropped every
+ * photograph to a portrait sliver and enlarged it. The grid is capped at ~48%
+ * of the viewport height for the same reason on desktop.
  *
  * `variant="plans"` reuses the same machinery for floor plans: a plain grid of
  * contained drawings instead of cropped photographs.
@@ -42,9 +43,9 @@ export type ListingGalleryProps = {
 
 /** Span classes for the small frames, by how many there are (1–4). */
 const SMALL_SPANS: Record<number, readonly string[]> = {
-  1: ["md:col-span-2 md:row-span-2"],
-  2: ["md:col-span-2", "md:col-span-2"],
-  3: ["md:col-span-2", "", ""],
+  1: ["lg:col-span-2 lg:row-span-2"],
+  2: ["lg:col-span-2", "lg:col-span-2"],
+  3: ["lg:col-span-2", "", ""],
   4: ["", "", "", ""],
 };
 
@@ -106,8 +107,8 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
       <div
         className={cn(
           "grid gap-2",
-          small.length > 0 && "md:grid-cols-4 md:grid-rows-2",
-          "md:h-[clamp(340px,48vh,580px)]",
+          small.length > 0 && "lg:grid-cols-4 lg:grid-rows-2",
+          "lg:h-[clamp(340px,48vh,580px)]",
         )}
       >
         {lead !== undefined ? (
@@ -116,8 +117,8 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
             onClick={() => setOpen(0)}
             aria-label={openLabel(0)}
             className={cn(
-              "group/frame relative block aspect-[3/2] overflow-hidden bg-ink-2 max-md:-mx-gutter max-md:w-[calc(100%+2*var(--spacing-gutter))] md:aspect-auto md:h-full md:w-full",
-              small.length > 0 && "md:col-span-2 md:row-span-2",
+              "group/frame relative block aspect-[3/2] overflow-hidden bg-ink-2 max-md:-mx-gutter max-md:w-[calc(100%+2*var(--spacing-gutter))] lg:aspect-auto lg:h-full lg:w-full",
+              small.length > 0 && "lg:col-span-2 lg:row-span-2",
               "focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bronze",
             )}
           >
@@ -128,7 +129,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
               // The cover is the page's LCP: fetch it first, never lazily.
               loading="eager"
               fetchPriority="high"
-              sizes={small.length > 0 ? "(min-width: 1600px) 800px, (min-width: 768px) 50vw, 100vw" : "100vw"}
+              sizes={small.length > 0 ? "(min-width: 1600px) 800px, (min-width: 1024px) 50vw, 100vw" : "100vw"}
               placeholder={lead.blurDataURL !== undefined ? "blur" : "empty"}
               blurDataURL={lead.blurDataURL}
               className="object-cover transition-transform duration-700 ease-out pointer-fine:group-hover/frame:scale-[1.02]"
@@ -140,10 +141,10 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
                 </Badge>
               </span>
             ) : null}
-            {/* Phones see only this frame, so it carries the "all photos" affordance. */}
+            {/* Phones and tablets see only this frame, so it carries the "all photos" affordance. */}
             <span
               aria-hidden="true"
-              className="absolute bottom-3 right-3 inline-flex items-center gap-2 bg-ink/70 px-3 py-2 font-sans text-label uppercase tracking-[0.12em] text-ivory backdrop-blur-[2px] md:hidden"
+              className="absolute bottom-3 right-3 inline-flex items-center gap-2 bg-ink/70 px-3 py-2 font-sans text-label uppercase tracking-[0.12em] text-ivory backdrop-blur-[2px] lg:hidden"
             >
               <Images strokeWidth={1.25} className="size-4" />
               {t("galleryUi.counter", { index: 1, total })}
@@ -161,7 +162,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
               onClick={() => setOpen(index)}
               aria-label={isLast ? t("galleryUi.showAll", { count: total }) : openLabel(index)}
               className={cn(
-                "group/frame relative hidden overflow-hidden bg-ink-2 md:block",
+                "group/frame relative hidden overflow-hidden bg-ink-2 lg:block",
                 spans[i],
                 "focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bronze",
               )}
@@ -174,7 +175,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
                 className="object-cover transition-transform duration-700 ease-out pointer-fine:group-hover/frame:scale-[1.03]"
               />
               {isLast ? (
-                <span className="absolute inset-0 flex items-center justify-center bg-ink/55 font-sans text-small font-medium uppercase tracking-[0.12em] text-ivory transition-colors duration-300 pointer-fine:group-hover/frame:bg-ink/65">
+                <span className="absolute inset-0 flex items-center justify-center bg-ink/55 px-3 text-center font-sans text-small font-medium uppercase tracking-[0.12em] text-ivory transition-colors duration-300 pointer-fine:group-hover/frame:bg-ink/65">
                   {t("galleryUi.showAll", { count: total })}
                 </span>
               ) : null}
@@ -187,7 +188,10 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
         <div
           role="group"
           aria-label={t("galleryUi.filterLabel")}
-          className="-mx-gutter mt-3 flex gap-2 overflow-x-auto overscroll-x-contain px-gutter pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
+          // One scrolling row, gutter to gutter, until the desktop width can
+          // hold the chips on a line; wrapped on a tablet they stacked into
+          // two ragged rows of boxes.
+          className="-mx-gutter mt-3 flex gap-2 overflow-x-auto overscroll-x-contain px-gutter pb-1 [scrollbar-width:none] md:-mx-gutter-md md:px-gutter-md lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0"
         >
           {(["all", ...rooms] as const).map((value) => {
             const active = room === value;

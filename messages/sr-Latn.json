@@ -5,7 +5,7 @@
     "lede": "Agencija za nekretnine u Beogradu. Radimo sa manjim brojem nekretnina i svaku proveravamo pre nego što je oglasimo.",
     "valuesHeading": "Šta nam je važno",
     "metaTitle": "O nama: agencija za nekretnine u Beogradu",
-    "metaDescription": "Ko smo i kako radimo: proveravamo dokumentaciju pre oglasa, cenu predlažemo posle obilaska, na osnovu ostvarenih transakcija u kraju, i odgovaramo istog radnog dana.",
+    "metaDescription": "Ko smo i kako radimo: proveravamo dokumentaciju pre oglasa, a cenu predlažemo posle obilaska, na osnovu ostvarenih transakcija u kraju.",
     "eyebrow": "O nama",
     "imageAlt": "Secesijska fasada sa kovanim balkonima u zlatnom satu",
     "storyEyebrow": "Agencija",
@@ -15,7 +15,7 @@
     "numbersEyebrow": "Brojevi",
     "teamEyebrow": "Tim",
     "teamHeading": "Ljudi iza ponude",
-    "teamAll": "Ceo tim",
+    "teamAll": "Upoznajte tim",
     "officeEyebrow": "Kancelarija",
     "officeHeading": "Posetite nas",
     "officeLede": "Najavite dolazak telefonom ili porukom, pa ćemo odvojiti vreme za Vas.",
@@ -65,7 +65,7 @@
     "hasTour": "3D tura",
     "new": "Novo",
     "rooms": "{rooms, plural, one {# soba} few {# sobe} other {# soba}}",
-    "priceReduced": "Snižena cena",
+    "priceReduced": "Sniženo",
     "registered": "Uknjiženo",
     "newBuild": "Novogradnja",
     "mortgage": "Može na kredit",
@@ -100,6 +100,10 @@
   },
   "compare": {
     "bestValue": "Najbolja vrednost",
+    "markLargest": "Najveća površina",
+    "markMostRooms": "Najviše soba",
+    "markMostBathrooms": "Najviše kupatila",
+    "markNewest": "Najnovija gradnja",
     "empty": "Na listi ponude označite „Uporedi“ na karticama nekretnina koje Vas zanimaju, do četiri odjednom. Izbor se čuva na ovom uređaju.",
     "heading": "Poređenje",
     "lede": "Uporedite do četiri nekretnine jednu uz drugu.",
@@ -112,11 +116,12 @@
     "trayRemove": "Ukloni iz poređenja: {title}",
     "eyebrow": "Uporedni pregled",
     "metaDescription": "Uporedite do četiri nekretnine jednu uz drugu: cenu, cenu po kvadratu, kvadraturu, strukturu, sprat, godinu izgradnje, grejanje i mesečne troškove.",
-    "caption": "{count, plural, one {Poređenje # nekretnine} few {Poređenje # nekretnine} other {Poređenje # nekretnina}} po ceni, prostoru, zgradi i pravnom statusu. Najbolja vrednost u svakom redu označena je rombom i natpisom „Najbolja vrednost“.",
-    "legend": "Najbolja vrednost u redu",
+    "caption": "{count, plural, one {Poređenje # nekretnine} few {Poređenje # nekretnine} other {Poređenje # nekretnina}} po ceni, prostoru, zgradi i pravnom statusu. Vrednost koja se u redu ističe označena je rombom i natpisom: „Najbolja vrednost“ u redovima cene i troškova, a u ostalima onim po čemu se ističe, na primer „Najveća površina“.",
+    "legend": "Ističe se u redu",
     "notStated": "Nije navedeno",
     "count": "{count, plural, one {Upoređujete # nekretninu} few {Upoređujete # nekretnine} other {Upoređujete # nekretnina}}",
     "view": "Pogledajte nekretninu",
+    "viewShort": "Detalji",
     "addMore": "Dodajte nekretninu",
     "save": "Sačuvajte ovo poređenje",
     "saved": "Poređenje je sačuvano kao Vaš izbor na ovom uređaju.",
@@ -396,6 +401,7 @@
     "numbersClients": "Zadovoljnih klijenata",
     "numbersDaysToSell": "Dana do prodaje (prosek)",
     "numbersDemo": "Demo vrednosti — biće zamenjene stvarnim podacima agencije.",
+    "numbersEyebrow": "U brojkama",
     "numbersHeading": "Rezultati koji se mere",
     "numbersMediaAlt": "Fasada beogradske secesijske zgrade u zlatnom satu",
     "numbersSold": "Prodatih nekretnina",
@@ -628,7 +634,7 @@
       "walk3d": "3D šetnja"
     },
     "galleryUi": {
-      "showAll": "Sve fotografije ({count})",
+      "showAll": "Sve fotografije ({count})",
       "open": "Otvorite fotografiju {index} od {total}",
       "filterLabel": "Prikaz po prostoriji",
       "all": "Sve",
@@ -688,6 +694,8 @@
       "orientation": "Orijentacija",
       "bills": "Mesečni troškovi",
       "billsValue": "Infostan ~{infostan}, održavanje ~{maintenance}",
+      "billsInfostan": "Infostan ~{amount}",
+      "billsMaintenance": "Održavanje ~{amount}",
       "availableFrom": "Useljivo od",
       "completion": "Završetak gradnje",
       "minLease": "Minimalni zakup",
@@ -897,6 +905,8 @@
       "hideCaptions": "Sakrij opise",
       "showThumbnails": "Prikaži sličice",
       "hideThumbnails": "Sakrij sličice",
+      "caption": "opis",
+      "thumbnails": "Sličice",
       "position": "{index} od {total}"
     }
   },
@@ -1035,7 +1045,10 @@
       "attribution": "Izvori podataka mape",
       "outsideBelgrade": "Prikaži i {count} van Beograda",
       "showAll": "Prikaži sve rezultate na mapi ({count})",
-      "offline": "Mapa trenutno ne može da se učita. Svi rezultati su u listi."
+      "offline": "Mapa trenutno ne može da se učita. Svi rezultati su u listi.",
+      "gesturesWindows": "Držite Ctrl i skrolujte da biste zumirali mapu",
+      "gesturesMac": "Držite ⌘ i skrolujte da biste zumirali mapu",
+      "gesturesTouch": "Mapu pomerajte sa dva prsta"
     },
     "chips": {
       "label": "Aktivni filteri",
@@ -1213,7 +1226,7 @@
     "parallax": "Paralaks",
     "progress": "Napredak skrolovanja",
     "reveal": "Otkrivanje slike",
-    "sampleAnswer1": "Za stanove sa uređenom dokumentacijom prosečno 45 do 90 dana, zavisno od cene i lokacije. Okvirnu procenu onlajn dobijate odmah.",
+    "sampleAnswer1": "Zavisi od cene, lokacije i dokumentacije: stan sa uređenim papirima prodaje se brže. Okvirnu procenu onlajn dobijate odmah.",
     "sampleAnswer2": "Porez na prenos apsolutnih prava ili PDV, taksu za overu kod notara i upis u katastar. Tačan iznos računamo pre potpisivanja predugovora.",
     "sampleQuestion1": "Koliko traje prodaja stana u Beogradu?",
     "sampleQuestion2": "Koje troškove kupac plaća pored cene?",
@@ -1300,7 +1313,11 @@
     "m2": "m²",
     "minutesWalk": "{minutes} min hoda",
     "perMonth": "mesečno",
-    "rooms": "{count, plural, one {# soba} few {# sobe} other {# soba}}"
+    "rooms": "{count, plural, one {# soba} few {# sobe} other {# soba}}",
+    "north": "S",
+    "south": "J",
+    "east": "I",
+    "west": "Z"
   },
   "valuation": {
     "heading": "Procena vrednosti",
@@ -1399,7 +1416,7 @@
       "p1": "Okvirni raspon računamo iz prosečne cene po kvadratu u Vašem kraju, korigovane za stanje, sprat i lift. To je informativna procena, a ne zvanično veštačenje: ne može se koristiti pred bankom, sudom ili poreskom upravom.",
       "p2": "Tačniji broj dobijate kada nekretninu vidimo. Na terenu gledamo svetlo, orijentaciju, instalacije, zgradu i dokumentaciju i poredimo nekretninu sa stvarnim kupoprodajama iz Vašeg kraja, iz Registra cena nepokretnosti RGZ-a."
     },
-    "onsiteSectionEyebrow": "Procena na terenu",
+    "onsiteSectionEyebrow": "Tačniji broj",
     "book": {
       "heading": "Procena na terenu, bez obaveze.",
       "sub": "Dolazimo u dogovoreno vreme, pregledamo nekretninu i dokumentaciju i ostavljamo raspon u pisanoj formi.",

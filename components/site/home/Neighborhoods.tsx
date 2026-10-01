@@ -16,15 +16,30 @@ import type { NeighborhoodItem } from "./types";
  * Neighborhoods (DESIGN §6.5), on ink. It opens on a wide band of Belgrade
  * under the heading, then the index.
  *
- * The band is a verified photograph of the real city (the Sava, the Belgrade
- * Waterfront towers and Kula Beograd), not the owner's AI aerial: that film
- * renders Budapest's Chain Bridge and Buda Castle, and a Belgrade agency
- * cannot put Budapest under "Poznajemo svaku ulicu". It is atmosphere behind
- * the heading, so it carries no alt text.
+ * The band is a verified photograph of the real city, not the owner's AI
+ * aerial: that film renders Budapest's Chain Bridge and Buda Castle, and a
+ * Belgrade agency cannot put Budapest under "Poznajemo svaku ulicu". It is
+ * atmosphere behind the heading, so it carries no alt text. It is the first of
+ * `BAND_PHOTOS` that no place in the index uses as its cover, so the same
+ * picture never comes back as a card or in the sticky frame below.
  */
 
-/** "Sava river with Belgrade Waterfront residential towers and Belgrade Tower, Savski Venac". */
-const BELGRADE_AERIAL = "https://images.unsplash.com/photo-1708253832369-ce7e621df31a";
+const BAND_PHOTOS = [
+  {
+    /** "Sava riverfront with moored boats below Belgrade's old town and cathedral spire". */
+    url: "https://images.unsplash.com/photo-1727105538592-3074729d8abc",
+    width: 1920,
+    height: 1080,
+    position: "object-[50%_40%]",
+  },
+  {
+    /** "Sava river with Belgrade Waterfront residential towers and Belgrade Tower, Savski Venac". */
+    url: "https://images.unsplash.com/photo-1708253832369-ce7e621df31a",
+    width: 1920,
+    height: 1440,
+    position: "object-[50%_68%]",
+  },
+] as const;
 
 export async function Neighborhoods({
   locale,
@@ -37,17 +52,20 @@ export async function Neighborhoods({
 }) {
   if (items.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "home" });
+  // A seeded cover is the same photograph with sizing parameters appended.
+  const covers = new Set(items.map((item) => item.image?.split("?")[0]));
+  const band = BAND_PHOTOS.find((photo) => !covers.has(photo.url)) ?? BAND_PHOTOS[0];
 
   return (
     <section aria-labelledby="neighborhoods-title" className="bg-ink text-ivory">
       <div className="relative isolate min-h-[72svh] overflow-clip lg:min-h-[72svh]">
         <ParallaxLayer amount={10} className="absolute inset-0 -z-10">
           <Picture
-            image={remoteResponsiveImage(BELGRADE_AERIAL, 1920, 1280)}
+            image={remoteResponsiveImage(band.url, band.width, band.height)}
             alt=""
             sizes="100vw"
             className="absolute inset-0"
-            imgClassName="photo-grade object-[50%_68%]"
+            imgClassName={`photo-grade ${band.position}`}
           />
         </ParallaxLayer>
         {/* Weighted to the bottom, where the heading sits and the index begins

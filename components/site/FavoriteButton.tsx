@@ -12,6 +12,11 @@ import { cn } from "@/lib/utils";
  *
  * The fill transition is 180ms — a toggle a visitor may hit repeatedly should
  * feel instant, not choreographed.
+ *
+ * On a photograph (`tone="dark"`) the heart sits on its own ink plate, the
+ * same chrome as the card's carousel controls: a bare outline, or a bronze
+ * fill, falls below 3:1 on a bright interior. The saved heart keeps its ivory
+ * outline there, so the shape stays legible whatever the plate shows through.
  */
 export function FavoriteButton({
   listingId,
@@ -29,6 +34,7 @@ export function FavoriteButton({
   const [isFavorite, toggle] = useFavorite(listingId);
   // A toggle keeps one name; `aria-pressed` says whether it is on.
   const label = `${t("addToFavorites")}: ${title}`;
+  const dark = tone === "dark";
 
   return (
     <button
@@ -38,18 +44,20 @@ export function FavoriteButton({
       aria-label={label}
       className={cn(
         "inline-flex size-11 items-center justify-center transition-transform duration-150 ease-out active:scale-[0.92]",
-        tone === "dark" ? "text-ivory" : "text-ink",
+        dark ? "text-ivory" : "text-ink",
         className,
       )}
     >
-      <Heart
-        aria-hidden="true"
-        strokeWidth={1.25}
-        className={cn(
-          "size-5 transition-colors duration-[180ms] ease-out",
-          isFavorite ? "fill-bronze text-bronze" : "fill-transparent",
-        )}
-      />
+      <span className={cn("inline-flex items-center justify-center", dark && "size-8 bg-ink/70")}>
+        <Heart
+          aria-hidden="true"
+          strokeWidth={1.25}
+          className={cn(
+            "size-5 transition-colors duration-[180ms] ease-out",
+            isFavorite ? (dark ? "fill-bronze" : "fill-bronze text-bronze") : "fill-transparent",
+          )}
+        />
+      </span>
     </button>
   );
 }

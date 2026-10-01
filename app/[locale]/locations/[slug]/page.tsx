@@ -13,6 +13,7 @@ import { Eyebrow } from "@/components/site/Eyebrow";
 import { photoGrade } from "@/components/site/home/art-direction";
 import {
   clipText,
+  formatCoordinates,
   getLocationBySlug,
   listingTotal,
   placeFigures,
@@ -48,6 +49,13 @@ import { localizedUrl, pageMetadata } from "@/lib/seo";
  */
 
 type Params = PageProps<"/[locale]/locations/[slug]">["params"];
+
+/**
+ * Fewer places than this beside the page's own do not fill a section (one row
+ * before the footer read as an empty state): they become a row of links in the
+ * "at a glance" list instead.
+ */
+const NEARBY_SECTION_MIN = 3;
 
 function hrefOf(slug: string) {
   return { pathname: "/locations/[slug]" as const, params: { slug } };
@@ -101,7 +109,10 @@ export default async function LocationPage({ params }: { params: Params }) {
   const factItems = facts?.items.filter((item) => item.trim().length > 0) ?? [];
   const parent = parents.at(-1);
   const siblings = siblingsOf(nodes, location);
+  const siblingsTitle = location.kind === "city" ? t("otherCitiesHeading") : t("nearbyHeading");
+  const siblingsSection = siblings.length >= NEARBY_SECTION_MIN;
   const total = listingTotal(location);
+  const coordinates = formatCoordinates(location.lat, location.lng, locale, tUnits);
   const pageUrl = localizedUrl(hrefOf(location.slug), locale);
 
   const context = [...parents].reverse().map((node) => placeName(node, locale).text);
@@ -164,8 +175,9 @@ export default async function LocationPage({ params }: { params: Params }) {
         </Straddle>
       ) : null}
 
-      {/* At a glance: what the place belongs to, the listing split, the
-          admin's facts, and the map at its centre. */}
+      {/* At a glance: what the place belongs to (and the one or two places
+          beside it), the listing split, the admin's facts, and the map at its
+          centre. */}
       <section aria-labelledby="glance-title" className="bg-ivory py-section text-ink lg:py-section-lg">
         <Container>
           <div className="grid grid-cols-4 gap-x-6 gap-y-14 lg:grid-cols-12">
@@ -177,6 +189,22 @@ export default async function LocationPage({ params }: { params: Params }) {
                     <Link href={hrefOf(parent.slug)} className={textLinkClasses("light")}>
                       <span lang={placeName(parent, locale).lang}>{context.join(", ")}</span>
                     </Link>
+                  </FactRow>
+                ) : null}
+                {siblings.length > 0 && !siblingsSection ? (
+                  <FactRow label={siblingsTitle}>
+                    <ul className="flex flex-wrap justify-end gap-x-5 gap-y-1">
+                      {siblings.map((node) => {
+                        const sibling = placeName(node, locale);
+                        return (
+                          <li key={node._id}>
+                            <Link href={hrefOf(node.slug)} className={textLinkClasses("light")}>
+                              <span lang={sibling.lang}>{sibling.text}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </FactRow>
                 ) : null}
                 <FactRow label={t("forSale")}>
@@ -210,7 +238,8 @@ export default async function LocationPage({ params }: { params: Params }) {
               <figcaption className="mt-4 flex flex-wrap justify-between gap-x-6 gap-y-1 text-small text-stone-text">
                 <span>{t("mapCaption")}</span>
                 <span data-numeric="" className="font-mono text-label">
-                  {location.lat.toFixed(4)}° N · {location.lng.toFixed(4)}° E
+                  <span className="whitespace-nowrap">{coordinates.lat}</span> ·{" "}
+                  <span className="whitespace-nowrap">{coordinates.lng}</span>
                 </span>
               </figcaption>
             </figure>
@@ -272,7 +301,7 @@ export default async function LocationPage({ params }: { params: Params }) {
         </Container>
       </section>
 
-      {children.length > 0 || siblings.length > 0 ? (
+      {children.length > 0 || siblingsSection ? (
         <section aria-label={t("exploreLabel")} className="bg-ivory py-section text-ink lg:py-section-lg">
           <Container className="flex flex-col gap-20 lg:gap-28">
             {children.length > 0 ? (
@@ -285,12 +314,12 @@ export default async function LocationPage({ params }: { params: Params }) {
                 locale={locale}
               />
             ) : null}
-            {siblings.length > 0 ? (
+            {siblingsSection ? (
               <PlaceGroup
                 id="nearby-title"
                 eyebrow={parent !== undefined ? placeName(parent, locale).text : t("country")}
                 eyebrowLang={parent !== undefined ? placeName(parent, locale).lang : undefined}
-                title={location.kind === "city" ? t("otherCitiesHeading") : t("nearbyHeading")}
+                title={siblingsTitle}
                 items={siblings}
                 locale={locale}
               />

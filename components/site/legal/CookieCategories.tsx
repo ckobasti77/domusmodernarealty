@@ -42,7 +42,8 @@ export function CookieCategories() {
         {CATEGORIES.map((category) => (
           <li key={category} className="grid gap-x-10 gap-y-5 hairline-b py-7 md:grid-cols-[minmax(0,1fr)_auto]">
             <div>
-              <h3 className="font-display text-h3 font-normal">{tConsent(category)}</h3>
+              {/* The legal pages' in-section sub-heading step (`.rich-text-nested h3`). */}
+              <h3 className="font-display text-[1.375rem] font-normal leading-[1.3]">{tConsent(category)}</h3>
               <p className="mt-2 max-w-[48ch] text-pretty text-body text-stone-text">{tConsent(`${category}Help`)}</p>
             </div>
             <dl className="grid grid-cols-2 gap-x-8 md:min-w-[20rem]">
@@ -61,7 +62,7 @@ export function CookieCategories() {
         ))}
       </ul>
 
-      <p className="mt-8 max-w-[60ch] text-pretty text-body">{t("change")}</p>
+      <p className="mt-8 max-w-[32em] text-pretty text-body">{t("change")}</p>
       {hydrated && record !== null ? (
         <p className="mt-2 text-small text-stone-text">
           {t("decidedAt", { date: formatLongDate(record.decidedAt, locale) })}

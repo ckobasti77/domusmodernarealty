@@ -169,12 +169,14 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
 
       {/* The film loops for as long as the stage is on screen, so it can be held
           still (WCAG 2.2.2). Only where the film can play at all: from 768px,
-          with motion allowed. Below the fixed header's height. */}
+          with motion allowed. Below the fixed header's height. It sits on its
+          own ink plate, so it reads over the film's sunlit walls as well as
+          over the dark margin (WCAG 1.4.11). */}
       {film !== null ? (
         <button
           type="button"
           onClick={() => setFilmPaused((value) => !value)}
-          className="absolute right-6 top-28 z-10 hidden size-11 items-center justify-center border border-ivory/40 text-ivory transition-colors duration-200 motion-safe:md:flex pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze"
+          className="absolute right-6 top-28 z-10 hidden size-11 items-center justify-center border border-ivory/60 bg-ink/60 text-ivory transition-colors duration-200 motion-safe:md:flex pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze"
         >
           {filmPaused ? (
             <Play aria-hidden="true" strokeWidth={1.25} className="size-4" />

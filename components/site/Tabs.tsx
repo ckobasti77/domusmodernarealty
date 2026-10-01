@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs as TabsPrimitive } from "radix-ui";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,6 +39,8 @@ export function Tabs({
   className?: string;
 }) {
   const first = defaultValue ?? tabs[0]?.value;
+  const listRef = useRef<HTMLDivElement>(null);
+  const clipped = useClippedEnd(listRef);
   if (first === undefined) return null;
 
   return (
@@ -47,12 +49,18 @@ export function Tabs({
       className={cn("w-full", className)}
     >
       <TabsPrimitive.List
+        ref={listRef}
         aria-label={ariaLabel}
         // One row that scrolls sideways on phones instead of wrapping. The
         // hairline is a background line, not a border: a scroll container
         // clips its border box, which would cut the active tab's underline.
+        // It spans exactly the content column (the focus ring is drawn
+        // inside each tab instead of in a negative margin), and while tabs
+        // run past the right edge that edge fades, so a cut label reads as
+        // "scroll for more" rather than as a rendering fault.
         className={cn(
-          "-mx-1 flex gap-x-8 overflow-x-auto px-1 pt-1 [scrollbar-width:none]",
+          "flex gap-x-6 overflow-x-auto pt-1 [scrollbar-width:none] sm:gap-x-8",
+          clipped && "[mask-image:linear-gradient(to_right,#000_85%,transparent)]",
           tone === "dark"
             ? "bg-[linear-gradient(to_top,var(--color-hairline-dark)_1px,transparent_1px)]"
             : "bg-[linear-gradient(to_top,var(--color-hairline-light)_1px,transparent_1px)]",
@@ -63,8 +71,8 @@ export function Tabs({
             key={tab.value}
             value={tab.value}
             className={cn(
-              "relative flex min-h-11 shrink-0 items-center whitespace-nowrap pb-3 pt-1",
-              "font-sans text-small font-medium uppercase tracking-[0.12em]",
+              "relative flex min-h-11 shrink-0 items-center whitespace-nowrap pb-3 pt-1 focus-visible:-outline-offset-2",
+              "font-sans text-small font-medium uppercase tracking-[0.08em] sm:tracking-[0.12em]",
               "transition-colors duration-200 ease-out",
               "after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0",
               "after:transition-transform after:duration-300 after:ease-out",
@@ -90,4 +98,28 @@ export function Tabs({
       ))}
     </TabsPrimitive.Root>
   );
+}
+
+/**
+ * Whether a horizontal scroller has content past its right edge. Re-checked on
+ * scroll and whenever the strip or a tab changes size (a late web font, a
+ * rotated phone).
+ */
+function useClippedEnd(ref: RefObject<HTMLElement | null>): boolean {
+  const [clipped, setClipped] = useState(false);
+  useEffect(() => {
+    const element = ref.current;
+    if (element === null) return;
+    const update = () => setClipped(element.scrollLeft + element.clientWidth < element.scrollWidth - 1);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    for (const child of element.children) observer.observe(child);
+    element.addEventListener("scroll", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      element.removeEventListener("scroll", update);
+    };
+  }, [ref]);
+  return clipped;
 }

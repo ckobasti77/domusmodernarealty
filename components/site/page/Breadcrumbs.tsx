@@ -29,9 +29,10 @@ export async function Breadcrumbs({
 
   return (
     <nav aria-label={t("breadcrumb")} className={className}>
+      {/* Row gap 12px: a wrapped trail's link hit areas (6px past the text) never overlap. */}
       <ol
         className={cn(
-          "flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-label uppercase tracking-[0.12em]",
+          "flex flex-wrap items-center gap-x-2 gap-y-3 font-sans text-label uppercase tracking-[0.12em]",
           tone === "dark" ? "text-mist" : "text-stone-text",
         )}
       >
@@ -53,7 +54,9 @@ export async function Breadcrumbs({
                 <Link
                   href={crumb.href}
                   className={cn(
-                    "transition-colors duration-200",
+                    // The 11px label is a 13px-tall target; the invisible ::before
+                    // grows it past 24px (WCAG 2.5.8) without moving the text.
+                    "relative transition-colors duration-200 before:absolute before:-inset-x-1 before:-inset-y-1.5 before:content-['']",
                     tone === "dark" ? "pointer-fine:hover:text-ivory" : "pointer-fine:hover:text-ink",
                   )}
                 >

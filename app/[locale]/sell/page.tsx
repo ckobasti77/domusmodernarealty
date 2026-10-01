@@ -175,7 +175,11 @@ export default async function SellPage({ params }: Props) {
                 <p className="max-w-[46ch] text-pretty text-body text-stone-text">
                   {fixTypography(t("valuationPrompt"))}
                 </p>
-                <Link href="/valuation" className={cn(textLinkClasses("light"), "shrink-0 text-small font-medium")}>
+                {/* `self-start` keeps the column flex on phones from stretching the underline. */}
+                <Link
+                  href="/valuation"
+                  className={cn(textLinkClasses("light"), "shrink-0 self-start text-small font-medium sm:self-auto")}
+                >
                   {t("valuationLink")}
                 </Link>
               </div>
@@ -187,7 +191,7 @@ export default async function SellPage({ params }: Props) {
       <Section tone="ivory-2" aria-labelledby="sell-process-title">
         <Container>
           <Grid className="gap-y-16">
-            <div className="col-span-4 lg:col-span-5">
+            <div className="col-span-4 lg:col-span-4">
               <div className="lg:sticky lg:top-28">
                 <SectionHeading
                   id="sell-process-title"
@@ -198,8 +202,8 @@ export default async function SellPage({ params }: Props) {
                 />
               </div>
             </div>
-            <div className="col-span-4 lg:col-span-6 lg:col-start-7 lg:pt-4">
-              <ProcessSteps steps={copy.steps} />
+            <div className="col-span-4 lg:col-span-7 lg:col-start-6 lg:pt-4">
+              <ProcessSteps steps={copy.steps} titleSize="h3" />
             </div>
           </Grid>
         </Container>

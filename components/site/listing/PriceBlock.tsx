@@ -93,7 +93,8 @@ export function PriceBlock({
               {showRsd ? `≈ ${formatRsd(price, eurRsd, locale)}` : formatPrice(price, locale)}
             </span>
             {transaction === "rent" ? <span className={cn("text-body", muted)}>{tUnits("perMonth")}</span> : null}
-            {transaction === "sale" && pricePerM2 > 0 && !showRsd ? (
+            {/* €/m² goes beside every price (CLAUDE.md), a monthly rent's too, as on its card. */}
+            {pricePerM2 > 0 && !showRsd ? (
               <span data-numeric className={cn("text-body", muted)}>
                 {formatPricePerM2(pricePerM2, locale, tUnits("m2"))}
               </span>
@@ -102,7 +103,7 @@ export function PriceBlock({
           {showRsd || deposit !== undefined ? (
             <p data-numeric className={cn("flex flex-wrap gap-x-4 text-small", muted)}>
               {showRsd ? <span>{formatPrice(price, locale)}</span> : null}
-              {showRsd && transaction === "sale" && pricePerM2 > 0 ? (
+              {showRsd && pricePerM2 > 0 ? (
                 <span>{formatPricePerM2(pricePerM2, locale, tUnits("m2"))}</span>
               ) : null}
               {deposit !== undefined ? <span>{t("price.deposit", { amount: formatPrice(deposit, locale) })}</span> : null}

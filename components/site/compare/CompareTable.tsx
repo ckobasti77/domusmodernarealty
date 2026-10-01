@@ -24,8 +24,9 @@ import { buildCompareGroups, type CompareCell } from "./rows";
  * column stays pinned with CSS `position: sticky` (no script). On a desktop
  * the listing titles stick under the header while the rows scroll past.
  *
- * A best value is never colour alone: the cell gets a bronze rule, a diamond
- * marker, a heavier figure AND the words "Najbolja vrednost".
+ * A standout figure is never colour alone: the cell gets a diamond marker, a
+ * heavier figure AND words, "Najbolja vrednost" on the price rows and the plain
+ * fact elsewhere ("Najveća površina"; `rows.ts`).
  */
 
 /** Phones scroll; each listing column keeps at least 12rem beside the 7rem fact column. */
@@ -74,20 +75,20 @@ export function CompareTable({
           {t("caption", { count: items.length })}
         </caption>
         <colgroup>
-          <col className="w-32 md:w-44 lg:w-56" />
+          <col className="w-32 md:w-36 lg:w-56" />
           {items.map((item) => (
             <col key={item._id} />
           ))}
         </colgroup>
 
         <thead>
-          {/* Photographs, the remove control and the reference: context, not headers. */}
+          {/* Photographs and the remove control: context, not headers. */}
           <tr>
-            <td className={cn(STICKY_COLUMN, "pb-5 pr-3 align-bottom")}>
+            <td className={cn(STICKY_COLUMN, "pb-4 pr-3 align-bottom lg:pb-2")}>
               <Legend />
             </td>
             {items.map((item, index) => (
-              <td key={item._id} className={cn(CELL_X, "pb-5 align-top")}>
+              <td key={item._id} className={cn(CELL_X, "pb-4 align-top lg:pb-2")}>
                 <ColumnMedia item={item} onRemove={() => onRemove(item, index)} />
               </td>
             ))}
@@ -107,10 +108,13 @@ export function CompareTable({
                     "lg:sticky lg:top-(--header-h,85px) lg:z-20 lg:pt-4",
                   )}
                 >
+                  {/* The title is what tells the columns apart, so it is clamped
+                      only where the header sticks (lg) and has to stay short,
+                      and it takes the full h3 size only once the columns are wide. */}
                   <Link
                     href={{ pathname: "/properties/[slug]", params: { slug: item.slug } }}
                     lang={title.lang === locale ? undefined : title.lang}
-                    className="line-clamp-3 font-display text-[1.25rem] leading-snug text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text lg:text-h3"
+                    className="block font-display text-[1.0625rem] leading-snug text-ink transition-colors duration-200 pointer-fine:hover:text-bronze-text md:text-[1.125rem] lg:line-clamp-3 lg:text-[1.25rem] xl:text-h3"
                   >
                     {fixTypography(title.text)}
                   </Link>
@@ -119,6 +123,15 @@ export function CompareTable({
                     className="mt-1.5 block text-small text-stone-text"
                   >
                     {place.text}
+                  </span>
+                  {/* The reference belongs to the listing, under its name; between
+                      the photograph and the title it read as a caption. */}
+                  <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-label uppercase tracking-[0.1em] text-stone-text">
+                    <span>
+                      {tListing(`propertyType.${item.propertyType}`)} · {tListing(`transaction.${item.transaction}`)}
+                    </span>
+                    <span aria-hidden="true">/</span>
+                    <span className="font-mono">{item.ref}</span>
                   </span>
                 </th>
               );
@@ -147,7 +160,11 @@ export function CompareTable({
                   {row.label}
                 </th>
                 {row.cells.map((cell, index) => (
-                  <ValueCell key={items[index]?._id ?? index} cell={cell} best={row.best.has(index)} />
+                  <ValueCell
+                    key={items[index]?._id ?? index}
+                    cell={cell}
+                    mark={row.best.has(index) ? row.mark : undefined}
+                  />
                 ))}
               </tr>
             ))}
@@ -159,14 +176,20 @@ export function CompareTable({
             <td className={cn(STICKY_COLUMN, "hairline-t")} />
             {items.map((item) => (
               <td key={item._id} className={cn(CELL_X, "hairline-t pt-8 align-top")}>
-                <Link
-                  href={{ pathname: "/properties/[slug]", params: { slug: item.slug } }}
-                  className={cn(buttonClasses({ variant: "outline", size: "compact" }), "w-full gap-2 px-3")}
-                >
-                  {t("view")}
-                  <ArrowUpRight aria-hidden="true" strokeWidth={1.25} className="size-4 shrink-0" />
-                  <span className="sr-only">: {pickL10n(item.title, locale).text}</span>
-                </Link>
+                {/* The full label needs ~18rem on one line ("Pogledajte nekretninu"),
+                    which a column only has with three listings on a wide screen;
+                    narrower, the button says "Detalji" instead of breaking in two. */}
+                <div className="@container">
+                  <Link
+                    href={{ pathname: "/properties/[slug]", params: { slug: item.slug } }}
+                    className={cn(buttonClasses({ variant: "outline", size: "compact" }), "w-full gap-2 px-3")}
+                  >
+                    <span className="@[18rem]:hidden">{t("viewShort")}</span>
+                    <span className="hidden @[18rem]:inline">{t("view")}</span>
+                    <ArrowUpRight aria-hidden="true" strokeWidth={1.25} className="size-4 shrink-0" />
+                    <span className="sr-only">: {pickL10n(item.title, locale).text}</span>
+                  </Link>
+                </div>
               </td>
             ))}
           </tr>
@@ -190,8 +213,9 @@ function BestMarker({ className }: { className?: string }) {
   return <span aria-hidden="true" className={cn("inline-block size-1.5 shrink-0 rotate-45 bg-bronze-text", className)} />;
 }
 
-function ValueCell({ cell, best }: { cell: CompareCell | null; best: boolean }) {
+function ValueCell({ cell, mark }: { cell: CompareCell | null; mark: string | undefined }) {
   const t = useTranslations("compare");
+  const best = mark !== undefined;
   return (
     <td
       data-testid={best ? "compare-best" : undefined}
@@ -215,9 +239,7 @@ function ValueCell({ cell, best }: { cell: CompareCell | null; best: boolean }) 
               {cell.detail}
             </p>
           ) : null}
-          {best ? (
-            <p className="mt-2 font-sans text-label uppercase tracking-[0.1em] text-bronze-text">{t("bestValue")}</p>
-          ) : null}
+          {best ? <p className="mt-2 font-sans text-label uppercase tracking-[0.1em] text-bronze-text">{mark}</p> : null}
         </>
       )}
     </td>
@@ -239,45 +261,36 @@ function ColumnMedia({ item, onRemove }: { item: CompareItem; onRemove: () => vo
           : null;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-[3/2] overflow-hidden bg-ivory-2">
-        {item.cover !== undefined ? (
-          <Image
-            src={item.cover.url}
-            loader={frameLoader(item.cover.url, 2 / 3)}
-            // The title sits right under the photograph; repeating it here
-            // would make every column announce its name twice.
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 12rem"
-            placeholder={item.cover.blurDataURL !== undefined ? "blur" : "empty"}
-            blurDataURL={item.cover.blurDataURL}
-            className="object-cover"
-          />
-        ) : null}
-        {status !== null ? (
-          <div className="absolute left-2 top-2">
-            <Badge tone="status">{status}</Badge>
-          </div>
-        ) : null}
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={t("trayRemove", { title })}
-          data-testid="compare-remove"
-          data-remove-id={item._id}
-          className="absolute right-0 top-0 inline-flex size-11 items-center justify-center bg-ink/75 text-ivory transition-colors duration-200 pointer-fine:hover:bg-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bronze"
-        >
-          <X aria-hidden="true" strokeWidth={1.5} className="size-4" />
-        </button>
-      </div>
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-label uppercase tracking-[0.1em] text-stone-text">
-        <span>
-          {tListing(`propertyType.${item.propertyType}`)} · {tListing(`transaction.${item.transaction}`)}
-        </span>
-        <span aria-hidden="true">/</span>
-        <span className="font-mono">{item.ref}</span>
-      </p>
+    <div className="relative aspect-[3/2] overflow-hidden bg-ivory-2">
+      {item.cover !== undefined ? (
+        <Image
+          src={item.cover.url}
+          loader={frameLoader(item.cover.url, 2 / 3)}
+          // The title sits right under the photograph; repeating it here
+          // would make every column announce its name twice.
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 12rem"
+          placeholder={item.cover.blurDataURL !== undefined ? "blur" : "empty"}
+          blurDataURL={item.cover.blurDataURL}
+          className="object-cover"
+        />
+      ) : null}
+      {status !== null ? (
+        <div className="absolute left-2 top-2">
+          <Badge tone="status">{status}</Badge>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={t("trayRemove", { title })}
+        data-testid="compare-remove"
+        data-remove-id={item._id}
+        className="absolute right-0 top-0 inline-flex size-11 items-center justify-center bg-ink/75 text-ivory transition-colors duration-200 pointer-fine:hover:bg-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-bronze"
+      >
+        <X aria-hidden="true" strokeWidth={1.5} className="size-4" />
+      </button>
     </div>
   );
 }

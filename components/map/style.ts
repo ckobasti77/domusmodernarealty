@@ -53,13 +53,15 @@ function isClutter(layerId: string, sourceLayer: string | undefined): boolean {
  * Positron prints every label twice ("Patrijarha Varnave Патријарха Варнаве").
  * One script per page: Latin everywhere, Cyrillic for Russian readers. Each
  * locale reads its own OpenMapTiles name first ("Beograd", "Belgrade",
- * "Белград"); `name:latin` alone gave the Serbian page "Belgrade" and street
- * names without diacritics.
+ * "Белград"). Few streets have an English or German name, so those pages fall
+ * back to the Serbian Latin one before `name:latin`, an ASCII transliteration
+ * of the Cyrillic: the map then reads "Njegoševa" beside the office address,
+ * not "Njegoseva".
  */
 const LABEL_FIELDS: Record<string, readonly string[]> = {
   "sr-Latn": ["name:sr-Latn", "name:latin"],
-  en: ["name:en", "name:latin"],
-  de: ["name:de", "name:latin"],
+  en: ["name:en", "name:sr-Latn", "name:latin"],
+  de: ["name:de", "name:sr-Latn", "name:latin"],
   ru: ["name:ru", "name:nonlatin"],
 };
 

@@ -25,6 +25,7 @@ export function PageHero({
   lede,
   ledeLang,
   aside,
+  asideClassName,
   children,
   size = "display-l",
   className,
@@ -37,6 +38,8 @@ export function PageHero({
   lede?: string;
   ledeLang?: string;
   aside?: ReactNode;
+  /** Classes for the aside's grid cell (e.g. `max-lg:hidden` when it only matters beside the title). */
+  asideClassName?: string;
   children?: ReactNode;
   size?: "display-l" | "display-m";
   className?: string;
@@ -66,7 +69,7 @@ export function PageHero({
               )}
             >
               <SplitReveal as="span" className="block">
-                {fixWidows(title)}
+                {fixWidows(fixTypography(title))}
               </SplitReveal>
             </h1>
             {lede !== undefined && lede.length > 0 ? (
@@ -76,7 +79,7 @@ export function PageHero({
             ) : null}
             {children}
           </div>
-          {aside !== undefined ? <div className="min-w-0 lg:col-span-5">{aside}</div> : null}
+          {aside !== undefined ? <div className={cn("min-w-0 lg:col-span-5", asideClassName)}>{aside}</div> : null}
         </div>
       </Container>
     </div>

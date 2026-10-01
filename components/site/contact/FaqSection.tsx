@@ -5,9 +5,9 @@ import { fixTypography } from "@/lib/format";
 import type { FaqEntry } from "./managed";
 
 /**
- * A page's questions (sell, contact): the heading on the left, the hairline
- * accordion on the right. Nothing renders without questions — an empty
- * "FAQ" heading is worse than none.
+ * A page's questions (sell, contact, valuation): the heading on the left, the
+ * hairline accordion on the right. Nothing renders without questions — an
+ * empty "FAQ" heading is worse than none.
  */
 export function FaqSection({
   id,

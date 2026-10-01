@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { formatCount, formatPricePerM2 } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { listingTotal, placeName, type LocationNode } from "./data";
+import { formatCoordinates, listingTotal, placeName, type LocationNode } from "./data";
 import { PlacePlate } from "./PlacePlate";
 
 /**
@@ -61,6 +61,7 @@ export async function PlaceCard({
                 kindLabel={t(`kind.${node.kind}`)}
                 lat={node.lat}
                 lng={node.lng}
+                coordinates={formatCoordinates(node.lat, node.lng, locale, tUnits)}
                 surface={surface}
                 {...(origin !== undefined ? { origin } : {})}
               />
@@ -126,12 +127,13 @@ export async function PlaceCard({
                   className="group/area flex min-h-11 items-center justify-between gap-4 py-2 text-small transition-colors duration-200 pointer-fine:hover:text-bronze-text focus-visible:text-bronze-text"
                 >
                   <span lang={areaName.lang}>{areaName.text}</span>
+                  {/* An empty place shows a dash, not a bare "0" that reads as missing data. */}
                   <span
                     data-numeric=""
                     aria-hidden="true"
                     className={cn("font-mono text-label", areaTotal > 0 ? "text-ink" : "text-stone-text")}
                   >
-                    {formatCount(areaTotal, locale)}
+                    {areaTotal > 0 ? formatCount(areaTotal, locale) : "—"}
                   </span>
                   <span className="sr-only">
                     {areaTotal > 0 ? t("count", { count: areaTotal }) : t("noOffers")}

@@ -4,7 +4,7 @@ import { fetchQuery } from "convex/nextjs";
 import type { FunctionReturnType } from "convex/server";
 import { cache } from "react";
 import { api } from "@/convex/_generated/api";
-import type { Locale } from "@/i18n/routing";
+import { htmlLang, type Locale } from "@/i18n/routing";
 import { formatCount, formatPricePerM2 } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import type { HeroFigure } from "./HeroFigures";
@@ -97,6 +97,25 @@ export function placeFigures(
   }
   out.push({ label: t("onOffer"), value: formatCount(listingTotal(node), locale) });
   return out;
+}
+
+/**
+ * A place's centre as the page's language writes it: the locale's decimal mark
+ * ("44,8125" in sr/ru/de) and its hemisphere marks from `units` (Serbian S/I,
+ * Russian с. ш./в. д., German O for east). Two strings, so each can be kept
+ * whole on its own line.
+ */
+export function formatCoordinates(
+  lat: number,
+  lng: number,
+  locale: Locale,
+  tUnits: Translator,
+): { lat: string; lng: string } {
+  const degrees = new Intl.NumberFormat(htmlLang[locale], { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  return {
+    lat: `${degrees.format(Math.abs(lat))}° ${tUnits(lat >= 0 ? "north" : "south")}`,
+    lng: `${degrees.format(Math.abs(lng))}° ${tUnits(lng >= 0 ? "east" : "west")}`,
+  };
 }
 
 /** A meta description: whole words, at most `max` characters, an ellipsis when cut. */

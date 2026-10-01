@@ -9,7 +9,13 @@ import { getJournalPage, getPopulatedCategories } from "@/components/site/journa
 import { FeaturedPost } from "@/components/site/journal/FeaturedPost";
 import { JournalCard } from "@/components/site/journal/JournalCard";
 import { LoadMorePosts } from "@/components/site/journal/LoadMorePosts";
-import { parseCategory, POST_CATEGORIES, POST_GRID } from "@/components/site/journal/shared";
+import {
+  parseCategory,
+  POST_CARD_SIZES_PAIR,
+  POST_CATEGORIES,
+  POST_GRID,
+  POST_GRID_PAIR,
+} from "@/components/site/journal/shared";
 import { JsonLdScript } from "@/components/site/page/JsonLd";
 import { PageHero } from "@/components/site/page/PageHero";
 import type { PostCategory } from "@/convex/lib/validators";
@@ -64,6 +70,8 @@ export default async function JournalPage(props: Props) {
   const posts = result.page;
   const featured = posts.find((post) => post.featured) ?? posts[0];
   const rest = posts.filter((post) => post !== featured);
+  // Two posts in halves; never when older ones can follow in the three-column grid.
+  const pair = rest.length === 2 && result.isDone;
 
   const crumbs =
     category === undefined
@@ -110,10 +118,10 @@ export default async function JournalPage(props: Props) {
               </div>
 
               {rest.length > 0 ? (
-                <ul className={cn(POST_GRID, "mt-20 hairline-t pt-16 lg:mt-28 lg:pt-20")}>
+                <ul className={cn(pair ? POST_GRID_PAIR : POST_GRID, "mt-20 hairline-t pt-16 lg:mt-28 lg:pt-20")}>
                   {rest.map((post) => (
                     <li key={post._id}>
-                      <JournalCard post={post} />
+                      <JournalCard post={post} sizes={pair ? POST_CARD_SIZES_PAIR : undefined} />
                     </li>
                   ))}
                 </ul>

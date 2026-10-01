@@ -6,13 +6,16 @@ import type { CompareItem } from "./compare-item";
 
 /**
  * The comparison as data: groups of rows, one cell per listing, and for every
- * row the columns that hold its best value. Pure, so the rules below are the
+ * row the columns that hold its standout figure. Pure, so the rules below are the
  * whole story of what gets highlighted.
  *
  * - Only figures with an obvious direction compete: the lowest price, €/m² and
  *   monthly costs; the largest area, outdoor space and plot; the most rooms and
  *   bathrooms; the newest building. Categorical rows (heating, condition…)
  *   never do — "Centralno" is not better than "Etažno" for every buyer.
+ * - Only the price rows call their standout the best value. The others say
+ *   what it is ("Najveća površina", "Najnovija gradnja"): a bigger, newer and
+ *   dearer flat is not the better deal, and it collected every "best value".
  * - A missing value never wins, and a row needs two stated values to compete.
  * - Ties highlight every tied column, but when ALL stated values are equal
  *   nothing stands out, so nothing is highlighted.
@@ -24,7 +27,7 @@ export type CompareCell = {
   text: string;
   /** A second, quieter line (a price cut, a renovation year, a cost breakdown). */
   detail?: string;
-  /** The figure that competes for the row's best value. */
+  /** The figure that competes for the row's standout. */
   value?: number;
 };
 
@@ -33,8 +36,10 @@ export type CompareRow = {
   label: string;
   /** `null` when the listing does not state it. */
   cells: (CompareCell | null)[];
-  /** Column indexes holding the best value; empty when the row has no winner. */
+  /** Column indexes holding the row's standout figure; empty when the row has no winner. */
   best: ReadonlySet<number>;
+  /** The words under a standout figure ("Najbolja vrednost", "Najviše soba"). */
+  mark?: string;
 };
 
 export type CompareGroup = { key: string; label: string; rows: CompareRow[] };
@@ -46,6 +51,9 @@ export type CompareTranslators = {
 };
 
 type Rule = "min" | "max";
+
+/** How a row picks its standout, and what the standout cell then says. */
+type Highlight = { rule: Rule; mark: string };
 
 const NONE: ReadonlySet<number> = new Set();
 
@@ -65,10 +73,11 @@ function row(
   key: string,
   label: string,
   cells: (CompareCell | null)[],
-  rule?: Rule,
+  highlight?: Highlight,
 ): CompareRow | null {
   if (cells.every((cell) => cell === null)) return null;
-  return { key, label, cells, best: rule === undefined ? NONE : bestColumns(cells, rule) };
+  if (highlight === undefined) return { key, label, cells, best: NONE };
+  return { key, label, cells, best: bestColumns(cells, highlight.rule), mark: highlight.mark };
 }
 
 function group(key: string, label: string, rows: (CompareRow | null)[]): CompareGroup | null {
@@ -137,25 +146,40 @@ export function buildCompareGroups(
     };
   });
 
+  const bestValue: Highlight = { rule: "min", mark: t.compare("bestValue") };
+  const largest: Highlight = { rule: "max", mark: t.compare("markLargest") };
+
   const groups = [
     group("price", t.compare("groups.price"), [
-      row("price", t.compare("rowPrice"), price, "min"),
-      row("pricePerM2", t.listing("pricePerM2"), perM2, "min"),
-      row("bills", t.listing("facts.bills"), bills, "min"),
+      row("price", t.compare("rowPrice"), price, bestValue),
+      row("pricePerM2", t.listing("pricePerM2"), perM2, bestValue),
+      row("bills", t.listing("facts.bills"), bills, bestValue),
     ]),
     group("space", t.compare("groups.space"), [
-      row("area", t.listing("area"), items.map((item) => area(item.areaM2)), "max"),
+      row("area", t.listing("area"), items.map((item) => area(item.areaM2)), largest),
       row(
         "rooms",
         t.listing("rooms"),
         items.map((item) =>
-          hasRooms(item) ? { text: structureShort(t.listing, t.units, item.rooms), value: item.rooms } : null,
+          hasRooms(item)
+            ? {
+                // "Trosoban" agrees with "stan"; an office or a house gets the plain count.
+                text:
+                  item.propertyType === "apartment"
+                    ? structureShort(t.listing, t.units, item.rooms)
+                    : t.units("rooms", { count: item.rooms }),
+                value: item.rooms,
+              }
+            : null,
         ),
-        "max",
+        { rule: "max", mark: t.compare("markMostRooms") },
       ),
-      row("bathrooms", t.listing("facts.bathrooms"), items.map((item) => count(item.bathrooms)), "max"),
-      row("outdoor", t.listing("facts.outdoor"), items.map((item) => area(item.outdoorAreaM2)), "max"),
-      row("plot", t.listing("facts.plotArea"), items.map((item) => area(item.plotAreaM2)), "max"),
+      row("bathrooms", t.listing("facts.bathrooms"), items.map((item) => count(item.bathrooms)), {
+        rule: "max",
+        mark: t.compare("markMostBathrooms"),
+      }),
+      row("outdoor", t.listing("facts.outdoor"), items.map((item) => area(item.outdoorAreaM2)), largest),
+      row("plot", t.listing("facts.plotArea"), items.map((item) => area(item.plotAreaM2)), largest),
       row(
         "floor",
         t.listing("floor"),
@@ -187,7 +211,7 @@ export function buildCompareGroups(
                   : {}),
               },
         ),
-        "max",
+        { rule: "max", mark: t.compare("markNewest") },
       ),
       row(
         "construction",

@@ -22,8 +22,10 @@ export type BadgeProps = {
 const TONE: Record<NonNullable<BadgeProps["tone"]>, string> = {
   light: "border-ink/30 text-ink", // 12% is 1.29:1 on ivory; 30% clears 3:1
   // `dark` sits directly on a photograph, so it carries its own scrim rather
-  // than trusting whatever the image happens to be behind it (DESIGN 5).
-  dark: "border-ivory/40 bg-ink/60 text-ivory backdrop-blur-[2px]",
+  // than trusting whatever the image happens to be behind it (DESIGN 5). The
+  // same ink/70 as the card's carousel chrome; no backdrop blur, which made no
+  // visible difference at 2px and left blank bars in long Chromium captures.
+  dark: "border-ivory/40 bg-ink/70 text-ivory",
   accent: "border-bronze-text text-bronze-text",
   status: "border-ink bg-ink text-ivory",
 };

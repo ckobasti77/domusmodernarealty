@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, unstable_rethrow } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
+import { FaqSection } from "@/components/site/contact/FaqSection";
 import { Container } from "@/components/site/Container";
 import { JsonLdScript } from "@/components/site/page/JsonLd";
 import { PageHero } from "@/components/site/page/PageHero";
@@ -12,7 +13,6 @@ import {
   HowWeCalculate,
   OnsiteSection,
   VALUATION_FALLBACK_IMAGE,
-  ValuationFaq,
 } from "@/components/site/valuation/sections";
 import { ValuationFunnel } from "@/components/site/valuation/ValuationFunnel";
 import { routing, type Locale } from "@/i18n/routing";
@@ -125,7 +125,7 @@ export default async function ValuationPage({ params, searchParams }: Props) {
       </section>
 
       <OnsiteSection locale={locale} lookAt={copy.lookAt} book={copy.book} />
-      <ValuationFaq locale={locale} items={copy.faq} />
+      <FaqSection id="valuation-faq-title" eyebrow={t("faqEyebrow")} heading={t("faqHeading")} items={copy.faq} />
     </>
   );
 }

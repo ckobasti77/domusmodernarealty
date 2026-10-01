@@ -115,10 +115,11 @@ export function formatRooms(value: number, locale: Locale): string {
  * line (u, i, o, a, s, k). `text-wrap: balance` is banned on SplitText elements
  * (CLAUDE.md), so the join is made unbreakable with a non-breaking space
  * instead. Safe for en/ru/de too — those single letters are rare there and a
- * NBSP after them is never wrong.
+ * NBSP after them is never wrong. The lookbehind lets a run of them chain
+ * ("i u Beogradu", "и в Белграде"): each one stays with the next word.
  */
 const ORPHANS =
-  /(^|[\s\u00A0])([aiouskAIOUSK\u0430\u0438\u043E\u0443\u0441\u043A\u0432\u044F\u0410\u0418\u041E\u0423\u0421\u041A\u0412\u042F])\s+/g;
+  /(?<=^|[\s\u00A0])([aiouskAIOUSK\u0430\u0438\u043E\u0443\u0441\u043A\u0432\u044F\u0410\u0418\u041E\u0423\u0421\u041A\u0412\u042F])\s+/g;
 
 /**
  * Multi-word conjunctions that read as one unit and must not break across a
@@ -127,9 +128,34 @@ const ORPHANS =
  */
 const UNITS = /(^|[\s\u00A0])([Pp]re) nego što(?=[\s\u00A0.,;:!?]|$)/g;
 
+/**
+ * A spaced em or en dash never opens a line ("Предложения / — Белград"): it is
+ * bound to the word before it and may still break after itself. Ranges
+ * without spaces ("9–17 h") are not touched.
+ */
+const DASH = /[ \t]+([—–])(?=\s)/g;
+
 export function fixOrphans(text: string): string {
-  return text.replace(ORPHANS, "$1$2\u00A0").replace(UNITS, "$1$2\u00A0nego\u00A0što");
+  return text
+    .replace(ORPHANS, "$1\u00A0")
+    .replace(UNITS, "$1$2\u00A0nego\u00A0što")
+    .replace(DASH, "\u00A0$1");
 }
+
+/**
+ * Russian two-letter prepositions and particles stay with the next word
+ * ("Прогуляйтесь по / комнатам" never ends a line on "по"). Cyrillic only, so
+ * headlines get it too without re-wrapping the sr/en/de ones.
+ */
+const RU_TWO_LETTER =
+  /(?<=^|[\s\u00A0])(по|на|за|до|от|из|об|со|во|не|но|По|На|За|До|От|Из|Об|Со|Во|Не|Но)\s+/g;
+
+/**
+ * A German relative pronoun after a comma opens the next line instead of
+ * closing this one ("Ein Zuhause, das / man nicht" → "Ein Zuhause, / das man
+ * nicht"). Headlines only: a prose measure is long enough not to need it.
+ */
+const DE_RELATIVE = /(?<=,[ \u00A0])(der|die|das|dem|den|deren|dessen|denen) +/g;
 
 /**
  * `fixOrphans` for display headlines, plus no lone last word: in a headline of
@@ -139,7 +165,7 @@ export function fixOrphans(text: string): string {
  * than a phone's measure at the size it is set in; lower it for larger type.
  */
 export function fixWidows(text: string, maxChars = 16): string {
-  const fixed = fixOrphans(text);
+  const fixed = fixOrphans(text).replace(RU_TWO_LETTER, "$1\u00A0").replace(DE_RELATIVE, "$1\u00A0");
   const words = fixed.split(" ");
   if (words.length < 3) return fixed;
   const last = words.at(-1) ?? "";
@@ -168,13 +194,13 @@ export function formatRsd(eur: number, rate: number, locale: Locale): string {
  * `fixOrphans` plus two rules for running prose (listing descriptions, notices):
  * a number never parts from its unit ("9 m²", "120 metara", "25 god."), and the
  * common two-letter prepositions stay with the next word (sa, na, od, za, do,
- * iz, uz, po, ka; ru на, по, за, от, до, из, со, во). Kept separate from
- * `fixOrphans` so the landing's measured headlines do not re-wrap.
+ * iz, uz, po, ka; ru по, на, за, до, от, из, об, со, во, не, но). The Latin set
+ * is kept out of `fixOrphans` so the landing's measured headlines do not
+ * re-wrap.
  */
 const NUMBER_UNIT =
   /(\d)\s+(?=(?:m²|м²|m2|m|м|km|км|€|EUR|RSD|min|мин|god\.|godina|metara|минут|metres|meters|Meter|sata|sati|sat|dana|часов|часа|час|дней|hours|hour|days|Stunden|Stunde|Tagen|Tage)(?![\p{L}\d]))/gu;
-const TWO_LETTER =
-  /(^|[\s\u00A0])(sa|na|od|za|do|iz|uz|po|ka|Sa|Na|Od|Za|Do|Iz|Uz|Po|Ka|на|по|за|от|до|из|со|во|На|По|За|От|До|Из|Со|Во)\s+/g;
+const TWO_LETTER = /(?<=^|[\s\u00A0])(sa|na|od|za|do|iz|uz|po|ka|Sa|Na|Od|Za|Do|Iz|Uz|Po|Ka)\s+/g;
 
 /** A one-letter prefix and its hyphen ("e-mail", "e-pošta") never end a line. */
 const PREFIX_HYPHEN = /(^|[\s(])([eE])-(?=\S)/g;
@@ -185,7 +211,8 @@ const WORD_JOINER = String.fromCharCode(0x2060);
 export function fixTypography(text: string): string {
   return fixOrphans(text)
     .replace(NUMBER_UNIT, "$1\u00A0")
-    .replace(TWO_LETTER, "$1$2\u00A0")
+    .replace(TWO_LETTER, "$1\u00A0")
+    .replace(RU_TWO_LETTER, "$1\u00A0")
     .replace(PREFIX_HYPHEN, `$1$2-${WORD_JOINER}`)
     .replace(NUMERIC_PREFIX_HYPHEN, `$1-${WORD_JOINER}`);
 }

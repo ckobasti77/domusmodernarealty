@@ -78,7 +78,7 @@ export async function LegalBlock({
         </p>
       </div>
 
-      <dl className="mt-6 grid gap-x-6 sm:grid-cols-2">
+      <dl className="mt-6 grid gap-x-8 sm:grid-cols-2">
         {rows.map((row) => (
           <div key={row.label} className="hairline-t flex flex-col gap-1 py-4">
             <dt className="font-sans text-label uppercase tracking-[0.12em] text-stone-text">{row.label}</dt>

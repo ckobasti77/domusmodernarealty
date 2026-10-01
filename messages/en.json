@@ -84,6 +84,7 @@
     "numbersClients": "Satisfied clients",
     "numbersDaysToSell": "Days to sell (average)",
     "numbersDemo": "Demo figures — to be replaced with the agency's real data.",
+    "numbersEyebrow": "In figures",
     "numbersHeading": "Results you can measure",
     "numbersMediaAlt": "Facade of an Art Nouveau building in Belgrade at golden hour",
     "numbersSold": "Properties sold",
@@ -218,7 +219,10 @@
       "attribution": "Map data sources",
       "outsideBelgrade": "Show {count} more outside Belgrade",
       "showAll": "Show all {count} results on the map",
-      "offline": "The map cannot be loaded right now. All results are in the list."
+      "offline": "The map cannot be loaded right now. All results are in the list.",
+      "gesturesWindows": "Hold Ctrl and scroll to zoom the map",
+      "gesturesMac": "Hold ⌘ and scroll to zoom the map",
+      "gesturesTouch": "Use two fingers to move the map"
     },
     "chips": {
       "label": "Active filters",
@@ -386,7 +390,7 @@
       "walk3d": "3D walkthrough"
     },
     "galleryUi": {
-      "showAll": "All photos ({count})",
+      "showAll": "All photos ({count})",
       "open": "Open photo {index} of {total}",
       "filterLabel": "View by room",
       "all": "All",
@@ -446,6 +450,8 @@
       "orientation": "Aspect",
       "bills": "Monthly costs",
       "billsValue": "Infostan utilities ~{infostan}, service charge ~{maintenance}",
+      "billsInfostan": "Infostan utilities ~{amount}",
+      "billsMaintenance": "Service charge ~{amount}",
       "availableFrom": "Available from",
       "completion": "Construction completion",
       "minLease": "Minimum tenancy",
@@ -655,6 +661,8 @@
       "hideCaptions": "Hide captions",
       "showThumbnails": "Show thumbnails",
       "hideThumbnails": "Hide thumbnails",
+      "caption": "caption",
+      "thumbnails": "Thumbnails",
       "position": "{index} of {total}"
     }
   },
@@ -828,7 +836,7 @@
       "p1": "The indicative range is calculated from the average price per square metre in your area, adjusted for condition, floor and lift. It is an indicative estimate, not a formal appraisal: it cannot be used with a bank, a court or the tax authority.",
       "p2": "A firmer figure follows once we have seen the property. On site we look at the light, the orientation, the services, the building and the paperwork, and compare the property with actual sales in your area from the property price register of the Republic Geodetic Authority (RGZ)."
     },
-    "onsiteSectionEyebrow": "On-site valuation",
+    "onsiteSectionEyebrow": "A firmer figure",
     "book": {
       "heading": "An on-site valuation, with no obligation.",
       "sub": "We come at a time that suits you, review the property and the paperwork, and leave you the range in writing.",
@@ -1084,7 +1092,7 @@
     "valuesHeading": "What matters to us",
     "complianceHeading": "Licences and registration",
     "metaTitle": "About us: an estate agency in Belgrade",
-    "metaDescription": "Who we are and how we work: we check the paperwork before listing, propose prices based on completed sales and reply the same working day.",
+    "metaDescription": "Who we are and how we work: we check the paperwork before listing and propose a price after a viewing, based on completed sales in the area.",
     "eyebrow": "About us",
     "imageAlt": "An Art Nouveau facade with wrought-iron balconies at golden hour",
     "storyEyebrow": "The agency",
@@ -1202,6 +1210,10 @@
     "empty": "In the property list, tick “Compare” on the cards that interest you, up to four at a time. Your selection is kept on this device.",
     "limitReached": "{max, plural, one {You can compare up to # property.} other {You can compare up to # properties.}}",
     "bestValue": "Best value",
+    "markLargest": "Largest area",
+    "markMostRooms": "Most rooms",
+    "markMostBathrooms": "Most bathrooms",
+    "markNewest": "Newest build",
     "shareCta": "Share comparison",
     "trayLabel": "Selected for comparison",
     "traySelected": "{count, plural, one {# property selected} other {# properties selected}}",
@@ -1210,11 +1222,12 @@
     "trayRemove": "Remove from comparison: {title}",
     "eyebrow": "Side by side",
     "metaDescription": "Compare up to four properties side by side: price, price per m², floor area, room structure, floor, year built, heating and monthly costs.",
-    "caption": "{count, plural, one {Comparison of # property} other {Comparison of # properties}} by price, space, building and legal status. The best value in each row is marked with a diamond and the words “Best value”.",
-    "legend": "Best value in the row",
+    "caption": "{count, plural, one {Comparison of # property} other {Comparison of # properties}} by price, space, building and legal status. The figure that stands out in a row is marked with a diamond and a note: “Best value” in the price and cost rows, elsewhere what sets it apart, such as “Largest area”.",
+    "legend": "Stands out in the row",
     "notStated": "Not stated",
     "count": "{count, plural, one {Comparing # property} other {Comparing # properties}}",
     "view": "View property",
+    "viewShort": "Details",
     "addMore": "Add a property",
     "save": "Save this comparison",
     "saved": "Comparison saved as your selection on this device.",
@@ -1393,7 +1406,11 @@
     "floorBasement": "Semi-basement",
     "floorSemiBasement": "Lower ground",
     "distanceM": "{meters} m",
-    "minutesWalk": "{minutes} min walk"
+    "minutesWalk": "{minutes} min walk",
+    "north": "N",
+    "south": "S",
+    "east": "E",
+    "west": "W"
   },
   "styleguide": {
     "accordion": "Accordion",
@@ -1420,7 +1437,7 @@
     "parallax": "Parallax",
     "progress": "Scroll progress",
     "reveal": "Image reveal",
-    "sampleAnswer1": "With the paperwork in order, 45 to 90 days on average, depending on price and location. You get a first valuation within 24 hours.",
+    "sampleAnswer1": "It depends on the price, the location and the paperwork: an apartment with its papers in order sells faster. You get an indicative online valuation straight away.",
     "sampleAnswer2": "Transfer tax or VAT, the notary fee and the cadastre registration. We calculate the exact figure before the preliminary contract is signed.",
     "sampleQuestion1": "How long does selling an apartment in Belgrade take?",
     "sampleQuestion2": "What does a buyer pay on top of the price?",

@@ -44,7 +44,24 @@ describe("fixWidows", () => {
 
   it("leaves short headlines and long pairs alone", () => {
     expect(fixWidows("Izdvojene nekretnine")).toBe("Izdvojene nekretnine");
-    expect(fixWidows("Ein Zuhause, das man nicht vergisst.", 10)).toBe("Ein Zuhause, das man nicht vergisst.");
+  });
+
+  it("opens the line with a German relative pronoun instead of stranding it", () => {
+    expect(fixWidows("Ein Zuhause, das man nicht vergisst.", 10)).toBe(`Ein Zuhause, das${NBSP}man nicht vergisst.`);
+    expect(fixWidows("Eine Wohnung, die bleibt")).toBe(`Eine Wohnung, die${NBSP}bleibt`);
+    expect(fixWidows("Das Haus der Familie")).toBe(`Das Haus der${NBSP}Familie`);
+  });
+
+  it("binds Russian two-letter prepositions in headlines", () => {
+    expect(fixWidows("Прогуляйтесь по комнатам ещё до визита.")).toBe(
+      `Прогуляйтесь по${NBSP}комнатам ещё${NBSP}до${NBSP}визита.`,
+    );
+    expect(fixWidows("Не только цена")).toBe(`Не${NBSP}только цена`);
+  });
+
+  it("never lets a dash open a line", () => {
+    expect(fixWidows("Предложения — Белград")).toBe(`Предложения${NBSP}— Белград`);
+    expect(fixWidows("Ponuda — Dorćol")).toBe(`Ponuda${NBSP}— Dorćol`);
   });
 
   it("keeps a conjunction together instead of forming a long unbreakable tail", () => {
@@ -70,6 +87,24 @@ describe("parseLocaleNumber", () => {
   it("returns null for empty or junk input", () => {
     expect(parseLocaleNumber("", "sr-Latn")).toBeNull();
     expect(parseLocaleNumber("abc", "en")).toBeNull();
+  });
+});
+
+describe("fixTypography dashes and chains", () => {
+  it("binds a spaced em or en dash to the word before it", () => {
+    expect(fixTypography("trosoban — dnevna soba")).toBe(`trosoban${NBSP}— dnevna soba`);
+    expect(fixTypography("все объекты — в поиске")).toBe(`все объекты${NBSP}— в${NBSP}поиске`);
+    expect(fixTypography("Beograd – Novi Sad")).toBe(`Beograd${NBSP}– Novi Sad`);
+  });
+
+  it("leaves unspaced ranges alone", () => {
+    expect(fixTypography("9–12 h")).toBe("9–12 h");
+  });
+
+  it("chains a run of short words", () => {
+    expect(fixTypography("i u Beogradu")).toBe(`i${NBSP}u${NBSP}Beogradu`);
+    expect(fixTypography("и в Белграде")).toBe(`и${NBSP}в${NBSP}Белграде`);
+    expect(fixTypography("не на продажу")).toBe(`не${NBSP}на${NBSP}продажу`);
   });
 });
 

@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { gsap, MOTION_QUERIES, ScrollTrigger, useGSAP } from "@/components/motion/gsap";
+import { cn } from "@/lib/utils";
 
 /**
  * The five selling steps along a vertical hairline (DESIGN §6.8). A bronze
@@ -21,7 +22,18 @@ function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-export function ProcessSteps({ steps }: { steps: readonly ProcessStep[] }) {
+export function ProcessSteps({
+  steps,
+  titleSize = "h2",
+}: {
+  steps: readonly ProcessStep[];
+  /**
+   * `h2` grows the step titles to the h2 token on desktop, under the landing's
+   * display-size heading; `h3` keeps them at h3 where the section heading is
+   * itself only h2 (sell), so the steps never match it.
+   */
+  titleSize?: "h2" | "h3";
+}) {
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -119,7 +131,10 @@ export function ProcessSteps({ steps }: { steps: readonly ProcessStep[] }) {
               <p aria-hidden="true" data-numeric="" className="font-mono text-label text-bronze-text">
                 {pad(index + 1)}
               </p>
-              <h3 lang={step.titleLang} className="mt-3 font-display text-h3 font-normal lg:text-h2">
+              <h3
+                lang={step.titleLang}
+                className={cn("mt-3 font-display text-h3 font-normal", titleSize === "h2" && "lg:text-h2")}
+              >
                 {step.title}
               </h3>
               <p lang={step.bodyLang} className="mt-3 max-w-[48ch] text-pretty text-body text-stone-text">

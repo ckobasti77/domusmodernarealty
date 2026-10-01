@@ -24,7 +24,7 @@ import {
   TextAreaField,
   TextField,
 } from "@/components/site/Field";
-import { formatArea, formatCount, formatRooms } from "@/lib/format";
+import { fixTypography, formatArea, formatCount, formatRooms } from "@/lib/format";
 import { Price } from "@/components/site/Price";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
@@ -539,6 +539,8 @@ export default async function StyleguidePage({
               </div>
             ))}
           </dl>
+          {/* Sample figures for the component, marked the way the landing marks demo stats. */}
+          <p className="mt-8 max-w-[52ch] text-pretty text-small text-stone-text">{fixTypography(tHome("numbersDemo"))}</p>
         </Container>
       </Section>
 

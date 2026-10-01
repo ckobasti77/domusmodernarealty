@@ -3,7 +3,7 @@ import { internalMutation } from "./_generated/server";
 import { logActivity } from "./lib/activity";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { FIRST_REF_NUMBER, formatRef } from "./lib/slug";
-import type { L10n, L10nList } from "./lib/validators";
+import type { ImageRef, L10n, L10nList } from "./lib/validators";
 import { SEED_AGENTS } from "./seed/agents";
 import { LISTING_COPY_1 } from "./seed/content/listings1";
 import type { SeedListingCopy } from "./seed/content/listings1";
@@ -12,6 +12,9 @@ import { LISTING_COPY_3 } from "./seed/content/listings3";
 import { PAGE_CONTENT, SETTINGS_COPY } from "./seed/content/pages";
 import { POST_COPY } from "./seed/content/posts";
 import { SEED_LOCATIONS } from "./seed/locations";
+import type { SeedLocation } from "./seed/locations";
+import { photoUrl } from "./seed/media";
+import { DEMO_PHOTOS } from "./seed/media.generated";
 import { SEED_LISTINGS } from "./seed/spec";
 
 /**
@@ -101,6 +104,18 @@ function l10n(text: { sr: string; en?: string; ru?: string; de?: string }): L10n
   };
 }
 
+/**
+ * The cover a seeded place pins (`coverPhoto`), stored exactly as
+ * `seedStages:seedLocations` stores it. Only verified demo photos qualify.
+ */
+function pinnedCover(item: SeedLocation): ImageRef | undefined {
+  if (item.coverPhoto === undefined) return undefined;
+  if (!DEMO_PHOTOS.some((photo) => photo.url === item.coverPhoto)) {
+    throw new Error(`Location "${item.slug}" names an unverified cover photo`);
+  }
+  return { kind: "url", url: photoUrl(item.coverPhoto, 1600) };
+}
+
 function l10nList(list: { sr: string[]; en?: string[]; ru?: string[]; de?: string[] }): L10nList {
   return {
     sr: list.sr,
@@ -113,9 +128,9 @@ function l10nList(list: { sr: string[]; en?: string[]; ru?: string[]; de?: strin
 /**
  * Brings the demo copy in the database in line with the seed files after a
  * translation pass (step 12): listing titles/descriptions/highlights, post
- * texts, place names and introductions, agent roles and bios, and the demo
- * settings texts. Pages are refreshed by `refreshSeededPages`, tour scenes by
- * `seedStages:applyDemoTours`.
+ * texts, place names, introductions and pinned covers, agent roles and bios,
+ * and the demo settings texts. Pages are refreshed by `refreshSeededPages`,
+ * tour scenes by `seedStages:applyDemoTours`.
  *
  * Only `isDemo` records are touched — demo content is placeholder by
  * definition and is removed from the admin in one click — and only fields
@@ -143,11 +158,19 @@ export const refreshSeededCopy = internalMutation({
         .withIndex("by_slug", (q) => q.eq("slug", item.slug))
         .unique();
       if (doc === null || !doc.isDemo) continue;
+      const cover = pinnedCover(item);
       const next = {
         name: l10n(item.name),
         ...(item.intro !== undefined ? { intro: l10n(item.intro) } : {}),
+        ...(cover !== undefined ? { cover } : {}),
       };
-      if (sameValue(doc.name, next.name) && sameValue(doc.intro, next.intro)) continue;
+      if (
+        sameValue(doc.name, next.name) &&
+        sameValue(doc.intro, next.intro) &&
+        (cover === undefined || sameValue(doc.cover, cover))
+      ) {
+        continue;
+      }
       await ctx.db.patch("locations", doc._id, next);
       locations += 1;
     }

@@ -70,7 +70,7 @@ export async function Services({ locale, copy }: { locale: Locale; copy: HomeCop
                 <span
                   aria-hidden="true"
                   data-numeric=""
-                  className="pt-2 font-mono text-label text-bronze-text lg:col-span-1 lg:self-start lg:pt-5"
+                  className="pt-2 font-mono text-label text-bronze-text lg:col-span-1 lg:pt-0"
                 >
                   {pad(index + 1)}
                 </span>
@@ -86,7 +86,7 @@ export async function Services({ locale, copy }: { locale: Locale; copy: HomeCop
                   {service.title.text}
                 </h3>
 
-                <div className={cn("col-start-2 mt-4 lg:col-span-5 lg:col-start-8 lg:mt-0", FOLDED)}>
+                <div className={cn("col-start-2 mt-4 lg:col-span-4 lg:col-start-8 lg:mt-0", FOLDED)}>
                   <p className="max-w-[56ch] text-pretty text-body text-stone-text">
                     {service.body.lang !== undefined ? (
                       <span lang={service.body.lang}>{fixTypography(service.body.text)}</span>
@@ -107,7 +107,13 @@ export async function Services({ locale, copy }: { locale: Locale; copy: HomeCop
                   </p>
                 </div>
 
-                <span aria-hidden="true" className="hidden lg:col-span-1 lg:col-start-12 lg:flex lg:justify-end">
+                {/* On the row's one line with the rest (the text stops at column 11),
+                    so number, title and arrow share its centre however many lines the
+                    text runs to. */}
+                <span
+                  aria-hidden="true"
+                  className="hidden lg:col-span-1 lg:col-start-12 lg:row-start-1 lg:flex lg:justify-end"
+                >
                   <ArrowRight
                     strokeWidth={1}
                     className={cn(

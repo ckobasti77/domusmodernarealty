@@ -79,7 +79,7 @@ export function LocaleSwitcher({
                   "transition-colors duration-200",
                   stacked
                     ? "flex min-h-12 w-full items-baseline justify-between gap-4 py-2 font-display text-h3 font-normal"
-                    : "font-mono text-label uppercase",
+                    : "inline-flex min-h-9 items-center font-mono text-label uppercase",
                   isActive ? "text-bronze" : "text-mist pointer-fine:hover:text-ivory focus-visible:text-ivory",
                 )}
               >

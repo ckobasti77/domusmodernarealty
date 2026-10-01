@@ -47,9 +47,11 @@ export async function ToursTeaser({
             title={headingNode(copy.heading)}
             size="display-l"
             tone="dark"
-            // Narrow enough that the bound "pre nego što" moves to the second
-            // line with its verb, instead of leaving "dođete." alone there.
-            className="col-span-4 lg:col-span-7 lg:max-w-[min(45vw,44rem)]"
+            // On a phone and from 1024px the measure is narrow enough that the
+            // bound "pre nego što" moves to line two with its verb. A tablet has
+            // room for the whole headline, so the title's 22ch cap is lifted
+            // there instead of leaving "dođete." alone on line two.
+            className="col-span-4 md:[&_h2]:max-w-none lg:col-span-7 lg:max-w-[min(45vw,44rem)]"
           />
           <div className="col-span-4 lg:col-span-4 lg:col-start-9 lg:pb-2">
             <p lang={copy.lede.lang} className="max-w-[40ch] text-pretty text-body-l text-mist">

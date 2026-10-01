@@ -1,12 +1,16 @@
 "use client";
 
-import { Check, Link2, Mail, MessageCircle } from "lucide-react";
+import { Check, Link2, Mail, MessageCircle, MessagesSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 /**
  * Share row (PRD A5): copy link, WhatsApp, Viber, e-mail. The URL is the
  * canonical one from the server, so a visitor on `?utm=…` never forwards it.
+ *
+ * A 2×2 grid on phones and in the desktop sidebars (listing, article), where a
+ * wrapping row left the fourth link alone on a second line; one row between.
+ * Viber has the agent card's glyph, so the two messengers are told apart.
  */
 export function ShareButtons({ url, title }: { url: string; title: string }) {
   const t = useTranslations("listing.share");
@@ -30,7 +34,7 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="eyebrow text-stone-text">{t("heading")}</p>
-      <ul className="grid grid-cols-2 gap-x-5 sm:flex sm:flex-wrap">
+      <ul className="grid grid-cols-2 gap-x-5 sm:flex sm:flex-wrap lg:grid">
         <li>
           <button type="button" onClick={copy} className={link}>
             {copied ? (
@@ -54,7 +58,7 @@ export function ShareButtons({ url, title }: { url: string; title: string }) {
         </li>
         <li>
           <a href={`viber://forward?text=${encodeURIComponent(text)}`} className={link}>
-            <MessageCircle aria-hidden="true" strokeWidth={1.5} className="size-4" />
+            <MessagesSquare aria-hidden="true" strokeWidth={1.5} className="size-4" />
             {tCommon("viber")}
           </a>
         </li>

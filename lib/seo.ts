@@ -60,6 +60,17 @@ export function defaultShareImage(locale: Locale): ShareImage {
 }
 
 /**
+ * `og:locale` takes Open Graph's language_TERRITORY form, not a BCP-47 tag.
+ * The territories match the `Intl` locales in `lib/format.ts` (en is en-GB).
+ */
+const OG_LOCALE: Record<Locale, string> = {
+  "sr-Latn": "sr_RS",
+  en: "en_GB",
+  ru: "ru_RU",
+  de: "de_DE",
+};
+
+/**
  * Open Graph + Twitter card for one localized URL. Every public page gets
  * both, so a link pasted into Viber, WhatsApp, Facebook, LinkedIn or X always
  * unfurls with a title, a description and a picture.
@@ -89,8 +100,8 @@ export function socialMetadata({
       url,
       title,
       description,
-      locale: htmlLang[locale],
-      alternateLocale: locales.filter((other) => other !== locale).map((other) => htmlLang[other]),
+      locale: OG_LOCALE[locale],
+      alternateLocale: locales.filter((other) => other !== locale).map((other) => OG_LOCALE[other]),
       siteName: "Mihajlo Estate",
       images: [picture],
       ...(type === "article" && publishedTime !== undefined

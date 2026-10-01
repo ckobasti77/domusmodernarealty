@@ -117,19 +117,25 @@ export function TextAreaField({
   className,
   rows = 4,
   placeholder = " ",
+  style,
   ...rest
 }: TextAreaFieldProps) {
   const { id, messageId, describedBy } = useFieldIds(error, hint);
   return (
     <div className={cn("w-full", className)}>
       <div className="relative">
+        {/* No browser resize grip on the underline: the field grows with what
+            is typed (`field-sizing`), from `rows` lines plus its padding, up
+            to 16 lines, then scrolls. Browsers without `field-sizing` keep
+            the fixed `rows` height. */}
         <textarea
           id={id}
           rows={rows}
           placeholder={placeholder}
           aria-invalid={error !== undefined}
           aria-describedby={describedBy}
-          className={cn(CONTROL, "resize-y")}
+          className={cn(CONTROL, "max-h-[calc(16lh+2rem)] resize-none [field-sizing:content]")}
+          style={{ minHeight: `calc(${rows}lh + 2rem + 1px)`, ...style }}
           {...rest}
         />
         <label htmlFor={id} className={LABEL}>

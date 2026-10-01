@@ -4,6 +4,7 @@ import { buttonClasses } from "@/components/site/Button";
 import { mailHref, telHref, viberHref, whatsappHref } from "@/components/site/listing/contact-links";
 import type { AgentPublic } from "@/convex/lib/dto";
 import type { Locale } from "@/i18n/routing";
+import { fixTypography } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,7 +59,7 @@ export async function AgentContacts({ agent, locale }: { agent: AgentPublic; loc
       <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap [&>:last-child:nth-child(even)]:col-span-2">
         {channels}
       </div>
-      <p className="max-w-[46ch] text-small text-mist">{t("replyPromise")}</p>
+      <p className="max-w-[46ch] text-pretty text-small text-mist">{fixTypography(t("replyPromise"))}</p>
     </div>
   );
 }

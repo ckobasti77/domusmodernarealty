@@ -16,6 +16,7 @@ export function RichText({
   profile = "page",
   lang,
   size = "body",
+  nested = false,
   className,
 }: {
   html: string;
@@ -24,13 +25,15 @@ export function RichText({
   /** BCP-47 tag of the text actually shown (Serbian when it fell back). */
   lang?: string;
   size?: "body" | "body-l";
+  /** The block sits under its own section h2, so its h3 steps down (`.rich-text-nested`). */
+  nested?: boolean;
   className?: string;
 }) {
   const clean = profile === "post" ? sanitizePostHtml(html) : sanitizePageHtml(html);
   return (
     <div
       lang={lang}
-      className={cn("rich-text", size === "body-l" && "rich-text-l", className)}
+      className={cn("rich-text", size === "body-l" && "rich-text-l", nested && "rich-text-nested", className)}
       dangerouslySetInnerHTML={{ __html: clean }}
     />
   );

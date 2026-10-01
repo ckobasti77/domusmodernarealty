@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { buttonClasses } from "@/components/site/Button";
 import { Container } from "@/components/site/Container";
+import { Eyebrow } from "@/components/site/Eyebrow";
 import { PropertyCard } from "@/components/site/PropertyCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { textLinkClasses } from "@/components/site/TextLink";
@@ -35,7 +36,7 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
     return (
       <section aria-labelledby="featured-title" className="bg-ivory py-section text-ink lg:py-section-lg">
         <Container className="flex flex-col items-start gap-8">
-          <SectionHeading id="featured-title" title={t("featuredHeading")} />
+          <SectionHeading id="featured-title" eyebrow={t("featuredEyebrow")} title={t("featuredHeading")} />
           <p className="max-w-[52ch] text-body-l text-stone-text">{fixTypography(t("featuredEmpty"))}</p>
           <Link href="/contact" className={buttonClasses({ variant: "primary" })}>
             <span>{t("featuredEmptyCta")}</span>
@@ -57,7 +58,8 @@ export async function FeaturedListings({ locale, listings }: { locale: Locale; l
               {/* The opening panel, above the carousel below 1024px. Sized so the
                   longest single word of any locale ("Рекомендуемые") fits it:
                   4.6vw type in a 32vw column. */}
-              <header className="px-gutter md:px-gutter-md lg:w-[min(32rem,32vw)] lg:shrink-0 lg:px-0 lg:pr-12">
+              <header className="flex flex-col gap-4 px-gutter md:px-gutter-md lg:w-[min(32rem,32vw)] lg:shrink-0 lg:px-0 lg:pr-12">
+                <Eyebrow>{t("featuredEyebrow")}</Eyebrow>
                 <h2
                   id="featured-title"
                   className="max-w-[12ch] font-display text-display-l font-normal lg:max-w-none lg:text-[clamp(2.5rem,4.6vw,4.75rem)] lg:leading-[0.98]"

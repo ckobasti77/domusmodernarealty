@@ -41,9 +41,9 @@ export const SEED_AGENTS: SeedAgent[] = [
     },
     bio: {
       sr: "Vodi prodaju stanova na Vračaru, Savskom vencu i Starom gradu. Radi sa kupcima koji traže renovirane stanove u zgradama sa fasadama i sa investitorima u novogradnji na savskoj obali.",
-      en: "Leads apartment sales across Vračar, Savski Venac and Stari Grad. Works with buyers looking for renovated flats in period buildings and with investors in the new build on the Sava bank.",
+      en: "Leads apartment sales across Vračar, Savski venac and Stari grad. Works with buyers looking for renovated flats in period buildings and with investors in the new build on the Sava bank.",
       ru: "Отвечает за продажу квартир во Врачаре, Савском венце и Старом граде. Работает с покупателями, которые ищут отремонтированные квартиры в исторических домах, и с инвесторами в новостройках на берегу Савы.",
-      de: "Leitet den Wohnungsverkauf in Vračar, Savski Venac und Stari Grad. Arbeitet mit Käufern, die renovierte Wohnungen in Altbauten suchen, und mit Investoren im Neubau am Save-Ufer.",
+      de: "Leitet den Wohnungsverkauf in Vračar, Savski venac und Stari grad. Arbeitet mit Käufern, die renovierte Wohnungen in Altbauten suchen, und mit Investoren im Neubau am Save-Ufer.",
     },
     languages: ["sr", "en", "de"],
     phone: "+381 11 000 0011",

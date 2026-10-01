@@ -8,7 +8,7 @@ import type { ListingCard } from "@/convex/lib/dto";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { JournalCard } from "./JournalCard";
-import { POST_GRID, type PostCard } from "./shared";
+import { POST_CARD_SIZES_PAIR, POST_GRID, POST_GRID_PAIR, type PostCard } from "./shared";
 
 type Href = ComponentProps<typeof Link>["href"];
 
@@ -34,18 +34,19 @@ function BandHeading({ id, title, href, linkLabel }: { id: string; title: string
   );
 }
 
-/** More from the journal (`posts.related`): up to three cards. Hidden when empty. */
+/** More from the journal (`posts.related`): up to three cards, two in halves. Hidden when empty. */
 export function RelatedPosts({ posts }: { posts: readonly PostCard[] }) {
   const t = useTranslations("journal");
   if (posts.length === 0) return null;
+  const pair = posts.length === 2;
   return (
     <Section tone="ivory-2" aria-labelledby="related-posts">
       <Container>
         <BandHeading id="related-posts" title={t("relatedHeading")} href="/journal" linkLabel={t("allPosts")} />
-        <ul className={cn(POST_GRID, "mt-12 lg:mt-16")}>
+        <ul className={cn(pair ? POST_GRID_PAIR : POST_GRID, "mt-12 lg:mt-16")}>
           {posts.map((post) => (
             <li key={post._id}>
-              <JournalCard post={post} level={3} />
+              <JournalCard post={post} level={3} sizes={pair ? POST_CARD_SIZES_PAIR : undefined} />
             </li>
           ))}
         </ul>

@@ -108,7 +108,7 @@ export default async function ContactPage({ params }: Props) {
       <Section tone="ivory" aria-labelledby="contact-form-title">
         <Container>
           <Grid className="gap-y-14">
-            <div className="col-span-4 lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
+            <div className="col-span-4 lg:sticky lg:top-28 lg:col-span-4 lg:self-start">
               <SectionHeading id="contact-form-title" eyebrow={t("formEyebrow")} title={t("formHeading")} size="h2" />
               {intro?.rest !== null && intro?.rest !== undefined ? (
                 <RichText html={intro.rest.html} lang={intro.rest.lang} className="mt-8 text-stone-text" />
@@ -117,7 +117,9 @@ export default async function ContactPage({ params }: Props) {
                 {fixTypography(t("formLede"))}
               </p>
             </div>
-            <div className="col-span-4 lg:col-span-6 lg:col-start-7">
+            {/* Column 6 is the page's right-hand spine: the form, the map and
+                the questions all start on it, as on the sell page. */}
+            <div className="col-span-4 lg:col-span-7 lg:col-start-6">
               <ContactForm />
             </div>
           </Grid>

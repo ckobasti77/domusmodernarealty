@@ -21,6 +21,11 @@ import { cn } from "@/lib/utils";
  * Titles and thumbnails come from the cards already loaded on the page, so
  * the tray needs no query of its own; a selection made on another page shows
  * its reference slot without a photo.
+ *
+ * Below 1024px the tray states the count instead of the thumbnails: next to
+ * the CTA (and "Očisti izbor" from 768px) four thumbnails do not fit, and a
+ * strip sliced at the button read as broken. There the cards' own "Uporedi"
+ * toggles remove a listing.
  */
 export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard> }) {
   const t = useTranslations("compare");
@@ -37,10 +42,13 @@ export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard>
       style={{ bottom: 0, translate: "0 calc(-1 * var(--consent-h, 0px))" }}
     >
       <div className="mx-auto flex max-w-bleed items-center gap-4 px-gutter py-3 md:px-gutter-md lg:px-gutter-lg">
-        <p className="sr-only shrink-0 font-sans text-label uppercase tracking-[0.12em] text-mist sm:not-sr-only" aria-live="polite">
+        <p
+          className="min-w-0 flex-1 font-sans text-label uppercase tracking-[0.12em] text-mist lg:flex-none"
+          aria-live="polite"
+        >
           {t("traySelected", { count: ids.length })}
         </p>
-        <ul className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        <ul className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
           {ids.map((id) => {
             const card = known.get(id);
             const title = card !== undefined ? pickL10n(card.title, locale).text : "";
@@ -62,7 +70,9 @@ export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard>
                   type="button"
                   onClick={() => removeFromCompare(id)}
                   aria-label={t("trayRemove", { title: title.length > 0 ? title : (card?.ref ?? "") })}
-                  className="absolute -right-1 -top-1 inline-flex size-6 items-center justify-center bg-ivory text-ink transition-colors duration-200 pointer-fine:hover:bg-bronze focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+                  // A 24px square to the eye, a 44px target to the finger (the
+                  // pseudo-element); the thumbnails are 72px apart, so no two overlap.
+                  className="absolute -right-1 -top-1 inline-flex size-6 items-center justify-center bg-ivory text-ink transition-colors duration-200 before:absolute before:-inset-2.5 before:content-[''] pointer-fine:hover:bg-bronze focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
                 >
                   <X aria-hidden="true" strokeWidth={1.5} className="size-3.5" />
                 </button>

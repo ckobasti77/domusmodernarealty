@@ -363,18 +363,19 @@ async function expectThreeColumnsWithBestValues(page: Page, listings: ListingCar
     await expect(table.getByRole("columnheader").nth(index)).toContainText(listing.title.sr.slice(0, 20));
   }
 
-  // A best value is marked in words as well as style ("Najbolja vrednost").
-  const expectations: { label: string; values: number[]; rule: "min" | "max" }[] = [
-    { label: "Cena", values: listings.map((listing) => listing.price), rule: "min" },
-    { label: "€/m²", values: listings.map((listing) => listing.pricePerM2), rule: "min" },
-    { label: "Kvadratura", values: listings.map((listing) => listing.areaM2), rule: "max" },
+  // The standout cell is marked in words as well as style: "Najbolja vrednost"
+  // only where less is better for a buyer (price, €/m²), its own wording elsewhere.
+  const expectations: { label: string; values: number[]; rule: "min" | "max"; mark: string }[] = [
+    { label: "Cena", values: listings.map((listing) => listing.price), rule: "min", mark: "Najbolja vrednost" },
+    { label: "€/m²", values: listings.map((listing) => listing.pricePerM2), rule: "min", mark: "Najbolja vrednost" },
+    { label: "Kvadratura", values: listings.map((listing) => listing.areaM2), rule: "max", mark: "Najveća površina" },
   ];
-  for (const { label, values, rule } of expectations) {
+  for (const { label, values, rule, mark } of expectations) {
     const row = compareRow(table, label);
     await expect(row, `row ${label}`).toHaveCount(1);
     const best = row.getByTestId("compare-best");
     await expect(best, `best value in ${label}`).toHaveCount(1);
-    await expect(best).toContainText("Najbolja vrednost");
+    await expect(best).toContainText(mark);
     await expect(row.getByRole("cell").nth(indexOfExtreme(values, rule))).toHaveAttribute("data-testid", "compare-best");
   }
 }

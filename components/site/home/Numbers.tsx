@@ -36,7 +36,7 @@ export async function Numbers({ locale, copy }: { locale: Locale; copy: HomeCopy
       <Container>
         <div className="grid grid-cols-4 gap-x-6 gap-y-14 lg:grid-cols-12 lg:items-start">
           <div className="col-span-4 lg:col-span-6">
-            <SectionHeading id="numbers-title" title={headingNode(copy.heading)} />
+            <SectionHeading id="numbers-title" eyebrow={t("numbersEyebrow")} title={headingNode(copy.heading)} />
 
             <dl className="mt-12 grid grid-cols-2 border-t border-hairline-light lg:mt-16">
               {stats.slice(0, 4).map((stat, index) => {

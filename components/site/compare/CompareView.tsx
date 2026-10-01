@@ -224,7 +224,8 @@ export function CompareView({ shared }: { shared: SharedComparison | null }) {
   } else {
     content = (
       <section aria-labelledby="compare-status-heading" className="bg-ivory">
-        <Container className="py-16 lg:py-24">
+        {/* Closes on the section rhythm (96 / 160px) like the other content pages. */}
+        <Container className="pb-section pt-16 lg:pb-section-lg lg:pt-24">
           <div className="hairline-b flex flex-wrap items-end justify-between gap-x-10 gap-y-6 pb-6">
             <div className="flex flex-col gap-2">
               <h2
@@ -341,12 +342,12 @@ function UnavailableNote({ count, onPrune }: { count: number; onPrune: () => voi
 function LoadingShell({ label }: { label: string }) {
   return (
     <section aria-busy="true" aria-label={label} className="bg-ivory">
-      <Container className="py-16 lg:py-24">
+      <Container className="pb-section pt-16 lg:pb-section-lg lg:pt-24">
         <div className="hairline-b flex items-end justify-between gap-6 pb-6">
           <div className="h-10 w-72 max-w-full animate-pulse bg-ivory-2 motion-reduce:animate-none" />
           <div className="hidden h-11 w-56 animate-pulse bg-ivory-2 motion-reduce:animate-none sm:block" />
         </div>
-        <div className="mt-10 grid grid-cols-[7rem_1fr_1fr] gap-x-6 md:grid-cols-[11rem_1fr_1fr_1fr] lg:mt-14 lg:grid-cols-[14rem_1fr_1fr_1fr]">
+        <div className="mt-10 grid grid-cols-[7rem_1fr_1fr] gap-x-6 md:grid-cols-[9rem_1fr_1fr_1fr] lg:mt-14 lg:grid-cols-[14rem_1fr_1fr_1fr]">
           <div />
           {Array.from({ length: 3 }, (_, index) => (
             <div key={index} className={cn("flex flex-col gap-3", index === 2 && "max-md:hidden")}>

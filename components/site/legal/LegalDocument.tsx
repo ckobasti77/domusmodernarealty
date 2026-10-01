@@ -107,11 +107,15 @@ export async function LegalDocument({ pageKey, locale }: { pageKey: LegalKey; lo
   /* ----------------------------------------------------- page-specific parts */
   const commission = settings !== null ? pickL10n(settings.commissionText, locale) : null;
   const commissionText = commission !== null && commission.text.trim().length > 0 ? commission : null;
+  // The larger callouts stop where the section's `.rich-text` copy does (32em
+  // at 16px = 32rem, border and padding included), not 60ch further right.
   const commissionSummary = (titled: boolean) =>
     commissionText !== null ? (
-      <div className={titled ? "mt-10 border-l border-bronze pl-6 lg:pl-8" : undefined}>
-        {titled ? <h3 className="font-display text-h3 font-normal">{t("commission.summary")}</h3> : null}
-        <p lang={foreign(commissionText)} className={titled ? "mt-3 max-w-[60ch] text-pretty text-body-l" : "max-w-[60ch] text-pretty text-body-l"}>
+      <div className={titled ? "mt-10 max-w-[32rem] border-l border-bronze pl-6 lg:pl-8" : undefined}>
+        {titled ? (
+          <h3 className="font-display text-[1.375rem] font-normal leading-[1.3]">{t("commission.summary")}</h3>
+        ) : null}
+        <p lang={foreign(commissionText)} className={titled ? "mt-3 text-pretty text-body-l" : "max-w-[32rem] text-pretty text-body-l"}>
           {fixTypography(commissionText.text)}
         </p>
       </div>
@@ -129,7 +133,7 @@ export async function LegalDocument({ pageKey, locale }: { pageKey: LegalKey; lo
       testId: "legal-section",
       content: (
         <>
-          <RichText html={fillPlaceholders(body.text, values)} profile="page" lang={foreign(body)} />
+          <RichText html={fillPlaceholders(body.text, values)} profile="page" lang={foreign(body)} nested />
           {pageKey === "terms" && block.key === "commission" ? commissionSummary(true) : null}
         </>
       ),
@@ -150,7 +154,7 @@ export async function LegalDocument({ pageKey, locale }: { pageKey: LegalKey; lo
       title: { text: t("cookieChoices.heading") },
       content: (
         <>
-          <p className="mb-10 max-w-[60ch] text-pretty text-body-l">{t("cookieChoices.lede")}</p>
+          <p className="mb-10 max-w-[32rem] text-pretty text-body-l">{t("cookieChoices.lede")}</p>
           <CookieCategories />
         </>
       ),
@@ -293,10 +297,12 @@ export async function LegalDocument({ pageKey, locale }: { pageKey: LegalKey; lo
                         <p aria-hidden="true" data-numeric className="font-mono text-label text-bronze-text">
                           {pad(number)}
                         </p>
+                        {/* h2's floor is 1.75rem; 2rem keeps a full step above the
+                            1.375rem sub-headings inside the section on phones. */}
                         <h2
                           id={`${section.id}-title`}
                           lang={section.title.lang}
-                          className="mt-3 max-w-[30ch] text-balance font-display text-h2 font-normal"
+                          className="mt-3 max-w-[30ch] text-balance font-display text-[clamp(2rem,2.6vw,2.5rem)] font-normal leading-[1.1]"
                         >
                           {section.title.text}
                         </h2>

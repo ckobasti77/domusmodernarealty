@@ -38,6 +38,17 @@ export function parseCategory(value: string | string[] | undefined): PostCategor
 export const POST_GRID = "grid grid-cols-1 gap-x-6 gap-y-16 md:grid-cols-2 lg:grid-cols-3 lg:gap-y-20";
 export const POST_GRID_CONTINUED = "mt-16 lg:mt-20";
 
+/**
+ * Exactly two posts (a small topic under its lead story, two related
+ * articles) stay in halves on a desktop, as on a tablet: in thirds the empty
+ * third column reads as a missing card.
+ */
+export const POST_GRID_PAIR = "grid grid-cols-1 gap-x-6 gap-y-16 md:grid-cols-2";
+
+/** Card cover `sizes` for each grid (the content column is at most 1344px). */
+export const POST_CARD_SIZES = "(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 92vw";
+export const POST_CARD_SIZES_PAIR = "(min-width: 1440px) 660px, (min-width: 768px) 46vw, 92vw";
+
 /** English dates are British (`21 September 2026`), per the brand voice. */
 const DATE_LOCALE: Record<Locale, string> = { "sr-Latn": "sr-Latn", en: "en-GB", ru: "ru", de: "de" };
 

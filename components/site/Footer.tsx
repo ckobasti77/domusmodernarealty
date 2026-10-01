@@ -9,6 +9,8 @@ import { fixOrphans } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { Container } from "./Container";
 import { ConsentSettingsButton } from "./CookieConsent";
+import { viberHref, whatsappHref } from "./listing/contact-links";
+import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Logo } from "./Logo";
 
 /**
@@ -78,9 +80,12 @@ export async function Footer() {
   return (
     <footer className="bg-ink text-ivory">
       <Container className="pb-10 pt-section lg:pb-12 lg:pt-28">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-gutter-lg">
-          {/* Legal identity — Art. 18 + e-commerce law. */}
-          <div className="lg:col-span-4">
+        {/* The sections' 12-column grid with 24px column gutters (`Grid`). The
+            three lists start on column 7, so on the landing they line up under
+            the final CTA's contact list on the same ink surface. */}
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-6">
+          {/* Legal identity — Art. 18 + e-commerce law — and the commission terms. */}
+          <div className="lg:col-span-5">
             <Logo tone="dark" className="w-[230px]" title="" />
             <p className="mt-6 max-w-[34ch] text-small text-mist">{fixOrphans(tCommon("tagline"))}</p>
 
@@ -128,9 +133,17 @@ export async function Footer() {
             {settings?.isDemo === true ? (
               <p className="mt-4 max-w-[38ch] text-small text-stone">{fixOrphans(t("demoDataWarning"))}</p>
             ) : null}
+
+            {/* The commission terms sit here, not under the contact channels: a
+                paragraph needs a wider measure than a two-column span gives it. */}
+            {settings !== null ? (
+              <p className="mt-6 max-w-[38ch] text-small text-mist">
+                {fixOrphans(pickL10n(settings.commissionText, locale).text)}
+              </p>
+            ) : null}
           </div>
 
-          <nav aria-labelledby="footer-explore" className="lg:col-span-3">
+          <nav aria-labelledby="footer-explore" className="lg:col-span-2 lg:col-start-7">
             <h2 id="footer-explore" className="eyebrow text-bronze">
               {t("exploreHeading")}
             </h2>
@@ -152,7 +165,8 @@ export async function Footer() {
             <h2 id="footer-legal" className="eyebrow text-bronze">
               {t("legalHeading")}
             </h2>
-            <ul className="mt-5 space-y-2">
+            {/* Hyphenated, so "Datenschutzerklärung" fits the column at 1024px. */}
+            <ul className="mt-5 space-y-2 hyphens-auto">
               {LEGAL.map((item) => (
                 <li key={item.href}>
                   <Link
@@ -169,7 +183,7 @@ export async function Footer() {
             </ul>
           </nav>
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <h2 id="footer-contact" className="eyebrow text-bronze">
               {t("contactHeading")}
             </h2>
@@ -187,13 +201,37 @@ export async function Footer() {
                   </li>
                 ))}
                 <li>
+                  {/* An address is one long word; it breaks rather than run out of a narrow column. */}
                   <a
                     href={`mailto:${settings.email}`}
-                    className="inline-flex min-h-9 items-center text-mist transition-colors duration-200 pointer-fine:hover:text-ivory"
+                    className="inline-flex min-h-9 items-center text-mist transition-colors duration-200 [overflow-wrap:anywhere] pointer-fine:hover:text-ivory"
                   >
                     {settings.email}
                   </a>
                 </li>
+                {/* Brand names, the same in every language. */}
+                {settings.viber !== undefined ? (
+                  <li>
+                    <a
+                      href={viberHref(settings.viber)}
+                      className="inline-flex min-h-9 items-center text-mist transition-colors duration-200 pointer-fine:hover:text-ivory"
+                    >
+                      Viber
+                    </a>
+                  </li>
+                ) : null}
+                {settings.whatsapp !== undefined ? (
+                  <li>
+                    <a
+                      href={whatsappHref(settings.whatsapp)}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      className="inline-flex min-h-9 items-center text-mist transition-colors duration-200 pointer-fine:hover:text-ivory"
+                    >
+                      WhatsApp
+                    </a>
+                  </li>
+                ) : null}
               </ul>
             ) : null}
 
@@ -213,18 +251,13 @@ export async function Footer() {
                   ))}
               </ul>
             ) : null}
-
-            {settings !== null ? (
-              <p className="mt-6 max-w-[34ch] text-small text-mist">
-                {fixOrphans(pickL10n(settings.commissionText, locale).text)}
-              </p>
-            ) : null}
           </div>
         </div>
 
         <div className="mt-16 flex flex-wrap items-center justify-between gap-4 border-t border-hairline-dark pt-6 text-small text-stone">
           {/* `rights` is "© {year} {brand}. …" — it owns the whole line. */}
           <p>{t("rights", { year, brand: settings?.companyName ?? tCommon("brand") })}</p>
+          <LocaleSwitcher />
           <p>{t("madeIn")}</p>
         </div>
       </Container>

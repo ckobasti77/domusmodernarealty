@@ -27,7 +27,8 @@ import {
  *   - the contacts CSV export downloads a file holding that contact;
  *   - a journal post written and published in the editor is returned by the
  *     PUBLIC posts query in sr-Latn (the /sr/magazin page itself is step 10);
- *   - editing the home hero headline in "Sadržaj sajta" changes /sr;
+ *   - editing the home hero lede in "Sadržaj sajta" changes /sr (the lede,
+ *     not the h1, which landing.spec / shell.spec assert in parallel runs);
  *   - an invite created in "Tim" is accepted in a fresh browser and the new
  *     agent sees only the agent's menu, while the server refuses manager-only
  *     calls.
@@ -201,27 +202,37 @@ test.describe("CRM and content modules @admin", () => {
       .toContain(POST_TITLE);
   });
 
-  test("editing the home hero headline changes the public landing @admin @public", async ({ browser }, testInfo) => {
-    const headline = `E2E naslov ${RUN}`;
-    await page.goto("/admin/sadrzaj");
-    await page.getByTestId("content-page-home").click();
-    const field = page.getByTestId("block-hero-title-sr");
-    await expect(field).toBeVisible({ timeout: 20_000 });
-    await field.fill(headline);
-    await page.getByTestId("save-button").click();
-    const publicClient = new ConvexHttpClient(convexUrl());
-    await expect
-      .poll(async () => JSON.stringify(await publicClient.query(api.pages.get, { key: "home" })), { timeout: 20_000 })
-      .toContain(headline);
-
-    const visitor = await projectContext(browser, testInfo);
+  // The hero LEDE, not the headline: landing.spec and shell.spec assert the
+  // seeded h1 ("Dom koji se pamti."), so editing it raced them in a parallel
+  // run. No spec asserts the lede's text. The page is restored as soon as the
+  // public check is done (afterAll restores again as a safety net).
+  test("editing the home hero lede changes the public landing @admin @public", async ({ browser }, testInfo) => {
+    const lede = `E2E uvod ${RUN}`;
     try {
-      const site = await visitor.newPage();
-      await quietPublicPage(site);
-      await site.goto("/sr");
-      await expect(site.getByTestId("hero-headline")).toContainText(headline);
+      await page.goto("/admin/sadrzaj");
+      await page.getByTestId("content-page-home").click();
+      const field = page.getByTestId("block-hero-body-sr");
+      await expect(field).toBeVisible({ timeout: 20_000 });
+      await field.fill(lede);
+      await page.getByTestId("save-button").click();
+      const publicClient = new ConvexHttpClient(convexUrl());
+      await expect
+        .poll(async () => JSON.stringify(await publicClient.query(api.pages.get, { key: "home" })), { timeout: 20_000 })
+        .toContain(lede);
+
+      const visitor = await projectContext(browser, testInfo);
+      try {
+        const site = await visitor.newPage();
+        await quietPublicPage(site);
+        await site.goto("/sr");
+        await expect(site.locator('section[aria-labelledby="hero-title"] [data-hero-reveal="lede"]')).toContainText(lede);
+        // The headline is untouched by this edit.
+        await expect(site.getByTestId("hero-headline")).not.toContainText(RUN);
+      } finally {
+        await visitor.close();
+      }
     } finally {
-      await visitor.close();
+      if (homeSnapshot !== null) convexRun("qa:restorePage", { key: "home", ...homeSnapshot });
     }
   });
 

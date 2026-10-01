@@ -5,6 +5,7 @@ import {
   ORDINARY_LISTING,
   presetVisitor,
   realSlugs,
+  SHOWCASE_LISTING,
   scrollThrough,
   scrollToY,
   waitForVisualSettle,
@@ -13,22 +14,24 @@ import {
 } from "./helpers/routes";
 
 /**
- * Night-run step 12: accessibility.
+ * Night-run steps 12 + 13: accessibility (PRD C).
  *
- *  1. axe (WCAG 2.0/2.1 A+AA and 2.2 AA tags) on ten key Serbian pages. Every
- *     violation is printed (impact, rule, targets) and attached as JSON; the
- *     test fails on any `serious` or `critical` one.
+ *  1. axe (WCAG 2.0/2.1 A+AA and 2.2 AA tags) on EVERY public Serbian route,
+ *     the localized 404 and /admin/login, on both projects (desktop 1440 and
+ *     Pixel 7). Every violation is printed (impact, rule, targets) and
+ *     attached as JSON; the test fails on any `serious` or `critical` one.
  *     Cookie banner: the choice ("necessary only") is recorded in localStorage
- *     BEFORE the page loads, so the banner is absent on all ten pages. The
- *     banner-open state is judged by landing.spec.ts.
+ *     BEFORE the page loads, so the banner is absent on every page. The
+ *     banner-open state is judged by landing.spec.ts and a11y-focus.spec.ts.
  *     Each page is scrolled top to bottom (every reveal plays, lazy sections
  *     mount), back to the top, and judged only once nothing animates any more.
  *  2. Keyboard: the skip link and the main navigation (desktop), the phone menu
  *     (mobile project), the search filter panel, the gallery lightbox and the
  *     contact form's tab order and error wiring.
  *
- * Everything runs on the desktop project except the phone-menu case, which
- * runs on the mobile project only.
+ * More: a11y-focus.spec.ts (dialogs, banner, funnel, inquiry errors),
+ * a11y-keyboard.spec.ts (no keyboard traps) and a11y-motion.spec.ts (reduced
+ * motion).
  */
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -107,40 +110,89 @@ async function axeAudit(page: Page, label: string, testInfo: TestInfo): Promise<
 
 /* -------------------------------------------------------------------- axe */
 
-type AxeTarget = { label: string; route: Route; slug?: (slugs: Slugs) => string };
+/** ME-1063 is seeded as sold: the "Prodato" state of the detail page. */
+const SOLD_LISTING = "dvoiposoban-stan-na-julinom-brdu-osmi-sprat-sa-lodjom-me-1063";
+/** The city page (the top of the location tree). */
+const CITY = "beograd";
+/** Any path no route matches: the localized `[locale]/not-found.tsx`. */
+const UNKNOWN_PATH = "/sr/ova-stranica-ne-postoji-a11y";
 
+type AxeTarget = {
+  label: string;
+  /** A localized public route, or a literal path (the 404 and the admin). */
+  route: Route | { path: string };
+  slug?: (slugs: Slugs) => string;
+  status?: number;
+  /** Seeds the favorites / compare stores with two real listings. */
+  store?: "favorites" | "compare";
+  /** Proof the page's own content has rendered, beyond the shell. */
+  ready?: (page: Page) => Locator;
+  /** Not inside the public locale layout (no Header to hydrate). */
+  admin?: boolean;
+};
+
+/**
+ * Every public route in Serbian, plus the localized 404 and the admin sign-in
+ * (night-run step 13). Runs on BOTH projects: desktop 1440 and Pixel 7.
+ */
 const AXE_PAGES: AxeTarget[] = [
   { label: "home", route: "/" },
-  { label: "search", route: "/properties" },
+  {
+    label: "search",
+    route: "/properties",
+    ready: (page) => page.locator('[data-search-bar][data-ready="true"]'),
+  },
+  { label: "listing ME-1049 (showcase, tours)", route: "/properties/[slug]", slug: () => SHOWCASE_LISTING },
   { label: "listing ME-1042", route: "/properties/[slug]", slug: () => ORDINARY_LISTING },
+  { label: "listing ME-1063 (sold)", route: "/properties/[slug]", slug: () => SOLD_LISTING },
   { label: "locations", route: "/locations" },
-  { label: "location detail", route: "/locations/[slug]", slug: (s) => s.location },
-  { label: "agents", route: "/agents" },
-  { label: "valuation", route: "/valuation" },
+  { label: "city beograd", route: "/locations/[slug]", slug: () => CITY },
+  { label: "neighborhood", route: "/locations/[slug]", slug: (s) => s.location },
+  { label: "valuation", route: "/valuation", ready: (page) => page.getByTestId("valuation-step-1") },
   { label: "sell", route: "/sell" },
-  { label: "contact", route: "/contact" },
+  { label: "agents", route: "/agents" },
+  { label: "agent profile", route: "/agents/[slug]", slug: (s) => s.agent },
+  { label: "about", route: "/about" },
+  { label: "contact", route: "/contact", ready: (page) => page.getByTestId("contact-form") },
+  { label: "journal", route: "/journal" },
   { label: "journal article", route: "/journal/[slug]", slug: (s) => s.post },
+  { label: "favorites", route: "/favorites", store: "favorites", ready: (page) => page.getByTestId("favorites-grid") },
+  { label: "compare", route: "/compare", store: "compare", ready: (page) => page.getByTestId("compare-table") },
+  { label: "privacy", route: "/privacy" },
+  { label: "terms", route: "/terms" },
+  { label: "cookies", route: "/cookies" },
+  { label: "localized 404", route: { path: UNKNOWN_PATH }, status: 404 },
+  {
+    label: "admin login",
+    route: { path: "/admin/login" },
+    admin: true,
+    ready: (page) => page.getByRole("button", { name: "Prijavite se" }),
+  },
 ];
 
-test.describe("axe: WCAG 2.2 AA on ten key pages (sr)", () => {
+test.describe("axe: WCAG 2.2 AA on every public route (sr) and the admin sign-in", () => {
   let slugs: Slugs;
 
-  test.beforeAll(async ({}, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "axe runs once, on the desktop project.");
+  test.beforeAll(async () => {
     slugs = await realSlugs();
   });
 
   for (const target of AXE_PAGES) {
-    test(`${target.label} has no serious or critical violations @public @a11y`, async ({ page }, testInfo) => {
-      test.setTimeout(120_000);
-      const path = localizedPath(target.route, "sr-Latn", target.slug?.(slugs));
-      await presetVisitor(page);
+    const area = target.admin === true ? "@admin" : "@public";
+    test(`${target.label} has no serious or critical violations ${area} @a11y`, async ({ page }, testInfo) => {
+      test.setTimeout(150_000);
+      const path =
+        typeof target.route === "string"
+          ? localizedPath(target.route, "sr-Latn", target.slug?.(slugs))
+          : target.route.path;
+      await presetVisitor(page, {
+        ...(target.store === "favorites" ? { favorites: slugs.listingIds } : {}),
+        ...(target.store === "compare" ? { compare: slugs.listingIds } : {}),
+      });
       const response = await page.goto(path);
-      expect(response?.status(), path).toBe(200);
-      await shellHydrated(page);
-      if (target.route === "/properties") {
-        await expect(page.locator('[data-search-bar][data-ready="true"]')).toBeVisible({ timeout: 30_000 });
-      }
+      expect(response?.status(), path).toBe(target.status ?? 200);
+      if (target.admin !== true) await shellHydrated(page);
+      if (target.ready !== undefined) await expect(target.ready(page)).toBeVisible({ timeout: 30_000 });
       await page.waitForLoadState("networkidle");
 
       // Every reveal plays once it has been scrolled past; judge the final paint.
@@ -148,11 +200,11 @@ test.describe("axe: WCAG 2.2 AA on ten key pages (sr)", () => {
       await scrollToY(page, 0);
       await waitForVisualSettle(page);
 
-      const lines = await axeAudit(page, `${path}`, testInfo);
+      const lines = await axeAudit(page, `${testInfo.project.name} ${path}`, testInfo);
       const blocking = lines
         .filter((line) => line.impact === "serious" || line.impact === "critical")
         .map((line) => `${line.impact} ${line.id}: ${line.targets.join(" | ")}`);
-      expect(blocking, `serious/critical axe violations on ${path}`).toEqual([]);
+      expect(blocking, `serious/critical axe violations on ${path} (${testInfo.project.name})`).toEqual([]);
     });
   }
 });

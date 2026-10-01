@@ -128,7 +128,8 @@ export function blockInfo(
   if (block.key === NOTICE_KEY) {
     return {
       title: "Napomena: nacrt",
-      description: "Upozorenje da tekst još nije pravno proveren. Uklonite ga tek kada pravnik odobri stranicu.",
+      description:
+        "Upozorenje da tekst još nije pravno proveren. Vidi se samo ovde, u administraciji — javna stranica ga ne prikazuje. Uklonite ga kada pravnik odobri tekst.",
     };
   }
   const title = srTitle.trim();

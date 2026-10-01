@@ -1,17 +1,61 @@
 {
   "about": {
     "complianceHeading": "Licence i registracija",
-    "heading": "O nama",
-    "lede": "Agencija za nekretnine sa fokusom na kvalitet, ne na broj oglasa.",
-    "valuesHeading": "Kako radimo"
+    "heading": "Ko smo i kako radimo",
+    "lede": "Agencija za nekretnine u Beogradu. Radimo sa manjim brojem nekretnina i svaku proveravamo pre nego što je oglasimo.",
+    "valuesHeading": "Šta nam je važno",
+    "metaTitle": "O nama: agencija za nekretnine u Beogradu",
+    "metaDescription": "Ko smo i kako radimo: proveravamo dokumentaciju pre oglasa, cenu predlažemo na osnovu ostvarenih transakcija i odgovaramo istog radnog dana.",
+    "eyebrow": "O nama",
+    "imageAlt": "Secesijska fasada sa kovanim balkonima u zlatnom satu",
+    "storyEyebrow": "Agencija",
+    "valuesEyebrow": "Vrednosti",
+    "methodEyebrow": "Način rada",
+    "methodHeading": "Standardi rada",
+    "numbersEyebrow": "Brojevi",
+    "teamEyebrow": "Tim",
+    "teamHeading": "Ljudi iza ponude",
+    "teamAll": "Ceo tim",
+    "officeEyebrow": "Kancelarija",
+    "officeHeading": "Posetite nas",
+    "officeLede": "Najavite dolazak telefonom ili porukom, pa ćemo odvojiti vreme za Vas.",
+    "addressLabel": "Adresa",
+    "contactLink": "Kontakt i radno vreme",
+    "complianceLede": "Podaci koje propisuju Zakon o posredovanju u prometu i zakupu nepokretnosti i Zakon o elektronskoj trgovini.",
+    "legalName": "Poslovno ime",
+    "seat": "Sedište",
+    "registryNo": "Broj u Registru posrednika",
+    "pib": "PIB",
+    "mb": "Matični broj",
+    "complianceDemo": "Prikazani su demo podaci. PIB, matični broj i broj iz Registra posrednika još nisu uneti."
   },
   "agents": {
     "areas": "Područja",
-    "contactCta": "Kontaktirajte {name}",
-    "heading": "Naš tim",
+    "heading": "Ljudi koje ćete upoznati.",
     "languages": "Jezici",
-    "lede": "Mali tim, dugogodišnje iskustvo i poznavanje beogradskog tržišta.",
-    "listingsHeading": "Nekretnine agenta"
+    "lede": "Svaki agent vodi svoja područja i svoje nekretnine. Pišite direktno onome ko poznaje kraj koji Vas zanima.",
+    "listingsHeading": "Aktuelna ponuda",
+    "metaTitle": "Tim: agenti za nekretnine",
+    "metaDescription": "Agenti agencije Mihajlo Estate: područja koja vode, jezici na kojima rade i direktan kontakt.",
+    "eyebrow": "Tim",
+    "empty": "Profili agenata još nisu objavljeni.",
+    "ctaHeading": "Niste sigurni kome da se obratite?",
+    "ctaBody": "Pišite kancelariji i povezaćemo Vas sa agentom koji vodi Vaš kraj.",
+    "ctaLink": "Kontakt",
+    "replyPromise": "Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+    "call": "Pozovite",
+    "email": "E-pošta",
+    "emailSubject": "Upit sa sajta",
+    "profileMetaTitle": "{name}, {role}",
+    "profileMetaFallback": "{name}, {role}. Kontakt, jezici, područja i aktuelna ponuda.",
+    "profileEyebrow": "Profil",
+    "profileHeading": "Jezici i područja",
+    "license": "ID kartica posrednika",
+    "listingsEmpty": "Trenutno nema aktivnih oglasa. Pogledajte celu ponudu agencije.",
+    "listingsAll": "Cela ponuda",
+    "closedEyebrow": "Završeno",
+    "closedHeading": "Prodato i izdato",
+    "closedLede": "Nekretnine iz ove ponude koje su već prodate ili izdate."
   },
   "card": {
     "area": "{area} m²",
@@ -56,17 +100,50 @@
   },
   "compare": {
     "bestValue": "Najbolja vrednost",
-    "empty": "Dodajte nekretnine u poređenje sa liste ponude.",
+    "empty": "Na listi ponude označite „Uporedi“ na karticama nekretnina koje Vas zanimaju, do četiri odjednom. Izbor se čuva na ovom uređaju.",
     "heading": "Poređenje",
     "lede": "Uporedite do četiri nekretnine jednu uz drugu.",
     "limitReached": "{max, plural, one {Možete uporediti najviše # nekretninu.} few {Možete uporediti najviše # nekretnine.} other {Možete uporediti najviše # nekretnina.}}",
-    "remove": "Ukloni",
     "shareCta": "Podelite poređenje",
     "trayLabel": "Izabrano za poređenje",
     "traySelected": "{count, plural, one {# nekretnina izabrana} few {# nekretnine izabrane} other {# nekretnina izabrano}}",
     "trayCta": "Uporedi",
     "trayClear": "Očisti izbor",
-    "trayRemove": "Ukloni iz poređenja: {title}"
+    "trayRemove": "Ukloni iz poređenja: {title}",
+    "eyebrow": "Uporedni pregled",
+    "metaDescription": "Uporedite do četiri nekretnine jednu uz drugu: cenu, cenu po kvadratu, kvadraturu, strukturu, sprat, godinu izgradnje, grejanje i mesečne troškove.",
+    "caption": "{count, plural, one {Poređenje # nekretnine} few {Poređenje # nekretnine} other {Poređenje # nekretnina}} po ceni, prostoru, zgradi i pravnom statusu. Najbolja vrednost u svakom redu označena je rombom i natpisom „Najbolja vrednost“.",
+    "legend": "Najbolja vrednost u redu",
+    "notStated": "Nije navedeno",
+    "count": "{count, plural, one {Upoređujete # nekretninu} few {Upoređujete # nekretnine} other {Upoređujete # nekretnina}}",
+    "view": "Pogledajte nekretninu",
+    "addMore": "Dodajte nekretninu",
+    "save": "Sačuvajte ovo poređenje",
+    "saved": "Poređenje je sačuvano kao Vaš izbor na ovom uređaju.",
+    "sharedNote": "Otvorili ste poređenje iz deljenog linka. Sačuvajte ga da biste nastavili sa ovim izborom.",
+    "sharedNoteReplace": "Otvorili ste poređenje iz deljenog linka. Ako ga sačuvate, zameniće Vaš dosadašnji izbor za poređenje.",
+    "shareFallback": "Kopirajte link ovog poređenja:",
+    "removed": "Uklonjeno iz poređenja: {title}",
+    "pruned": "Nekretnine koje više nisu u ponudi uklonjene su iz izbora.",
+    "unavailable": "{count, plural, one {# izabrana nekretnina više nije u ponudi i ne prikazuje se.} few {# izabrane nekretnine više nisu u ponudi i ne prikazuju se.} other {# izabranih nekretnina više nije u ponudi i ne prikazuje se.}}",
+    "unavailableRemove": "{count, plural, =1 {Uklonite je iz izbora} other {Uklonite ih iz izbora}}",
+    "sharedSomeUnavailable": "{count, plural, one {# nekretnina iz ovog linka više nije u ponudi.} few {# nekretnine iz ovog linka više nisu u ponudi.} other {# nekretnina iz ovog linka više nije u ponudi.}}",
+    "sharedUnavailable": "Nekretnine iz ovog linka više nisu u ponudi.",
+    "needMoreEyebrow": "Izbor za poređenje",
+    "needMoreTitle": "Za poređenje su potrebne bar dve nekretnine.",
+    "browse": "Pogledajte ponudu",
+    "fromFavorites": "Izaberite iz omiljenog ({count})",
+    "ownSelection": "Pogledajte svoj izbor ({count})",
+    "rowPrice": "Cena",
+    "billsTotal": "~{amount} mesečno",
+    "billsInfostan": "Infostan {amount}",
+    "billsMaintenance": "Održavanje {amount}",
+    "groups": {
+      "price": "Cena i troškovi",
+      "space": "Prostor",
+      "building": "Zgrada i stanje",
+      "legal": "Pravni status i finansiranje"
+    }
   },
   "consent": {
     "acceptAll": "Prihvatam sve",
@@ -91,7 +168,28 @@
     "hoursHeading": "Radno vreme",
     "lede": "Pišite nam ili nas pozovite. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
     "mapLabel": "Mapa sa lokacijom kancelarije",
-    "officeHeading": "Kancelarija"
+    "officeHeading": "Kancelarija",
+    "metaTitle": "Kontakt",
+    "metaDescription": "Telefon, Viber, WhatsApp, e-pošta, adresa i radno vreme kancelarije. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+    "eyebrow": "Javite nam se",
+    "channelsLabel": "Kanali za kontakt",
+    "channelPhone": "Telefon",
+    "channelMessaging": "Poruke",
+    "channelEmail": "E-pošta",
+    "formEyebrow": "Poruka",
+    "formLede": "Ako se pitanje odnosi na konkretnu nekretninu, navedite njenu šifru ili link oglasa.",
+    "form": {
+      "subjectHint": "Na primer: kupovina, izdavanje, saradnja.",
+      "successHeading": "Poruka je poslata",
+      "sendAnother": "Pošaljite novu poruku"
+    },
+    "visitHeading": "Posetite nas",
+    "addressLabel": "Adresa",
+    "closed": "Zatvoreno",
+    "hoursNote": "Razgledanja zakazujemo i van radnog vremena, po dogovoru.",
+    "directions": "Otvorite u Google mapama",
+    "faqEyebrow": "Pitanja",
+    "faqHeading": "Česta pitanja"
   },
   "errors": {
     "FORBIDDEN": "Nemate pristup ovom sadržaju.",
@@ -110,14 +208,43 @@
     "INVALID_INPUT": "Proverite unete podatke i pokušajte ponovo.",
     "SPAM": "Zahtev nije prihvaćen. Pokušajte ponovo.",
     "offline": "Veza sa serverom nije uspostavljena. Proverite internet i pokušajte ponovo.",
-    "ALREADY_REQUESTED": "Već ste poslali zahtev za razgledanje ove nekretnine. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata."
+    "ALREADY_REQUESTED": "Već ste poslali zahtev za razgledanje ove nekretnine. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+    "notFoundTitle": "Ova adresa ne vodi nikuda.",
+    "notFoundHint": "Pretražite ponudu ili izaberite neku od stranica sa liste.",
+    "errorEyebrow": "Greška",
+    "genericHint": "Ako se greška ponovi, pretražite ponudu ili nam se javite.",
+    "searchLabel": "Pretražite ponudu",
+    "searchSubmit": "Pretraži",
+    "popularHeading": "Možda tražite",
+    "digest": "Oznaka greške: {digest}"
   },
   "favorites": {
     "clear": "Očisti listu",
     "empty": "Još niste sačuvali nijednu nekretninu.",
     "emptyCta": "Pogledajte ponudu",
     "heading": "Omiljeno",
-    "lede": "Nekretnine koje ste sačuvali na ovom uređaju."
+    "lede": "Nekretnine koje ste sačuvali na ovom uređaju.",
+    "eyebrow": "Vaš izbor",
+    "metaDescription": "Nekretnine koje ste sačuvali dok ste pregledali ponudu Mihajlo Estate, na jednom mestu i spremne za poređenje.",
+    "count": "{count, plural, one {# sačuvana nekretnina} few {# sačuvane nekretnine} other {# sačuvanih nekretnina}}",
+    "compareHint": "Označite „Uporedi“ na dve do četiri kartice i pogledajte ih jednu uz drugu.",
+    "unavailable": "{count, plural, one {# sačuvana nekretnina više nije u ponudi.} few {# sačuvane nekretnine više nisu u ponudi.} other {# sačuvanih nekretnina više nije u ponudi.}}",
+    "unavailableRemove": "{count, plural, =1 {Uklonite je sa liste} other {Uklonite ih sa liste}}",
+    "allUnavailable": "Nijedna od nekretnina koje ste sačuvali više nije u ponudi. Pogledajte aktuelnu ponudu ili nam pišite šta tražite.",
+    "deviceNote": "Lista se čuva samo u ovom pregledaču, bez naloga i registracije. Na drugom uređaju, ili kada obrišete podatke pregledača, biće prazna.",
+    "removed": "Uklonjeno iz omiljenog: {title}",
+    "restored": "Vraćeno u omiljeno: {title}",
+    "cleared": "Lista omiljenih je ispražnjena.",
+    "pruned": "{count, plural, one {Uklonjena je # nekretnina koja više nije u ponudi.} few {Uklonjene su # nekretnine koje više nisu u ponudi.} other {Uklonjeno je # nekretnina koje više nisu u ponudi.}}",
+    "undo": "Vrati",
+    "undoLabel": "Vrati u omiljeno: {title}",
+    "clearConfirm": "Obrisati sve sačuvane nekretnine?",
+    "clearYes": "Da, obriši sve",
+    "clearNo": "Odustani",
+    "emptyEyebrow": "Lista je prazna",
+    "emptyBody": "Dodirnite srce na kartici ili na stranici nekretnine i ona će Vas čekati ovde. Lista se čuva samo u ovom pregledaču, bez naloga i registracije.",
+    "emptyHow": "Dodirnite srce da sačuvate nekretninu",
+    "loading": "Učitavanje sačuvanih nekretnina…"
   },
   "filters": {
     "activeCount": "{count, plural, one {# filter} few {# filtera} other {# filtera}}",
@@ -346,7 +473,7 @@
     "allPosts": "Svi tekstovi",
     "heading": "Magazin",
     "lede": "Analize tržišta, vodiči za kupce i prodavce, i priče o Beogradu.",
-    "publishedOn": "Objavljeno {date}",
+    "publishedOn": "Objavljeno: {date}",
     "readingTime": "{minutes} min čitanja",
     "relatedHeading": "Slični tekstovi",
     "categories": {
@@ -355,14 +482,63 @@
       "legal": "Pravo i porezi",
       "market": "Tržište",
       "neighborhood": "Kvartovi"
-    }
+    },
+    "filterLabel": "Teme magazina",
+    "featured": "Izdvojeno",
+    "readMore": "Pročitajte tekst",
+    "loadMore": "Prikaži starije tekstove",
+    "loadingMore": "Učitavanje tekstova…",
+    "loadedMore": "{count, plural, one {Prikazan je još # tekst.} few {Prikazana su još # teksta.} other {Prikazano je još # tekstova.}}",
+    "loadError": "Tekstovi trenutno ne mogu da se učitaju. Pokušajte ponovo.",
+    "emptyCategory": "U ovoj temi još nema objavljenih tekstova.",
+    "emptyAll": "Još nema objavljenih tekstova.",
+    "emptyHint": "Pogledajte ostale teme ili našu aktuelnu ponudu nekretnina.",
+    "categoryTitle": "Magazin: {category}",
+    "writtenBy": "Tekst",
+    "tags": "Oznake",
+    "relatedListingsHeading": "Iz naše ponude",
+    "allListings": "Sve nekretnine"
   },
   "legal": {
     "complianceNote": "Podaci o posredniku prikazani su u skladu sa članom 18. Zakona o posredovanju u prometu i zakupu nepokretnosti.",
     "cookiesHeading": "Politika kolačića",
     "lastUpdated": "Poslednja izmena: {date}",
     "privacyHeading": "Politika privatnosti",
-    "termsHeading": "Uslovi korišćenja"
+    "termsHeading": "Uslovi poslovanja",
+    "eyebrow": "Pravne informacije",
+    "privacyLede": "Koje podatke o ličnosti prikupljamo, zašto, koliko dugo ih čuvamo i kako ostvarujete svoja prava.",
+    "termsLede": "Opšti uslovi poslovanja agencije: šta posredovanje obuhvata, kako se ugovara provizija i koje su obaveze obe strane.",
+    "cookiesLede": "Koje kolačiće i lokalno skladište koristimo, čemu služe i kako u svakom trenutku menjate svoju odluku.",
+    "tocHeading": "Sadržaj",
+    "unavailable": "Tekst ove stranice trenutno nije dostupan.",
+    "unavailableContact": "Za sva pitanja pišite nam na <link>{email}</link>.",
+    "termsPdf": "Preuzmite uslove poslovanja (PDF)",
+    "commission": {
+      "heading": "Provizija",
+      "summary": "Provizija ukratko"
+    },
+    "agency": {
+      "heading": "Podaci o posredniku",
+      "legalName": "Poslovno ime",
+      "address": "Sedište",
+      "pib": "PIB",
+      "mb": "Matični broj",
+      "registryNo": "Broj u Registru posrednika",
+      "email": "E-pošta"
+    },
+    "cookieChoices": {
+      "heading": "Kategorije i Vaša saglasnost",
+      "lede": "Ovo su iste kategorije koje nudi baner za kolačiće. Sve osim neophodnih ostaju isključene dok ih sami ne uključite.",
+      "default": "Podrazumevano",
+      "current": "Vaš izbor",
+      "alwaysOn": "Uvek uključeni",
+      "offByDefault": "Isključeni",
+      "on": "Uključeni",
+      "off": "Isključeni",
+      "undecided": "Isključeni, odluka nije doneta",
+      "decidedAt": "Datum Vaše odluke: {date}",
+      "change": "Odluku možete promeniti ili povući u svakom trenutku, jednako lako kao što ste je dali."
+    }
   },
   "listing": {
     "addToCompare": "Dodaj u poređenje",
@@ -726,12 +902,63 @@
     }
   },
   "locations": {
-    "avgPriceRent": "Prosečno izdavanje",
-    "avgPriceSale": "Prosečno prodaja",
-    "heading": "Lokacije",
-    "lede": "Kratki vodiči kroz krajeve u kojima radimo, sa prosečnim cenama po kvadratu.",
-    "listingsHeading": "Nekretnine u {name}",
-    "nearbyHeading": "U blizini"
+    "heading": "Prvo kraj, pa stan.",
+    "lede": "Kratki vodiči kroz krajeve u kojima radimo, sa prosečnim cenama po kvadratu i aktuelnom ponudom.",
+    "listingsHeading": "Ponuda — {name}",
+    "nearbyHeading": "U blizini",
+    "metaTitle": "Lokacije: kvartovi Beograda i gradovi Srbije",
+    "metaDescription": "Vodiči kroz beogradske opštine i kvartove i gradove Srbije: prosečne cene po kvadratu za prodaju i zakup i aktuelna ponuda agencije.",
+    "eyebrow": "Lokacije",
+    "summaryLabel": "Pregled",
+    "summaryCities": "Gradovi",
+    "summaryAreas": "Opštine i krajevi",
+    "summaryListings": "Nekretnine u ponudi",
+    "emptyIndex": "Lokacije još nisu objavljene.",
+    "primaryEyebrow": "Naše glavno tržište",
+    "districtsHeading": "Opštine i krajevi",
+    "guideCta": "Vodič i ponuda",
+    "searchCta": "Pretražite ponudu",
+    "citiesEyebrow": "Ostala tržišta",
+    "citiesHeading": "Širom Srbije",
+    "citiesLede": "Ista pravila kao u Beogradu: nekretninu vidimo i proveravamo dokumentaciju pre nego što je oglasimo.",
+    "avgNote": "Prosečne cene su orijentacione tražene cene po kvadratu; cena zakupa je mesečna.",
+    "count": "{count, plural, one {# nekretnina} few {# nekretnine} other {# nekretnina}}",
+    "noOffers": "Trenutno bez ponude",
+    "sale": "Prodaja",
+    "rent": "Zakup",
+    "kind": {
+      "city": "Grad",
+      "municipality": "Opština",
+      "neighborhood": "Kraj"
+    },
+    "country": "Srbija",
+    "areasOf": "Krajevi: {name}",
+    "figuresLabel": "Ključni podaci",
+    "avgSale": "Prosečna cena, prodaja",
+    "avgRent": "Prosečna cena, zakup",
+    "onOffer": "U ponudi",
+    "detailMetaTitle": "{name}: cene i ponuda nekretnina",
+    "detailMetaFallback": "Prosečne cene po kvadratu za prodaju i zakup i aktuelna ponuda nekretnina — {name}.",
+    "detailLedeFallback": "Prosečne cene po kvadratu i aktuelna ponuda na ovoj lokaciji.",
+    "factsEyebrow": "Ukratko",
+    "factsHeading": "Na prvi pogled",
+    "partOf": "Pripada",
+    "forSale": "Na prodaju",
+    "forRent": "Za izdavanje",
+    "mapCaption": "Mapa prikazuje približan centar lokacije.",
+    "listingsShown": "Prikazano je {shown} od {total}. Celu ponudu otvara pretraga.",
+    "searchSale": "Sve na prodaju",
+    "searchRent": "Sve za izdavanje",
+    "emptyTitle": "Trenutno nemamo nekretnina u ponudi na ovoj lokaciji.",
+    "emptyBody": "Napišite nam šta tražite ili pogledajte celu ponudu. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+    "emptyContact": "Pišite nam",
+    "emptyAll": "Cela ponuda",
+    "sellPrompt": "Prodajete nekretninu na ovoj lokaciji? Procenu radimo besplatno.",
+    "sellCta": "Zatražite procenu",
+    "exploreLabel": "Okolne lokacije",
+    "childrenMunicipalities": "Opštine",
+    "childrenNeighborhoods": "Krajevi",
+    "otherCitiesHeading": "Ostala tržišta"
   },
   "nav": {
     "about": "O nama",
@@ -829,8 +1056,129 @@
     "benefitsHeading": "Šta dobijate",
     "formHeading": "Prijavite nekretninu",
     "heading": "Prodajte sa nama",
-    "lede": "Pripremamo, fotografišemo i predstavljamo vašu nekretninu pravim kupcima.",
-    "processHeading": "Kako izgleda saradnja"
+    "lede": "Pripremamo, fotografišemo i predstavljamo Vašu nekretninu pravim kupcima, a Vi u svakom trenutku znate šta se dešava.",
+    "processHeading": "Kako izgleda saradnja",
+    "metaTitle": "Prodajte nekretninu sa nama",
+    "metaDescription": "Prodaja stana, kuće ili poslovnog prostora u Beogradu i širom Srbije: obilazak i predlog cene, provera dokumentacije, profesionalne fotografije i vođenje do primopredaje.",
+    "eyebrow": "Za vlasnike",
+    "heroCta": "Prijavite nekretninu",
+    "heroValuationCta": "Okvirna procena za dva minuta",
+    "mediaAlt": "Ulazni hol sa dvokrilnim vratima i ključevima na kamenom stolu",
+    "benefitsEyebrow": "Usluga",
+    "benefitsLede": "Prodaja bez improvizacije: proverena dokumentacija, pripremljena nekretnina i cena zasnovana na podacima.",
+    "benefits": {
+      "b1": "Predlog cene posle obilaska, uz poređenje sa ostvarenim prodajama u Vašem kraju.",
+      "b2": "Provera dokumentacije pre objave oglasa, sa spiskom onoga što treba rešiti.",
+      "b3": "Profesionalne fotografije, a za odabrane nekretnine i tlocrt i 360° tura.",
+      "b4": "Oglas na srpskom, engleskom, ruskom i nemačkom jeziku.",
+      "b5": "Razgledanja uz najavu i pisani izveštaj o reakcijama kupaca.",
+      "b6": "Koordinacija sa advokatom i notarom do predaje ključeva."
+    },
+    "valuationPrompt": "Želite prvo okvirni raspon? Onlajn procena se računa iz prosečnih cena u Vašem kraju i traje dva minuta.",
+    "valuationLink": "Započnite procenu",
+    "processEyebrow": "Proces",
+    "processLede": "Pet koraka od prvog obilaska do predaje ključeva. Posle svakog znate šta sledi i šta je potrebno od Vas.",
+    "processSteps": {
+      "s1": {
+        "title": "Upoznavanje i procena",
+        "body": "Obilazimo nekretninu, pregledamo dokumentaciju i dajemo Vam pisani predlog cene i plan prodaje."
+      },
+      "s2": {
+        "title": "Priprema i fotografisanje",
+        "body": "Predlažemo sitne popravke pre snimanja, a zatim dolazi fotograf; za odabrane nekretnine snimamo i tlocrt i 360° turu."
+      },
+      "s3": {
+        "title": "Marketing i 3D tura",
+        "body": "Oglas pišemo na četiri jezika i objavljujemo ga na sajtu, na portalima i u našoj bazi kupaca."
+      },
+      "s4": {
+        "title": "Razgledanja i pregovori",
+        "body": "Razgledanja vodimo uz najavu, posle svakog dobijate belešku, a ponude pregovaramo pisano. Odluka je uvek Vaša."
+      },
+      "s5": {
+        "title": "Ugovor i primopredaja",
+        "body": "Sa advokatom pripremamo ugovor, koordiniramo overu kod notara i uplatu i prisustvujemo primopredaji."
+      }
+    },
+    "documentsEyebrow": "Dokumentacija",
+    "documentsHeading": "Šta nam je potrebno od Vas",
+    "documentsLede": "Za prodaju je obično potrebno sledeće. Tačan spisak zavisi od nekretnine i načina na koji je stečena, pa ga proveravamo zajedno, na prvom sastanku.",
+    "documents": {
+      "d1": {
+        "title": "List nepokretnosti",
+        "note": "Izvod iz katastra kao dokaz o vlasništvu i upisu nekretnine."
+      },
+      "d2": {
+        "title": "Osnov sticanja",
+        "note": "Ugovor o kupoprodaji, rešenje o nasleđivanju, ugovor o poklonu ili drugi pravni osnov."
+      },
+      "d3": {
+        "title": "Lična dokumenta vlasnika",
+        "note": "Lična karta ili pasoš svakog vlasnika; overeno punomoćje ako Vas neko zastupa."
+      },
+      "d4": {
+        "title": "Upotrebna dozvola ili rešenje o ozakonjenju",
+        "note": "Gde je primenljivo — najčešće kod novije gradnje, dogradnji i ozakonjenih objekata."
+      },
+      "d5": {
+        "title": "Potvrde o izmirenim obavezama",
+        "note": "Poslednji računi za Infostan, struju i grejanje; po potrebi i potvrda o plaćenom porezu na imovinu."
+      },
+      "d6": {
+        "title": "Saglasnost bračnog druga",
+        "note": "Obično se traži ako je nekretnina stečena u braku, i kada je upisana samo na jednog supružnika."
+      },
+      "d7": {
+        "title": "Energetski pasoš",
+        "note": "Ako postoji — najčešće ga imaju zgrade novije gradnje."
+      }
+    },
+    "documentsNote": "Spisak je informativan i ne zamenjuje pravni savet. Ako nešto nedostaje, reći ćemo Vam šta je potrebno i gde se pribavlja.",
+    "faqEyebrow": "Pitanja",
+    "faqHeading": "Česta pitanja prodavaca",
+    "faq": {
+      "q1": {
+        "q": "Kolika je provizija?",
+        "a": "Provizija se dogovara ugovorom o posredovanju i zavisi od vrste posla i obima usluge. Važeća tarifa je deo naših Uslova poslovanja."
+      },
+      "q2": {
+        "q": "Da li su obilazak i predlog cene besplatni?",
+        "a": "Da. Obilazak i predlog cene ne obavezuju Vas na saradnju."
+      },
+      "q3": {
+        "q": "Koliko traje prodaja?",
+        "a": "Zavisi od cene, lokacije i dokumentacije. Okviran rok dobijate u pisanom predlogu posle obilaska."
+      }
+    },
+    "formEyebrow": "Prijava",
+    "formLede": "Ostavite osnovne podatke, a mi se javljamo da dogovorimo obilazak — besplatno i bez obaveze da nam poverite prodaju.",
+    "formPhonePrompt": "Radije razgovarate telefonom?",
+    "form": {
+      "propertyLegend": "Nekretnina",
+      "contactLegend": "Vaši podaci",
+      "propertyType": "Vrsta nekretnine",
+      "location": "Lokacija",
+      "locationNone": "Izaberite iz liste",
+      "otherCities": "Ostali gradovi",
+      "address": "Ulica ili bliža lokacija",
+      "addressHint": "Tačnu adresu možete poslati i kasnije.",
+      "area": "Kvadratura (m²)",
+      "areaInvalid": "Unesite kvadraturu između {min} i {max} m².",
+      "rooms": "Broj soba",
+      "roomsNone": "Izaberite",
+      "roomsStudio": "Garsonjera",
+      "roomsFivePlus": "5 i više",
+      "roomsHint": "Dnevna soba se računa kao soba.",
+      "price": "Očekivana cena u evrima",
+      "priceHint": "Ako je već imate na umu. Naš predlog cene dobijate posle obilaska.",
+      "priceInvalid": "Unesite iznos u evrima, npr. {example}.",
+      "message": "Napomena",
+      "messageHint": "Stanje, sprat, grejanje, rok za prodaju — sve što smatrate važnim.",
+      "submit": "Pošaljite prijavu",
+      "successHeading": "Prijava je poslata",
+      "successDetail": "Agent će Vam se javiti da dogovorite termin obilaska.",
+      "sendAnother": "Prijavite još jednu nekretninu"
+    }
   },
   "seo": {
     "defaultDescription": "Pažljivo odabrani stanovi, kuće i poslovni prostori u Beogradu i Srbiji. Procena, prodaja, zakup i 3D obilasci.",
@@ -908,16 +1256,133 @@
   },
   "valuation": {
     "heading": "Procena vrednosti",
-    "lede": "Tri koraka do okvirne procene, na osnovu prosečnih cena u Vašem kraju.",
+    "lede": "Tri kratka koraka do okvirnog raspona vrednosti, izračunatog iz prosečnih cena u Vašem kraju. Bez obaveza i bez poziva koje niste tražili.",
     "next": "Nastavite",
     "previous": "Nazad",
-    "resultCta": "Zatražite tačnu procenu na terenu",
-    "resultDisclaimer": "Procena je informativna i ne predstavlja zvanično veštačenje.",
+    "resultDisclaimer": "Ovo je okvirna procena. Izračunata je iz prosečne cene po kvadratu u odabranom kraju i korigovana za stanje, sprat i lift. Nije zasnovana na stvarnim kupoprodajama i ne predstavlja zvanično veštačenje.",
     "resultHeading": "Procenjena vrednost",
     "resultRange": "{min} – {max}",
     "step": "Korak {current} od {total}",
     "stepContact": "Kontakt",
-    "stepDetails": "Detalji",
-    "stepProperty": "Nekretnina"
+    "stepProperty": "Nekretnina",
+    "metaTitle": "Procena vrednosti nekretnine",
+    "metaDescription": "Okvirna procena vrednosti stana ili kuće za dva minuta, na osnovu prosečnih cena u Vašem kraju. Besplatno i bez obaveze, uz mogućnost procene na terenu.",
+    "eyebrow": "Online procena",
+    "facts": {
+      "durationLabel": "Trajanje",
+      "durationValue": "Oko dva minuta",
+      "costLabel": "Naknada",
+      "costValue": "Besplatno",
+      "resultLabel": "Rezultat",
+      "resultValue": "Okvirni raspon, odmah"
+    },
+    "funnelLabel": "Online procena vrednosti",
+    "progressLabel": "Koraci procene",
+    "stepResult": "Procena",
+    "stepDone": "završeno",
+    "propertyHeading": "Opišite nekretninu",
+    "contactHeading": "Vaši kontakt podaci",
+    "contactLede": "Raspon prikazujemo odmah, na ovoj stranici. Bez obaveza i bez poziva koje niste tražili.",
+    "submit": "Prikažite procenu",
+    "submitting": "Računamo…",
+    "fields": {
+      "location": "Lokacija",
+      "locationPlaceholder": "Izaberite lokaciju",
+      "propertyType": "Tip nekretnine",
+      "area": "Kvadratura (m²)",
+      "rooms": "Struktura",
+      "roomsPlaceholder": "Izaberite strukturu",
+      "floor": "Sprat",
+      "floorPlaceholder": "Izaberite sprat",
+      "floorNumber": "{floor}. sprat",
+      "totalFloors": "Poslednji sprat zgrade",
+      "notSpecified": "Nije navedeno",
+      "elevator": "Lift",
+      "elevatorYes": "Zgrada ima lift",
+      "elevatorNo": "Zgrada nema lift",
+      "condition": "Stanje",
+      "conditionPlaceholder": "Izaberite stanje",
+      "yearBuilt": "Godina izgradnje",
+      "addressNote": "Ulica i broj",
+      "addressHint": "Ne utiče na raspon; pomaže agentu ako zatražite procenu na terenu."
+    },
+    "locationOtherAreas": "{city}, ostali delovi grada",
+    "locationOtherCities": "Ostali gradovi",
+    "areaInvalid": "Unesite kvadraturu između {min} i {max} m².",
+    "yearInvalid": "Unesite godinu između {min} i {max}.",
+    "floorAboveTotal": "Sprat ne može biti iznad poslednjeg sprata zgrade.",
+    "resultEyebrow": "Okvirna procena",
+    "rangeLow": "Najniže",
+    "rangeMid": "Sredina",
+    "rangeHigh": "Najviše",
+    "basisPricePerM2": "Prosečna cena po m², korigovana",
+    "basisArea": "Kvadratura",
+    "restart": "Procenite drugu nekretninu",
+    "onsite": {
+      "eyebrow": "Sledeći korak",
+      "heading": "Besplatna procena na terenu",
+      "lede": "Tačniji broj dobijate kada nekretninu vidimo. Agent obilazi nekretninu, pregleda dokumentaciju i poredi je sa stvarnim kupoprodajama iz Vašeg kraja, iz Registra cena nepokretnosti RGZ-a. Izaberite dan i deo dana koji Vam odgovaraju, a mi Vas zovemo da potvrdimo termin.",
+      "day": "Željeni dan",
+      "window": "Deo dana",
+      "morning": "Pre podne",
+      "morningHours": "9–12 h",
+      "midday": "Oko podne",
+      "middayHours": "12–15 h",
+      "afternoon": "Popodne",
+      "afternoonHours": "15–18 h",
+      "note": "Napomena za agenta",
+      "submit": "Zatražite procenu na terenu",
+      "dayRequired": "Izaberite dan.",
+      "windowRequired": "Izaberite deo dana.",
+      "successHeading": "Zahtev je primljen",
+      "success": "Javićemo Vam se da potvrdimo termin. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+      "already": "Procenu na terenu ste već zatražili. Javićemo Vam se da potvrdimo termin. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+      "expired": "Ova procena je istekla. Pokrenite novu procenu ili nam pišite preko stranice Kontakt.",
+      "selected": "Predloženi termin: {date}, {window}."
+    },
+    "unavailable": {
+      "heading": "Online procena trenutno nije dostupna",
+      "body": "Za sada nemamo prosečne cene na osnovu kojih računamo okvirni raspon. Pišite nam i dogovorićemo procenu na terenu. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+      "cta": "Kontaktirajte nas"
+    },
+    "aboutEyebrow": "Metod",
+    "aboutHeading": "Kako računamo",
+    "about": {
+      "p1": "Okvirni raspon računamo iz prosečne cene po kvadratu u Vašem kraju, korigovane za stanje, sprat i lift. To je informativna procena, a ne zvanično veštačenje: ne može se koristiti pred bankom, sudom ili poreskom upravom.",
+      "p2": "Tačniji broj dobijate kada nekretninu vidimo. Na terenu gledamo svetlo, orijentaciju, instalacije, zgradu i dokumentaciju i poredimo nekretninu sa stvarnim kupoprodajama iz Vašeg kraja, iz Registra cena nepokretnosti RGZ-a."
+    },
+    "onsiteSectionEyebrow": "Procena na terenu",
+    "book": {
+      "heading": "Procena na terenu, bez obaveze.",
+      "sub": "Dolazimo u dogovoreno vreme, pregledamo nekretninu i dokumentaciju i ostavljamo raspon u pisanoj formi.",
+      "label": "Zakažite procenu"
+    },
+    "lookAtTitle": "Šta gledamo",
+    "lookAt": {
+      "location": "Lokacija i mikrolokacija — ulica, saobraćaj, škole, zelenilo, buka.",
+      "size": "Kvadratura i struktura — broj soba, raspored, upotrebljivost prostora.",
+      "floor": "Sprat, lift i orijentacija — svetlo, pogled, nivo ulične buke.",
+      "condition": "Godina gradnje i stanje — instalacije, stolarija, fasada, krov, zajednički delovi.",
+      "heating": "Grejanje i energetska efikasnost — CG, EG, toplotna pumpa, mesečni računi.",
+      "documents": "Dokumentacija — uknjiženost, ozakonjenje, upotrebna dozvola, tereti i suvlasništvo."
+    },
+    "replyPromise": "Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+    "mediaAlt": "Osnova stana na radnom stolu, sa mesinganim lenjirom u popodnevnom svetlu",
+    "faqEyebrow": "Pitanja",
+    "faqHeading": "Česta pitanja",
+    "faq": {
+      "free": {
+        "q": "Da li je procena besplatna?",
+        "a": "Online procena je besplatna i traje oko dva minuta. Procena na terenu je takođe bez naknade i bez obaveze da nam poverite prodaju: dolazimo u dogovoreno vreme i ostavljamo Vam raspon u pisanoj formi."
+      },
+      "accuracy": {
+        "q": "Koliko je procena precizna?",
+        "a": "Za standardan stan u kraju sa dovoljno podataka o cenama raspon je blizu tržišta. Kod netipičnih nekretnina — potkrovlja, adaptacija, neuknjiženih delova, kuća sa velikim placem — odstupanje je veće, pa procenu treba proveriti na terenu. Zato rezultat uvek dajemo kao interval, ne kao jedan broj."
+      },
+      "data": {
+        "q": "Šta se dešava sa mojim podacima?",
+        "a": "Podatke iz formulara koristimo samo da izračunamo raspon i da Vam odgovorimo. Ne prodajemo ih i ne šaljemo trećim licima. Izbor novih nekretnina dobijate samo ako to posebno označite, a brisanje možete zatražiti u svakom trenutku na adresu iz Politike privatnosti."
+      }
+    }
   }
 }

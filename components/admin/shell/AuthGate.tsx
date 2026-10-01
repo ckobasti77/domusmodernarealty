@@ -9,14 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { MeProvider } from "./me";
 
-/** Only same-section paths are accepted as a post-login target. */
-export function safeNext(next: string | null): string {
-  if (next === null || !next.startsWith("/admin") || next.startsWith("/admin/login")) {
-    return "/admin";
-  }
-  return next;
-}
-
 /**
  * Client-side gate for every `/admin/*` screen except login and invite
  * acceptance. It is a convenience, not the security boundary: each Convex

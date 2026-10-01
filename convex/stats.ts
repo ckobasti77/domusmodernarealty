@@ -61,46 +61,6 @@ export const trackView = mutation({
 });
 
 /**
- * Favorite counter, best-effort: the source of truth is the visitor's browser.
- * It still needs a session key and a rate limit — it is a public write that feeds
- * the admin funnel and `analytics.topListings`, so an unlimited version lets
- * anyone inflate or zero a listing.
- */
-export const trackFavorite = mutation({
-  args: {
-    listingId: v.id("listings"),
-    sessionKey: v.string(),
-    delta: v.union(v.literal(1), v.literal(-1)),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    assertSessionKey(args.sessionKey);
-    const listing = await ctx.db.get("listings", args.listingId);
-    if (listing === null || !isPublicScope(listing.scope)) return null;
-    await consumeLimit(ctx, "favoritePerSession", args.sessionKey);
-
-    const stats = await ctx.db
-      .query("listingStats")
-      .withIndex("by_listingId", (q) => q.eq("listingId", args.listingId))
-      .unique();
-    if (stats === null) {
-      await ctx.db.insert("listingStats", {
-        listingId: args.listingId,
-        views: 0,
-        favorites: Math.max(args.delta, 0),
-        leads: 0,
-        viewings: 0,
-      });
-      return null;
-    }
-    await ctx.db.patch("listingStats", stats._id, {
-      favorites: Math.max(stats.favorites + args.delta, 0),
-    });
-    return null;
-  },
-});
-
-/**
  * `listingViews` exists only to make `trackView` idempotent per session. It is
  * append-only and would otherwise grow forever, so a nightly cron drops rows
  * older than the retention window in bounded batches, rescheduling itself

@@ -46,6 +46,7 @@ import type * as lib_tourAssets from "../lib/tourAssets.js";
 import type * as lib_tourBlobs from "../lib/tourBlobs.js";
 import type * as lib_tours from "../lib/tours.js";
 import type * as lib_validators from "../lib/validators.js";
+import type * as lib_video from "../lib/video.js";
 import type * as listings from "../listings.js";
 import type * as listingsAdmin from "../listingsAdmin.js";
 import type * as listingsInternal from "../listingsInternal.js";
@@ -129,6 +130,7 @@ declare const fullApi: ApiFromModules<{
   "lib/tourBlobs": typeof lib_tourBlobs;
   "lib/tours": typeof lib_tours;
   "lib/validators": typeof lib_validators;
+  "lib/video": typeof lib_video;
   listings: typeof listings;
   listingsAdmin: typeof listingsAdmin;
   listingsInternal: typeof listingsInternal;

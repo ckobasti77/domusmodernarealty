@@ -69,6 +69,19 @@ function doorElement(label: string): HTMLElement {
   return box;
 }
 
+/**
+ * The gallery plugin writes a node's `name` into innerHTML unescaped, and
+ * scene titles are staff input, so they are escaped before PSV sees them.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 /** PSV sizes a 2D link box itself: wide enough for the label at 12 px uppercase. */
 function doorWidth(label: string): number {
   return Math.round(label.length * 10.5 + 64);
@@ -99,7 +112,7 @@ export default function Tour360({ scenes, title }: Props) {
     const nodes: VirtualTourNode[] = scenes.map((scene) => ({
       id: scene.id,
       panorama: smallScreen && scene.panoMobileUrl !== undefined ? scene.panoMobileUrl : scene.panoUrl,
-      name: scene.title,
+      name: escapeHtml(scene.title),
       ...(scene.thumbUrl !== undefined ? { thumbnail: scene.thumbUrl } : {}),
       links: scene.links.flatMap((link) => {
         const label = titleOf.get(link.to);

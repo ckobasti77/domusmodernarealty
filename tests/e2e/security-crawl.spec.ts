@@ -261,9 +261,14 @@ test.describe("security headers", () => {
       expect(permissions, "Permissions-Policy").toContain("camera=()");
       expect(permissions, "Permissions-Policy").toContain("microphone=()");
       expect(headers["x-frame-options"], "X-Frame-Options").toBe("DENY");
+      expect(headers["x-powered-by"], "no framework banner").toBeUndefined();
 
       if (path === "/admin/login") {
         expect(headers["x-robots-tag"], "X-Robots-Tag").toBe("noindex, nofollow");
+        // The admin policy, not the public one: the panel embeds no third-party frames.
+        expect(policy.get("frame-src"), "admin frame-src").toEqual(["'none'"]);
+      } else {
+        expect(policy.get("frame-src"), "public frame-src").toContain("https://my.matterport.com");
       }
     });
   }

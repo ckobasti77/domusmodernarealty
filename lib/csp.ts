@@ -98,9 +98,18 @@ const hsts =
     ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
     : [];
 
-/** `headers()` entries for next.config.ts. */
+/**
+ * `headers()` entries for next.config.ts. Both entries match an admin path,
+ * and for a key set twice the LAST matching entry wins, so the admin entry
+ * must come after the catch-all or the public CSP (with its third-party
+ * frame-src) would replace the admin one.
+ */
 export function securityHeaders() {
   return [
+    {
+      source: "/:path*",
+      headers: [...baseSecurityHeaders, ...hsts, { key: "Content-Security-Policy", value: publicCsp }],
+    },
     {
       source: "/admin/:path*",
       headers: [
@@ -109,10 +118,6 @@ export function securityHeaders() {
         { key: "Content-Security-Policy", value: adminCsp },
         { key: "X-Robots-Tag", value: "noindex, nofollow" },
       ],
-    },
-    {
-      source: "/:path*",
-      headers: [...baseSecurityHeaders, ...hsts, { key: "Content-Security-Policy", value: publicCsp }],
     },
   ];
 }

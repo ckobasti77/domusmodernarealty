@@ -11,9 +11,10 @@ import { deleteListingCascade } from "./lib/listingCascade";
 import { deleteBlobIfPresent } from "./lib/storage";
 
 /**
- * Daily cron: a published listing whose brokerage contract has expired must come
- * off the market — advertising without a valid mandate breaches the brokerage law
- * (Art. 18). Each unpublish is logged.
+ * Daily cron: a listed (published or reserved) listing whose brokerage contract
+ * has expired must come off the market — advertising without a valid mandate
+ * breaches the brokerage law (Art. 18). Each unpublish is logged; a full batch
+ * schedules the next one.
  */
 export const expireMandates = internalMutation({
   args: {},
@@ -24,12 +25,18 @@ export const expireMandates = internalMutation({
     // `lt("mandateEnd", now)` would fill the batch with listings that have no
     // mandate at all and never reach the genuinely expired ones. The `gte(0)`
     // lower bound excludes them from the range instead of filtering afterwards.
-    const expired = await ctx.db
-      .query("listings")
-      .withIndex("by_status_and_mandateEnd", (q) =>
-        q.eq("status", "published").gte("mandateEnd", 0).lt("mandateEnd", now),
-      )
-      .take(100);
+    const BATCH = 100;
+    const expired = [];
+    for (const status of ["published", "reserved"] as const) {
+      expired.push(
+        ...(await ctx.db
+          .query("listings")
+          .withIndex("by_status_and_mandateEnd", (q) =>
+            q.eq("status", status).gte("mandateEnd", 0).lt("mandateEnd", now),
+          )
+          .take(BATCH)),
+      );
+    }
 
     let withdrawn = 0;
     for (const listing of expired) {
@@ -60,6 +67,9 @@ export const expireMandates = internalMutation({
       withdrawn += 1;
     }
 
+    if (expired.length >= BATCH) {
+      await ctx.scheduler.runAfter(0, internal.listingsInternal.expireMandates, {});
+    }
     return { withdrawn };
   },
 });

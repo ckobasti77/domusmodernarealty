@@ -30,6 +30,7 @@ import {
 import { isPublicScope, normalizeText } from "./lib/search";
 import { optionalPhone, requireEmail } from "./lib/rateLimit";
 import { randomToken } from "./lib/tokens";
+import { isVideoUrl } from "./lib/video";
 import {
   addressVisibilityV,
   conditionV,
@@ -276,13 +277,6 @@ function visibleToViewer(viewer: Viewer, doc: Doc<"listings">): boolean {
   return true;
 }
 
-const VIDEO_URL =
-  /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/|(?:player\.)?vimeo\.com\/)[\w\-?=&/%.]{3,200}$/;
-
-/** The public page embeds only YouTube and Vimeo (`VideoFacade`). */
-function isVideoUrl(url: string): boolean {
-  return url.length <= 500 && VIDEO_URL.test(url);
-}
 
 /**
  * The three place ids must form one chain: the municipality belongs to the
@@ -973,6 +967,24 @@ async function changeStatus(
   });
 }
 
+/**
+ * The status moves `setStatus` may make, mirroring the editor's PublishPanel.
+ * Publishing is not here: it always goes through `publish` and its checklist.
+ * Without this table a withdrawn or archived listing could be set straight to
+ * reserved, sold or rented and so reappear on the site without the mandate
+ * and Art. 18 checks.
+ */
+const STATUS_MOVES: Record<Doc<"listings">["status"], ReadonlyArray<Doc<"listings">["status"]>> = {
+  draft: ["review", "archived"],
+  review: ["draft"],
+  published: ["reserved", "sold", "rented", "withdrawn"],
+  reserved: ["sold", "rented", "withdrawn"],
+  sold: ["archived"],
+  rented: ["archived"],
+  withdrawn: ["draft", "archived"],
+  archived: ["draft"],
+};
+
 export const setStatus = mutation({
   args: { id: v.id("listings"), status: listingStatusV },
   returns: v.null(),
@@ -987,6 +999,9 @@ export const setStatus = mutation({
         "INVALID_INPUT",
         "Za objavljivanje koristite dugme Objavi (provera je obavezna).",
       );
+    }
+    if (!STATUS_MOVES[before.status].includes(args.status)) {
+      invalidInput(`Status se ne može promeniti iz „${before.status}” u „${args.status}”.`);
     }
 
     await changeStatus(ctx, before, args.status, viewer._id);
@@ -1183,9 +1198,16 @@ export const bulk = mutation({
       }
 
       if (args.action === "feature" || args.action === "unfeature") {
-        await ctx.db.patch("listings", id, {
-          isFeatured: args.action === "feature",
-          updatedAt: now,
+        const isFeatured = args.action === "feature";
+        await ctx.db.patch("listings", id, { isFeatured, updatedAt: now });
+        // Per listing, like the status actions below (PRD B13).
+        await logActivity(ctx, {
+          entity: "listing",
+          entityId: id,
+          action: "listing.updated",
+          summary: `${before.ref} (grupno)`,
+          diff: diffFields({ isFeatured: before.isFeatured }, { isFeatured }),
+          by: viewer._id,
         });
         done += 1;
         continue;
@@ -1203,6 +1225,15 @@ export const bulk = mutation({
         await ctx.db.patch("listings", id, { agentId: args.agentId, updatedAt: now });
         // The per-agent status counters follow the listing to its new agent.
         await applyCountDelta(ctx, before, await ctx.db.get("listings", id));
+        const previousAgent = await ctx.db.get("agents", before.agentId);
+        await logActivity(ctx, {
+          entity: "listing",
+          entityId: id,
+          action: "listing.updated",
+          summary: `${before.ref} (grupno)`,
+          diff: diffFields({ agent: previousAgent?.name ?? null }, { agent: agent.name }),
+          by: viewer._id,
+        });
         done += 1;
         continue;
       }
@@ -1460,13 +1491,30 @@ export const todos = query({
               .withIndex("by_status_and_updatedAt", (q) => q.eq("status", "published"))
               .order("desc")
               .take(300);
+    // Reserved listings are still advertised, so their mandates and gaps count too.
+    const reserved =
+      agentId === null
+        ? []
+        : agentId !== undefined
+          ? await ctx.db
+              .query("listings")
+              .withIndex("by_agentId_and_status_and_updatedAt", (q) =>
+                q.eq("agentId", agentId).eq("status", "reserved"),
+              )
+              .order("desc")
+              .take(100)
+          : await ctx.db
+              .query("listings")
+              .withIndex("by_status_and_updatedAt", (q) => q.eq("status", "reserved"))
+              .order("desc")
+              .take(100);
 
     const missingPhotos = [];
     const missingFloorPlan = [];
     const missingTranslations = [];
     const mandateExpiring = [];
 
-    for (const doc of docs) {
+    for (const doc of [...docs, ...reserved]) {
       if (!visibleToViewer(viewer, doc)) continue;
       if (doc.media.length < 8) {
         missingPhotos.push({ id: doc._id, ref: doc.ref, count: doc.media.length });

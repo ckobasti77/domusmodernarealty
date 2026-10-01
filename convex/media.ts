@@ -8,7 +8,8 @@ import { applyDerived, locationNamesFor } from "./lib/derive";
 import { invalidInput, notFound } from "./lib/errors";
 import { imageV, l10nV, mediaItemV, roomTagV } from "./lib/validators";
 import type { MediaItem } from "./lib/validators";
-import { assertFresh, deleteBlobIfPresent } from "./lib/storage";
+import { assertFresh, assertImageRef, deleteBlobIfPresent } from "./lib/storage";
+import { isVideoUrl } from "./lib/video";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
 
@@ -78,6 +79,28 @@ function nextId(existing: readonly MediaItem[]): string {
   return `m-${Date.now().toString(36)}-${existing.length}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 }
 
+/** Bounds on the free-text metadata an attached image carries to the public DTO. */
+function assertMediaMeta(item: {
+  alt: { sr: string; en?: string; ru?: string; de?: string };
+  blurDataURL?: string;
+  author?: string;
+  sourcePage?: string;
+}): void {
+  for (const value of [item.alt.sr, item.alt.en, item.alt.ru, item.alt.de]) {
+    if (value !== undefined && value.length > 300) invalidInput("Opis slike može imati najviše 300 znakova.");
+  }
+  if (
+    item.blurDataURL !== undefined &&
+    (!item.blurDataURL.startsWith("data:image/") || item.blurDataURL.length > 4096)
+  ) {
+    invalidInput("Pregled slike nije ispravan.");
+  }
+  if (item.author !== undefined && item.author.length > 200) invalidInput("Ime autora je predugačko.");
+  if (item.sourcePage !== undefined && (item.sourcePage.length > 500 || !item.sourcePage.startsWith("https://"))) {
+    invalidInput("Izvor slike mora biti https adresa.");
+  }
+}
+
 export const attach = mutation({
   args: {
     listingId: v.id("listings"),
@@ -111,7 +134,12 @@ export const attach = mutation({
         // A gallery item is always a new link: refuse an old (someone else's) blob.
         const meta = await ctx.db.system.get("_storage", item.image.storageId);
         if (meta !== null) assertFresh(meta._creationTime);
+      } else {
+        // The same https + host allowlist as every other image field: the URL
+        // reaches the public pages, the sitemap and the share-image renderer.
+        await assertImageRef(ctx, item.image);
       }
+      assertMediaMeta(item);
       added.push({
         id: nextId([...current, ...added]),
         image: item.image,
@@ -303,8 +331,8 @@ export const setVideoUrl = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const { viewer, listing } = await loadEditable(ctx, args.listingId);
-    if (args.videoUrl !== undefined && !/^https:\/\//.test(args.videoUrl)) {
-      invalidInput("Video adresa mora počinjati sa https://");
+    if (args.videoUrl !== undefined && !isVideoUrl(args.videoUrl.trim())) {
+      invalidInput("Video mora biti YouTube ili Vimeo adresa (https://…).");
     }
     const names = await locationNamesFor(ctx, listing);
     const next: Doc<"listings"> = { ...listing, videoUrl: args.videoUrl };

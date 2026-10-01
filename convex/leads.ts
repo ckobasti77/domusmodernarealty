@@ -287,6 +287,24 @@ export const createValuation = mutation({
     if (!Number.isFinite(args.rooms) || args.rooms < 0 || args.rooms > 20) {
       invalidInput("Broj soba mora biti između 0 i 20.");
     }
+    // The remaining numbers are stored for staff and feed the estimate, so they
+    // get the same treatment: whole numbers in a plausible range, or nothing.
+    if (typeof args.floor === "number" && (!Number.isInteger(args.floor) || args.floor < -2 || args.floor > 100)) {
+      invalidInput("Sprat mora biti ceo broj između -2 i 100.");
+    }
+    if (
+      args.totalFloors !== undefined &&
+      (!Number.isInteger(args.totalFloors) || args.totalFloors < 0 || args.totalFloors > 100)
+    ) {
+      invalidInput("Ukupan broj spratova mora biti ceo broj između 0 i 100.");
+    }
+    const latestYear = new Date().getUTCFullYear() + 5;
+    if (
+      args.yearBuilt !== undefined &&
+      (!Number.isInteger(args.yearBuilt) || args.yearBuilt < 1800 || args.yearBuilt > latestYear)
+    ) {
+      invalidInput(`Godina izgradnje mora biti između 1800 i ${latestYear}.`);
+    }
 
     const location = await ctx.db.get("locations", args.locationId);
     if (location === null) appError("NOT_FOUND", "Lokacija nije pronađena.");

@@ -145,3 +145,28 @@ describe("leads.requestOnsiteValuation", () => {
     ).rejects.toThrow(/SPAM|odbijen/);
   });
 });
+
+describe("leads.createValuation input bounds", () => {
+  test("refuses implausible floors, floor counts and construction years", async () => {
+    const { t, ids } = await setup();
+    const base = {
+      sessionKey: session("bounds"),
+      locale: "en" as const,
+      contact: CONTACT,
+      marketing: false,
+      privacy: true,
+      locationId: ids.neighborhood,
+      propertyType: "apartment" as const,
+      areaM2: 64,
+      rooms: 2,
+      condition: "renovated" as const,
+    };
+    await expect(t.mutation(api.leads.createValuation, { ...base, floor: 1e12 })).rejects.toThrow(/Sprat/);
+    await expect(t.mutation(api.leads.createValuation, { ...base, floor: 3, totalFloors: Number.NaN })).rejects.toThrow(
+      /spratova/,
+    );
+    await expect(t.mutation(api.leads.createValuation, { ...base, floor: 3, yearBuilt: 3000 })).rejects.toThrow(
+      /Godina izgradnje/,
+    );
+  });
+});

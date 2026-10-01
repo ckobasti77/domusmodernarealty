@@ -102,6 +102,17 @@ describe("360° scenes", () => {
     ).rejects.toThrow(/dva polja/);
   });
 
+  test("a scene title cannot carry markup (the 360° gallery renders titles as HTML)", async () => {
+    const { ids, asAdmin } = await setup();
+    await expect(
+      asAdmin.mutation(api.toursAdmin.upsertScene, {
+        listingId: ids.listing,
+        title: { sr: "Soba", en: '<img src=x onerror="alert(1)">' },
+        pano: PANO,
+      }),
+    ).rejects.toThrow(/< i >/);
+  });
+
   test("an agent cannot edit another agent's tour", async () => {
     const { t, ids } = await setup();
     const asAgent = t.withIdentity({ subject: ids.agentUser });

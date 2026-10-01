@@ -275,3 +275,57 @@ describe("editor side effects", () => {
     expect(copy?.media.map((item) => item.order)).toEqual(copy?.media.map((_item, index) => index));
   });
 });
+
+describe("step 13 server guards", () => {
+  test("a withdrawn listing cannot be set straight to reserved or sold; it must be published again", async () => {
+    const { t, ids } = await setup();
+    const asAdmin = t.withIdentity({ subject: ids.admin });
+    await asAdmin.mutation(api.listingsAdmin.unpublish, { id: ids.listingB });
+
+    for (const status of ["reserved", "sold", "rented"] as const) {
+      await expect(asAdmin.mutation(api.listingsAdmin.setStatus, { id: ids.listingB, status })).rejects.toThrow(
+        /ne može promeniti/,
+      );
+    }
+    const after = await t.run((ctx) => ctx.db.get("listings", ids.listingB));
+    expect(after?.status).toBe("withdrawn");
+    // The moves the editor offers still work.
+    await asAdmin.mutation(api.listingsAdmin.setStatus, { id: ids.listingB, status: "archived" });
+  });
+
+  test("a gallery image by URL must be https on an allowed host, with bounded metadata", async () => {
+    const { t, ids } = await setup();
+    const asAdmin = t.withIdentity({ subject: ids.admin });
+    const item = (url: string) => ({ image: { kind: "url" as const, url }, alt: { sr: "Dnevna soba" } });
+
+    for (const url of ["http://images.unsplash.com/photo-1", "https://169.254.169.254/latest", "https://evil.example/a.jpg"]) {
+      await expect(
+        asAdmin.mutation(api.media.attach, { listingId: ids.listingA, target: "gallery", items: [item(url)] }),
+      ).rejects.toThrow(/nije dozvoljena|nije ispravna/);
+    }
+    await expect(
+      asAdmin.mutation(api.media.attach, {
+        listingId: ids.listingA,
+        target: "gallery",
+        items: [{ ...item("https://images.unsplash.com/photo-1"), blurDataURL: "javascript:alert(1)" }],
+      }),
+    ).rejects.toThrow(/Pregled slike/);
+    await asAdmin.mutation(api.media.attach, {
+      listingId: ids.listingA,
+      target: "gallery",
+      items: [item("https://images.unsplash.com/photo-1")],
+    });
+  });
+
+  test("the video setter accepts only YouTube and Vimeo", async () => {
+    const { t, ids } = await setup();
+    const asAdmin = t.withIdentity({ subject: ids.admin });
+    await expect(
+      asAdmin.mutation(api.media.setVideoUrl, { listingId: ids.listingA, videoUrl: "https://evil.example/watch" }),
+    ).rejects.toThrow(/YouTube ili Vimeo/);
+    await asAdmin.mutation(api.media.setVideoUrl, {
+      listingId: ids.listingA,
+      videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    });
+  });
+});

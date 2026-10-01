@@ -45,7 +45,8 @@ export const listings = query({
       .query("listings")
       .withIndex("by_scope_and_publishedAt", (q) => q.eq("scope", listedScope(args.transaction)))
       .order("desc")
-      .paginate(args.paginationOpts);
+      // A public query: the page size is the server's to bound, not the caller's.
+      .paginate({ ...args.paginationOpts, numItems: Math.min(Math.max(Math.floor(args.paginationOpts.numItems) || 1, 1), 500) });
 
     const page = [];
     for (const doc of result.page) {

@@ -86,6 +86,8 @@ function assertView(view: { yaw: number; pitch: number } | undefined): void {
 function assertTitle(title: Doc<"tourScenes">["title"]): void {
   for (const value of [title.sr, title.en, title.ru, title.de]) {
     if (value !== undefined && value.length > 80) invalidInput("Naziv scene može imati najviše 80 znakova.");
+    // The 360° viewer renders titles inside its own HTML; markup is never a room name.
+    if (value !== undefined && /[<>]/.test(value)) invalidInput("Naziv scene ne može sadržati znakove < i >.");
   }
   if (title.sr.trim() === "") invalidInput("Unesite naziv scene na srpskom.");
 }

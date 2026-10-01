@@ -25,7 +25,6 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   valuationPerSession: { kind: "token bucket", rate: 4, period: HOUR, capacity: 2 },
   trackViewPerSession: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 30 },
   trackViewGlobal: { kind: "fixed window", rate: 5000, period: HOUR },
-  favoritePerSession: { kind: "token bucket", rate: 30, period: HOUR, capacity: 15 },
   // Nominatim usage policy: at most one request per second from the whole app.
   geocodeGlobal: { kind: "token bucket", rate: 1, period: SECOND, capacity: 1 },
   // One editor typing fast must not drain the shared per-second slot.
@@ -36,8 +35,7 @@ export type PublicFormLimit =
   | "leadPerSession"
   | "viewingPerSession"
   | "valuationPerSession"
-  | "trackViewPerSession"
-  | "favoritePerSession";
+  | "trackViewPerSession";
 
 type GlobalLimit = "leadGlobal" | "viewingGlobal" | "trackViewGlobal";
 
@@ -48,7 +46,6 @@ const GLOBAL_FOR: Partial<Record<PublicFormLimit, GlobalLimit>> = {
   // A script can mint a fresh sessionKey per request, so the per-session bucket
   // alone cannot bound view inflation.
   trackViewPerSession: "trackViewGlobal",
-  favoritePerSession: "trackViewGlobal",
 };
 
 /** Session keys come from the browser; keep them short and opaque. */

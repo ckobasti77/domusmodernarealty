@@ -558,7 +558,7 @@ export const get = query({
     mediaPreviews: v.array(v.object({ key: v.string(), url: v.string() })),
   }),
   handler: async (ctx, args) => {
-    await requireRole(ctx, CONTENT);
+    const viewer = await requireRole(ctx, CONTENT);
     const doc = await findPage(ctx, args.key);
     const blocks = editorBlocks(args.key, doc?.blocks ?? null);
 
@@ -572,7 +572,8 @@ export const get = query({
     let updatedByName: string | undefined;
     if (doc?.updatedBy !== undefined) {
       const user = await ctx.db.get("users", doc.updatedBy);
-      updatedByName = user?.name ?? user?.email ?? undefined;
+      // Only admins see an e-mail in place of a missing name (as in activity.ts).
+      updatedByName = user?.name ?? (viewer.role === "admin" ? user?.email : undefined) ?? "Član tima";
     }
 
     return {

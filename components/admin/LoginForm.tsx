@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "@/lib/admin/zod";
-import { safeNext } from "@/components/admin/shell/AuthGate";
+import { safeNext } from "@/lib/admin/safe-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/admin/auth/PasswordInput";

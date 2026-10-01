@@ -21,8 +21,9 @@ import { finishIntro, revealIntro } from "./intro";
  *    that hydrates late does not keep the visitor staring at ink.
  * The curtain is `position: fixed`, so it never shifts layout.
  *
- * This component only hands the moment of the lift to the hero (`revealIntro`)
- * and holds the scroll still while the curtain is down.
+ * This component only hands the moment of the lift to the hero (`revealIntro`),
+ * holds the scroll still while the curtain is down, and lets the visitor skip
+ * it: any key, click, tap or wheel fades the curtain out at once (PRD A2).
  */
 
 const KEY = "me.preloaded.v1";
@@ -30,6 +31,9 @@ const KEY = "me.preloaded.v1";
 /** Mirrors the keyframe timings in globals.css. */
 const LIFT_AT_MS = 1000;
 const DONE_AT_MS = 1800;
+/** A skipped curtain fades instead of lifting (a UI response, so <= 300 ms). */
+const SKIP_FADE_MS = 200;
+const SKIP_EVENTS = ["keydown", "pointerdown", "wheel", "touchstart"] as const;
 
 /**
  * Runs during HTML parsing, before the curtain is painted. It decides two
@@ -59,6 +63,10 @@ export function Preloader() {
   /** `performance.now()` until which scrolling stays locked. */
   const lockUntil = useRef(0);
   const lenis = useLenis();
+  const lenisRef = useRef(lenis);
+  useEffect(() => {
+    lenisRef.current = lenis;
+  }, [lenis]);
 
   useEffect(() => {
     const curtain = root.current;
@@ -101,8 +109,39 @@ export function Preloader() {
       }, DONE_AT_MS - elapsed),
     );
 
+    let skipped = false;
+    const skip = () => {
+      if (skipped) return;
+      skipped = true;
+      for (const type of SKIP_EVENTS) window.removeEventListener(type, skip, true);
+      for (const timer of timers) window.clearTimeout(timer);
+      revealIntro();
+      html.style.overflow = previous;
+      lockUntil.current = 0;
+      lenisRef.current?.start();
+      const fade = curtain.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: SKIP_FADE_MS,
+        easing: "ease-out",
+        fill: "forwards",
+      });
+      void fade.finished
+        .catch(() => undefined)
+        .then(() => {
+          // "skip" is the state a repeat visit starts in: the curtain is gone.
+          html.dataset.intro = "skip";
+          finishIntro();
+        });
+    };
+    for (const type of SKIP_EVENTS) window.addEventListener(type, skip, { capture: true, passive: true });
+    timers.push(
+      window.setTimeout(() => {
+        for (const type of SKIP_EVENTS) window.removeEventListener(type, skip, true);
+      }, DONE_AT_MS - elapsed),
+    );
+
     return () => {
       curtain.removeEventListener("animationstart", onLift);
+      for (const type of SKIP_EVENTS) window.removeEventListener(type, skip, true);
       for (const timer of timers) window.clearTimeout(timer);
       html.style.overflow = previous;
       revealIntro();

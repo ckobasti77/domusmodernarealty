@@ -8,9 +8,17 @@ import { type PageBlock, pageBlockV, pageKeyV, seoV } from "./lib/validators";
  * plain URL, so a public renderer never needs storage access. A blob that has
  * gone missing drops the block rather than rendering a broken image.
  */
+/**
+ * The legal pages carry a "draft — check with a lawyer" block under this key.
+ * It is a note for the staff (shown in the admin editor only), so the public
+ * query never returns it.
+ */
+const STAFF_NOTICE_KEY = "notice";
+
 async function publicBlocks(ctx: QueryCtx, blocks: PageBlock[]): Promise<PageBlock[]> {
   const out: PageBlock[] = [];
   for (const block of blocks) {
+    if (block.key === STAFF_NOTICE_KEY) continue;
     if (block.type !== "media" || block.image.kind === "url") {
       out.push(block);
       continue;
@@ -33,7 +41,7 @@ async function publicSeo(ctx: QueryCtx, seo: Seo): Promise<Seo> {
 
 /**
  * Editable site content (PRD B10) for the public pages. Everything in a page
- * is public copy, so the whole document is returned; the landing and the
+ * except the staff notice is public copy, so the rest is returned; the landing and the
  * legal/info pages read their blocks by `key` and fall back to the built-in
  * texts for anything missing (`lib/content/pages.ts`).
  */

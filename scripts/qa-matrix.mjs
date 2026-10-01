@@ -13,8 +13,8 @@
 //   - failed requests (network failures and HTTP >= 400), with the OpenFreeMap
 //     tile host reported separately (it has been unreachable from this machine);
 //   - broken images (complete, src set, naturalWidth 0) after a scroll-through;
-//   - horizontal page overflow and elements that stick out of the viewport or
-//     clip their own text;
+//   - horizontal page overflow, elements that stick out of the viewport or
+//     clip their own text, and words wider than a SplitText line mask;
 //   - the h1 count and text;
 //   - content smells: lorem ipsum, "undefined", "NaN", "null", "[object Object]",
 //     raw message keys, "m2" instead of m², and EUR amounts not formatted the
@@ -201,6 +201,13 @@ async function inspect(page, locale) {
         }
       }
 
+      // A SplitText line mask clips its line, so a word wider than the column
+      // (a long German compound) vanishes there without any page overflow.
+      const maskClipped = Array.from(document.querySelectorAll(".split-line-mask"))
+        .filter((mask) => mask.firstElementChild && mask.firstElementChild.scrollWidth > mask.clientWidth + 1)
+        .slice(0, 6)
+        .map((mask) => `"${mask.textContent.trim().slice(0, 60)}" (${mask.firstElementChild.scrollWidth}>${mask.clientWidth})`);
+
       const brokenImages = Array.from(document.images)
         .filter((img) => img.complete && (img.currentSrc || img.src) && img.naturalWidth === 0)
         .map((img) => (img.currentSrc || img.src).slice(0, 160));
@@ -247,6 +254,7 @@ async function inspect(page, locale) {
         pageOverflow,
         sticking,
         clipped,
+        maskClipped,
         brokenImages,
         pendingLazy,
         h1s,
@@ -420,6 +428,7 @@ async function worker() {
       result.consoleErrors?.length && `${result.consoleErrors.length} console`,
       result.failedRequests?.length && `${result.failedRequests.length} failed req`,
       result.brokenImages?.length && `${result.brokenImages.length} broken img`,
+      result.maskClipped?.length && `${result.maskClipped.length} mask-clipped`,
       result.pageOverflow > 0 && `overflow ${result.pageOverflow}px`,
       result.h1s && result.h1s.length !== 1 && `${result.h1s.length} h1`,
       result.smells?.length && `${result.smells.length} smells`,

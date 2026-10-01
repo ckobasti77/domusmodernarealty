@@ -20,6 +20,24 @@ const SPLAT_HOSTS = SPLAT_HOSTNAMES.map((host) => `https://${host}`);
 
 const MAP_TILES = "https://tiles.openfreemap.org";
 
+/**
+ * Measurement hosts for the IDs set in Podešavanja (components/site/Analytics).
+ * The scripts are injected only after the visitor's consent; the policy just
+ * has to let them run once they are.
+ */
+const ANALYTICS = {
+  script: ["https://plausible.io", "https://www.googletagmanager.com", "https://connect.facebook.net"],
+  connect: [
+    "https://plausible.io",
+    "https://www.google-analytics.com",
+    "https://*.google-analytics.com",
+    "https://*.analytics.google.com",
+    "https://www.googletagmanager.com",
+    "https://www.facebook.com",
+  ],
+  img: ["https://www.google-analytics.com", "https://www.googletagmanager.com", "https://www.facebook.com"],
+};
+
 type Directives = Record<string, ReadonlyArray<string>>;
 
 function serialize(directives: Directives): string {
@@ -50,12 +68,14 @@ const SHARED: Directives = {
 
 export const publicCsp = serialize({
   ...SHARED,
-  "img-src": ["'self'", "data:", "blob:", ...DEMO_IMAGE_HOSTS, "https://*.convex.cloud", MAP_TILES],
+  "script-src": [...scriptSrc(), ...ANALYTICS.script],
+  "img-src": ["'self'", "data:", "blob:", ...DEMO_IMAGE_HOSTS, "https://*.convex.cloud", MAP_TILES, ...ANALYTICS.img],
   "connect-src": [
     "'self'",
     ...CONVEX,
     MAP_TILES,
     ...SPLAT_HOSTS,
+    ...ANALYTICS.connect,
   ],
   "frame-src": [
     ...Object.values(EXTERNAL_TOUR_HOSTS).map((host) => `https://${host}`),

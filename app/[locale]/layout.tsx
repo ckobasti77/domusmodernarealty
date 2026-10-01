@@ -8,6 +8,7 @@ import { PageTransition } from "@/components/motion/PageTransition";
 import { Preloader } from "@/components/motion/Preloader";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
+import { Analytics } from "@/components/site/Analytics";
 import { CookieConsent } from "@/components/site/CookieConsent";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
@@ -85,6 +86,19 @@ async function AgencyJsonLd({ locale }: { locale: Locale }) {
 }
 
 /**
+ * Consent-gated measurement from the settings. Nothing is rendered (and no
+ * client code runs) while no analytics ID is configured.
+ */
+async function AnalyticsFromSettings() {
+  const settings = await getPublicSettings();
+  const ids = settings?.analytics;
+  if (ids === undefined || (ids.ga4Id === undefined && ids.plausibleDomain === undefined && ids.metaPixelId === undefined)) {
+    return null;
+  }
+  return <Analytics ids={ids} />;
+}
+
+/**
  * PUBLIC root layout (root layout #1). There is deliberately no
  * `app/layout.tsx`: the admin panel has its own root at `app/admin/layout.tsx`
  * with a different `lang`, no Lenis and no GSAP.
@@ -132,6 +146,7 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
               <CookieConsent />
             </SmoothScroll>
             <AgencyJsonLd locale={locale} />
+            <AnalyticsFromSettings />
           </ConvexClientProvider>
         </NextIntlClientProvider>
       </body>

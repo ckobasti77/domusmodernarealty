@@ -33,6 +33,7 @@ import { LISTING_COPY_3 } from "./seed/content/listings3";
 import type { SeedListingCopy } from "./seed/content/listings1";
 import { POST_COPY, TESTIMONIAL_COPY } from "./seed/content/posts";
 import { PAGE_CONTENT, SETTINGS_COPY } from "./seed/content/pages";
+import { contactSearchText } from "./lib/contactSearch";
 
 const LISTING_COPY: SeedListingCopy[] = [
   ...LISTING_COPY_1,
@@ -825,6 +826,7 @@ export const seedCrm = internalMutation({
         name: item.name,
         email: item.email,
         phone: item.phone,
+        searchText: contactSearchText({ name: item.name, email: item.email, phone: item.phone }),
         locale: item.locale,
         tags: ["demo", "web"],
         consents: [consent],

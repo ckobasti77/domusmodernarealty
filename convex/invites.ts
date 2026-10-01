@@ -1,14 +1,28 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import {
+  DEFAULT_AGENT_ROLE,
+  insertAgentProfile,
+  openInvitesForAgent,
+} from "./agentsAdmin";
 import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
 import { invalidInput, notFound } from "./lib/errors";
 import { requireEmail } from "./lib/rateLimit";
 import { MIN_TOKEN_LENGTH, hashToken, randomToken } from "./lib/tokens";
-import { roleV } from "./lib/validators";
+import { roleV, type Role } from "./lib/validators";
 
 const ADMINS = ["admin"] as const;
+/** An invite link works for 7 days and exactly once (`auth.ts` consumes it). */
 const INVITE_TTL_MS = 7 * 86_400_000;
+
+const ROLE_SR: Record<Role, string> = {
+  admin: "Administrator",
+  manager: "Menadžer",
+  agent: "Agent",
+  editor: "Urednik",
+};
 
 export const list = query({
   args: {},
@@ -22,27 +36,81 @@ export const list = query({
       acceptedAt: v.optional(v.number()),
       revokedAt: v.optional(v.number()),
       createdAt: v.number(),
+      agentId: v.optional(v.id("agents")),
+      agentName: v.optional(v.string()),
+      createdByName: v.optional(v.string()),
     }),
   ),
   handler: async (ctx) => {
     await requireRole(ctx, ADMINS);
     const docs = await ctx.db.query("invites").order("desc").take(100);
-    return docs.map((doc) => ({
-      _id: doc._id,
-      email: doc.email,
-      ...(doc.name !== undefined ? { name: doc.name } : {}),
-      role: doc.role,
-      expiresAt: doc.expiresAt,
-      ...(doc.acceptedAt !== undefined ? { acceptedAt: doc.acceptedAt } : {}),
-      ...(doc.revokedAt !== undefined ? { revokedAt: doc.revokedAt } : {}),
-      createdAt: doc._creationTime,
-    }));
+    const out = [];
+    for (const doc of docs) {
+      const agent = doc.agentId !== undefined ? await ctx.db.get("agents", doc.agentId) : null;
+      const author = doc.createdBy !== undefined ? await ctx.db.get("users", doc.createdBy) : null;
+      const authorName = author?.name ?? author?.email;
+      out.push({
+        _id: doc._id,
+        email: doc.email,
+        ...(doc.name !== undefined ? { name: doc.name } : {}),
+        role: doc.role,
+        expiresAt: doc.expiresAt,
+        ...(doc.acceptedAt !== undefined ? { acceptedAt: doc.acceptedAt } : {}),
+        ...(doc.revokedAt !== undefined ? { revokedAt: doc.revokedAt } : {}),
+        createdAt: doc._creationTime,
+        ...(doc.agentId !== undefined ? { agentId: doc.agentId } : {}),
+        ...(agent !== null ? { agentName: agent.name } : {}),
+        ...(authorName !== undefined ? { createdByName: authorName } : {}),
+      });
+    }
+    return out;
   },
 });
 
+async function assertNoAccount(ctx: MutationCtx, email: string): Promise<void> {
+  const existingUser = await ctx.db
+    .query("users")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .first();
+  if (existingUser !== null) {
+    invalidInput("Korisnik sa tom email adresom već postoji.");
+  }
+}
+
 /**
- * Creates an invite and returns the RAW token exactly once. The acceptance page
- * (step 08) posts it back with `flow: "signUp"`, and `auth.ts` consumes it.
+ * The profile an invite will link: it must exist, have no account yet, and
+ * not be promised to a different address by another open invite.
+ */
+async function assertLinkableAgent(
+  ctx: MutationCtx,
+  agentId: Id<"agents">,
+  email: string,
+  now: number,
+): Promise<Doc<"agents">> {
+  const agent = await ctx.db.get("agents", agentId);
+  if (agent === null) notFound("Profil agenta");
+  if (agent.userId !== undefined && (await ctx.db.get("users", agent.userId)) !== null) {
+    invalidInput("Taj profil agenta je već povezan sa nalogom.");
+  }
+  const rival = (await openInvitesForAgent(ctx, agentId, now)).find(
+    (invite) => invite.email !== email,
+  );
+  if (rival !== undefined) {
+    invalidInput(
+      `Za profil „${agent.name}” već postoji otvorena pozivnica (${rival.email}). Opozovite je pre nove.`,
+    );
+  }
+  return agent;
+}
+
+/**
+ * Creates an invite and returns the RAW token exactly once; only its hash is
+ * stored. The acceptance page (`/admin/pozivnica/<token>`) posts it back with
+ * `flow: "signUp"`, and `auth.ts::createOrUpdateUser` consumes it.
+ *
+ * Role `agent` must come with a profile: an existing unlinked one (`agentId`)
+ * or a new hidden one made here (`agentName`), so the new agent sees exactly
+ * their own leads and listings from the first sign-in.
  */
 export const create = mutation({
   args: {
@@ -50,61 +118,132 @@ export const create = mutation({
     name: v.optional(v.string()),
     role: roleV,
     agentId: v.optional(v.id("agents")),
+    /** Creates a new (non-public) agent profile with this name and links it. */
+    agentName: v.optional(v.string()),
   },
   returns: v.object({
     id: v.id("invites"),
     token: v.string(),
     expiresAt: v.number(),
+    agentId: v.optional(v.id("agents")),
   }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, ADMINS);
     const email = requireEmail(args.email);
+    const name = args.name?.trim().replace(/\s+/g, " ").slice(0, 120);
+    const agentName = args.agentName?.trim().replace(/\s+/g, " ").slice(0, 80);
 
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
-    if (existingUser !== null) {
-      invalidInput("Korisnik sa tom email adresom već postoji.");
+    await assertNoAccount(ctx, email);
+    if (args.agentId !== undefined && agentName !== undefined) {
+      invalidInput("Izaberite postojeći profil ili unesite ime novog, ne oba.");
+    }
+    if (args.role === "editor" && (args.agentId !== undefined || agentName !== undefined)) {
+      invalidInput("Urednik se ne povezuje sa profilom agenta.");
+    }
+    if (args.role === "agent" && args.agentId === undefined && agentName === undefined) {
+      invalidInput("Za ulogu Agent izaberite profil agenta ili napravite novi.");
+    }
+    if (agentName !== undefined && agentName.length < 2) {
+      invalidInput("Unesite ime za novi profil agenta.");
     }
 
+    const now = Date.now();
     if (args.agentId !== undefined) {
-      const agent = await ctx.db.get("agents", args.agentId);
-      if (agent === null) notFound("Agent");
+      await assertLinkableAgent(ctx, args.agentId, email, now);
     }
 
-    // Supersede any open invite for the same address.
+    // Supersede any open invite for the same address: only the newest link works.
     const open = await ctx.db
       .query("invites")
       .withIndex("by_email", (q) => q.eq("email", email))
-      .take(10);
-    const now = Date.now();
+      .take(20);
     for (const invite of open) {
       if (invite.acceptedAt === undefined && invite.revokedAt === undefined) {
         await ctx.db.patch("invites", invite._id, { revokedAt: now });
       }
     }
 
+    let agentId = args.agentId;
+    if (agentName !== undefined) {
+      const created = await insertAgentProfile(ctx, {
+        name: agentName,
+        role: DEFAULT_AGENT_ROLE,
+        languages: ["sr"],
+        areas: [],
+        // Hidden until someone completes it (photo, bio, contact channels).
+        // The login address is deliberately not copied to the public profile.
+        isPublic: false,
+      });
+      agentId = created.id;
+      await logActivity(ctx, {
+        entity: "agent",
+        entityId: created.id,
+        action: "agent.created",
+        summary: `${agentName} (uz pozivnicu za ${email})`,
+        by: viewer._id,
+      });
+    }
+
     const token = randomToken();
+    const expiresAt = now + INVITE_TTL_MS;
     const id = await ctx.db.insert("invites", {
       email,
-      ...(args.name !== undefined ? { name: args.name.trim().slice(0, 120) } : {}),
+      ...(name !== undefined && name.length > 0 ? { name } : {}),
       role: args.role,
       tokenHash: await hashToken(token),
-      expiresAt: now + INVITE_TTL_MS,
+      expiresAt,
       createdBy: viewer._id,
-      ...(args.agentId !== undefined ? { agentId: args.agentId } : {}),
+      ...(agentId !== undefined ? { agentId } : {}),
     });
 
     await logActivity(ctx, {
       entity: "user",
       entityId: id,
       action: "invite.created",
-      summary: `${email} (${args.role})`,
+      summary: `${email} (${ROLE_SR[args.role]})`,
       by: viewer._id,
     });
 
-    return { id, token, expiresAt: now + INVITE_TTL_MS };
+    return { id, token, expiresAt, ...(agentId !== undefined ? { agentId } : {}) };
+  },
+});
+
+/**
+ * A fresh link for an invite that was not used yet (lost link, or it
+ * expired): the old token stops working and the 7 days start again. The raw
+ * token is returned once, like `create`.
+ */
+export const renew = mutation({
+  args: { id: v.id("invites") },
+  returns: v.object({ token: v.string(), expiresAt: v.number() }),
+  handler: async (ctx, args) => {
+    const viewer = await requireRole(ctx, ADMINS);
+    const doc = await ctx.db.get("invites", args.id);
+    if (doc === null) notFound("Pozivnica");
+    if (doc.acceptedAt !== undefined) invalidInput("Pozivnica je već prihvaćena.");
+    if (doc.revokedAt !== undefined) {
+      invalidInput("Pozivnica je opozvana. Pošaljite novu pozivnicu.");
+    }
+    await assertNoAccount(ctx, doc.email);
+    const now = Date.now();
+    if (doc.agentId !== undefined) {
+      await assertLinkableAgent(ctx, doc.agentId, doc.email, now);
+    }
+
+    const token = randomToken();
+    const expiresAt = now + INVITE_TTL_MS;
+    await ctx.db.patch("invites", doc._id, {
+      tokenHash: await hashToken(token),
+      expiresAt,
+    });
+    await logActivity(ctx, {
+      entity: "user",
+      entityId: doc._id,
+      action: "invite.renewed",
+      summary: doc.email,
+      by: viewer._id,
+    });
+    return { token, expiresAt };
   },
 });
 
@@ -118,6 +257,7 @@ export const revoke = mutation({
     if (doc.acceptedAt !== undefined) {
       invalidInput("Pozivnica je već prihvaćena.");
     }
+    if (doc.revokedAt !== undefined) return null;
     await ctx.db.patch("invites", doc._id, { revokedAt: Date.now() });
     await logActivity(ctx, {
       entity: "user",

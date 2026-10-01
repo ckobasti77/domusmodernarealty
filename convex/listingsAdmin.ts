@@ -54,6 +54,7 @@ import {
   walk3dV,
   legalV,
 } from "./lib/validators";
+import { contactSearchText } from "./lib/contactSearch";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
 const MANAGERS = ["admin", "manager"] as const;
@@ -1373,6 +1374,7 @@ export const setOwner = mutation({
           name,
           phone,
           email,
+          searchText: contactSearchText({ name, phone, email }),
           tags: existing.tags.includes("vlasnik") ? existing.tags : [...existing.tags, "vlasnik"],
         });
         await logActivity(ctx, {
@@ -1388,6 +1390,7 @@ export const setOwner = mutation({
 
     const contactId = await ctx.db.insert("contacts", {
       ...fields,
+      searchText: contactSearchText(fields),
       tags: ["vlasnik"],
       consents: [],
       isDemo: false,

@@ -11,7 +11,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
@@ -53,24 +52,6 @@ export function AppSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  if (!item.ready) {
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          aria-disabled="true"
-                          disabled
-                          tooltip={`${item.label} (uskoro)`}
-                          className="cursor-not-allowed opacity-55"
-                        >
-                          <Icon aria-hidden="true" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                        <SidebarMenuBadge className="text-[0.625rem] font-normal tracking-wide text-muted-foreground uppercase">
-                          uskoro
-                        </SidebarMenuBadge>
-                      </SidebarMenuItem>
-                    );
-                  }
                   const active = isActive(pathname, item.href);
                   return (
                     <SidebarMenuItem key={item.href}>

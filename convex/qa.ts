@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { deleteListingCascade } from "./lib/listingCascade";
-import { leadTypeV, leadStatusV, viewingModeV, viewingStatusV } from "./lib/validators";
+import { leadTypeV, leadStatusV, pageBlockV, pageKeyV, viewingModeV, viewingStatusV } from "./lib/validators";
 
 /**
  * Test-only helpers for the Playwright suite. Both are INTERNAL, so no browser
@@ -243,7 +243,24 @@ export const purgeE2EUser = internalMutation({
       .query("invites")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .take(20);
-    for (const invite of invites) await ctx.db.delete("invites", invite._id);
+    for (const invite of invites) {
+      // A profile created together with an invite that was never accepted has
+      // no user to reach it through; remove it when it is an unused e2e one.
+      if (invite.agentId !== undefined) {
+        const agent = await ctx.db.get("agents", invite.agentId);
+        if (agent !== null && agent.name.startsWith("E2E ") && agent.userId === undefined) {
+          const owned = await ctx.db
+            .query("listings")
+            .withIndex("by_agentId", (q) => q.eq("agentId", agent._id))
+            .take(1);
+          if (owned.length === 0) {
+            await ctx.db.delete("agents", agent._id);
+            agents += 1;
+          }
+        }
+      }
+      await ctx.db.delete("invites", invite._id);
+    }
     return { users, invites: invites.length, agents };
   },
 });
@@ -270,5 +287,56 @@ export const purgeE2EListings = internalMutation({
       }
     }
     return removed;
+  },
+});
+
+/** Deletes every non-demo journal post whose Serbian title starts with "[E2E]". */
+export const purgeE2EPosts = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("posts")
+      .withIndex("by_isDemo", (q) => q.eq("isDemo", false))
+      .take(200);
+    let removed = 0;
+    for (const doc of rows) {
+      if (!doc.title.sr.startsWith(E2E_TITLE)) continue;
+      if (doc.cover?.kind === "storage") await ctx.storage.delete(doc.cover.storageId);
+      await ctx.db.delete("posts", doc._id);
+      removed += 1;
+    }
+    return removed;
+  },
+});
+
+/**
+ * The site-content e2e edits the live home page through the admin UI; these
+ * two put the page back exactly as it was (blocks AND the demo flag, which an
+ * editor's save clears).
+ */
+export const pageSnapshot = internalQuery({
+  args: { key: pageKeyV },
+  returns: v.union(v.null(), v.object({ blocks: v.array(pageBlockV), isDemo: v.boolean() })),
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query("pages")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .unique();
+    return doc === null ? null : { blocks: doc.blocks, isDemo: doc.isDemo };
+  },
+});
+
+export const restorePage = internalMutation({
+  args: { key: pageKeyV, blocks: v.array(pageBlockV), isDemo: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const doc = await ctx.db
+      .query("pages")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .unique();
+    if (doc === null) throw new Error(`No page with key ${args.key}`);
+    await ctx.db.patch("pages", doc._id, { blocks: args.blocks, isDemo: args.isDemo });
+    return null;
   },
 });

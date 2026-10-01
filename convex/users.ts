@@ -1,11 +1,32 @@
 import { v } from "convex/values";
-import { internalQuery, mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import {
+  internalQuery,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
+import { openInvitesForAgent } from "./agentsAdmin";
 import { logActivity } from "./lib/activity";
 import { getViewer, requireRole } from "./lib/auth";
-import { forbidden, invalidInput, notFound } from "./lib/errors";
-import { ALL_ROLES, roleV, userStatusV } from "./lib/validators";
+import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
+import { ALL_ROLES, roleV, userStatusV, type Role, type UserStatus } from "./lib/validators";
 
 const ADMINS = ["admin"] as const;
+
+const ROLE_SR: Record<Role, string> = {
+  admin: "Administrator",
+  manager: "Menadžer",
+  agent: "Agent",
+  editor: "Urednik",
+};
+
+const STATUS_SR: Record<UserStatus, string> = {
+  invited: "Pozvan",
+  active: "Aktivan",
+  disabled: "Deaktiviran",
+};
 
 const meV = v.object({
   _id: v.id("users"),
@@ -39,6 +60,31 @@ export const getMe = query({
   },
 });
 
+/**
+ * When the person last used the panel, from the auth tables: a session is
+ * created at sign-in and a refresh token roughly every hour of activity, so
+ * the newest of the two is accurate to about an hour. No secret is read out.
+ */
+async function lastSeenOf(ctx: QueryCtx, user: Doc<"users">): Promise<number | undefined> {
+  let latest = user.lastSeenAt ?? 0;
+  const sessions = await ctx.db
+    .query("authSessions")
+    .withIndex("userId", (q) => q.eq("userId", user._id))
+    .order("desc")
+    .take(3);
+  for (const session of sessions) {
+    latest = Math.max(latest, session._creationTime);
+    const token = await ctx.db
+      .query("authRefreshTokens")
+      .withIndex("sessionId", (q) => q.eq("sessionId", session._id))
+      .order("desc")
+      .first();
+    if (token !== null) latest = Math.max(latest, token._creationTime);
+  }
+  return latest > 0 ? latest : undefined;
+}
+
+/** Staff accounts for the Team page. Never returns tokens, hashes or sessions. */
 export const list = query({
   args: {},
   returns: v.array(
@@ -51,6 +97,7 @@ export const list = query({
       agentId: v.optional(v.id("agents")),
       agentName: v.optional(v.string()),
       createdAt: v.number(),
+      lastSeenAt: v.optional(v.number()),
     }),
   ),
   handler: async (ctx) => {
@@ -60,6 +107,7 @@ export const list = query({
     for (const doc of docs) {
       const agent =
         doc.agentId !== undefined ? await ctx.db.get("agents", doc.agentId) : null;
+      const lastSeenAt = await lastSeenOf(ctx, doc);
       out.push({
         _id: doc._id,
         ...(doc.email !== undefined ? { email: doc.email } : {}),
@@ -69,11 +117,55 @@ export const list = query({
         ...(doc.agentId !== undefined ? { agentId: doc.agentId } : {}),
         ...(agent !== null ? { agentName: agent.name } : {}),
         createdAt: doc._creationTime,
+        ...(lastSeenAt !== undefined ? { lastSeenAt } : {}),
       });
     }
     return out;
   },
 });
+
+function labelOf(user: Doc<"users">): string {
+  return user.name ?? user.email ?? user._id;
+}
+
+/**
+ * The agency must keep at least one active administrator, or nobody could
+ * manage accounts and settings any more. Throws when `target` is the last one.
+ */
+async function assertAnotherActiveAdmin(ctx: QueryCtx, target: Id<"users">): Promise<void> {
+  const admins = await ctx.db
+    .query("users")
+    .withIndex("by_role", (q) => q.eq("role", "admin"))
+    .take(50);
+  const others = admins.filter((item) => item._id !== target && item.status === "active");
+  if (others.length === 0) {
+    appError(
+      "FORBIDDEN",
+      "Ovo je jedini aktivni administrator. Prvo dodelite ulogu administratora nekom drugom.",
+    );
+  }
+}
+
+/**
+ * Signs a deactivated account out everywhere: its sessions (and their refresh
+ * tokens) are deleted, so no client can renew its access token. Requests made
+ * with a still-valid token are refused anyway (`requireUser` checks status).
+ */
+async function endSessions(ctx: MutationCtx, userId: Id<"users">): Promise<number> {
+  const sessions = await ctx.db
+    .query("authSessions")
+    .withIndex("userId", (q) => q.eq("userId", userId))
+    .take(100);
+  for (const session of sessions) {
+    const tokens = await ctx.db
+      .query("authRefreshTokens")
+      .withIndex("sessionId", (q) => q.eq("sessionId", session._id))
+      .take(100);
+    for (const token of tokens) await ctx.db.delete("authRefreshTokens", token._id);
+    await ctx.db.delete("authSessions", session._id);
+  }
+  return sessions.length;
+}
 
 export const setRole = mutation({
   args: { id: v.id("users"), role: roleV },
@@ -82,19 +174,15 @@ export const setRole = mutation({
     const viewer = await requireRole(ctx, ADMINS);
     const target = await ctx.db.get("users", args.id);
     if (target === null) notFound("Korisnik");
+    if (target.role === args.role) return null;
 
-    // Never allow the last admin to demote themselves out of the panel.
-    if (target._id === viewer._id && args.role !== "admin") {
-      const admins = await ctx.db
-        .query("users")
-        .withIndex("by_role", (q) => q.eq("role", "admin"))
-        .take(5);
-      const otherActiveAdmins = admins.filter(
-        (item) => item._id !== viewer._id && item.status === "active",
+    if (target.role === "admin" && target.status === "active") {
+      await assertAnotherActiveAdmin(ctx, target._id);
+    }
+    if (args.role === "agent" && target.agentId === undefined) {
+      invalidInput(
+        "Nalog sa ulogom Agent mora biti povezan sa profilom agenta. Prvo povežite profil.",
       );
-      if (otherActiveAdmins.length === 0) {
-        forbidden("promenu uloge poslednjeg administratora");
-      }
     }
 
     await ctx.db.patch("users", target._id, { role: args.role });
@@ -102,7 +190,8 @@ export const setRole = mutation({
       entity: "user",
       entityId: target._id,
       action: "user.role",
-      summary: `${target.email ?? target._id}: ${target.role} → ${args.role}`,
+      summary: `${labelOf(target)}: ${ROLE_SR[target.role]} → ${ROLE_SR[args.role]}`,
+      diff: [{ field: "role", from: ROLE_SR[target.role], to: ROLE_SR[args.role] }],
       by: viewer._id,
     });
     return null;
@@ -116,22 +205,37 @@ export const setStatus = mutation({
     const viewer = await requireRole(ctx, ADMINS);
     const target = await ctx.db.get("users", args.id);
     if (target === null) notFound("Korisnik");
+    if (args.status === "invited") {
+      invalidInput("Status „Pozvan” se ne dodeljuje ručno.");
+    }
     if (target._id === viewer._id && args.status !== "active") {
-      forbidden("deaktivaciju sopstvenog računa");
+      forbidden("deaktivaciju sopstvenog naloga");
+    }
+    if (target.status === args.status) return null;
+    if (target.role === "admin" && target.status === "active") {
+      await assertAnotherActiveAdmin(ctx, target._id);
     }
 
     await ctx.db.patch("users", target._id, { status: args.status });
+    const ended = args.status === "disabled" ? await endSessions(ctx, target._id) : 0;
     await logActivity(ctx, {
       entity: "user",
       entityId: target._id,
       action: "user.status",
-      summary: `${target.email ?? target._id}: ${target.status} → ${args.status}`,
+      summary:
+        `${labelOf(target)}: ${STATUS_SR[target.status]} → ${STATUS_SR[args.status]}` +
+        (ended > 0 ? ` (završene sesije: ${ended})` : ""),
+      diff: [{ field: "status", from: STATUS_SR[target.status], to: STATUS_SR[args.status] }],
       by: viewer._id,
     });
     return null;
   },
 });
 
+/**
+ * Links an account to an agent profile (an agent then sees only that
+ * profile's listings, leads and viewings), or unlinks it.
+ */
 export const linkAgent = mutation({
   args: { id: v.id("users"), agentId: v.optional(v.id("agents")) },
   returns: v.null(),
@@ -139,17 +243,33 @@ export const linkAgent = mutation({
     const viewer = await requireRole(ctx, ADMINS);
     const target = await ctx.db.get("users", args.id);
     if (target === null) notFound("Korisnik");
+    if (target.agentId === args.agentId) return null;
 
-    if (args.agentId !== undefined) {
-      const agent = await ctx.db.get("agents", args.agentId);
-      if (agent === null) notFound("Agent");
-      if (agent.userId !== undefined && agent.userId !== target._id) {
-        invalidInput("Taj profil agenta je već povezan sa drugim korisnikom.");
-      }
-      await ctx.db.patch("agents", args.agentId, { userId: target._id });
+    if (args.agentId === undefined && target.role === "agent" && target.status === "active") {
+      invalidInput(
+        "Aktivan agent mora imati profil. Povežite drugi profil ili prvo promenite ulogu.",
+      );
     }
-    if (target.agentId !== undefined && target.agentId !== args.agentId) {
-      await ctx.db.patch("agents", target.agentId, { userId: undefined });
+
+    const previous =
+      target.agentId !== undefined ? await ctx.db.get("agents", target.agentId) : null;
+    let next: Doc<"agents"> | null = null;
+    if (args.agentId !== undefined) {
+      next = await ctx.db.get("agents", args.agentId);
+      if (next === null) notFound("Profil agenta");
+      if (next.userId !== undefined && next.userId !== target._id) {
+        const owner = await ctx.db.get("users", next.userId);
+        if (owner !== null) {
+          invalidInput(`Taj profil je već povezan sa nalogom ${labelOf(owner)}.`);
+        }
+      }
+      if ((await openInvitesForAgent(ctx, next._id, Date.now())).length > 0) {
+        invalidInput("Za taj profil postoji otvorena pozivnica. Prvo je opozovite.");
+      }
+      await ctx.db.patch("agents", next._id, { userId: target._id });
+    }
+    if (previous !== null && previous.userId === target._id) {
+      await ctx.db.patch("agents", previous._id, { userId: undefined });
     }
 
     await ctx.db.patch("users", target._id, { agentId: args.agentId });
@@ -157,6 +277,14 @@ export const linkAgent = mutation({
       entity: "user",
       entityId: target._id,
       action: "user.agentLinked",
+      summary: `${labelOf(target)}: ${next !== null ? `profil ${next.name}` : "bez profila"}`,
+      diff: [
+        {
+          field: "agentId",
+          ...(previous !== null ? { from: previous.name } : {}),
+          ...(next !== null ? { to: next.name } : {}),
+        },
+      ],
       by: viewer._id,
     });
     return null;

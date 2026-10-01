@@ -61,7 +61,7 @@ export function CommandPalette({
   const needle = search.trim().toLowerCase();
   const pages = navFor(me.role)
     .flatMap((group) => group.items)
-    .filter((item) => item.ready && (needle.length === 0 || item.label.toLowerCase().includes(needle)));
+    .filter((item) => needle.length === 0 || item.label.toLowerCase().includes(needle));
 
   return (
     <CommandDialog

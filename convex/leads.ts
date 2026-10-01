@@ -25,6 +25,7 @@ import {
   valuationResultV,
 } from "./lib/validators";
 import type { LeadType, Locale } from "./lib/validators";
+import { contactSearchText } from "./lib/contactSearch";
 
 /** The privacy-consent text version stored with every lead (ZZPL Art. 15). */
 export const CONSENT_TEXT_VERSION = "privacy-2026-09";
@@ -93,8 +94,14 @@ async function upsertContact(
     // client's email could otherwise replace their phone number with their own
     // and have the agent call them about the client's property. Only fill gaps;
     // changing an existing value is an admin action (`contacts.merge`).
+    const addsPhone = existing.phone === undefined && phone !== undefined;
     await ctx.db.patch("contacts", existing._id, {
-      ...(existing.phone === undefined && phone !== undefined ? { phone } : {}),
+      ...(addsPhone
+        ? {
+            phone,
+            searchText: contactSearchText({ name: existing.name, email: existing.email, phone }),
+          }
+        : {}),
       locale,
       consents: [...existing.consents.slice(-19), consent],
     });
@@ -105,6 +112,7 @@ async function upsertContact(
     name,
     email,
     ...(phone !== undefined ? { phone } : {}),
+    searchText: contactSearchText({ name, email, phone }),
     locale,
     tags: ["web"],
     consents: [consent],

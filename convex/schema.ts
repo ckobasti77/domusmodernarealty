@@ -91,7 +91,8 @@ export default defineSchema({
     agentId: v.optional(v.id("agents")),
   })
     .index("by_email", { fields: ["email"] })
-    .index("by_tokenHash", { fields: ["tokenHash"] }),
+    .index("by_tokenHash", { fields: ["tokenHash"] })
+    .index("by_agentId", { fields: ["agentId"] }),
 
   locations: defineTable({
     kind: locationKindV,
@@ -377,11 +378,16 @@ export default defineSchema({
     consents: v.array(consentV),
     note: v.optional(v.string()),
     anonymizedAt: v.optional(v.number()),
+    /** Folded name/email/phone words (`contacts.ts::contactSearchText`); absent when anonymized. */
+    searchText: v.optional(v.string()),
     isDemo: v.boolean(),
   })
     .index("by_email", { fields: ["email"] })
     .index("by_phone", { fields: ["phone"] })
-    .index("by_isDemo", { fields: ["isDemo"] }),
+    .index("by_isDemo", { fields: ["isDemo"] })
+    .searchIndex("search_text", { searchField: "searchText" })
+    // Fallback for contacts written without `searchText` (diacritics exact).
+    .searchIndex("search_name", { searchField: "name" }),
 
   leads: defineTable({
     type: leadTypeV,
@@ -403,6 +409,9 @@ export default defineSchema({
   })
     .index("by_status_and_creation", { fields: ["status"] })
     .index("by_agentId_and_status", { fields: ["agentId", "status"] })
+    // Newest-first inbox of one agent / one type (`_creationTime` follows).
+    .index("by_agentId", { fields: ["agentId"] })
+    .index("by_type", { fields: ["type"] })
     .index("by_listingId", { fields: ["listingId"] })
     .index("by_type_and_status", { fields: ["type", "status"] })
     .index("by_contactId", { fields: ["contactId"] })
@@ -428,7 +437,10 @@ export default defineSchema({
     isDemo: v.boolean(),
   })
     .index("by_agentId_and_start", { fields: ["agentId", "start"] })
+    .index("by_agentId_and_status_and_start", { fields: ["agentId", "status", "start"] })
     .index("by_listingId_and_start", { fields: ["listingId", "start"] })
+    // A lead's viewings (lead sheet, anonymization).
+    .index("by_leadId_and_start", { fields: ["leadId", "start"] })
     .index("by_status_and_start", { fields: ["status", "start"] })
     .index("by_start", { fields: ["start"] })
     .index("by_isDemo", { fields: ["isDemo"] }),
@@ -448,6 +460,13 @@ export default defineSchema({
     readingMinutes: v.optional(v.number()),
     seo: v.optional(seoV),
     isDemo: v.boolean(),
+    /** A draft set to go live at this instant (the scheduler publishes it). */
+    scheduledAt: v.optional(v.number()),
+    /** The pending `postsAdmin.publishScheduled` run, cancelled on reschedule. */
+    scheduledFnId: v.optional(v.id("_scheduled_functions")),
+    /** Blobs uploaded into the body; freed when the post is deleted. */
+    inlineImages: v.optional(v.array(v.id("_storage"))),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_slug", { fields: ["slug"] })
     .index("by_status_and_publishedAt", { fields: ["status", "publishedAt"] })
@@ -455,6 +474,7 @@ export default defineSchema({
     .index("by_status_and_category_and_publishedAt", {
       fields: ["status", "category", "publishedAt"],
     })
+    .index("by_scheduledAt", { fields: ["scheduledAt"] })
     .index("by_isDemo", { fields: ["isDemo"] }),
 
   pages: defineTable({
@@ -462,6 +482,8 @@ export default defineSchema({
     blocks: v.array(pageBlockV),
     seo: v.optional(seoV),
     updatedAt: v.number(),
+    /** Who saved it last from the admin; absent on seeded pages. */
+    updatedBy: v.optional(v.id("users")),
     isDemo: v.boolean(),
   }).index("by_key", { fields: ["key"] }),
 
@@ -474,6 +496,7 @@ export default defineSchema({
     isDemo: v.boolean(),
   })
     .index("by_verified_and_order", { fields: ["verified", "order"] })
+    .index("by_order", { fields: ["order"] })
     .index("by_isDemo", { fields: ["isDemo"] }),
 
   settings: defineTable({

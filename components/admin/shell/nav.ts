@@ -21,12 +21,6 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   roles: readonly Role[];
-  /**
-   * False until the section's screens exist (step 09 builds the CRM and
-   * content modules). The sidebar shows it disabled with "uskoro" instead of
-   * linking to a 404.
-   */
-  ready: boolean;
 };
 
 export type NavGroup = { label: string; items: readonly NavItem[] };
@@ -41,34 +35,34 @@ export const NAV: readonly NavGroup[] = [
   {
     label: "Pregled",
     items: [
-      { href: "/admin", label: "Kontrolna tabla", icon: LayoutDashboard, roles: ALL, ready: true },
-      { href: "/admin/nekretnine", label: "Nekretnine", icon: Building2, roles: LISTINGS, ready: true },
+      { href: "/admin", label: "Kontrolna tabla", icon: LayoutDashboard, roles: ALL },
+      { href: "/admin/nekretnine", label: "Nekretnine", icon: Building2, roles: LISTINGS },
     ],
   },
   {
     label: "Klijenti",
     items: [
-      { href: "/admin/upiti", label: "Upiti", icon: Inbox, roles: LISTINGS, ready: true },
-      { href: "/admin/razgledanja", label: "Razgledanja", icon: CalendarDays, roles: LISTINGS, ready: true },
-      { href: "/admin/kontakti", label: "Kontakti", icon: UserRound, roles: MANAGERS, ready: true },
+      { href: "/admin/upiti", label: "Upiti", icon: Inbox, roles: LISTINGS },
+      { href: "/admin/razgledanja", label: "Razgledanja", icon: CalendarDays, roles: LISTINGS },
+      { href: "/admin/kontakti", label: "Kontakti", icon: UserRound, roles: MANAGERS },
     ],
   },
   {
     label: "Sadržaj",
     items: [
-      { href: "/admin/lokacije", label: "Lokacije", icon: MapPin, roles: CONTENT, ready: true },
-      { href: "/admin/magazin", label: "Magazin", icon: Newspaper, roles: CONTENT, ready: true },
-      { href: "/admin/sadrzaj", label: "Sadržaj sajta", icon: FileText, roles: CONTENT, ready: true },
+      { href: "/admin/lokacije", label: "Lokacije", icon: MapPin, roles: CONTENT },
+      { href: "/admin/magazin", label: "Magazin", icon: Newspaper, roles: CONTENT },
+      { href: "/admin/sadrzaj", label: "Sadržaj sajta", icon: FileText, roles: CONTENT },
     ],
   },
   {
     label: "Agencija",
     items: [
-      { href: "/admin/tim", label: "Tim", icon: Users, roles: MANAGERS, ready: true },
-      { href: "/admin/analitika", label: "Analitika", icon: BarChart3, roles: MANAGERS, ready: true },
-      { href: "/admin/aktivnost", label: "Aktivnost", icon: History, roles: MANAGERS, ready: true },
-      { href: "/admin/podesavanja", label: "Podešavanja", icon: Settings, roles: ADMIN, ready: true },
-      { href: "/admin/demo", label: "Demo sadržaj", icon: FlaskConical, roles: ADMIN, ready: true },
+      { href: "/admin/tim", label: "Tim", icon: Users, roles: MANAGERS },
+      { href: "/admin/analitika", label: "Analitika", icon: BarChart3, roles: MANAGERS },
+      { href: "/admin/aktivnost", label: "Aktivnost", icon: History, roles: MANAGERS },
+      { href: "/admin/podesavanja", label: "Podešavanja", icon: Settings, roles: ADMIN },
+      { href: "/admin/demo", label: "Demo sadržaj", icon: FlaskConical, roles: ADMIN },
     ],
   },
 ];

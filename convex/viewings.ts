@@ -22,6 +22,7 @@ import { isListedScope } from "./lib/search";
 import { localeV, viewingModeV } from "./lib/validators";
 import { parseHm } from "./agents";
 import { CONSENT_TEXT_VERSION } from "./leads";
+import { contactSearchText } from "./lib/contactSearch";
 
 /** Viewings entered by the office can run longer than a web slot; overlap checks look this far back. */
 const LONGEST_VIEWING_MS = 3 * 60 * 60 * 1000;
@@ -157,8 +158,14 @@ export const request = mutation({
         appError("ALREADY_REQUESTED", "Zahtev za razgledanje ove nekretnine je već poslat.");
       }
       // Public path: fill gaps only, never replace an existing identifier.
+      const addsPhone = existing.phone === undefined && phone !== undefined;
       await ctx.db.patch("contacts", existing._id, {
-        ...(existing.phone === undefined && phone !== undefined ? { phone } : {}),
+        ...(addsPhone
+          ? {
+              phone,
+              searchText: contactSearchText({ name: existing.name, email: existing.email, phone }),
+            }
+          : {}),
         locale: args.locale,
         consents: [...existing.consents.slice(-19), consent],
       });
@@ -168,6 +175,7 @@ export const request = mutation({
         name,
         email,
         ...(phone !== undefined ? { phone } : {}),
+        searchText: contactSearchText({ name, email, phone }),
         locale: args.locale,
         tags: ["web", "razgledanje"],
         consents: [consent],

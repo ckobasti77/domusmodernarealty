@@ -1,12 +1,81 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
 import { invalidInput, notFound } from "./lib/errors";
-import { consentV, localeV } from "./lib/validators";
+import { contactSearchText, words } from "./lib/contactSearch";
+import { consentV, leadStatusV, leadTypeV, localeV } from "./lib/validators";
+import type { Locale } from "./lib/validators";
 
 const MANAGERS = ["admin", "manager"] as const;
+
+/** The list shows "20+" rather than counting every lead of a busy contact. */
+const LEAD_COUNT_CAP = 20;
+/** Search results are one page: the best matches, never a scan. */
+const SEARCH_TAKE = 30;
+/** Leads cleaned per transaction by `anonymize`; the rest continue in the scheduler. */
+const ANONYMIZE_BATCH = 25;
+/** Rows per CSV export (PRD B6). A larger database needs a paged export. */
+const EXPORT_CAP = 2000;
+/** Owners of a listing (`listingsAdmin.setOwner`) carry this tag. */
+const OWNER_TAG = "vlasnik";
+const ANONYMIZED_NAME = "Anonimizovan kontakt";
+
+/* ------------------------------------------------------------ search text */
+
+
+/** A phone-looking query searches digits; anything else, folded words. */
+function searchTerm(raw: string): string {
+  if (/^[\d\s+()/.-]+$/.test(raw)) {
+    const digits = raw.replace(/\D/g, "").replace(/^00/, "");
+    if (digits.length >= 3) return digits;
+  }
+  return words(raw).join(" ");
+}
+
+async function searchContacts(ctx: QueryCtx, raw: string): Promise<Doc<"contacts">[]> {
+  const found = new Map<Id<"contacts">, Doc<"contacts">>();
+  const add = (docs: Doc<"contacts">[]) => {
+    for (const doc of docs) if (!found.has(doc._id)) found.set(doc._id, doc);
+  };
+
+  const term = searchTerm(raw);
+  if (term.length > 0) {
+    add(
+      await ctx.db
+        .query("contacts")
+        .withSearchIndex("search_text", (s) => s.search("searchText", term))
+        .take(SEARCH_TAKE),
+    );
+  }
+  // Contacts written by a path that does not store `searchText` yet are
+  // still found by their name as typed (case-insensitive, diacritics exact)…
+  if (words(raw).length > 0) {
+    add(
+      await ctx.db
+        .query("contacts")
+        .withSearchIndex("search_name", (s) => s.search("name", raw))
+        .take(SEARCH_TAKE),
+    );
+  }
+  // …and by the start of their (lowercased) email address.
+  const email = raw.toLowerCase();
+  if (email.length >= 3 && !/\s/.test(email)) {
+    add(
+      await ctx.db
+        .query("contacts")
+        .withIndex("by_email", (q) => q.gte("email", email).lt("email", `${email}￿`))
+        .take(10),
+    );
+  }
+  return [...found.values()].slice(0, SEARCH_TAKE);
+}
+
+/* -------------------------------------------------------------------- rows */
 
 const contactRowV = v.object({
   _id: v.id("contacts"),
@@ -16,13 +85,56 @@ const contactRowV = v.object({
   locale: v.optional(localeV),
   tags: v.array(v.string()),
   leadCount: v.number(),
+  leadCountCapped: v.boolean(),
+  lastActivityAt: v.number(),
   lastConsentAt: v.optional(v.number()),
   marketing: v.boolean(),
   anonymizedAt: v.optional(v.number()),
+  isOwner: v.boolean(),
   createdAt: v.number(),
   isDemo: v.boolean(),
 });
 
+type Consent = Doc<"contacts">["consents"][number];
+
+function latestConsent(consents: readonly Consent[]): Consent | undefined {
+  let latest: Consent | undefined;
+  for (const consent of consents) if (latest === undefined || consent.at >= latest.at) latest = consent;
+  return latest;
+}
+
+async function toRow(ctx: QueryCtx, doc: Doc<"contacts">) {
+  const leads = await ctx.db
+    .query("leads")
+    .withIndex("by_contactId", (q) => q.eq("contactId", doc._id))
+    .order("desc")
+    .take(LEAD_COUNT_CAP + 1);
+  const last = latestConsent(doc.consents);
+  return {
+    _id: doc._id,
+    name: doc.name,
+    ...(doc.email !== undefined ? { email: doc.email } : {}),
+    ...(doc.phone !== undefined ? { phone: doc.phone } : {}),
+    ...(doc.locale !== undefined ? { locale: doc.locale } : {}),
+    tags: doc.tags,
+    leadCount: Math.min(leads.length, LEAD_COUNT_CAP),
+    leadCountCapped: leads.length > LEAD_COUNT_CAP,
+    lastActivityAt: Math.max(doc._creationTime, leads[0]?._creationTime ?? 0, last?.at ?? 0),
+    ...(last !== undefined ? { lastConsentAt: last.at } : {}),
+    marketing: last?.marketing === true,
+    ...(doc.anonymizedAt !== undefined ? { anonymizedAt: doc.anonymizedAt } : {}),
+    isOwner: doc.tags.includes(OWNER_TAG),
+    createdAt: doc._creationTime,
+    isDemo: doc.isDemo,
+  };
+}
+
+/* ------------------------------------------------------------------ queries */
+
+/**
+ * Contacts newest first (PRD B6). With `q`, one page of the best matches:
+ * folded full-text search on `searchText`, the raw name, and an email prefix.
+ */
 export const list = query({
   args: { q: v.optional(v.string()), paginationOpts: paginationOptsValidator },
   returns: v.object({
@@ -32,112 +144,83 @@ export const list = query({
   }),
   handler: async (ctx, args) => {
     await requireRole(ctx, MANAGERS);
-    const result = await ctx.db
-      .query("contacts")
-      .order("desc")
-      .paginate(args.paginationOpts);
+    const q = (args.q ?? "").trim().slice(0, 100);
 
-    const needle = args.q?.trim().toLowerCase();
-    const page = [];
-    for (const doc of result.page) {
-      if (
-        needle !== undefined &&
-        needle.length > 0 &&
-        !`${doc.name} ${doc.email ?? ""} ${doc.phone ?? ""}`
-          .toLowerCase()
-          .includes(needle)
-      ) {
-        continue;
-      }
-      const leads = await ctx.db
-        .query("leads")
-        .withIndex("by_contactId", (q) => q.eq("contactId", doc._id))
-        .take(50);
-      const last = doc.consents[doc.consents.length - 1];
-      page.push({
-        _id: doc._id,
-        name: doc.name,
-        ...(doc.email !== undefined ? { email: doc.email } : {}),
-        ...(doc.phone !== undefined ? { phone: doc.phone } : {}),
-        ...(doc.locale !== undefined ? { locale: doc.locale } : {}),
-        tags: doc.tags,
-        leadCount: leads.length,
-        ...(last !== undefined ? { lastConsentAt: last.at } : {}),
-        marketing: last?.marketing === true,
-        ...(doc.anonymizedAt !== undefined ? { anonymizedAt: doc.anonymizedAt } : {}),
-        createdAt: doc._creationTime,
-        isDemo: doc.isDemo,
-      });
+    if (q.length > 0) {
+      const page = [];
+      for (const doc of await searchContacts(ctx, q)) page.push(await toRow(ctx, doc));
+      return { page, isDone: true, continueCursor: "" };
     }
+
+    const result = await ctx.db.query("contacts").order("desc").paginate(args.paginationOpts);
+    const page = [];
+    for (const doc of result.page) page.push(await toRow(ctx, doc));
     return { page, isDone: result.isDone, continueCursor: result.continueCursor };
   },
 });
 
+const LEAD_HISTORY_CAP = 50;
+
+/** One contact for the sheet; `id` comes from the URL, so any string is accepted. */
 export const get = query({
-  args: { id: v.id("contacts") },
+  args: { id: v.string() },
   returns: v.union(
     v.object({
       contact: contactRowV,
+      /** Newest first. */
       consents: v.array(consentV),
       note: v.optional(v.string()),
       leads: v.array(
         v.object({
           _id: v.id("leads"),
-          type: v.string(),
-          status: v.string(),
+          type: leadTypeV,
+          status: leadStatusV,
           createdAt: v.number(),
           listingRef: v.optional(v.string()),
+          agentName: v.optional(v.string()),
         }),
       ),
+      leadsCapped: v.boolean(),
     }),
     v.null(),
   ),
   handler: async (ctx, args) => {
     await requireRole(ctx, MANAGERS);
-    const doc = await ctx.db.get("contacts", args.id);
+    const id = ctx.db.normalizeId("contacts", args.id);
+    const doc = id === null ? null : await ctx.db.get("contacts", id);
     if (doc === null) return null;
 
     const leadDocs = await ctx.db
       .query("leads")
       .withIndex("by_contactId", (q) => q.eq("contactId", doc._id))
-      .take(50);
+      .order("desc")
+      .take(LEAD_HISTORY_CAP + 1);
     const leads = [];
-    for (const lead of leadDocs) {
+    for (const lead of leadDocs.slice(0, LEAD_HISTORY_CAP)) {
       const listing =
-        lead.listingId !== undefined
-          ? await ctx.db.get("listings", lead.listingId)
-          : null;
+        lead.listingId !== undefined ? await ctx.db.get("listings", lead.listingId) : null;
+      const agent = lead.agentId !== undefined ? await ctx.db.get("agents", lead.agentId) : null;
       leads.push({
         _id: lead._id,
         type: lead.type,
         status: lead.status,
         createdAt: lead._creationTime,
         ...(listing !== null ? { listingRef: listing.ref } : {}),
+        ...(agent !== null ? { agentName: agent.name } : {}),
       });
     }
 
-    const last = doc.consents[doc.consents.length - 1];
     return {
-      contact: {
-        _id: doc._id,
-        name: doc.name,
-        ...(doc.email !== undefined ? { email: doc.email } : {}),
-        ...(doc.phone !== undefined ? { phone: doc.phone } : {}),
-        ...(doc.locale !== undefined ? { locale: doc.locale } : {}),
-        tags: doc.tags,
-        leadCount: leadDocs.length,
-        ...(last !== undefined ? { lastConsentAt: last.at } : {}),
-        marketing: last?.marketing === true,
-        ...(doc.anonymizedAt !== undefined ? { anonymizedAt: doc.anonymizedAt } : {}),
-        createdAt: doc._creationTime,
-        isDemo: doc.isDemo,
-      },
-      consents: doc.consents,
+      contact: await toRow(ctx, doc),
+      consents: [...doc.consents].sort((a, b) => b.at - a.at),
       ...(doc.note !== undefined ? { note: doc.note } : {}),
       leads,
+      leadsCapped: leadDocs.length > LEAD_HISTORY_CAP,
     };
   },
 });
+
+/* ---------------------------------------------------------------- mutations */
 
 export const setNote = mutation({
   args: { id: v.id("contacts"), note: v.string() },
@@ -146,9 +229,14 @@ export const setNote = mutation({
     const viewer = await requireRole(ctx, MANAGERS);
     const doc = await ctx.db.get("contacts", args.id);
     if (doc === null) notFound("Kontakt");
-    await ctx.db.patch("contacts", doc._id, {
-      note: args.note.trim().slice(0, 4000),
-    });
+    if (doc.anonymizedAt !== undefined) invalidInput("Anonimizovan kontakt se ne menja.");
+
+    const note = args.note.trim();
+    if (note.length > 4000) invalidInput("Beleška je predugačka (najviše 4000 znakova).");
+    const next = note.length > 0 ? note : undefined;
+    if (next === doc.note) return null;
+
+    await ctx.db.patch("contacts", doc._id, { note: next });
     await logActivity(ctx, {
       entity: "contact",
       entityId: doc._id,
@@ -170,6 +258,16 @@ export const merge = mutation({
     const into = await ctx.db.get("contacts", args.intoId);
     const from = await ctx.db.get("contacts", args.fromId);
     if (into === null || from === null) notFound("Kontakt");
+    if (into.anonymizedAt !== undefined || from.anonymizedAt !== undefined) {
+      invalidInput("Anonimizovani kontakti se ne spajaju.");
+    }
+    // A listing points at its owner through `ownerContactId` (no index to
+    // repoint it), so an owner may only ever be the surviving contact.
+    if (from.tags.includes(OWNER_TAG)) {
+      invalidInput(
+        "Kontakt koji uklanjate je vlasnik nekretnine. Spojite ga u suprotnom smeru.",
+      );
+    }
 
     const leads = await ctx.db
       .query("leads")
@@ -185,12 +283,21 @@ export const merge = mutation({
       await ctx.db.patch("leads", lead._id, { contactId: into._id });
     }
 
+    const email = into.email ?? from.email;
+    const phone = into.phone ?? from.phone;
     await ctx.db.patch("contacts", into._id, {
-      phone: into.phone ?? from.phone,
+      email,
+      phone,
       locale: into.locale ?? from.locale,
       tags: Array.from(new Set([...into.tags, ...from.tags])),
-      consents: [...into.consents, ...from.consents].slice(-20),
-      note: [into.note, from.note].filter(Boolean).join("\n---\n").slice(0, 4000),
+      consents: [...into.consents, ...from.consents].sort((a, b) => a.at - b.at).slice(-20),
+      note: [into.note, from.note].filter(Boolean).join("\n---\n").slice(0, 4000) || undefined,
+      searchText: contactSearchText({
+        name: into.name,
+        ...(email !== undefined ? { email } : {}),
+        ...(phone !== undefined ? { phone } : {}),
+      }),
+      isDemo: into.isDemo && from.isDemo,
     });
     await ctx.db.delete("contacts", from._id);
 
@@ -205,107 +312,268 @@ export const merge = mutation({
   },
 });
 
-/** ZZPL erasure: keeps the lead history, drops every identifier. */
+/** Activity rows whose summary quotes staff free text about the person. */
+const FREE_TEXT_ACTIONS = new Set(["lead.note", "contact.merged"]);
+
+async function scrubActivity(ctx: MutationCtx, entityId: string): Promise<void> {
+  const rows = await ctx.db
+    .query("activity")
+    .withIndex("by_entityId_and_at", (q) => q.eq("entityId", entityId))
+    .take(100);
+  for (const row of rows) {
+    if (FREE_TEXT_ACTIONS.has(row.action) && row.summary !== undefined) {
+      await ctx.db.patch("activity", row._id, { summary: undefined });
+    }
+  }
+}
+
+/**
+ * Erases what a lead holds about the person: the message, the form answers
+ * (the valuation/seller `addressNote` is their own address), the valuation,
+ * staff notes, note previews in the activity log and viewing feedback.
+ */
+async function scrubLead(ctx: MutationCtx, lead: Doc<"leads">): Promise<void> {
+  await ctx.db.patch("leads", lead._id, {
+    message: undefined,
+    answers: undefined,
+    valuation: undefined,
+  });
+  const notes = await ctx.db
+    .query("leadNotes")
+    .withIndex("by_leadId_and_at", (q) => q.eq("leadId", lead._id))
+    .take(100);
+  for (const note of notes) await ctx.db.delete("leadNotes", note._id);
+  await scrubActivity(ctx, lead._id);
+
+  const viewings = await ctx.db
+    .query("viewings")
+    .withIndex("by_leadId_and_start", (q) => q.eq("leadId", lead._id))
+    .take(100);
+  for (const viewing of viewings) {
+    if (viewing.feedback !== undefined) {
+      await ctx.db.patch("viewings", viewing._id, { feedback: undefined });
+    }
+  }
+}
+
+async function scrubLeadBatch(
+  ctx: MutationCtx,
+  contactId: Id<"contacts">,
+  cursor: string | null,
+): Promise<{ scrubbed: number; isDone: boolean; continueCursor: string }> {
+  const result = await ctx.db
+    .query("leads")
+    .withIndex("by_contactId", (q) => q.eq("contactId", contactId))
+    .paginate({ numItems: ANONYMIZE_BATCH, cursor });
+  for (const lead of result.page) await scrubLead(ctx, lead);
+  return {
+    scrubbed: result.page.length,
+    isDone: result.isDone,
+    continueCursor: result.continueCursor,
+  };
+}
+
+/**
+ * ZZPL erasure: keeps the lead history (type, stage, dates, listing, agent)
+ * and drops every identifier. The contact itself is erased at once; a contact
+ * with many leads has the rest cleaned by scheduled batches.
+ */
 export const anonymize = mutation({
   args: { id: v.id("contacts") },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<null> => {
     const viewer = await requireRole(ctx, MANAGERS);
     const doc = await ctx.db.get("contacts", args.id);
     if (doc === null) notFound("Kontakt");
     if (doc.anonymizedAt !== undefined) return null;
 
-    const now = Date.now();
     await ctx.db.patch("contacts", doc._id, {
-      name: "Anonimizovan kontakt",
+      name: ANONYMIZED_NAME,
       email: undefined,
       phone: undefined,
       note: undefined,
+      searchText: undefined,
       tags: ["anonimizovan"],
-      anonymizedAt: now,
+      anonymizedAt: Date.now(),
     });
+    await scrubActivity(ctx, doc._id);
 
-    // `answers` holds the valuation/seller `addressNote` (the subject's own
-    // address) and `leadNotes` holds whatever staff typed, so ZZPL erasure has to
-    // reach both — clearing `message` alone left the address behind.
-    const leads = await ctx.db
-      .query("leads")
-      .withIndex("by_contactId", (q) => q.eq("contactId", doc._id))
-      .take(201);
-    if (leads.length > 200) {
-      invalidInput(
-        "Kontakt ima previše upita za jednu operaciju. Pokrenite anonimizaciju ponovo.",
-      );
-    }
-    for (const lead of leads) {
-      await ctx.db.patch("leads", lead._id, {
-        message: undefined,
-        answers: undefined,
-        valuation: undefined,
+    const batch = await scrubLeadBatch(ctx, doc._id, null);
+    if (!batch.isDone) {
+      await ctx.scheduler.runAfter(0, internal.contacts.anonymizeRemainingLeads, {
+        contactId: doc._id,
+        cursor: batch.continueCursor,
       });
-      const notes = await ctx.db
-        .query("leadNotes")
-        .withIndex("by_leadId_and_at", (q) => q.eq("leadId", lead._id))
-        .take(50);
-      for (const note of notes) await ctx.db.delete("leadNotes", note._id);
     }
 
     await logActivity(ctx, {
       entity: "contact",
       entityId: doc._id,
       action: "contact.anonymized",
-      summary: `${leads.length} upita očišćeno`,
+      summary: batch.isDone
+        ? `${batch.scrubbed} upita očišćeno`
+        : `${batch.scrubbed}+ upita, ostatak se čisti u pozadini`,
       by: viewer._id,
     });
     return null;
   },
 });
 
-function csvCell(value: string | number | undefined): string {
-  if (value === undefined) return "";
-  let text = String(value);
-  // A contact name arrives from a public form. A leading =, +, - or @ makes Excel
-  // and LibreOffice treat the cell as a formula, so prefix it to neutralise it.
+/** The continuation of `anonymize` for a contact with many leads. */
+export const anonymizeRemainingLeads = internalMutation({
+  args: { contactId: v.id("contacts"), cursor: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    const batch = await scrubLeadBatch(ctx, args.contactId, args.cursor);
+    if (!batch.isDone) {
+      await ctx.scheduler.runAfter(0, internal.contacts.anonymizeRemainingLeads, {
+        contactId: args.contactId,
+        cursor: batch.continueCursor,
+      });
+    }
+    return null;
+  },
+});
+
+/**
+ * One-off backfill of `searchText` for contacts written before it existed.
+ * Run: `npx convex run contacts:backfillSearchText '{}'` (it pages itself).
+ */
+export const backfillSearchText = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  returns: v.object({ updated: v.number(), done: v.boolean() }),
+  handler: async (ctx, args): Promise<{ updated: number; done: boolean }> => {
+    const result = await ctx.db
+      .query("contacts")
+      .paginate({ numItems: 200, cursor: args.cursor ?? null });
+    let updated = 0;
+    for (const doc of result.page) {
+      const next =
+        doc.anonymizedAt !== undefined
+          ? undefined
+          : contactSearchText({
+              name: doc.name,
+              ...(doc.email !== undefined ? { email: doc.email } : {}),
+              ...(doc.phone !== undefined ? { phone: doc.phone } : {}),
+            });
+      if (next === doc.searchText) continue;
+      await ctx.db.patch("contacts", doc._id, { searchText: next });
+      updated += 1;
+    }
+    if (!result.isDone) {
+      await ctx.scheduler.runAfter(0, internal.contacts.backfillSearchText, {
+        cursor: result.continueCursor,
+      });
+    }
+    return { updated, done: result.isDone };
+  },
+});
+
+/* ---------------------------------------------------------------------- CSV */
+
+/**
+ * `;` separates cells: Excel with Serbian regional settings uses the comma as
+ * the decimal mark and `;` as its list separator, so a double-clicked file
+ * opens in columns. The client prepends a UTF-8 BOM so č, ć, š, ž, đ and
+ * Cyrillic survive (no `sep=` line: it makes Excel ignore the BOM).
+ */
+const SEPARATOR = ";";
+
+function csvCell(value: string | undefined): string {
+  if (value === undefined || value.length === 0) return "";
+  let text = value;
+  // Names arrive from a public form. A leading =, +, - or @ (or a tab/CR)
+  // makes Excel and LibreOffice evaluate the cell as a formula; the quote
+  // prefix keeps it text (OWASP "CSV injection").
   if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return /[",\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  return /[";,\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-/** CSV export for the contacts table (PRD B6). Capped at 2000 rows. */
+/** Last Sunday of a month at 01:00 UTC, when Europe switches summer time. */
+function lastSundayAt1Utc(year: number, monthIndex: number): number {
+  const day = new Date(Date.UTC(year, monthIndex + 1, 0, 1));
+  day.setUTCDate(day.getUTCDate() - day.getUTCDay());
+  return day.getTime();
+}
+
+/** `2026-09-30 14:05` in Belgrade time (CET/CEST), which Excel reads as a date. */
+function belgradeDateTime(ms: number): string {
+  const year = new Date(ms).getUTCFullYear();
+  const summer = ms >= lastSundayAt1Utc(year, 2) && ms < lastSundayAt1Utc(year, 9);
+  const local = new Date(ms + (summer ? 2 : 1) * 3_600_000).toISOString();
+  return `${local.slice(0, 10)} ${local.slice(11, 16)}`;
+}
+
+const LOCALE_SR: Record<Locale, string> = {
+  "sr-Latn": "srpski",
+  en: "engleski",
+  ru: "ruski",
+  de: "nemački",
+};
+
+/**
+ * CSV export of the contacts table (PRD B6), newest first, capped at
+ * EXPORT_CAP rows. Anonymized contacts are left out: they hold no identifier
+ * worth exporting. Returned as text; the browser adds the BOM and downloads.
+ */
 export const exportCsv = query({
   args: {},
-  returns: v.object({ csv: v.string(), rows: v.number() }),
+  returns: v.object({ csv: v.string(), rows: v.number(), truncated: v.boolean() }),
   handler: async (ctx) => {
     await requireRole(ctx, MANAGERS);
-    const docs = await ctx.db.query("contacts").order("desc").take(2000);
+    const docs = await ctx.db.query("contacts").order("desc").take(EXPORT_CAP + 1);
+    const truncated = docs.length > EXPORT_CAP;
     const header = [
-      "name",
-      "email",
-      "phone",
-      "locale",
-      "tags",
-      "marketing",
-      "consentAt",
-      "consentVersion",
-      "createdAt",
-      "isDemo",
-    ].join(";");
+      "Ime",
+      "E-pošta",
+      "Telefon",
+      "Jezik",
+      "Oznake",
+      "Marketing saglasnost",
+      "Saglasnost data",
+      "Verzija teksta saglasnosti",
+      "Kanal",
+      "Kreiran",
+      "Demo",
+    ].join(SEPARATOR);
 
-    const lines = docs.map((doc) => {
-      const last = doc.consents[doc.consents.length - 1];
-      return [
-        csvCell(doc.name),
-        csvCell(doc.email),
-        csvCell(doc.phone),
-        csvCell(doc.locale),
-        csvCell(doc.tags.join(",")),
-        csvCell(last?.marketing === true ? "da" : "ne"),
-        csvCell(last !== undefined ? new Date(last.at).toISOString() : ""),
-        csvCell(last?.textVersion),
-        csvCell(new Date(doc._creationTime).toISOString()),
-        csvCell(doc.isDemo ? "da" : "ne"),
-      ].join(";");
+    const lines = [];
+    for (const doc of docs.slice(0, EXPORT_CAP)) {
+      if (doc.anonymizedAt !== undefined) continue;
+      const last = latestConsent(doc.consents);
+      lines.push(
+        [
+          csvCell(doc.name),
+          csvCell(doc.email),
+          csvCell(doc.phone),
+          csvCell(doc.locale !== undefined ? LOCALE_SR[doc.locale] : undefined),
+          csvCell(doc.tags.join(", ")),
+          csvCell(last === undefined ? undefined : last.marketing ? "da" : "ne"),
+          csvCell(last !== undefined ? belgradeDateTime(last.at) : undefined),
+          csvCell(last?.textVersion),
+          csvCell(last?.channel),
+          csvCell(belgradeDateTime(doc._creationTime)),
+          csvCell(doc.isDemo ? "da" : "ne"),
+        ].join(SEPARATOR),
+      );
+    }
+
+    return { csv: [header, ...lines].join("\r\n"), rows: lines.length, truncated };
+  },
+});
+
+/** Audit trail for an export of personal data: who, when, how many rows. */
+export const logExport = mutation({
+  args: { rows: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const viewer = await requireRole(ctx, MANAGERS);
+    await logActivity(ctx, {
+      entity: "contact",
+      action: "contact.exported",
+      summary: `CSV izvoz: ${Math.max(0, Math.floor(args.rows))} kontakata`,
+      by: viewer._id,
     });
-
-    return { csv: [header, ...lines].join("\r\n"), rows: docs.length };
+    return null;
   },
 });

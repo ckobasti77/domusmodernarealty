@@ -93,7 +93,9 @@ export function FilterBar({ state, onChange, onSheetApply, index, now, countText
   return (
     <div className="flex items-center gap-3">
       {/* ------------------------------------------------------ desktop bar */}
-      <div className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
+      {/* The buttons never shrink, so on a narrow desktop (or with the longer
+          ru/de labels) the row wraps instead of running under the sort. */}
+      <div className="hidden min-w-0 flex-1 flex-wrap items-center gap-2 lg:flex">
         {transactionSwitch("transaction-bar", "mr-2 flex-nowrap")}
         <FilterPopover label={t("location")} value={placeLabel()} testId="bar-location" wide>
           <LocationSection state={state} onChange={onChange} index={index} />
@@ -255,7 +257,7 @@ function SortSelect({ state, onChange }: { state: SearchState; onChange: (next: 
     // it: the result count keeps the room, and the picker is still native.
     <label className="relative ml-auto flex shrink-0 items-center gap-3 max-sm:size-11 max-sm:justify-center max-sm:border max-sm:border-ink/30">
       <ArrowUpDown aria-hidden="true" strokeWidth={1.25} className="size-4 sm:hidden" />
-      <span className="hidden font-sans text-label uppercase tracking-[0.12em] text-stone-text lg:inline">
+      <span className="hidden font-sans text-label uppercase tracking-[0.12em] text-stone-text xl:inline">
         {t("sortLabel")}
       </span>
       <select

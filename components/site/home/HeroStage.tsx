@@ -166,7 +166,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
           tl.from(
             split.lines,
             {
-              yPercent: 110,
+              yPercent: 130,
               duration: tuning.lines,
               stagger: tuning.stagger,
               // The lines only exist for the entrance. Reverting afterwards

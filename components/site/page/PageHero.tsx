@@ -41,6 +41,10 @@ export function PageHero({
   size?: "display-l" | "display-m";
   className?: string;
 }) {
+  // A German compound ("Immobilienbewertung") is wider than a phone at the
+  // display size, and a masked line cannot wrap or hyphenate inside a word,
+  // so a title with a very long word steps down one size below `sm`.
+  const longestWord = Math.max(...title.split(/\s+/).map((word) => word.length));
   return (
     <div className={cn("bg-ink text-ivory", className)}>
       <Container className="pb-14 pt-[calc(var(--header-h,85px)+2rem)] lg:pb-20 lg:pt-[calc(var(--header-h,85px)+3.5rem)]">
@@ -58,6 +62,7 @@ export function PageHero({
               className={cn(
                 "max-w-[18ch] font-display font-normal text-ivory",
                 size === "display-l" ? "text-display-l" : "text-display-m",
+                longestWord >= 15 && "max-sm:text-[2.25rem]",
               )}
             >
               <SplitReveal as="span" className="block">

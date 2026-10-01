@@ -564,6 +564,21 @@ html[data-consent="pending"] {
 }
 
 /* ---------------------------------------------------------------------------
+   SplitText line masks (SplitReveal, HeroStage). Each mask clips at its line
+   box, and the display sizes set line-height below 1, so descenders (g, j, p,
+   y) and diacritics were cut off for good once the reveal had played. The
+   padding grows the clip box past the glyphs; the equal negative margin keeps
+   the lines exactly where they were. The reveals start at yPercent 130, below
+   the grown box, so a line is still fully hidden before it rises.
+--------------------------------------------------------------------------- */
+@layer components {
+  .split-line-mask {
+    padding-block: 0.08em 0.22em;
+    margin-block: -0.08em -0.22em;
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Managed rich text on the public site (components/site/page/RichText.tsx):
    legal sections, page bodies and journal articles. Serif headings, a ~68ch
    measure, generous paragraph rhythm, bronze-text link underlines (AA on

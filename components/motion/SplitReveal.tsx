@@ -72,7 +72,7 @@ export function SplitReveal({
             reduceWhiteSpace: false,
             onSplit(self) {
               return gsap.from(self.lines, {
-                yPercent: 110,
+                yPercent: 130,
                 duration,
                 delay,
                 stagger: each,

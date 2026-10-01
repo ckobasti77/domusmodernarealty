@@ -19,7 +19,7 @@ import { useListingFilters } from "./filters";
 import { ListingsFilters } from "./ListingsFilters";
 import { ListingsList } from "./ListingsList";
 import { ListingsTable } from "./ListingsTable";
-import { COUNT_CAP, StatusTabs } from "./StatusTabs";
+import { StatusTabs } from "./StatusTabs";
 import { PAGE_SIZE } from "./types";
 
 const NEW_LISTING_HREF = "/admin/nekretnine/nova";
@@ -58,9 +58,8 @@ function useHeldWhileLoading<T>(value: T, loading: boolean): T {
 
 /**
  * How many listings the current view holds, when that is known: every page is
- * loaded, or no filter beyond the status is on (then `counts` has it, unless
- * it hit the server's read cap). Otherwise the footer shows the loaded count
- * alone rather than a guess.
+ * loaded, or no filter beyond the status is on (then the exact `counts` have
+ * it). Otherwise the footer shows the loaded count alone rather than a guess.
  */
 function knownTotal({
   loaded,
@@ -78,7 +77,6 @@ function knownTotal({
   if (exhausted) return loaded;
   if (hasFilters || counts === undefined) return undefined;
   const scoped = status === undefined ? counts : counts.filter((row) => row.status === status);
-  if (scoped.some((row) => row.count >= COUNT_CAP)) return undefined;
   const total = scoped.reduce((sum, row) => sum + row.count, 0);
   // The two queries update independently; never print "25 od 24".
   return total >= loaded ? total : undefined;

@@ -9,14 +9,6 @@ import { STATUS_LABEL, STATUS_ORDER } from "@/lib/admin/labels";
 import { formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-/** `listingsAdmin.counts` reads at most 501 rows per status. */
-export const COUNT_CAP = 501;
-
-function countLabel(count: number, capped: boolean): string {
-  if (capped) return `${formatCount(COUNT_CAP - 1, "sr-Latn")}+`;
-  return formatCount(count, "sr-Latn");
-}
-
 type TabKey = "all" | ListingStatus;
 type Tab = { key: TabKey; status: ListingStatus | undefined; label: string };
 
@@ -90,18 +82,17 @@ export function StatusTabs({
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
   const edges = useClippedEdges(scroller);
 
+  // Exact counts: `listingsAdmin.counts` reads the denormalized counters (convex/lib/counts.ts).
   const byStatus = new Map(counts?.map((row) => [row.status, row.count]));
-  const total = counts?.reduce((sum, row) => sum + Math.min(row.count, COUNT_CAP - 1), 0);
-  const totalCapped = counts?.some((row) => row.count >= COUNT_CAP) ?? false;
+  const total = counts?.reduce((sum, row) => sum + row.count, 0);
 
   const tabs = TABS.map((tab) => {
     const count = tab.status === undefined ? total : byStatus.get(tab.status);
-    const capped = tab.status === undefined ? totalCapped : (count ?? 0) >= COUNT_CAP;
     return {
       ...tab,
       active: tab.status === current,
       count,
-      countText: count === undefined ? undefined : countLabel(count, capped),
+      countText: count === undefined ? undefined : formatCount(count, "sr-Latn"),
     };
   });
 

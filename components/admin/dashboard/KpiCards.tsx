@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { formatDate } from "@/lib/admin/format";
 import { cn } from "@/lib/utils";
-import { formatCapped, formatDuration } from "./format";
+import { formatCapped, formatCount, formatDuration } from "./format";
 
 type Kpi = {
   key: string;
@@ -22,7 +22,8 @@ type Kpi = {
 
 /**
  * Agency-wide KPIs (managers only — `analytics.dashboard` refuses anyone else).
- * The server counts with `.take(n)`, so values at that limit read `n+`.
+ * Listing counts are exact (denormalized counters); new leads and today's
+ * viewings are read with `.take(n)`, so a value at that limit reads `n+`.
  * A card links only where a screen exists for it (today: the listings table),
  * and every linked card carries the same arrow; the rest are plain.
  */
@@ -33,15 +34,17 @@ export function KpiCards({ now }: { now: number }) {
     {
       key: "active",
       label: "Aktivne nekretnine",
-      value: stats === undefined ? undefined : formatCapped(stats.activeListings, 500),
-      hint:
-        stats === undefined ? undefined : `${formatCapped(stats.draftListings, 500)} u nacrtu`,
+      value: stats === undefined ? undefined : formatCount(stats.activeListings),
+      hint: stats === undefined ? undefined : `${formatCount(stats.draftListings)} u nacrtu`,
       href: "/admin/nekretnine?status=published",
     },
     {
       key: "leads",
       label: "Novi upiti (7 dana)",
-      value: stats === undefined ? undefined : formatCapped(stats.newLeads7d, 500),
+      value:
+        stats === undefined
+          ? undefined
+          : `${formatCount(stats.newLeads7d)}${stats.newLeads7dCapped ? "+" : ""}`,
       hint: "Svi kanali i svi agenti",
     },
     {

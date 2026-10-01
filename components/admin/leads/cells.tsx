@@ -41,7 +41,7 @@ export function ResponseTimer({
     return (
       <span className={cn("inline-flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
         <Clock className="size-3.5" aria-hidden="true" />
-        Odgovoreno za {formatDuration(minutes)}
+        {minutes < 1 ? "Odgovoreno u prvom minutu" : `Odgovoreno za ${formatDuration(minutes)}`}
       </span>
     );
   }

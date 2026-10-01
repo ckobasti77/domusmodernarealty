@@ -47,11 +47,12 @@ export function pluralSr(count: number, one: string, many: string): string {
   return count % 10 === 1 && count % 100 !== 11 ? one : many;
 }
 
-/** 0 → `< 1 min`, 45 → `45 min`, 135 → `2 h 15 min`, 1500 → `1 dan 1 h`. */
+/** 0 → `do 1 min`, 45 → `45 min`, 135 → `2 h 15 min`, 1500 → `1 dan 1 h`. */
 export function formatDuration(minutes: number): string {
   const total = Math.max(0, Math.round(minutes));
   // The server rounds to whole minutes, so 0 means "under half a minute".
-  if (total < 1) return "< 1 min";
+  // Words, not "<": in Manrope at 13 px a "<" reads like a quote mark ("‹ 1 min").
+  if (total < 1) return "do 1 min";
   if (total < 60) return `${total} min`;
   const hours = Math.floor(total / 60);
   const rest = total % 60;

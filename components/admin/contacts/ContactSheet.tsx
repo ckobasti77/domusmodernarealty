@@ -22,6 +22,10 @@ import { ContactTags, MarketingBadge } from "./ContactBits";
 import { MergeDialog } from "./MergeDialog";
 import type { ContactDetail } from "./shared";
 
+/** E-mail and phone values read as links at rest, not only on hover. */
+const VALUE_LINK =
+  "text-primary underline decoration-primary/30 underline-offset-4 transition-colors duration-150 hover:decoration-primary";
+
 /**
  * One contact (PRD B6): details, internal note, lead history, every consent
  * record, merge a duplicate, and the ZZPL erasure ("Anonimizuj").
@@ -56,7 +60,7 @@ export function ContactSheet({ id, onClose }: { id: string | undefined; onClose:
       footer={
         contact !== undefined && !anonymized ? (
           <>
-            <MergeDialog into={contact} />
+            {/* Irreversible, so it stays out of the primary slot: a quiet button on the far left. */}
             <ConfirmDialog
               destructive
               title="Anonimizovati kontakt?"
@@ -67,12 +71,18 @@ export function ContactSheet({ id, onClose }: { id: string | undefined; onClose:
                 return result !== undefined;
               }}
               trigger={
-                <Button variant="destructive" data-testid="contact-anonymize" disabled={anonymize.pending}>
+                <Button
+                  variant="ghost"
+                  data-testid="contact-anonymize"
+                  disabled={anonymize.pending}
+                  className="mr-auto text-destructive hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
+                >
                   {anonymize.pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserX aria-hidden="true" />}
                   Anonimizuj
                 </Button>
               }
             />
+            <MergeDialog into={contact} />
           </>
         ) : undefined
       }
@@ -113,7 +123,7 @@ function ContactBody({ data }: { data: ContactDetail }) {
               label: "E-pošta",
               value:
                 contact.email !== undefined ? (
-                  <a href={`mailto:${contact.email}`} className="underline-offset-4 hover:underline">
+                  <a href={`mailto:${contact.email}`} className={VALUE_LINK}>
                     {contact.email}
                   </a>
                 ) : (
@@ -124,7 +134,7 @@ function ContactBody({ data }: { data: ContactDetail }) {
               label: "Telefon",
               value:
                 contact.phone !== undefined ? (
-                  <a href={telHref(contact.phone)} className="tabular-nums underline-offset-4 hover:underline">
+                  <a href={telHref(contact.phone)} className={`tabular-nums ${VALUE_LINK}`}>
                     {contact.phone}
                   </a>
                 ) : (

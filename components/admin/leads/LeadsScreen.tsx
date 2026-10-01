@@ -101,7 +101,7 @@ function LeadsView() {
         title="Upiti"
         description={
           canManage
-            ? "Svi upiti agencije: sa sajta, telefonom i lično. Odgovorite u roku od sat vremena."
+            ? "Svi upiti sa sajta i njihove faze prodaje. Odgovorite u roku od sat vremena."
             : "Upiti dodeljeni Vama. Odgovorite u roku od sat vremena."
         }
         actions={
@@ -119,9 +119,9 @@ function LeadsView() {
               <List aria-hidden="true" />
               <span className="max-sm:sr-only">Lista</span>
             </ToggleGroupItem>
-            <ToggleGroupItem value="kanban" data-testid="leads-view-kanban" aria-label="Pipeline">
+            <ToggleGroupItem value="kanban" data-testid="leads-view-kanban" aria-label="Faze">
               <Columns3 aria-hidden="true" />
-              <span className="max-sm:sr-only">Pipeline</span>
+              <span className="max-sm:sr-only">Faze</span>
             </ToggleGroupItem>
           </ToggleGroup>
         }

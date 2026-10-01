@@ -189,7 +189,7 @@ export const seedSettings = internalMutation({
       pib: "000000000",
       mb: "00000000",
       registryNo: "000",
-      insurance: "Polisa profesionalne odgovornosti — broj se unosi u Podešavanjima",
+      // No insurance policy is seeded: the owner enters the real one in Podešavanja.
       phones: ["+381 11 000 0010"],
       email: "office@mihajlo-estate.local",
       viber: "+381 11 000 0010",

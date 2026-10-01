@@ -28,6 +28,10 @@ export type AgentChoice = { _id: Id<"agents">; name: string };
 
 const NO_AGENT = "__none__";
 
+/** E-mail and phone values read as links at rest, not only on hover. */
+const VALUE_LINK =
+  "text-primary underline decoration-primary/30 underline-offset-4 transition-colors duration-150 hover:decoration-primary";
+
 const VIEWING_TONE: Record<ViewingStatus, DotTone> = {
   requested: "accent",
   confirmed: "strong",
@@ -185,7 +189,7 @@ function LeadBody({
               label: "E-pošta",
               value:
                 lead.contactEmail !== undefined ? (
-                  <a href={`mailto:${lead.contactEmail}`} className="underline-offset-4 hover:underline">
+                  <a href={`mailto:${lead.contactEmail}`} className={VALUE_LINK}>
                     {lead.contactEmail}
                   </a>
                 ) : (
@@ -196,7 +200,7 @@ function LeadBody({
               label: "Telefon",
               value:
                 lead.contactPhone !== undefined ? (
-                  <a href={telHref(lead.contactPhone)} className="tabular-nums underline-offset-4 hover:underline">
+                  <a href={telHref(lead.contactPhone)} className={`tabular-nums ${VALUE_LINK}`}>
                     {lead.contactPhone}
                   </a>
                 ) : (
@@ -209,10 +213,7 @@ function LeadBody({
                     label: "Telefon iz forme",
                     value: (
                       <span>
-                        <a
-                          href={telHref(lead.submittedPhone)}
-                          className="tabular-nums underline-offset-4 hover:underline"
-                        >
+                        <a href={telHref(lead.submittedPhone)} className={`tabular-nums ${VALUE_LINK}`}>
                           {lead.submittedPhone}
                         </a>
                         <span className="block text-xs text-muted-foreground">

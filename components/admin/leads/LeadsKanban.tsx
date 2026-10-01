@@ -20,7 +20,7 @@ import {
 import { useQuery } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import Link from "next/link";
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import type { DotTone } from "@/components/admin/common/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
@@ -70,6 +70,29 @@ function useHeld<T>(value: T | undefined): T | undefined {
 }
 
 /**
+ * True while columns sit past the right edge of the scroll box. The
+ * ResizeObserver reports once on `observe`, so the first value needs no
+ * extra call; the columns are observed too, in case their width changes.
+ */
+function useMoreToTheRight(node: HTMLElement | null): boolean {
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    if (node === null) return;
+    // 1 px of slack: `scrollLeft` is fractional on zoomed or high-DPI screens.
+    const update = () => setMore(node.scrollLeft + node.clientWidth < node.scrollWidth - 1);
+    node.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    for (const child of Array.from(node.children)) observer.observe(child);
+    return () => {
+      node.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [node]);
+  return more;
+}
+
+/**
  * The pipeline (PRD B4): Novi → Kontaktiran → Kvalifikovan → Razgledanje →
  * Ponuda → Dobijen / Izgubljen. Drag a card to another column, or use its
  * "Premesti u…" menu; "Izgubljen" asks for the reason first.
@@ -96,6 +119,8 @@ export function LeadsKanban({
   const columns = useHeld(live);
   const refreshing = live === undefined && columns !== undefined;
   const reduced = useReducedMotion();
+  const [board, setBoard] = useState<HTMLDivElement | null>(null);
+  const moreToTheRight = useMoreToTheRight(board);
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -139,6 +164,7 @@ export function LeadsKanban({
       accessibility={{ announcements, screenReaderInstructions: INSTRUCTIONS }}
     >
       <div
+        ref={setBoard}
         role="region"
         aria-label="Faze prodaje"
         aria-busy={refreshing}
@@ -147,8 +173,12 @@ export function LeadsKanban({
         className={cn(
           // `relative`: absolutely positioned descendants (sr-only labels) stay inside the scroll box
           // instead of widening the whole page.
-          "relative -mx-1 flex gap-3 overflow-x-auto px-1 pb-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 transition-opacity duration-150",
+          "relative -mx-1 flex gap-3 overflow-x-auto px-1 pb-3 outline-none [scrollbar-width:thin] focus-visible:ring-3 focus-visible:ring-ring/50 transition-opacity duration-150",
           refreshing && "opacity-60",
+          // The right edge fades while later stages (Dobijen, Izgubljen) are out of view. A mask
+          // also clips the outer focus ring, so it steps aside while the board has keyboard focus.
+          moreToTheRight &&
+            "[mask-image:linear-gradient(to_right,#000_calc(100%_-_4rem),transparent)] focus-visible:[mask-image:none]",
         )}
       >
         {columns.map((column) => (

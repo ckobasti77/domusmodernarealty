@@ -183,7 +183,7 @@ test.describe("CRM and content modules @admin", () => {
         "Zatim sledi predugovor kod notara, uplata kapare i, na kraju, glavni ugovor i primopredaja ključeva.",
     );
     await page.getByTestId("save-button").click();
-    await expect(page.getByTestId("save-bar")).toContainText("sačuvane", { timeout: 20_000 });
+    await expect(page.getByTestId("save-button")).toBeDisabled({ timeout: 20_000 });
 
     await page.getByTestId("post-publish-now").click();
     await page.getByTestId("confirm-dialog-action").click();
@@ -209,7 +209,10 @@ test.describe("CRM and content modules @admin", () => {
     await expect(field).toBeVisible({ timeout: 20_000 });
     await field.fill(headline);
     await page.getByTestId("save-button").click();
-    await expect(page.getByTestId("save-bar")).toContainText("sačuvane", { timeout: 20_000 });
+    const publicClient = new ConvexHttpClient(convexUrl());
+    await expect
+      .poll(async () => JSON.stringify(await publicClient.query(api.pages.get, { key: "home" })), { timeout: 20_000 })
+      .toContain(headline);
 
     const visitor = await projectContext(browser, testInfo);
     try {

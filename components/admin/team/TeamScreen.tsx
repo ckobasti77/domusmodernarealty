@@ -76,7 +76,6 @@ function TeamView() {
   const openAgent = agentSheetOpen ? agents?.find((agent) => agent._id === params.id) : undefined;
 
   const pendingInvites = invites?.filter((invite) => inviteState(invite, now) === "pending").length;
-  const activeUsers = users?.filter((user) => user.status === "active").length;
 
   const openInvite = () => setParams({ invite: true });
 
@@ -110,7 +109,7 @@ function TeamView() {
         {tabs.length > 1 ? (
           <TabsList variant="line" aria-label="Delovi stranice Tim" className="h-9 max-w-full">
             <TabsTrigger value="users" data-testid="team-tab-users" className="flex-none px-3">
-              Korisnici <Count value={activeUsers} />
+              Korisnici <Count value={users?.length} />
             </TabsTrigger>
             <TabsTrigger value="invites" data-testid="team-tab-invites" className="flex-none px-3">
               Pozivnice <Count value={pendingInvites} />

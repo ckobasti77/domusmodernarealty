@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -112,7 +112,9 @@ export function FieldShell({
 
 /**
  * The save row at the bottom of an editor. Sticky, so a long form never hides
- * its save button; says whether there are unsaved changes.
+ * its save button; says whether there are unsaved changes. On phones it stays
+ * one row: the status is read to screen readers only (the save button's
+ * enabled state shows it) and "Poništi izmene" becomes an icon button.
  */
 export function SaveBar({
   dirty,
@@ -133,15 +135,23 @@ export function SaveBar({
 }) {
   return (
     <div
-      className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
+      className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-nowrap items-center justify-end gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
       data-testid="save-bar"
     >
-      <p className="mr-auto text-xs text-muted-foreground" aria-live="polite">
+      <p className="mr-auto min-w-0 text-xs text-muted-foreground max-sm:sr-only" aria-live="polite">
         {saving ? "Čuvanje…" : dirty ? "Imate nesačuvane izmene." : extra ?? "Sve izmene su sačuvane."}
       </p>
       {onReset !== undefined ? (
-        <Button type="button" variant="ghost" disabled={!dirty || saving} onClick={onReset}>
-          Poništi izmene
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={!dirty || saving}
+          onClick={onReset}
+          aria-label="Poništi izmene"
+          className="max-sm:w-11 max-sm:px-0"
+        >
+          <RotateCcw aria-hidden="true" className="sm:hidden" />
+          <span className="max-sm:hidden">Poništi izmene</span>
         </Button>
       ) : null}
       <Button type="submit" form={form} disabled={!dirty || saving} data-testid="save-button">

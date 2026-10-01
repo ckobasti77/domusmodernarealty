@@ -660,6 +660,11 @@ test.describe("accessibility", () => {
     for (let y = 0; y < bottom; y += 700) await scrollToY(page, y);
     await scrollToY(page, bottom);
     await scrollToY(page, 0);
+    // Instant jumps leave the last reveals mid-fade (the process steps run
+    // 1.1 s), and axe measures a half-transparent line as low contrast. Inline
+    // opacity is no settle signal — the scrubbed intro words keep theirs — so
+    // give the slowest reveal time to finish before judging.
+    await page.waitForTimeout(2_000);
     expect(await seriousViolations(page)).toEqual([]);
   });
 });

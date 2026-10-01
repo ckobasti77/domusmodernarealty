@@ -19,7 +19,10 @@ import { useDebounced } from "./useSearchUrl";
  * so dragging produces one URL change, not fifty. When the committed values
  * change (our own commit, a removed chip, Back), the local draft is re-seeded
  * during render — never by remounting, which would drop keyboard focus from
- * the thumb in the middle of an arrow-key adjustment.
+ * the thumb in the middle of an arrow-key adjustment. Only the bound whose
+ * committed value changed is re-seeded: typing a minimum, tabbing to the
+ * maximum and typing it commits the minimum on blur, and when that URL update
+ * lands a moment later it must not wipe the maximum being typed.
  */
 export type RangeFieldProps = {
   labels: { min: string; max: string; from: string; to: string };
@@ -61,6 +64,30 @@ function seedDraft(
   };
 }
 
+/** `seedDraft` for a change of the committed values, keeping the draft of an unchanged bound. */
+function reseedDraft(
+  prev: Draft,
+  seed: string,
+  stops: readonly number[],
+  min: number | undefined,
+  max: number | undefined,
+  locale: Locale,
+): Draft {
+  const fresh = seedDraft(seed, stops, min, max, locale);
+  const [prevMin, prevMax, prevStops] = prev.seed.split("|");
+  const [nextMin, nextMax, nextStops] = seed.split("|");
+  if (prevStops !== nextStops) return fresh;
+  const low = prevMin === nextMin ? prev.low : fresh.low;
+  const high = prevMax === nextMax ? prev.high : fresh.high;
+  return {
+    seed,
+    low,
+    high: Math.max(high, low),
+    minText: prevMin === nextMin ? prev.minText : fresh.minText,
+    maxText: prevMax === nextMax ? prev.maxText : fresh.maxText,
+  };
+}
+
 export function RangeField({ labels, min, max, stops, format, onCommit, unit, testId }: RangeFieldProps) {
   const locale = useLocale() as Locale;
   const id = useId();
@@ -68,7 +95,7 @@ export function RangeField({ labels, min, max, stops, format, onCommit, unit, te
 
   const seed = `${min ?? ""}|${max ?? ""}|${stops.join(",")}`;
   const [draft, setDraft] = useState<Draft>(() => seedDraft(seed, stops, min, max, locale));
-  if (draft.seed !== seed) setDraft(seedDraft(seed, stops, min, max, locale));
+  if (draft.seed !== seed) setDraft(reseedDraft(draft, seed, stops, min, max, locale));
   const { low, high, minText, maxText } = draft;
 
   const commitSlider = useDebounced((lowIndex: number, highIndex: number) => {

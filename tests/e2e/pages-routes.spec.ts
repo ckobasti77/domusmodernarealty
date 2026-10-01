@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import nodePath from "node:path";
 import { expect, test } from "@playwright/test";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../convex/_generated/api";
@@ -50,11 +52,12 @@ async function realSlugs(): Promise<Slugs> {
   const [tree, agents, posts] = await Promise.all([
     client.query(api.locations.tree, {}),
     client.query(api.agents.list, {}),
-    client.query(api.posts.list, { paginationOpts: { numItems: 1, cursor: null } }),
+    client.query(api.posts.list, { paginationOpts: { numItems: 20, cursor: null } }),
   ]);
   const neighborhood = tree.find((node) => node.kind === "neighborhood" && node.saleCount + node.rentCount > 0);
   const agent = agents[0];
-  const post = posts.page[0];
+  // Never a post another spec created for itself: it may be deleted mid-run.
+  const post = posts.page.find((entry) => !entry.slug.startsWith("e2e-"));
   if (neighborhood === undefined || agent === undefined || post === undefined) {
     throw new Error("the deployment needs a neighborhood with listings, a public agent and a published post");
   }
@@ -82,6 +85,25 @@ test.describe("content pages in every locale @public", () => {
         expect(html.match(/<h1[\s>]/g)?.length ?? 0, `${path} has exactly one h1`).toBe(1);
       });
     }
+  }
+
+  // The `[locale]/[...rest]` catch-all: the 404 speaks the visitor's language
+  // (not the bilingual global page) and keeps the site's search box.
+  for (const locale of locales) {
+    test(`an unknown path → the localized 404 in ${locale}`, async ({ request }) => {
+      const path = `${locale === "sr-Latn" ? "/sr" : `/${locale}`}/e2e-nema-ove-strane`;
+      const response = await request.get(path, { maxRedirects: 0 });
+      expect(response.status(), path).toBe(404);
+      const html = await response.text();
+      // Next serves a `notFound()` 404 as its error document and paints the
+      // boundary from the RSC payload, so the localized proof is the
+      // server-rendered <title>, not `<html lang>`.
+      const messages = JSON.parse(readFileSync(nodePath.join(process.cwd(), "messages", `${locale}.json`), "utf8")) as {
+        errors: { notFoundHeading: string };
+      };
+      expect(html, `${path} has the localized title`).toContain(`<title>${messages.errors.notFoundHeading} — `);
+      expect(html, `${path} offers the search`).toContain("notfound-search");
+    });
   }
 
   for (const route of DYNAMIC_ROUTES) {

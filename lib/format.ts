@@ -55,13 +55,15 @@ export function formatPrice(value: number, locale: Locale): string {
  */
 export function formatPinPrice(value: number, locale: Locale): string {
   const intl = INTL_LOCALE[locale];
+  // The € goes where the locale's full price puts it ("€215k" in en, "215k €" elsewhere).
+  const withEuro = (figure: string) => (locale === "en" ? `€${figure}` : `${figure} €`);
   if (value >= 1_000_000) {
     const millions = new Intl.NumberFormat(intl, { maximumFractionDigits: 2 }).format(value / 1_000_000);
-    return `${millions}M €`;
+    return withEuro(`${millions}M`);
   }
   if (value >= 10_000) {
     const thousands = new Intl.NumberFormat(intl, { maximumFractionDigits: 0 }).format(Math.round(value / 1_000));
-    return `${thousands}k €`;
+    return withEuro(`${thousands}k`);
   }
   return formatPrice(value, locale);
 }

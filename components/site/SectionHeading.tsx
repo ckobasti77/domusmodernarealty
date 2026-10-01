@@ -73,7 +73,7 @@ export function SectionHeading({
             {typeof title === "string" ? fixWidows(title) : title}
           </SplitReveal>
         </Heading>
-        {action !== undefined ? <div className="shrink-0 pb-1">{action}</div> : null}
+        {action !== undefined ? <div className="max-w-full shrink-0 pb-1">{action}</div> : null}
       </div>
 
       {lede !== undefined ? (

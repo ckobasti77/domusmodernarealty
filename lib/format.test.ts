@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixTypography, fixWidows, parseLocaleNumber } from "./format";
+import { fixTypography, fixWidows, formatPinPrice, parseLocaleNumber } from "./format";
 
 const NBSP = " ";
 
@@ -79,5 +79,19 @@ describe("fixTypography prefixes", () => {
     expect(fixTypography("pišite na e-poštu")).toContain(`e-${joiner}poštu`);
     expect(fixTypography("by e-mail")).toBe(`by e-${joiner}mail`);
     expect(fixTypography("well-known")).toBe("well-known");
+  });
+});
+
+describe("formatPinPrice", () => {
+  it("puts the euro sign where the locale's full price puts it", () => {
+    expect(formatPinPrice(215_000, "en")).toBe("€215k");
+    expect(formatPinPrice(1_750_000, "en")).toBe("€1.75M");
+    expect(formatPinPrice(215_000, "sr-Latn")).toBe("215k €");
+    expect(formatPinPrice(1_750_000, "de")).toBe("1,75M €");
+    expect(formatPinPrice(1_750_000, "ru")).toBe("1,75M €");
+  });
+
+  it("keeps rents and small figures in full", () => {
+    expect(formatPinPrice(850, "sr-Latn")).toBe(`850${NBSP}€`);
   });
 });

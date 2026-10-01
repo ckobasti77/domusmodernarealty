@@ -1,4 +1,4 @@
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
@@ -17,8 +17,15 @@ const MANAGERS = ["admin", "manager"] as const;
 const LEAD_COUNT_CAP = 20;
 /** Search results are one page: the best matches, never a scan. */
 const SEARCH_TAKE = 30;
-/** Leads cleaned per transaction by `anonymize`; the rest continue in the scheduler. */
-const ANONYMIZE_BATCH = 25;
+/**
+ * Anonymization works in bounded pages so no transaction limit is ever hit and
+ * nothing is silently left behind: leads per transaction, rows per page of an
+ * activity log or of notes, viewings per page of one lead. Whatever does not
+ * fit continues in a scheduled mutation until it is done.
+ */
+const ANONYMIZE_BATCH = 5;
+const SCRUB_PAGE = 100;
+const VIEWING_PAGE = 10;
 /** Rows per CSV export (PRD B6). A larger database needs a paged export. */
 const EXPORT_CAP = 2000;
 /** Owners of a listing (`listingsAdmin.setOwner`) carry this tag. */
@@ -26,7 +33,6 @@ const OWNER_TAG = "vlasnik";
 const ANONYMIZED_NAME = "Anonimizovan kontakt";
 
 /* ------------------------------------------------------------ search text */
-
 
 /** A phone-looking query searches digits; anything else, folded words. */
 function searchTerm(raw: string): string {
@@ -137,11 +143,7 @@ async function toRow(ctx: QueryCtx, doc: Doc<"contacts">) {
  */
 export const list = query({
   args: { q: v.optional(v.string()), paginationOpts: paginationOptsValidator },
-  returns: v.object({
-    page: v.array(contactRowV),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(contactRowV),
   handler: async (ctx, args) => {
     await requireRole(ctx, MANAGERS);
     const q = (args.q ?? "").trim().slice(0, 100);
@@ -155,7 +157,8 @@ export const list = query({
     const result = await ctx.db.query("contacts").order("desc").paginate(args.paginationOpts);
     const page = [];
     for (const doc of result.page) page.push(await toRow(ctx, doc));
-    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
+    // The whole result, so `splitCursor` / `pageStatus` reach the client.
+    return { ...result, page };
   },
 });
 
@@ -167,7 +170,10 @@ export const get = query({
   returns: v.union(
     v.object({
       contact: contactRowV,
-      /** Newest first. */
+      /**
+       * Every consent on record, newest first: the contact's own plus the one
+       * each lead was submitted with (public forms never edit the contact).
+       */
       consents: v.array(consentV),
       note: v.optional(v.string()),
       leads: v.array(
@@ -210,9 +216,15 @@ export const get = query({
       });
     }
 
+    const consents = new Map<string, Consent>();
+    for (const consent of [...doc.consents, ...leadDocs.map((lead) => lead.consent)]) {
+      const key = `${consent.at}|${consent.textVersion}|${consent.marketing}|${consent.channel ?? ""}`;
+      if (!consents.has(key)) consents.set(key, consent);
+    }
+
     return {
       contact: await toRow(ctx, doc),
-      consents: [...doc.consents].sort((a, b) => b.at - a.at),
+      consents: [...consents.values()].sort((a, b) => b.at - a.at),
       ...(doc.note !== undefined ? { note: doc.note } : {}),
       leads,
       leadsCapped: leadDocs.length > LEAD_HISTORY_CAP,
@@ -243,6 +255,51 @@ export const setNote = mutation({
       action: "contact.note",
       by: viewer._id,
     });
+    return null;
+  },
+});
+
+/**
+ * Activity rows that may quote free text about a person (staff notes, viewing
+ * feedback, the names in an old merge summary). An anonymization clears their
+ * `summary` AND `diff`; the rest of the log holds no personal data.
+ */
+const FREE_TEXT_ACTIONS = new Set(["lead.note", "contact.note", "contact.merged", "viewing.feedback"]);
+
+function holdsFreeText(row: Doc<"activity">): boolean {
+  return FREE_TEXT_ACTIONS.has(row.action) && (row.summary !== undefined || row.diff !== undefined);
+}
+
+/**
+ * Moves the deleted duplicate's activity onto the surviving contact (so its
+ * history follows) and drops free text on the way. Rows leave the `from`
+ * range as they are re-keyed, so each page simply reads the first rows again.
+ */
+async function rekeyActivity(
+  ctx: MutationCtx,
+  fromId: Id<"contacts">,
+  intoId: Id<"contacts">,
+): Promise<void> {
+  const rows = await ctx.db
+    .query("activity")
+    .withIndex("by_entityId_and_at", (q) => q.eq("entityId", fromId))
+    .take(SCRUB_PAGE);
+  for (const row of rows) {
+    await ctx.db.patch("activity", row._id, {
+      entityId: intoId,
+      ...(holdsFreeText(row) ? { summary: undefined, diff: undefined } : {}),
+    });
+  }
+  if (rows.length === SCRUB_PAGE) {
+    await ctx.scheduler.runAfter(0, internal.contacts.rekeyActivityRest, { fromId, intoId });
+  }
+}
+
+export const rekeyActivityRest = internalMutation({
+  args: { fromId: v.id("contacts"), intoId: v.id("contacts") },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    await rekeyActivity(ctx, args.fromId, args.intoId);
     return null;
   },
 });
@@ -300,83 +357,164 @@ export const merge = mutation({
       isDemo: into.isDemo && from.isDemo,
     });
     await ctx.db.delete("contacts", from._id);
+    await rekeyActivity(ctx, from._id, into._id);
 
+    // Ids and counts only: a name in the log would outlive an anonymization.
     await logActivity(ctx, {
       entity: "contact",
       entityId: into._id,
       action: "contact.merged",
-      summary: `${from.name} → ${into.name} (${leads.length} upita)`,
+      summary: `Spojen duplikat ${from._id} (${leads.length} upita)`,
       by: viewer._id,
     });
     return { movedLeads: leads.length };
   },
 });
 
-/** Activity rows whose summary quotes staff free text about the person. */
-const FREE_TEXT_ACTIONS = new Set(["lead.note", "contact.merged"]);
-
-async function scrubActivity(ctx: MutationCtx, entityId: string): Promise<void> {
+/**
+ * Clears free text from an entity's activity, a page at a time from `after`
+ * (an `at` timestamp). Rows sharing the boundary timestamp are read again,
+ * which is harmless: the patch is idempotent.
+ */
+async function scrubActivityFrom(ctx: MutationCtx, entityId: string, after: number): Promise<void> {
   const rows = await ctx.db
     .query("activity")
-    .withIndex("by_entityId_and_at", (q) => q.eq("entityId", entityId))
-    .take(100);
+    .withIndex("by_entityId_and_at", (q) => q.eq("entityId", entityId).gte("at", after))
+    .take(SCRUB_PAGE);
   for (const row of rows) {
-    if (FREE_TEXT_ACTIONS.has(row.action) && row.summary !== undefined) {
-      await ctx.db.patch("activity", row._id, { summary: undefined });
+    if (holdsFreeText(row)) {
+      await ctx.db.patch("activity", row._id, { summary: undefined, diff: undefined });
     }
+  }
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  if (rows.length === SCRUB_PAGE && first !== undefined && last !== undefined) {
+    await ctx.scheduler.runAfter(0, internal.contacts.scrubActivityRest, {
+      entityId,
+      // A full page within one millisecond would never advance; step past it.
+      after: last.at === first.at ? last.at + 1 : last.at,
+    });
   }
 }
 
-/**
- * Erases what a lead holds about the person: the message, the form answers
- * (the valuation/seller `addressNote` is their own address), the valuation,
- * staff notes, note previews in the activity log and viewing feedback.
- */
-async function scrubLead(ctx: MutationCtx, lead: Doc<"leads">): Promise<void> {
-  await ctx.db.patch("leads", lead._id, {
-    message: undefined,
-    answers: undefined,
-    valuation: undefined,
-  });
+export const scrubActivityRest = internalMutation({
+  args: { entityId: v.string(), after: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    await scrubActivityFrom(ctx, args.entityId, args.after);
+    return null;
+  },
+});
+
+/** Deletes a lead's staff notes, a page per transaction. */
+async function deleteNotes(ctx: MutationCtx, leadId: Id<"leads">): Promise<void> {
   const notes = await ctx.db
     .query("leadNotes")
-    .withIndex("by_leadId_and_at", (q) => q.eq("leadId", lead._id))
-    .take(100);
+    .withIndex("by_leadId_and_at", (q) => q.eq("leadId", leadId))
+    .take(SCRUB_PAGE);
   for (const note of notes) await ctx.db.delete("leadNotes", note._id);
-  await scrubActivity(ctx, lead._id);
+  if (notes.length === SCRUB_PAGE) {
+    await ctx.scheduler.runAfter(0, internal.contacts.deleteNotesRest, { leadId });
+  }
+}
 
+export const deleteNotesRest = internalMutation({
+  args: { leadId: v.id("leads") },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    await deleteNotes(ctx, args.leadId);
+    return null;
+  },
+});
+
+/** Clears the feedback of a lead's viewings and their activity, from `after` (a start time). */
+async function scrubViewingsFrom(ctx: MutationCtx, leadId: Id<"leads">, after: number): Promise<void> {
   const viewings = await ctx.db
     .query("viewings")
-    .withIndex("by_leadId_and_start", (q) => q.eq("leadId", lead._id))
-    .take(100);
+    .withIndex("by_leadId_and_start", (q) => q.eq("leadId", leadId).gte("start", after))
+    .take(VIEWING_PAGE);
   for (const viewing of viewings) {
     if (viewing.feedback !== undefined) {
       await ctx.db.patch("viewings", viewing._id, { feedback: undefined });
     }
+    await scrubActivityFrom(ctx, viewing._id, 0);
+  }
+  const first = viewings[0];
+  const last = viewings[viewings.length - 1];
+  if (viewings.length === VIEWING_PAGE && first !== undefined && last !== undefined) {
+    await ctx.scheduler.runAfter(0, internal.contacts.scrubViewingsRest, {
+      leadId,
+      after: last.start === first.start ? last.start + 1 : last.start,
+    });
   }
 }
 
-async function scrubLeadBatch(
+export const scrubViewingsRest = internalMutation({
+  args: { leadId: v.id("leads"), after: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    await scrubViewingsFrom(ctx, args.leadId, args.after);
+    return null;
+  },
+});
+
+/**
+ * Erases what a lead holds about the person: the message, the form answers
+ * (the valuation/seller `addressNote` is their own address), the valuation,
+ * the loss reason, a phone typed into a later form, the free-text campaign
+ * tags, staff notes, viewing feedback, and free text in the activity log of
+ * the lead and of each of its viewings.
+ */
+async function scrubLead(ctx: MutationCtx, lead: Doc<"leads">): Promise<void> {
+  let utm: Doc<"leads">["utm"];
+  if (lead.utm !== undefined) {
+    const { term: _term, content: _content, ...kept } = lead.utm;
+    utm = kept;
+  }
+  await ctx.db.patch("leads", lead._id, {
+    message: undefined,
+    answers: undefined,
+    valuation: undefined,
+    lossReason: undefined,
+    submittedPhone: undefined,
+    utm,
+  });
+  await deleteNotes(ctx, lead._id);
+  await scrubActivityFrom(ctx, lead._id, 0);
+  await scrubViewingsFrom(ctx, lead._id, 0);
+}
+
+/**
+ * Scrubs the contact's leads created after `after` (a `_creationTime`), a
+ * batch per transaction; the rest continues in the scheduler.
+ */
+async function scrubLeadsFrom(
   ctx: MutationCtx,
   contactId: Id<"contacts">,
-  cursor: string | null,
-): Promise<{ scrubbed: number; isDone: boolean; continueCursor: string }> {
-  const result = await ctx.db
+  after: number,
+): Promise<{ scrubbed: number; done: boolean }> {
+  const leads = await ctx.db
     .query("leads")
-    .withIndex("by_contactId", (q) => q.eq("contactId", contactId))
-    .paginate({ numItems: ANONYMIZE_BATCH, cursor });
-  for (const lead of result.page) await scrubLead(ctx, lead);
-  return {
-    scrubbed: result.page.length,
-    isDone: result.isDone,
-    continueCursor: result.continueCursor,
-  };
+    .withIndex("by_contactId", (q) => q.eq("contactId", contactId).gt("_creationTime", after))
+    .take(ANONYMIZE_BATCH + 1);
+  const batch = leads.slice(0, ANONYMIZE_BATCH);
+  for (const lead of batch) await scrubLead(ctx, lead);
+  const last = batch[batch.length - 1];
+  const done = leads.length <= ANONYMIZE_BATCH;
+  if (!done && last !== undefined) {
+    await ctx.scheduler.runAfter(0, internal.contacts.anonymizeRemainingLeads, {
+      contactId,
+      after: last._creationTime,
+    });
+  }
+  return { scrubbed: batch.length, done };
 }
 
 /**
  * ZZPL erasure: keeps the lead history (type, stage, dates, listing, agent)
- * and drops every identifier. The contact itself is erased at once; a contact
- * with many leads has the rest cleaned by scheduled batches.
+ * and drops every identifier and every piece of free text about the person.
+ * The contact itself is erased at once; anything beyond the first batch is
+ * cleaned by scheduled mutations until nothing is left.
  */
 export const anonymize = mutation({
   args: { id: v.id("contacts") },
@@ -396,21 +534,14 @@ export const anonymize = mutation({
       tags: ["anonimizovan"],
       anonymizedAt: Date.now(),
     });
-    await scrubActivity(ctx, doc._id);
-
-    const batch = await scrubLeadBatch(ctx, doc._id, null);
-    if (!batch.isDone) {
-      await ctx.scheduler.runAfter(0, internal.contacts.anonymizeRemainingLeads, {
-        contactId: doc._id,
-        cursor: batch.continueCursor,
-      });
-    }
+    await scrubActivityFrom(ctx, doc._id, 0);
+    const batch = await scrubLeadsFrom(ctx, doc._id, 0);
 
     await logActivity(ctx, {
       entity: "contact",
       entityId: doc._id,
       action: "contact.anonymized",
-      summary: batch.isDone
+      summary: batch.done
         ? `${batch.scrubbed} upita očišćeno`
         : `${batch.scrubbed}+ upita, ostatak se čisti u pozadini`,
       by: viewer._id,
@@ -421,16 +552,10 @@ export const anonymize = mutation({
 
 /** The continuation of `anonymize` for a contact with many leads. */
 export const anonymizeRemainingLeads = internalMutation({
-  args: { contactId: v.id("contacts"), cursor: v.string() },
+  args: { contactId: v.id("contacts"), after: v.number() },
   returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
-    const batch = await scrubLeadBatch(ctx, args.contactId, args.cursor);
-    if (!batch.isDone) {
-      await ctx.scheduler.runAfter(0, internal.contacts.anonymizeRemainingLeads, {
-        contactId: args.contactId,
-        cursor: batch.continueCursor,
-      });
-    }
+    await scrubLeadsFrom(ctx, args.contactId, args.after);
     return null;
   },
 });
@@ -515,12 +640,16 @@ const LOCALE_SR: Record<Locale, string> = {
  * CSV export of the contacts table (PRD B6), newest first, capped at
  * EXPORT_CAP rows. Anonymized contacts are left out: they hold no identifier
  * worth exporting. Returned as text; the browser adds the BOM and downloads.
+ *
+ * A mutation, not a query: the export of personal data and its audit row
+ * (`contact.exported`, with the real row count) commit in ONE transaction, so
+ * there is no export without a trace, whatever the client does.
  */
-export const exportCsv = query({
+export const exportCsv = mutation({
   args: {},
   returns: v.object({ csv: v.string(), rows: v.number(), truncated: v.boolean() }),
   handler: async (ctx) => {
-    await requireRole(ctx, MANAGERS);
+    const viewer = await requireRole(ctx, MANAGERS);
     const docs = await ctx.db.query("contacts").order("desc").take(EXPORT_CAP + 1);
     const truncated = docs.length > EXPORT_CAP;
     const header = [
@@ -558,22 +687,12 @@ export const exportCsv = query({
       );
     }
 
-    return { csv: [header, ...lines].join("\r\n"), rows: lines.length, truncated };
-  },
-});
-
-/** Audit trail for an export of personal data: who, when, how many rows. */
-export const logExport = mutation({
-  args: { rows: v.number() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const viewer = await requireRole(ctx, MANAGERS);
     await logActivity(ctx, {
       entity: "contact",
       action: "contact.exported",
-      summary: `CSV izvoz: ${Math.max(0, Math.floor(args.rows))} kontakata`,
+      summary: `CSV izvoz: ${lines.length} kontakata${truncated ? ` (prvih ${EXPORT_CAP})` : ""}`,
       by: viewer._id,
     });
-    return null;
+    return { csv: [header, ...lines].join("\r\n"), rows: lines.length, truncated };
   },
 });

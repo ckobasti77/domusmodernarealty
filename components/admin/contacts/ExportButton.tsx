@@ -1,6 +1,6 @@
 "use client";
 
-import { useConvex, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -25,13 +25,13 @@ function download(text: string, filename: string): void {
 }
 
 /**
- * "Izvezi CSV": a one-off read of `contacts.exportCsv` (not a subscription),
- * then `kontakti-YYYY-MM-DD.csv`, `;`-separated for Excel with Serbian
- * regional settings. The export is logged in the activity log.
+ * "Izvezi CSV": one call to the `contacts.exportCsv` mutation (it builds the
+ * file and logs the export in the same transaction), then
+ * `kontakti-YYYY-MM-DD.csv`, `;`-separated for Excel with Serbian regional
+ * settings.
  */
 export function ExportButton() {
-  const convex = useConvex();
-  const logExport = useMutation(api.contacts.logExport);
+  const exportCsv = useMutation(api.contacts.exportCsv);
   const [pending, setPending] = useState(false);
 
   return (
@@ -42,9 +42,8 @@ export function ExportButton() {
       onClick={async () => {
         setPending(true);
         try {
-          const result = await convex.query(api.contacts.exportCsv, {});
+          const result = await exportCsv({});
           download(result.csv, `kontakti-${toDateInput(Date.now())}.csv`);
-          await logExport({ rows: result.rows });
           toast.success(
             result.truncated
               ? `Izvezeno je prvih ${result.rows} kontakata. Za veći izvoz se obratite administratoru.`

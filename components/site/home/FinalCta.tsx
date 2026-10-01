@@ -9,6 +9,7 @@ import { Eyebrow } from "@/components/site/Eyebrow";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
+import type { HomeCopy } from "./copy";
 import type { PublicSettings } from "./data";
 
 /**
@@ -50,7 +51,15 @@ function Channel({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-export async function FinalCta({ locale, settings }: { locale: Locale; settings: PublicSettings | null }) {
+export async function FinalCta({
+  locale,
+  settings,
+  copy,
+}: {
+  locale: Locale;
+  settings: PublicSettings | null;
+  copy: HomeCopy["final"];
+}) {
   const t = await getTranslations({ locale, namespace: "home" });
   const tCommon = await getTranslations({ locale, namespace: "common" });
 
@@ -64,15 +73,17 @@ export async function FinalCta({ locale, settings }: { locale: Locale; settings:
       <Container className="pt-section lg:pt-section-lg">
         <div className="border-b border-hairline-dark pb-section lg:pb-32">
           <Eyebrow tone="accentDark">{t("finalEyebrow")}</Eyebrow>
-          <h2 id="final-title" className="mt-6 font-display text-display-xl font-normal text-ivory">
+          <h2 id="final-title" lang={copy.heading.lang} className="mt-6 font-display text-display-xl font-normal text-ivory">
             <SplitReveal as="span" className="block">
-              {t("finalHeading")}
+              {copy.heading.text}
             </SplitReveal>
           </h2>
 
           <div className="mt-12 grid grid-cols-4 gap-x-6 gap-y-14 lg:mt-16 lg:grid-cols-12 lg:items-end">
             <div className="col-span-4 lg:col-span-5">
-              <p className="max-w-[44ch] text-pretty text-body-l text-mist">{fixTypography(t("finalLede"))}</p>
+              <p lang={copy.lede.lang} className="max-w-[44ch] text-pretty text-body-l text-mist">
+                {fixTypography(copy.lede.text)}
+              </p>
               <MagneticButton className="mt-10">
                 <Link href="/contact" prefetch={false} className={buttonClasses({ variant: "inverse" })}>
                   <span>{t("finalCta")}</span>

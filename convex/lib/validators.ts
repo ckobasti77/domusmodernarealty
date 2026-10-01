@@ -505,6 +505,13 @@ export type PageKey = Infer<typeof pageKeyV>;
 /**
  * Editable page content. A small typed union beats `v.any()`: the admin editor
  * and the public renderer both switch on `type`.
+ *
+ * `richText.body` is always HTML limited to `h3, p, ul, ol, li, strong, em, a,
+ * blockquote, br` (checked in `pagesAdmin.upsert`, sanitized again on render);
+ * every other string is plain text. The optional section `title` / `lede` on
+ * `steps` and `stats` and the `note` on `cta` let one block carry a whole
+ * landing section (heading + lede + items) — all optional, so rows written
+ * before they existed still validate.
  */
 export const pageBlockV = v.union(
   v.object({
@@ -516,6 +523,7 @@ export const pageBlockV = v.union(
   v.object({
     type: v.literal("stats"),
     key: v.string(),
+    title: v.optional(l10nV),
     items: v.array(
       v.object({ value: v.string(), label: l10nV, isDemo: v.boolean() }),
     ),
@@ -523,6 +531,8 @@ export const pageBlockV = v.union(
   v.object({
     type: v.literal("steps"),
     key: v.string(),
+    title: v.optional(l10nV),
+    lede: v.optional(l10nV),
     items: v.array(v.object({ title: l10nV, body: l10nV })),
   }),
   v.object({
@@ -535,6 +545,8 @@ export const pageBlockV = v.union(
     key: v.string(),
     heading: l10nV,
     sub: v.optional(l10nV),
+    /** Small print under the call to action (e.g. the on-site valuation note). */
+    note: v.optional(l10nV),
     label: l10nV,
     href: v.string(),
   }),

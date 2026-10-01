@@ -8,6 +8,7 @@ import { applyDerived, locationNamesFor } from "./lib/derive";
 import { notFound } from "./lib/errors";
 import { assertUploadOk } from "./media";
 import { imageV, l10nV, tour360V, walk3dV } from "./lib/validators";
+import { deleteBlobIfPresent } from "./lib/storage";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
 
@@ -233,9 +234,9 @@ export const removeScene = mutation({
     const scene = await ctx.db.get("tourScenes", args.sceneId);
     if (scene === null || scene.listingId !== listing._id) notFound("Scena");
 
-    if (scene.pano.kind === "storage") await ctx.storage.delete(scene.pano.storageId);
+    if (scene.pano.kind === "storage") await deleteBlobIfPresent(ctx, scene.pano.storageId);
     if (scene.panoMobile?.kind === "storage") {
-      await ctx.storage.delete(scene.panoMobile.storageId);
+      await deleteBlobIfPresent(ctx, scene.panoMobile.storageId);
     }
     await ctx.db.delete("tourScenes", args.sceneId);
 

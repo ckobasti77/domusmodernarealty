@@ -21,7 +21,7 @@ import {
 import { isListedScope } from "./lib/search";
 import { localeV, viewingModeV } from "./lib/validators";
 import { parseHm } from "./agents";
-import { CONSENT_TEXT_VERSION } from "./leads";
+import { CONSENT_TEXT_VERSION, matchWebContact } from "./leads";
 import { contactSearchText } from "./lib/contactSearch";
 
 /** Viewings entered by the office can run longer than a web slot; overlap checks look this far back. */
@@ -140,13 +140,13 @@ export const request = mutation({
       channel: "web",
     };
 
-    const existing = await ctx.db
-      .query("contacts")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .first();
+    // A public form never changes an existing contact (see `leads.ts`): the
+    // typed phone and this request's consent stay on the lead.
+    const existing = await matchWebContact(ctx, email);
 
     let contactId;
-    if (existing !== null && existing.anonymizedAt === undefined) {
+    let submittedPhone: string | undefined;
+    if (existing !== null) {
       // One open request per visitor and listing: the agent answers it before
       // the same address can hold a second slot on this property.
       const open = await ctx.db
@@ -157,19 +157,8 @@ export const request = mutation({
       if (open.some((lead) => lead.type === "viewing" && lead.listingId === listing._id && lead.status === "new")) {
         appError("ALREADY_REQUESTED", "Zahtev za razgledanje ove nekretnine je već poslat.");
       }
-      // Public path: fill gaps only, never replace an existing identifier.
-      const addsPhone = existing.phone === undefined && phone !== undefined;
-      await ctx.db.patch("contacts", existing._id, {
-        ...(addsPhone
-          ? {
-              phone,
-              searchText: contactSearchText({ name: existing.name, email: existing.email, phone }),
-            }
-          : {}),
-        locale: args.locale,
-        consents: [...existing.consents.slice(-19), consent],
-      });
       contactId = existing._id;
+      if (phone !== undefined && phone !== existing.phone) submittedPhone = phone;
     } else {
       contactId = await ctx.db.insert("contacts", {
         name,
@@ -189,6 +178,7 @@ export const request = mutation({
       listingId: listing._id,
       agentId: agent._id,
       contactId,
+      ...(submittedPhone !== undefined ? { submittedPhone } : {}),
       ...(message !== undefined ? { message } : {}),
       answers: {
         start: args.start,

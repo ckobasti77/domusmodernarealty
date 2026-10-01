@@ -8,6 +8,7 @@ import { logActivity } from "./lib/activity";
 import { applyCountDelta } from "./lib/counts";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { deleteListingCascade } from "./lib/listingCascade";
+import { deleteBlobIfPresent } from "./lib/storage";
 
 /**
  * Daily cron: a published listing whose brokerage contract has expired must come
@@ -176,7 +177,7 @@ export const mergeCopiedMedia = internalMutation({
     const listing = await ctx.db.get("listings", args.listingId);
     const discard = async (items: MediaItem[]) => {
       for (const item of items) {
-        if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
+        if (item.image.kind === "storage") await deleteBlobIfPresent(ctx, item.image.storageId);
       }
     };
     if (listing === null) {

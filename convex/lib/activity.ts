@@ -8,17 +8,25 @@ type DiffEntry = Infer<typeof diffEntryV>;
 
 type Primitive = string | number | boolean | null | undefined;
 
-function stringify(value: unknown): string | undefined {
+/** The full comparable form of a value: strings as-is, everything else JSON. */
+function serialize(value: unknown): string | undefined {
   if (value === undefined) return undefined;
   if (value === null) return "—";
-  if (typeof value === "string") return value.slice(0, 200);
+  if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value).slice(0, 200);
+  return JSON.stringify(value);
+}
+
+/** What the log stores and shows: the serialized value, cut to 200 characters. */
+function display(value: string | undefined): string | undefined {
+  return value === undefined ? undefined : value.slice(0, 200);
 }
 
 /**
  * Field-level diff of two shallow record snapshots. Nested objects/arrays are
- * compared by their JSON form, which is enough for the admin change log.
+ * compared by their JSON form. Change is decided on the FULL value (callers
+ * use an empty diff to skip a write, so an edit past character 200 must still
+ * count); only the logged before/after text is truncated.
  */
 export function diffFields(
   before: Record<string, unknown>,
@@ -28,9 +36,9 @@ export function diffFields(
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   for (const key of keys) {
     if (key.startsWith("_")) continue;
-    const from = stringify(before[key]);
-    const to = stringify(after[key]);
-    if (from !== to) entries.push({ field: key, from, to });
+    const from = serialize(before[key]);
+    const to = serialize(after[key]);
+    if (from !== to) entries.push({ field: key, from: display(from), to: display(to) });
   }
   return entries;
 }

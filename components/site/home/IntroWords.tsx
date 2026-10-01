@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
  * as written, and no `aria-label` lands on the `<p>` (prohibited there).
  */
 
-export function IntroWords({ text, className }: { text: string; className?: string }) {
+export function IntroWords({ text, lang, className }: { text: string; lang?: string; className?: string }) {
   const root = useRef<HTMLParagraphElement>(null);
 
   useGSAP(
@@ -79,7 +79,7 @@ export function IntroWords({ text, className }: { text: string; className?: stri
   );
 
   return (
-    <p ref={root} className={cn(className)}>
+    <p ref={root} lang={lang} className={cn(className)}>
       {text}
     </p>
   );

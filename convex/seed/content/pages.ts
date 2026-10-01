@@ -13,6 +13,15 @@
  *   Nothing here claims a founding year, a sales record, an award or a person.
  * - Legal pages are drafts: the first block of each legal page opens with the
  *   "NACRT" warning required by `docs/04-CONTENT.md`.
+ * - Owner decisions (2026-09-28): the instant online estimate is indicative,
+ *   from average prices in the area — only the on-site valuation by an agent
+ *   may cite real transactions; the one reply-time promise is "Odgovaramo
+ *   istog radnog dana, a najkasnije u roku od 24 sata."
+ *
+ * The `home` blocks are the landing's managed copy (`lib/content/pages.ts`
+ * reads them, key by key). Their text is exactly the `home.*` strings of
+ * `messages/*.json`, which stay as the landing's fallback: a seeded landing
+ * renders identically with or without this page.
  */
 
 export type L10nText = { sr: string; en: string; ru: string; de: string };
@@ -28,15 +37,23 @@ export type SeedBlock =
   | {
       type: "stats";
       key: string;
+      title?: L10nText;
       items: { value: string; label: L10nText; isDemo: boolean }[];
     }
-  | { type: "steps"; key: string; items: { title: L10nText; body: L10nText }[] }
+  | {
+      type: "steps";
+      key: string;
+      title?: L10nText;
+      lede?: L10nText;
+      items: { title: L10nText; body: L10nText }[];
+    }
   | { type: "faq"; key: string; items: { q: L10nText; a: L10nText }[] }
   | {
       type: "cta";
       key: string;
       heading: L10nText;
       sub?: L10nText;
+      note?: L10nText;
       label: L10nText;
       href: string;
     }
@@ -123,15 +140,15 @@ const HOME: SeedPage = {
       key: "hero",
       title: {
         sr: "Dom koji se pamti.",
-        en: "A home you remember.",
+        en: "A home to remember.",
         ru: "Дом, который запоминается.",
-        de: "Ein Zuhause, das bleibt.",
+        de: "Ein Zuhause, das man nicht vergisst.",
       },
       body: {
         sr: "<p>Pažljivo odabrane nekretnine u Beogradu i širom Srbije — i savet koji traje duže od kupovine.</p>",
-        en: "<p>Carefully chosen properties in Belgrade and across Serbia — and advice that outlasts the purchase.</p>",
-        ru: "<p>Тщательно отобранная недвижимость в Белграде и по всей Сербии — и сопровождение, которое не заканчивается сделкой.</p>",
-        de: "<p>Sorgfältig ausgewählte Immobilien in Belgrad und in ganz Serbien — und eine Beratung, die über den Kauf hinaus trägt.</p>",
+        en: "<p>Carefully selected properties in Belgrade and across Serbia — and advice that outlasts the purchase.</p>",
+        ru: "<p>Тщательно отобранная недвижимость в Белграде и по всей Сербии — и совет, на который можно рассчитывать и после покупки.</p>",
+        de: "<p>Sorgfältig ausgewählte Immobilien in Belgrad und in ganz Serbien – und eine Beratung, die nicht mit dem Kauf endet.</p>",
       },
     },
     {
@@ -139,9 +156,9 @@ const HOME: SeedPage = {
       key: "intro",
       body: {
         sr: "<p>Verujemo da se prava nekretnina ne bira, već prepoznaje. Zato biramo manje, proveravamo više i vodimo Vas kroz svaki korak — od prvog razgledanja do ključeva u ruci.</p>",
-        en: "<p>We believe the right property is not so much chosen as recognised. So we take on less, check more, and guide you through every step — from the first viewing to the keys in your hand.</p>",
-        ru: "<p>Мы убеждены: правильную недвижимость не столько выбирают, сколько узнают. Поэтому мы берём меньше объектов, проверяем больше и ведём Вас через каждый шаг — от первого просмотра до ключей в Вашей руке.</p>",
-        de: "<p>Wir glauben, dass man die richtige Immobilie weniger auswählt als erkennt. Deshalb nehmen wir weniger Objekte an, prüfen mehr und begleiten Sie durch jeden Schritt — von der ersten Besichtigung bis zur Schlüsselübergabe.</p>",
+        en: "<p>We believe the right property is not so much chosen as recognised. That is why we select fewer, check more and guide you through every step — from the first viewing to the keys in your hand.</p>",
+        ru: "<p>Мы верим, что свой дом не выбирают, а узнают. Поэтому мы отбираем меньше, проверяем больше и сопровождаем Вас на каждом этапе — от первого просмотра до ключей в Ваших руках.</p>",
+        de: "<p>Wir glauben, dass man die richtige Immobilie nicht auswählt, sondern erkennt. Deshalb wählen wir strenger aus, prüfen gründlicher und begleiten Sie bei jedem Schritt – von der ersten Besichtigung bis zur Schlüsselübergabe.</p>",
       },
     },
     {
@@ -154,55 +171,107 @@ const HOME: SeedPage = {
         de: "Wir kennen jede Straße.",
       },
       body: {
-        sr: "<p>Vračar, Dorćol, Senjak, Dedinje, Novi Beograd, Beograd na vodi, Zemun, Novi Sad. Za svaku lokaciju znamo kako zvuči ujutru, koliko se stoji u saobraćaju i koje zgrade drže vrednost. Pitajte nas o ulici, ne samo o kvadraturi.</p>",
-        en: "<p>Vračar, Dorćol, Senjak, Dedinje, Novi Beograd, Beograd na vodi, Zemun, Novi Sad. For each of them we know how the morning sounds, how long the traffic takes and which buildings hold their value. Ask us about the street, not only the floor area.</p>",
-        ru: "<p>Врачар, Дорчол, Сеньяк, Дедине, Нови-Белград, Белград на воде, Земун, Нови-Сад. О каждом районе мы знаем, как он звучит утром, сколько времени уходит на дорогу и какие дома держат цену. Спрашивайте нас об улице, а не только о площади.</p>",
-        de: "<p>Vračar, Dorćol, Senjak, Dedinje, Novi Beograd, Beograd na vodi, Zemun, Novi Sad. Für jede Lage wissen wir, wie der Morgen klingt, wie lange man im Verkehr steht und welche Häuser ihren Wert halten. Fragen Sie uns nach der Straße, nicht nur nach der Wohnfläche.</p>",
+        sr: "<p>Od Vračara i Dorćola do Novog Beograda i Novog Sada — biramo kraj pre nego što biramo stan.</p>",
+        en: "<p>From Vračar and Dorćol to Novi Beograd and Novi Sad — we choose the neighbourhood first, then the apartment.</p>",
+        ru: "<p>От Врачара и Дорчола до Нови-Белграда и Нови-Сада — сначала мы выбираем район, а уже потом квартиру.</p>",
+        de: "<p>Von Vračar und Dorćol bis Novi Beograd und Novi Sad – erst wählen wir das Viertel, dann die Wohnung.</p>",
       },
     },
     {
-      type: "list",
+      type: "steps",
       key: "services",
       title: {
         sr: "Kako Vam pomažemo",
-        en: "How we help",
-        ru: "Чем мы помогаем",
-        de: "Wie wir Sie begleiten",
+        en: "How we can help",
+        ru: "Чем мы можем помочь",
+        de: "Wie wir Sie unterstützen",
       },
-      items: {
-        sr: [
-          "Kupovina — pronalazimo, proveravamo i pregovaramo za Vas.",
-          "Prodaja — prava cena, prava publika, bez stresa.",
-          "Zakup — pouzdani zakupci i uredni ugovori.",
-          "Procena — realna vrednost na osnovu stvarnih transakcija.",
-          "3D ture — nekretnina dostupna svakome, u svakom trenutku.",
-          "Relokacija i dijaspora — kupovina iz inostranstva, bez putovanja.",
-        ],
-        en: [
-          "Buying — we find, verify and negotiate on your behalf.",
-          "Selling — the right price, the right audience, without the stress.",
-          "Letting — dependable tenants and sound contracts.",
-          "Valuation — a realistic figure based on actual transactions.",
-          "3D tours — the property open to everyone, at any hour.",
-          "Relocation and diaspora — buying from abroad, without the journey.",
-        ],
-        ru: [
-          "Покупка — находим, проверяем и ведём переговоры для Вас.",
-          "Продажа — верная цена, верная аудитория, без лишнего напряжения.",
-          "Аренда — надёжные арендаторы и аккуратные договоры.",
-          "Оценка — реальная стоимость на основе состоявшихся сделок.",
-          "3D-туры — объект доступен каждому и в любое время.",
-          "Релокация и диаспора — покупка из-за рубежа, без поездок.",
-        ],
-        de: [
-          "Kauf — wir finden, prüfen und verhandeln für Sie.",
-          "Verkauf — der richtige Preis, das richtige Publikum, ohne Stress.",
-          "Vermietung — verlässliche Mieter und saubere Verträge.",
-          "Bewertung — ein realistischer Wert auf Basis tatsächlicher Abschlüsse.",
-          "3D-Touren — die Immobilie jederzeit für jeden zugänglich.",
-          "Relokation und Diaspora — Kauf aus dem Ausland, ohne Anreise.",
-        ],
-      },
+      items: [
+        {
+          title: {
+            sr: "Kupovina",
+            en: "Buying",
+            ru: "Покупка",
+            de: "Kauf",
+          },
+          body: {
+            sr: "Pronalazimo, proveravamo i pregovaramo za Vas. Vidite samo nekretnine koje su prošle našu proveru dokumentacije.",
+            en: "We find, verify and negotiate on your behalf. You only see properties whose paperwork has passed our checks.",
+            ru: "Находим, проверяем и ведём переговоры за Вас. Вы видите только объекты, документы которых прошли нашу проверку.",
+            de: "Wir suchen, prüfen und verhandeln für Sie. Sie sehen nur Immobilien, deren Unterlagen unsere Prüfung bestanden haben.",
+          },
+        },
+        {
+          title: {
+            sr: "Prodaja",
+            en: "Selling",
+            ru: "Продажа",
+            de: "Verkauf",
+          },
+          body: {
+            sr: "Prava cena, prava publika, bez stresa. Pripremamo nekretninu, fotografišemo i vodimo pregovore do potpisa.",
+            en: "The right price, the right buyers, without the stress. We prepare the property, photograph it and see negotiations through to signing.",
+            ru: "Справедливая цена, нужные покупатели и никакого стресса. Мы готовим объект, фотографируем его и ведём переговоры до подписания договора.",
+            de: "Der richtige Preis, die richtigen Käufer, ohne Stress. Wir bereiten Ihre Immobilie vor, fotografieren sie und führen die Verhandlungen bis zur Unterschrift.",
+          },
+        },
+        {
+          title: {
+            sr: "Zakup",
+            en: "Letting",
+            ru: "Аренда",
+            de: "Vermietung",
+          },
+          body: {
+            sr: "Pouzdani zakupci i uredni ugovori. Proveravamo svakog kandidata i vodimo primopredaju.",
+            en: "Reliable tenants and sound tenancy agreements. We vet every applicant and manage the handover.",
+            ru: "Надёжные арендаторы и грамотно составленные договоры. Мы проверяем каждого кандидата и проводим передачу объекта.",
+            de: "Zuverlässige Mieter und saubere Verträge. Wir prüfen jeden Mietinteressenten und kümmern uns um die Übergabe.",
+          },
+        },
+        {
+          title: {
+            sr: "Procena",
+            en: "Valuation",
+            ru: "Оценка",
+            de: "Bewertung",
+          },
+          body: {
+            sr: "Okvirna procena onlajn za dva minuta, a na terenu i detaljna analiza sa uporedivim prodajama iz Vašeg kraja.",
+            en: "An indicative online estimate in two minutes, and a detailed on-site analysis drawing on comparable sales in your neighbourhood.",
+            ru: "Ориентировочная онлайн-оценка за две минуты, а при выезде на объект — подробный анализ сопоставимых продаж в Вашем районе.",
+            de: "Online erhalten Sie in zwei Minuten einen Richtwert, vor Ort eine detaillierte Analyse anhand vergleichbarer Verkäufe aus Ihrem Viertel.",
+          },
+        },
+        {
+          title: {
+            sr: "3D ture",
+            en: "3D tours",
+            ru: "3D-туры",
+            de: "3D-Touren",
+          },
+          body: {
+            sr: "Nekretnina dostupna svakome, u svakom trenutku. 360° ture i 3D šetnje za odabrane nekretnine.",
+            en: "Open to everyone, around the clock. 360° tours and 3D walkthroughs of selected properties.",
+            ru: "Объект доступен каждому и в любое время. Туры 360° и 3D-прогулки по отобранным объектам.",
+            de: "Die Immobilie, jederzeit und für jeden zugänglich. 360°-Touren und 3D-Rundgänge für ausgewählte Objekte.",
+          },
+        },
+        {
+          title: {
+            sr: "Relokacija i dijaspora",
+            en: "Relocation and diaspora",
+            ru: "Релокация и диаспора",
+            de: "Relocation und Diaspora",
+          },
+          body: {
+            sr: "Kupovina iz inostranstva, bez putovanja. Razgledanja uživo preko video poziva i punomoćje uz našeg advokata.",
+            en: "Buying from abroad, with no need to travel. Live viewings by video call, and power of attorney arranged through our lawyer.",
+            ru: "Покупка из-за рубежа — без поездок. Просмотры в реальном времени по видеосвязи и оформление доверенности через нашего адвоката.",
+            de: "Kauf aus dem Ausland, ohne Anreise. Sie besichtigen live per Videoanruf, die Vollmacht regeln wir mit unserem Anwalt.",
+          },
+        },
+      ],
     },
     {
       type: "richText",
@@ -211,31 +280,43 @@ const HOME: SeedPage = {
         sr: "Prošetajte pre nego što dođete.",
         en: "Walk through before you arrive.",
         ru: "Пройдитесь ещё до визита.",
-        de: "Ein Rundgang, bevor Sie anreisen.",
+        de: "Ein Rundgang, noch bevor Sie kommen.",
       },
       body: {
-        sr: "<p>Virtuelne 360° ture i 3D šetnje za odabrane nekretnine. Pogledajte raspored, visinu plafona i pogled sa terase sa telefona ili računara, u bilo koje doba dana — i dođite na razgledanje kada ste sigurni.</p>",
-        en: "<p>Virtual 360° tours and 3D walkthroughs for selected properties. Study the layout, the ceiling height and the view from the terrace on your phone or laptop, at any hour — and come to a viewing once you are sure.</p>",
-        ru: "<p>Виртуальные 360°-туры и 3D-прогулки для отдельных объектов. Изучите планировку, высоту потолков и вид с террасы с телефона или компьютера в любое время — и приезжайте на просмотр, когда будете уверены.</p>",
-        de: "<p>Virtuelle 360°-Touren und 3D-Rundgänge für ausgewählte Immobilien. Prüfen Sie Grundriss, Raumhöhe und den Blick von der Terrasse am Telefon oder am Rechner, zu jeder Tageszeit — und kommen Sie zur Besichtigung, wenn Sie sicher sind.</p>",
+        sr: "<p>Virtuelne 360° ture i 3D šetnje za odabrane nekretnine.</p>",
+        en: "<p>Virtual 360° tours and 3D walkthroughs of selected properties.</p>",
+        ru: "<p>Виртуальные туры 360° и 3D-прогулки по отобранным объектам.</p>",
+        de: "<p>Virtuelle 360°-Touren und 3D-Rundgänge für ausgewählte Immobilien.</p>",
       },
     },
     {
       type: "steps",
       key: "process",
+      title: {
+        sr: "Kako prodajemo",
+        en: "How we sell",
+        ru: "Как мы продаём",
+        de: "Wie wir verkaufen",
+      },
+      lede: {
+        sr: "Pet koraka od prvog razgovora do primopredaje ključeva. Na svakom znate šta sledi i ko Vas vodi.",
+        en: "Five steps, from our first conversation to handing over the keys. At each step you know what comes next and who is guiding you.",
+        ru: "Пять шагов от первого разговора до передачи ключей. На каждом этапе Вы знаете, что будет дальше и кто Вас сопровождает.",
+        de: "Fünf Schritte vom ersten Gespräch bis zur Schlüsselübergabe. Bei jedem wissen Sie, was als Nächstes kommt und wer Sie begleitet.",
+      },
       items: [
         {
           title: {
             sr: "Upoznavanje i procena",
-            en: "Introduction and valuation",
+            en: "First meeting and valuation",
             ru: "Знакомство и оценка",
             de: "Kennenlernen und Bewertung",
           },
           body: {
-            sr: "Obilazimo nekretninu, proveravamo dokumentaciju i predlažemo cenu zasnovanu na ostvarenim transakcijama u kraju.",
-            en: "We visit the property, check the paperwork and propose a price grounded in completed transactions nearby.",
-            ru: "Осматриваем объект, проверяем документы и предлагаем цену, основанную на состоявшихся сделках в районе.",
-            de: "Wir besichtigen die Immobilie, prüfen die Unterlagen und schlagen einen Preis vor, der auf tatsächlichen Abschlüssen in der Umgebung beruht.",
+            sr: "Dolazimo na adresu, slušamo Vaš plan i dajemo realan raspon cene sa obrazloženjem.",
+            en: "We visit the property, listen to your plans and give you a realistic price range, with the reasoning behind it.",
+            ru: "Приезжаем на объект, выслушиваем Ваши планы и называем реалистичный диапазон цены с обоснованием.",
+            de: "Wir besichtigen die Immobilie, hören uns Ihre Pläne an und nennen Ihnen eine realistische Preisspanne mit Begründung.",
           },
         },
         {
@@ -246,24 +327,24 @@ const HOME: SeedPage = {
             de: "Vorbereitung und Fotografie",
           },
           body: {
-            sr: "Savetujemo šta vredi urediti pre snimanja, a zatim dolaze fotograf i, po potrebi, snimanje tlocrta.",
-            en: "We advise what is worth tidying before the shoot, then the photographer arrives, with a floor plan where useful.",
-            ru: "Советуем, что стоит привести в порядок до съёмки, затем работает фотограф, при необходимости — обмер планировки.",
-            de: "Wir sagen Ihnen, was sich vor dem Termin lohnt, danach kommt der Fotograf, bei Bedarf mit Grundrissaufnahme.",
+            sr: "Sređujemo dokumentaciju, savetujemo šta vredi urediti i snimamo profesionalne fotografije.",
+            en: "We put the paperwork in order, advise on what is worth refreshing and take professional photographs.",
+            ru: "Приводим в порядок документы, подсказываем, что стоит обновить, и делаем профессиональные фотографии.",
+            de: "Wir bringen die Unterlagen in Ordnung, beraten Sie dazu, was sich herzurichten lohnt, und erstellen professionelle Fotos.",
           },
         },
         {
           title: {
             sr: "Marketing i 3D tura",
-            en: "Marketing and the 3D tour",
+            en: "Marketing and 3D tour",
             ru: "Маркетинг и 3D-тур",
-            de: "Marketing und 3D-Tour",
+            de: "Vermarktung und 3D-Tour",
           },
           body: {
-            sr: "Oglas na četiri jezika, portali, naša baza kupaca i 3D tura koja štedi vreme i Vama i kupcu.",
-            en: "A listing in four languages, the portals, our buyer database and a 3D tour that saves everyone time.",
-            ru: "Объявление на четырёх языках, порталы, наша база покупателей и 3D-тур, который экономит время всем.",
-            de: "Ein Angebot in vier Sprachen, die Portale, unsere Käuferdatei und eine 3D-Tour, die allen Zeit spart.",
+            sr: "Oglas na četiri jezika, 360° tura ili 3D šetnja i ciljano oglašavanje prema kupcima iz zemlje i dijaspore.",
+            en: "A listing in four languages, a 360° tour or a 3D walkthrough, and advertising targeted at buyers in Serbia and the diaspora.",
+            ru: "Объявление на четырёх языках, тур 360° или 3D-прогулка и адресная реклама для покупателей из Сербии и диаспоры.",
+            de: "Ein Exposé in vier Sprachen, eine 360°-Tour oder ein 3D-Rundgang sowie die gezielte Ansprache von Käufern in Serbien und in der Diaspora.",
           },
         },
         {
@@ -271,32 +352,42 @@ const HOME: SeedPage = {
             sr: "Razgledanja i pregovori",
             en: "Viewings and negotiation",
             ru: "Просмотры и переговоры",
-            de: "Besichtigungen und Verhandlung",
+            de: "Besichtigungen und Verhandlungen",
           },
           body: {
-            sr: "Vodimo razgledanja, prenosimo Vam svaku povratnu informaciju i pregovaramo o ceni i rokovima.",
-            en: "We host the viewings, pass on every piece of feedback and negotiate price and timings.",
-            ru: "Проводим просмотры, передаём Вам каждый отзыв и ведём переговоры о цене и сроках.",
-            de: "Wir führen die Besichtigungen, geben Ihnen jede Rückmeldung weiter und verhandeln Preis und Termine.",
+            sr: "Vodimo svako razgledanje, filtriramo ozbiljne kupce i pregovaramo u Vaše ime.",
+            en: "We conduct every viewing, screen buyers for serious interest and negotiate on your behalf.",
+            ru: "Проводим каждый просмотр, отбираем серьёзных покупателей и ведём переговоры от Вашего имени.",
+            de: "Wir führen jede Besichtigung durch, treffen eine Vorauswahl ernsthafter Interessenten und verhandeln in Ihrem Namen.",
           },
         },
         {
           title: {
             sr: "Ugovor i primopredaja",
             en: "Contract and handover",
-            ru: "Договор и передача",
+            ru: "Договор и передача ключей",
             de: "Vertrag und Übergabe",
           },
           body: {
-            sr: "Uz advokata i notara pripremamo ugovor, a na primopredaji zapisujemo stanje brojila i predaju ključeva.",
-            en: "With a solicitor and a notary we prepare the contract; at handover we record the meter readings and the keys.",
-            ru: "С адвокатом и нотариусом готовим договор, а при передаче фиксируем показания счётчиков и вручение ключей.",
-            de: "Mit Anwalt und Notar bereiten wir den Vertrag vor; bei der Übergabe halten wir Zählerstände und Schlüssel fest.",
+            sr: "Uz advokata pripremamo ugovor, pratimo overu, poresku prijavu i predaju ključeva.",
+            en: "We prepare the contract with a lawyer and oversee the notarisation, the tax filing and the handover of the keys.",
+            ru: "Вместе с адвокатом готовим договор, сопровождаем нотариальное заверение, подачу налоговой декларации и передачу ключей.",
+            de: "Gemeinsam mit einem Anwalt bereiten wir den Vertrag vor und begleiten die Beurkundung, die Steuererklärung und die Übergabe der Schlüssel.",
           },
         },
       ],
     },
-    { type: "stats", key: "numbers", items: DEMO_STATS },
+    {
+      type: "stats",
+      key: "numbers",
+      title: {
+        sr: "Rezultati koji se mere",
+        en: "Results you can measure",
+        ru: "Результаты, которые можно измерить",
+        de: "Messbare Ergebnisse",
+      },
+      items: DEMO_STATS,
+    },
     {
       type: "cta",
       key: "valuationCta",
@@ -307,14 +398,20 @@ const HOME: SeedPage = {
         de: "Was ist Ihre Wohnung wert?",
       },
       sub: {
-        sr: "Besplatna procena za 2 minuta, bez obaveza.",
-        en: "A free, no-obligation valuation in two minutes.",
-        ru: "Бесплатная оценка за две минуты, без обязательств.",
-        de: "Kostenlose Bewertung in zwei Minuten, ohne Verpflichtung.",
+        sr: "Okvirna procena za dva minuta, na osnovu prosečnih cena u Vašem kraju. Bez obaveza i bez poziva koje niste tražili.",
+        en: "An indicative estimate in two minutes, based on average prices in your neighbourhood. No obligation, and no unsolicited calls.",
+        ru: "Ориентировочная оценка за две минуты на основе средних цен в Вашем районе. Без обязательств и без звонков, о которых Вы не просили.",
+        de: "Ein Richtwert in zwei Minuten, auf Basis der Durchschnittspreise in Ihrem Viertel. Unverbindlich und ohne unerwünschte Anrufe.",
+      },
+      note: {
+        sr: "Želite tačniju cifru? Agent izlazi na teren besplatno i procenjuje na osnovu stvarnih transakcija iz Vašeg kraja.",
+        en: "Would you like a more precise figure? An agent will visit your property free of charge and value it based on actual transactions in your neighbourhood.",
+        ru: "Нужна более точная цифра? Агент бесплатно приедет на объект и оценит его на основе реальных сделок в Вашем районе.",
+        de: "Sie möchten es genauer wissen? Einer unserer Makler bewertet Ihre Immobilie kostenlos vor Ort – anhand tatsächlich erzielter Verkaufspreise in Ihrem Viertel.",
       },
       label: {
-        sr: "Započni procenu",
-        en: "Start the valuation",
+        sr: "Započnite procenu",
+        en: "Start your valuation",
         ru: "Начать оценку",
         de: "Bewertung starten",
       },
@@ -325,21 +422,21 @@ const HOME: SeedPage = {
       key: "finalCta",
       heading: {
         sr: "Razgovarajmo.",
-        en: "Let us talk.",
+        en: "Let's talk.",
         ru: "Давайте поговорим.",
-        de: "Sprechen wir darüber.",
+        de: "Kommen wir ins Gespräch.",
       },
       sub: {
-        sr: "Pozovite nas, pišite na Viber ili WhatsApp — odgovaramo istog dana.",
-        en: "Call us, or write on Viber or WhatsApp — we reply the same day.",
-        ru: "Позвоните нам или напишите в Viber или WhatsApp — отвечаем в тот же день.",
-        de: "Rufen Sie uns an oder schreiben Sie über Viber oder WhatsApp — wir antworten am selben Tag.",
+        sr: "Pozovite nas ili pišite na Viber, WhatsApp ili e-poštu. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+        en: "Call us, message us on Viber or WhatsApp, or email us. We reply the same working day, and within 24 hours at the latest.",
+        ru: "Позвоните нам или напишите в Viber, WhatsApp или на электронную почту. Мы отвечаем в тот же рабочий день, самое позднее — в течение 24 часов.",
+        de: "Rufen Sie uns an oder schreiben Sie uns per Viber, WhatsApp oder E-Mail. Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
       },
       label: {
-        sr: "Pišite nam",
-        en: "Write to us",
-        ru: "Напишите нам",
-        de: "Schreiben Sie uns",
+        sr: "Pošaljite upit",
+        en: "Send an enquiry",
+        ru: "Отправить запрос",
+        de: "Anfrage senden",
       },
       href: "/contact",
     },
@@ -361,10 +458,10 @@ const ABOUT: SeedPage = {
         de: "Wer wir sind und wie wir arbeiten",
       },
       body: {
-        sr: "<p>Mihajlo Estate je agencija za nekretnine sa sedištem u Beogradu. Posredujemo u prodaji, zakupu i proceni stanova, kuća i poslovnih prostora u Beogradu i širom Srbije.</p><p>Radimo sa manjim brojem nekretnina nego što bi tržište dopuštalo. Nekretninu primamo u ponudu tek kada je vidimo iznutra, pročitamo list nepokretnosti i potvrdimo ko ima pravo da prodaje. Ako dokumentacija nije uredna, prvo kažemo šta treba rešiti, pa onda razgovaramo o oglasu.</p><p>Cenu predlažemo na osnovu ostvarenih transakcija u istoj ulici i istom tipu zgrade, a ne na osnovu želja. Oglas pišemo konkretno: kvadratura, orijentacija, sprat, grejanje, stanje instalacija i šta ostaje u stanu. Fotografišemo profesionalno, a za odabrane nekretnine snimamo i 360° turu, tako da kupac iz inostranstva vidi prostor pre puta.</p><p>Razgovaramo na srpskom, engleskom, ruskom i nemačkom. Na svaki upit odgovaramo u toku jednog radnog dana — i kada je odgovor da ova nekretnina nije za Vas.</p>",
-        en: "<p>Mihajlo Estate is an estate agency based in Belgrade. We act as brokers in the sale, letting and valuation of apartments, houses and commercial premises in Belgrade and across Serbia.</p><p>We take on fewer properties than the market would allow. A property enters our portfolio only once we have seen it from the inside, read the title deed and confirmed who holds the right to sell. Where the paperwork is incomplete, we first set out what needs resolving, and only then discuss the listing.</p><p>Our price proposal rests on completed transactions in the same street and the same type of building, not on wishes. Listings are written in concrete terms: floor area, orientation, floor, heating, the state of the services, and what stays in the flat. Photography is professional, and selected properties are captured as a 360° tour, so a buyer abroad can see the space before travelling.</p><p>We work in Serbian, English, Russian and German. Every enquiry receives a reply within one working day — including when the answer is that a property is not right for you.</p>",
-        ru: "<p>Mihajlo Estate — агентство недвижимости со штаб-квартирой в Белграде. Мы выступаем посредниками при продаже, аренде и оценке квартир, домов и коммерческих помещений в Белграде и по всей Сербии.</p><p>Мы берём в работу меньше объектов, чем позволил бы рынок. Объект попадает в нашу подборку только после того, как мы увидели его изнутри, изучили выписку из кадастра и подтвердили, кто вправе продавать. Если документы не в порядке, мы сначала говорим, что нужно устранить, и лишь затем обсуждаем объявление.</p><p>Цену мы предлагаем на основе состоявшихся сделок на той же улице и в домах того же типа, а не исходя из пожеланий. Объявление пишем конкретно: площадь, ориентация, этаж, отопление, состояние коммуникаций и то, что остаётся в квартире. Фотосъёмка профессиональная, а для отдельных объектов мы снимаем 360°-тур, чтобы покупатель из-за рубежа увидел пространство до поездки.</p><p>Мы говорим на сербском, английском, русском и немецком. На каждое обращение отвечаем в течение одного рабочего дня — в том числе когда ответ таков, что этот объект Вам не подходит.</p>",
-        de: "<p>Mihajlo Estate ist eine Immobilienagentur mit Sitz in Belgrad. Wir vermitteln Verkauf, Vermietung und Bewertung von Wohnungen, Häusern und Gewerbeflächen in Belgrad und in ganz Serbien.</p><p>Wir nehmen weniger Objekte an, als der Markt zuließe. Eine Immobilie kommt erst dann in unser Angebot, wenn wir sie von innen gesehen, den Grundbuchauszug gelesen und die Verkaufsberechtigung geklärt haben. Sind die Unterlagen unvollständig, benennen wir zuerst die offenen Punkte und sprechen erst danach über das Angebot.</p><p>Unseren Preisvorschlag stützen wir auf abgeschlossene Verkäufe in derselben Straße und in vergleichbaren Häusern, nicht auf Wünsche. Angebote formulieren wir konkret: Wohnfläche, Ausrichtung, Etage, Heizung, Zustand der Installationen und was in der Wohnung bleibt. Fotografiert wird professionell; ausgewählte Objekte nehmen wir zusätzlich als 360°-Tour auf, damit Interessenten aus dem Ausland die Räume vor der Anreise sehen.</p><p>Wir beraten auf Serbisch, Englisch, Russisch und Deutsch. Jede Anfrage wird innerhalb eines Werktags beantwortet — auch dann, wenn die Antwort lautet, dass eine Immobilie nicht zu Ihnen passt.</p>",
+        sr: "<p>Mihajlo Estate je agencija za nekretnine sa sedištem u Beogradu. Posredujemo u prodaji, zakupu i proceni stanova, kuća i poslovnih prostora u Beogradu i širom Srbije.</p><p>Radimo sa manjim brojem nekretnina nego što bi tržište dopuštalo. Nekretninu primamo u ponudu tek kada je vidimo iznutra, pročitamo list nepokretnosti i potvrdimo ko ima pravo da prodaje. Ako dokumentacija nije uredna, prvo kažemo šta treba rešiti, pa onda razgovaramo o oglasu.</p><p>Cenu predlažemo na osnovu ostvarenih transakcija u istoj ulici i istom tipu zgrade, a ne na osnovu želja. Oglas pišemo konkretno: kvadratura, orijentacija, sprat, grejanje, stanje instalacija i šta ostaje u stanu. Fotografišemo profesionalno, a za odabrane nekretnine snimamo i 360° turu, tako da kupac iz inostranstva vidi prostor pre puta.</p><p>Razgovaramo na srpskom, engleskom, ruskom i nemačkom. Na svaki upit odgovaramo istog radnog dana, a najkasnije u roku od 24 sata — i kada je odgovor da ova nekretnina nije za Vas.</p>",
+        en: "<p>Mihajlo Estate is an estate agency based in Belgrade. We act as brokers in the sale, letting and valuation of apartments, houses and commercial premises in Belgrade and across Serbia.</p><p>We take on fewer properties than the market would allow. A property enters our portfolio only once we have seen it from the inside, read the title deed and confirmed who holds the right to sell. Where the paperwork is incomplete, we first set out what needs resolving, and only then discuss the listing.</p><p>Our price proposal rests on completed transactions in the same street and the same type of building, not on wishes. Listings are written in concrete terms: floor area, orientation, floor, heating, the state of the services, and what stays in the flat. Photography is professional, and selected properties are captured as a 360° tour, so a buyer abroad can see the space before travelling.</p><p>We work in Serbian, English, Russian and German. We reply to every enquiry the same working day, and within 24 hours at the latest — including when the answer is that a property is not right for you.</p>",
+        ru: "<p>Mihajlo Estate — агентство недвижимости со штаб-квартирой в Белграде. Мы выступаем посредниками при продаже, аренде и оценке квартир, домов и коммерческих помещений в Белграде и по всей Сербии.</p><p>Мы берём в работу меньше объектов, чем позволил бы рынок. Объект попадает в нашу подборку только после того, как мы увидели его изнутри, изучили выписку из кадастра и подтвердили, кто вправе продавать. Если документы не в порядке, мы сначала говорим, что нужно устранить, и лишь затем обсуждаем объявление.</p><p>Цену мы предлагаем на основе состоявшихся сделок на той же улице и в домах того же типа, а не исходя из пожеланий. Объявление пишем конкретно: площадь, ориентация, этаж, отопление, состояние коммуникаций и то, что остаётся в квартире. Фотосъёмка профессиональная, а для отдельных объектов мы снимаем 360°-тур, чтобы покупатель из-за рубежа увидел пространство до поездки.</p><p>Мы говорим на сербском, английском, русском и немецком. На каждое обращение мы отвечаем в тот же рабочий день, самое позднее — в течение 24 часов. Даже если ответ таков, что этот объект Вам не подходит.</p>",
+        de: "<p>Mihajlo Estate ist eine Immobilienagentur mit Sitz in Belgrad. Wir vermitteln Verkauf, Vermietung und Bewertung von Wohnungen, Häusern und Gewerbeflächen in Belgrad und in ganz Serbien.</p><p>Wir nehmen weniger Objekte an, als der Markt zuließe. Eine Immobilie kommt erst dann in unser Angebot, wenn wir sie von innen gesehen, den Grundbuchauszug gelesen und die Verkaufsberechtigung geklärt haben. Sind die Unterlagen unvollständig, benennen wir zuerst die offenen Punkte und sprechen erst danach über das Angebot.</p><p>Unseren Preisvorschlag stützen wir auf abgeschlossene Verkäufe in derselben Straße und in vergleichbaren Häusern, nicht auf Wünsche. Angebote formulieren wir konkret: Wohnfläche, Ausrichtung, Etage, Heizung, Zustand der Installationen und was in der Wohnung bleibt. Fotografiert wird professionell; ausgewählte Objekte nehmen wir zusätzlich als 360°-Tour auf, damit Interessenten aus dem Ausland die Räume vor der Anreise sehen.</p><p>Wir beraten auf Serbisch, Englisch, Russisch und Deutsch. Wir antworten auf jede Anfrage noch am selben Werktag, spätestens innerhalb von 24 Stunden — auch dann, wenn die Antwort lautet, dass eine Immobilie nicht zu Ihnen passt.</p>",
       },
     },
     {
@@ -380,34 +477,34 @@ const ABOUT: SeedPage = {
         sr: [
           "Manje nekretnina, više provere — ne oglašavamo ono što nismo videli.",
           "Dokumentacija pre cene — list nepokretnosti i pravo prodaje proveravamo na početku.",
-          "Cena iz podataka — predlog se oslanja na ostvarene transakcije, ne na osećaj.",
+          "Cena iz podataka — predlog cene posle obilaska oslanja se na ostvarene transakcije, ne na osećaj.",
           "Bez skrivenih troškova — provizija i troškovi dogovaraju se pisano i unapred.",
           "Diskrecija — podatke o klijentima i nekretninama ne delimo bez dogovora.",
-          "Odgovor u roku od jednog radnog dana, na četiri jezika.",
+          "Odgovor istog radnog dana, a najkasnije u roku od 24 sata — na četiri jezika.",
         ],
         en: [
           "Fewer properties, more checking — we do not advertise what we have not seen.",
           "Documents before price — we verify the title deed and the right to sell at the outset.",
-          "A price from data — our proposal rests on completed transactions, not on a feeling.",
+          "A price from data — after a visit, our proposal rests on completed transactions, not on a feeling.",
           "No hidden costs — commission and expenses are agreed in writing, in advance.",
           "Discretion — we do not share client or property details without agreement.",
-          "A reply within one working day, in four languages.",
+          "A reply the same working day, and within 24 hours at the latest — in four languages.",
         ],
         ru: [
           "Меньше объектов, больше проверок — мы не рекламируем то, чего не видели сами.",
           "Документы прежде цены — выписку из кадастра и право на продажу проверяем в самом начале.",
-          "Цена из данных — предложение опирается на состоявшиеся сделки, а не на ощущения.",
+          "Цена из данных — после осмотра наше предложение опирается на состоявшиеся сделки, а не на ощущения.",
           "Без скрытых расходов — комиссия и издержки согласуются письменно и заранее.",
           "Конфиденциальность — сведения о клиентах и объектах не передаём без согласия.",
-          "Ответ в течение одного рабочего дня, на четырёх языках.",
+          "Ответ в тот же рабочий день, самое позднее — в течение 24 часов, на четырёх языках.",
         ],
         de: [
           "Weniger Objekte, mehr Prüfung — wir bewerben nichts, was wir nicht selbst gesehen haben.",
           "Unterlagen vor Preis — Grundbuchauszug und Verkaufsberechtigung prüfen wir zu Beginn.",
-          "Ein Preis aus Daten — unser Vorschlag beruht auf abgeschlossenen Verkäufen, nicht auf Gefühl.",
+          "Ein Preis aus Daten — nach der Besichtigung beruht unser Vorschlag auf abgeschlossenen Verkäufen, nicht auf Gefühl.",
           "Keine versteckten Kosten — Provision und Auslagen werden vorab schriftlich vereinbart.",
           "Diskretion — Angaben zu Kunden und Objekten geben wir nicht ohne Absprache weiter.",
-          "Antwort innerhalb eines Werktags, in vier Sprachen.",
+          "Antwort noch am selben Werktag, spätestens innerhalb von 24 Stunden — in vier Sprachen.",
         ],
       },
     },
@@ -462,7 +559,7 @@ const SELL: SeedPage = {
       },
       items: {
         sr: [
-          "Predlog cene iz ostvarenih transakcija u Vašoj ulici i tipu zgrade.",
+          "Predlog cene posle obilaska, iz ostvarenih transakcija u Vašoj ulici i tipu zgrade.",
           "Provera dokumentacije pre oglasa, sa spiskom onoga što treba rešiti.",
           "Profesionalne fotografije, tlocrt i 360° tura za odabrane nekretnine.",
           "Oglas na srpskom, engleskom, ruskom i nemačkom — i za kupce iz dijaspore.",
@@ -471,7 +568,7 @@ const SELL: SeedPage = {
           "Pravna i poreska koordinacija do primopredaje, uz advokata i notara.",
         ],
         en: [
-          "A price proposal based on completed transactions in your street and building type.",
+          "A price proposal after a visit, based on completed transactions in your street and building type.",
           "A documents check before the listing goes live, with a list of what needs resolving.",
           "Professional photography, a floor plan and a 360° tour for selected properties.",
           "A listing in Serbian, English, Russian and German — reaching buyers abroad too.",
@@ -480,7 +577,7 @@ const SELL: SeedPage = {
           "Legal and tax coordination through to handover, with a solicitor and a notary.",
         ],
         ru: [
-          "Предложение по цене на основе состоявшихся сделок на Вашей улице и в домах того же типа.",
+          "Предложение по цене после осмотра — на основе состоявшихся сделок на Вашей улице и в домах того же типа.",
           "Проверка документов до публикации объявления и перечень того, что нужно устранить.",
           "Профессиональные фотографии, планировка и 360°-тур для отдельных объектов.",
           "Объявление на сербском, английском, русском и немецком — в том числе для покупателей за рубежом.",
@@ -489,7 +586,7 @@ const SELL: SeedPage = {
           "Юридическое и налоговое сопровождение до передачи объекта, с адвокатом и нотариусом.",
         ],
         de: [
-          "Ein Preisvorschlag auf Basis abgeschlossener Verkäufe in Ihrer Straße und in vergleichbaren Häusern.",
+          "Ein Preisvorschlag nach der Besichtigung, auf Basis abgeschlossener Verkäufe in Ihrer Straße und in vergleichbaren Häusern.",
           "Prüfung der Unterlagen vor der Veröffentlichung, mit einer Liste der offenen Punkte.",
           "Professionelle Fotos, Grundriss und 360°-Tour für ausgewählte Immobilien.",
           "Ein Angebot auf Serbisch, Englisch, Russisch und Deutsch — auch für Käufer im Ausland.",
@@ -655,10 +752,10 @@ const VALUATION: SeedPage = {
         de: "Wertermittlung",
       },
       body: {
-        sr: "<p>Naša online procena je orijentacioni raspon. Računa se iz prosečne cene po kvadratu u Vašem kraju, uz korekciju za sprat, stanje i godinu gradnje, na osnovu podataka o ostvarenim transakcijama i aktuelnoj ponudi.</p><p>To nije zvanično veštačenje i ne može se koristiti pred bankom, sudom ili poreskom upravom. Za kredit banka angažuje svog procenitelja, a za sudske i poreske potrebe potrebna je procena ovlašćenog sudskog veštaka.</p><p>Raspon je koristan za jednu odluku: da li ima smisla izaći na tržište sada i sa kojom cenom. Tačniji broj dobijate kada nekretninu vidimo — tada gledamo svetlo, orijentaciju, instalacije, zgradu i dokumentaciju.</p>",
-        en: "<p>Our online valuation is an indicative range. It is calculated from the average price per square metre in your neighbourhood, adjusted for floor, condition and year of construction, using data on completed transactions and current supply.</p><p>It is not a formal appraisal and cannot be used with a bank, a court or the tax authority. For a mortgage the bank appoints its own valuer; for court or tax purposes you need a report from a licensed court expert.</p><p>The range is useful for one decision: whether it makes sense to come to market now, and at what price. A firmer figure follows once we have seen the property — then we look at the light, the orientation, the services, the building and the paperwork.</p>",
-        ru: "<p>Наша онлайн-оценка — это ориентировочный диапазон. Он рассчитывается из средней цены за квадратный метр в Вашем районе с поправками на этаж, состояние и год постройки, по данным о состоявшихся сделках и текущем предложении.</p><p>Это не официальная экспертиза: такой расчёт нельзя предъявить банку, суду или налоговому органу. Для ипотеки банк привлекает своего оценщика, а для суда и налогов требуется отчёт лицензированного судебного эксперта.</p><p>Диапазон помогает решить одно: имеет ли смысл выходить на рынок сейчас и с какой ценой. Более точную цифру Вы получите после нашего осмотра — тогда мы смотрим на свет, ориентацию, коммуникации, дом и документы.</p>",
-        de: "<p>Unsere Online-Bewertung ist eine Orientierungsspanne. Sie wird aus dem durchschnittlichen Quadratmeterpreis in Ihrem Viertel berechnet und um Etage, Zustand und Baujahr korrigiert — auf Grundlage abgeschlossener Verkäufe und des aktuellen Angebots.</p><p>Sie ist kein offizielles Wertgutachten und lässt sich gegenüber Bank, Gericht oder Steuerbehörde nicht verwenden. Für eine Finanzierung bestellt die Bank ihren eigenen Gutachter; für Gericht und Steuer brauchen Sie das Gutachten eines gerichtlich zugelassenen Sachverständigen.</p><p>Die Spanne hilft bei einer Frage: Lohnt sich der Markteintritt jetzt, und zu welchem Preis? Eine belastbare Zahl folgt nach der Besichtigung — dann betrachten wir Licht, Ausrichtung, Installationen, Haus und Unterlagen.</p>",
+        sr: "<p>Naša online procena je okvirni raspon. Računa se iz prosečne cene po kvadratu u Vašem kraju, uz korekciju za sprat, stanje i godinu gradnje.</p><p>To nije zvanično veštačenje i ne može se koristiti pred bankom, sudom ili poreskom upravom. Za kredit banka angažuje svog procenitelja, a za sudske i poreske potrebe potrebna je procena ovlašćenog sudskog veštaka.</p><p>Raspon je koristan za jednu odluku: da li ima smisla izaći na tržište sada i sa kojom cenom. Tačniji broj dobijate kada nekretninu vidimo — tada gledamo svetlo, orijentaciju, instalacije, zgradu i dokumentaciju i poredimo je sa stvarnim transakcijama iz Vašeg kraja, iz Registra cena nepokretnosti RGZ-a.</p>",
+        en: "<p>Our online valuation is an indicative range. It is calculated from the average price per square metre in your neighbourhood, adjusted for floor, condition and year of construction.</p><p>It is not a formal appraisal and cannot be used with a bank, a court or the tax authority. For a mortgage the bank appoints its own valuer; for court or tax purposes you need a report from a licensed court expert.</p><p>The range is useful for one decision: whether it makes sense to come to market now, and at what price. A firmer figure follows once we have seen the property — then we look at the light, the orientation, the services, the building and the paperwork, and compare the property with actual transactions in your area from the RGZ real estate price register.</p>",
+        ru: "<p>Наша онлайн-оценка — это ориентировочный диапазон. Он рассчитывается из средней цены за квадратный метр в Вашем районе с поправками на этаж, состояние и год постройки.</p><p>Это не официальная экспертиза: такой расчёт нельзя предъявить банку, суду или налоговому органу. Для ипотеки банк привлекает своего оценщика, а для суда и налогов требуется отчёт лицензированного судебного эксперта.</p><p>Диапазон помогает решить одно: имеет ли смысл выходить на рынок сейчас и с какой ценой. Более точную цифру Вы получите после нашего осмотра — тогда мы смотрим на свет, ориентацию, коммуникации, дом и документы и сравниваем объект с реальными сделками в Вашем районе по данным реестра цен недвижимости RGZ.</p>",
+        de: "<p>Unsere Online-Bewertung ist eine Orientierungsspanne. Sie wird aus dem durchschnittlichen Quadratmeterpreis in Ihrem Viertel berechnet und um Etage, Zustand und Baujahr korrigiert.</p><p>Sie ist kein offizielles Wertgutachten und lässt sich gegenüber Bank, Gericht oder Steuerbehörde nicht verwenden. Für eine Finanzierung bestellt die Bank ihren eigenen Gutachter; für Gericht und Steuer brauchen Sie das Gutachten eines gerichtlich zugelassenen Sachverständigen.</p><p>Die Spanne hilft bei einer Frage: Lohnt sich der Markteintritt jetzt, und zu welchem Preis? Eine belastbare Zahl folgt nach der Besichtigung — dann betrachten wir Licht, Ausrichtung, Installationen, Haus und Unterlagen und vergleichen die Immobilie mit tatsächlichen Verkäufen in Ihrem Viertel aus dem Immobilienpreisregister der RGZ.</p>",
       },
     },
     {
@@ -731,10 +828,10 @@ const VALUATION: SeedPage = {
             de: "Wie genau ist die Bewertung?",
           },
           a: {
-            sr: "Za standardan stan u kraju sa dovoljno uporedivih transakcija raspon je blizu tržišta. Kod netipičnih nekretnina — potkrovlja, adaptacija, neuknjiženih delova, kuća sa velikim placem — odstupanje je veće, pa procenu treba proveriti na terenu. Zato rezultat uvek dajemo kao interval, ne kao jedan broj.",
-            en: "For a standard flat in an area with enough comparable transactions, the range sits close to the market. For unusual properties — attic conversions, adapted spaces, unregistered extensions, houses on large plots — the margin widens, so the figure should be checked on site. That is why the result is always an interval rather than a single number.",
-            ru: "Для типовой квартиры в районе с достаточным числом сопоставимых сделок диапазон близок к рынку. Для нетипичных объектов — мансард, перепланировок, незарегистрированных частей, домов с большим участком — разброс шире, и результат стоит проверить на месте. Поэтому мы всегда даём интервал, а не одно число.",
-            de: "Bei einer üblichen Wohnung in einem Viertel mit genügend vergleichbaren Abschlüssen liegt die Spanne nah am Markt. Bei besonderen Objekten — Dachgeschossausbauten, Umnutzungen, nicht eingetragenen Teilen, Häusern mit großem Grundstück — wird sie breiter und sollte vor Ort geprüft werden. Deshalb nennen wir immer ein Intervall und keine einzelne Zahl.",
+            sr: "Za standardan stan u kraju sa dovoljno podataka o cenama raspon je blizu tržišta. Kod netipičnih nekretnina — potkrovlja, adaptacija, neuknjiženih delova, kuća sa velikim placem — odstupanje je veće, pa procenu treba proveriti na terenu. Zato rezultat uvek dajemo kao interval, ne kao jedan broj.",
+            en: "For a standard flat in an area with plenty of price data, the range sits close to the market. For unusual properties — attic conversions, adapted spaces, unregistered extensions, houses on large plots — the margin widens, so the figure should be checked on site. That is why the result is always an interval rather than a single number.",
+            ru: "Для типовой квартиры в районе, по которому достаточно данных о ценах, диапазон близок к рынку. Для нетипичных объектов — мансард, перепланировок, незарегистрированных частей, домов с большим участком — разброс шире, и результат стоит проверить на месте. Поэтому мы всегда даём интервал, а не одно число.",
+            de: "Bei einer üblichen Wohnung in einem Viertel mit ausreichend Preisdaten liegt die Spanne nah am Markt. Bei besonderen Objekten — Dachgeschossausbauten, Umnutzungen, nicht eingetragenen Teilen, Häusern mit großem Grundstück — wird sie breiter und sollte vor Ort geprüft werden. Deshalb nennen wir immer ein Intervall und keine einzelne Zahl.",
           },
         },
         {
@@ -794,10 +891,10 @@ const CONTACT: SeedPage = {
         de: "Kontakt",
       },
       body: {
-        sr: "<p>Najlakše je telefonom: na konkretno pitanje o nekretnini dobijate odgovor odmah. Pišite nam i na Viber, WhatsApp ili e-poštu — na svaku poruku odgovaramo u toku jednog radnog dana.</p><p>Ako tražite nekretninu koju još nemamo u ponudi, opišite šta Vam je važno: kraj, kvadratura, sprat, rok. Takve upite vodimo kao potražnju i javljamo se kada se pojavi odgovarajuća nekretnina, često pre objave oglasa.</p>",
-        en: "<p>The telephone is quickest: a specific question about a property gets an answer straight away. You are equally welcome on Viber, WhatsApp or by email — every message receives a reply within one working day.</p><p>If you are looking for something we do not currently have, tell us what matters: the area, the floor area, the floor, your timing. We keep such requests on file and come back to you when a suitable property appears, often before it is advertised.</p>",
-        ru: "<p>Быстрее всего по телефону: на конкретный вопрос об объекте Вы получите ответ сразу. Пишите также в Viber, WhatsApp или на электронную почту — на каждое сообщение отвечаем в течение одного рабочего дня.</p><p>Если Вы ищете объект, которого пока нет в нашей подборке, опишите, что для Вас важно: район, площадь, этаж, сроки. Такие запросы мы ведём отдельно и сообщаем, когда появляется подходящий вариант — часто до публикации объявления.</p>",
-        de: "<p>Am schnellsten geht es telefonisch: eine konkrete Frage zu einer Immobilie beantworten wir sofort. Ebenso erreichen Sie uns über Viber, WhatsApp oder per E-Mail — jede Nachricht wird innerhalb eines Werktags beantwortet.</p><p>Wenn Sie etwas suchen, das wir derzeit nicht im Angebot haben, beschreiben Sie uns, worauf es Ihnen ankommt: Viertel, Wohnfläche, Etage, Zeitrahmen. Solche Anfragen führen wir als Suchauftrag und melden uns, sobald eine passende Immobilie auftaucht — oft vor der Veröffentlichung.</p>",
+        sr: "<p>Najlakše je telefonom: na konkretno pitanje o nekretnini dobijate odgovor odmah. Pišite nam i na Viber, WhatsApp ili e-poštu. Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.</p><p>Ako tražite nekretninu koju još nemamo u ponudi, opišite šta Vam je važno: kraj, kvadratura, sprat, rok. Takve upite vodimo kao potražnju i javljamo se kada se pojavi odgovarajuća nekretnina, često pre objave oglasa.</p>",
+        en: "<p>The telephone is quickest: a specific question about a property gets an answer straight away. You are equally welcome on Viber, WhatsApp or by email. We reply the same working day, and within 24 hours at the latest.</p><p>If you are looking for something we do not currently have, tell us what matters: the area, the floor area, the floor, your timing. We keep such requests on file and come back to you when a suitable property appears, often before it is advertised.</p>",
+        ru: "<p>Быстрее всего по телефону: на конкретный вопрос об объекте Вы получите ответ сразу. Пишите также в Viber, WhatsApp или на электронную почту. Мы отвечаем в тот же рабочий день, самое позднее — в течение 24 часов.</p><p>Если Вы ищете объект, которого пока нет в нашей подборке, опишите, что для Вас важно: район, площадь, этаж, сроки. Такие запросы мы ведём отдельно и сообщаем, когда появляется подходящий вариант — часто до публикации объявления.</p>",
+        de: "<p>Am schnellsten geht es telefonisch: eine konkrete Frage zu einer Immobilie beantworten wir sofort. Ebenso erreichen Sie uns über Viber, WhatsApp oder per E-Mail. Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.</p><p>Wenn Sie etwas suchen, das wir derzeit nicht im Angebot haben, beschreiben Sie uns, worauf es Ihnen ankommt: Viertel, Wohnfläche, Etage, Zeitrahmen. Solche Anfragen führen wir als Suchauftrag und melden uns, sobald eine passende Immobilie auftaucht — oft vor der Veröffentlichung.</p>",
       },
     },
     {
@@ -840,10 +937,10 @@ const CONTACT: SeedPage = {
             de: "Wie schnell antworten Sie?",
           },
           a: {
-            sr: "Na poruke poslate preko sajta odgovaramo istog dana, najkasnije u roku od jednog radnog dana. Ako je pitanje složeno — dokumentacija, kredit, kupovina iz inostranstva — prvo potvrdimo prijem i kažemo kada možete očekivati potpun odgovor.",
-            en: "Messages sent through this site are answered the same day, and within one working day at the latest. If the question is involved — paperwork, a mortgage, buying from abroad — we confirm receipt first and tell you when to expect a full answer.",
-            ru: "На сообщения с сайта отвечаем в тот же день, самое позднее — в течение одного рабочего дня. Если вопрос сложный — документы, ипотека, покупка из-за рубежа, — сначала подтверждаем получение и сообщаем, когда ждать полный ответ.",
-            de: "Nachrichten über diese Website beantworten wir am selben Tag, spätestens innerhalb eines Werktags. Bei umfangreicheren Fragen — Unterlagen, Finanzierung, Kauf aus dem Ausland — bestätigen wir zuerst den Eingang und nennen Ihnen, wann Sie eine vollständige Antwort erhalten.",
+            sr: "Odgovaramo istog radnog dana, a najkasnije u roku od 24 sata. Ako je pitanje složeno — dokumentacija, kredit, kupovina iz inostranstva — prvo potvrdimo prijem i kažemo kada možete očekivati potpun odgovor.",
+            en: "We reply the same working day, and within 24 hours at the latest. If the question is involved — paperwork, a mortgage, buying from abroad — we confirm receipt first and tell you when to expect a full answer.",
+            ru: "Мы отвечаем в тот же рабочий день, самое позднее — в течение 24 часов. Если вопрос сложный — документы, ипотека, покупка из-за рубежа, — сначала подтверждаем получение и сообщаем, когда ждать полный ответ.",
+            de: "Wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden. Bei umfangreicheren Fragen — Unterlagen, Finanzierung, Kauf aus dem Ausland — bestätigen wir zuerst den Eingang und nennen Ihnen, wann Sie eine vollständige Antwort erhalten.",
           },
         },
       ],

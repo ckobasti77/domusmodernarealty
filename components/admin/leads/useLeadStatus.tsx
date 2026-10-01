@@ -67,7 +67,7 @@ function moveOptimistically(store: OptimisticLocalStore, move: Move): void {
   }
 }
 
-type Target = Pick<LeadRow, "_id" | "contactName" | "status">;
+type Target = Pick<LeadRow, "_id" | "contactName" | "status" | "contactAnonymized">;
 
 /**
  * One way to change a lead's stage for the board, the card menu and the
@@ -98,7 +98,8 @@ export function useLeadStatus(): {
   const changeStatus = useCallback(
     (lead: Target, status: LeadStatus) => {
       if (status === lead.status) return;
-      if (status === "lost") {
+      // An anonymized contact's lead takes no new free text: no reason asked.
+      if (status === "lost" && !lead.contactAnonymized) {
         setLosing(lead);
         return;
       }

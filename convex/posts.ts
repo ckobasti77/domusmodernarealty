@@ -1,10 +1,14 @@
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
+import type { Infer } from "convex/values";
 import { query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { agentPublicV, imageUrl, toAgentPublic } from "./lib/dto";
-import { l10nV, postCategoryV, seoV } from "./lib/validators";
+import { l10nV, postCategoryV } from "./lib/validators";
+
+/** Public page size cap: the journal grid never asks for more. */
+const PAGE_MAX = 24;
 
 const postCardV = v.object({
   _id: v.id("posts"),
@@ -20,11 +24,29 @@ const postCardV = v.object({
   isDemo: v.boolean(),
 });
 
+/** SEO for the article page; the share image is a resolved URL, never a storage ref. */
+const postSeoV = v.object({
+  metaTitle: v.optional(l10nV),
+  metaDescription: v.optional(l10nV),
+  ogImageUrl: v.optional(v.string()),
+});
+
 const postDetailV = postCardV.extend({
   body: l10nV,
   author: v.optional(agentPublicV),
-  seo: v.optional(seoV),
+  seo: v.optional(postSeoV),
 });
+
+async function publicSeo(ctx: QueryCtx, doc: Doc<"posts">): Promise<Infer<typeof postSeoV> | null> {
+  if (doc.seo === undefined) return null;
+  const ogImageUrl = doc.seo.ogImage !== undefined ? await imageUrl(ctx, doc.seo.ogImage) : null;
+  const seo = {
+    ...(doc.seo.metaTitle !== undefined ? { metaTitle: doc.seo.metaTitle } : {}),
+    ...(doc.seo.metaDescription !== undefined ? { metaDescription: doc.seo.metaDescription } : {}),
+    ...(ogImageUrl !== null ? { ogImageUrl } : {}),
+  };
+  return Object.keys(seo).length > 0 ? seo : null;
+}
 
 async function toCardDto(ctx: QueryCtx, doc: Doc<"posts">) {
   const coverUrl = doc.cover !== undefined ? await imageUrl(ctx, doc.cover) : null;
@@ -50,12 +72,12 @@ export const list = query({
     category: v.optional(postCategoryV),
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(postCardV),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(postCardV),
   handler: async (ctx, args) => {
+    const paginationOpts = {
+      ...args.paginationOpts,
+      numItems: Math.min(Math.max(Math.floor(args.paginationOpts.numItems) || 1, 1), PAGE_MAX),
+    };
     const result =
       args.category !== undefined
         ? await ctx.db
@@ -64,25 +86,21 @@ export const list = query({
               q.eq("status", "published").eq("category", args.category!),
             )
             .order("desc")
-            .paginate(args.paginationOpts)
+            .paginate(paginationOpts)
         : await ctx.db
             .query("posts")
             .withIndex("by_status_and_publishedAt", (q) =>
               q.eq("status", "published"),
             )
             .order("desc")
-            .paginate(args.paginationOpts);
+            .paginate(paginationOpts);
 
     const page = [];
     for (const doc of result.page) {
       if (doc.status !== "published") continue;
       page.push(await toCardDto(ctx, doc));
     }
-    return {
-      page,
-      isDone: result.isDone,
-      continueCursor: result.continueCursor,
-    };
+    return { ...result, page };
   },
 });
 
@@ -100,6 +118,7 @@ export const bySlug = query({
       doc.authorAgentId !== undefined
         ? await ctx.db.get("agents", doc.authorAgentId)
         : null;
+    const seo = await publicSeo(ctx, doc);
 
     return {
       ...(await toCardDto(ctx, doc)),
@@ -107,7 +126,7 @@ export const bySlug = query({
       ...(agent !== null && agent.isPublic
         ? { author: await toAgentPublic(ctx, agent) }
         : {}),
-      ...(doc.seo !== undefined ? { seo: doc.seo } : {}),
+      ...(seo !== null ? { seo } : {}),
     };
   },
 });
@@ -116,7 +135,7 @@ export const related = query({
   args: { slug: v.string(), limit: v.optional(v.number()) },
   returns: v.array(postCardV),
   handler: async (ctx, args) => {
-    const limit = Math.min(Math.max(args.limit ?? 3, 1), 9);
+    const limit = Math.min(Math.max(Math.floor(args.limit ?? 3) || 3, 1), 9);
     const current = await ctx.db
       .query("posts")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))

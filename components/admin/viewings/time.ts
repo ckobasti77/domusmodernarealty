@@ -109,12 +109,8 @@ const dayMonthLong = new Intl.DateTimeFormat("sr-Latn-RS", {
   year: "numeric",
   timeZone: "UTC",
 });
-const rangeFmt = new Intl.DateTimeFormat("sr-Latn-RS", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
+const dayMonthNoYear = new Intl.DateTimeFormat("sr-Latn-RS", { day: "numeric", month: "long", timeZone: "UTC" });
+const yearOf = new Intl.DateTimeFormat("en", { year: "numeric", timeZone: "UTC" });
 
 function capitalize(text: string): string {
   return text.length > 0 ? text[0].toLocaleUpperCase("sr-Latn") + text.slice(1) : text;
@@ -140,7 +136,13 @@ export function longDayLabel(wall: number): string {
   return `${weekdayName(wall)}, ${dayMonthLong.format(wall)}`;
 }
 
-/** `28. septembar – 4. oktobar 2026.` */
+/**
+ * `28. septembar – 4. oktobar 2026.` Built from two plain formats:
+ * `formatRange` prints a zero-padded end day ("04. oktobar") in sr-Latn.
+ */
 export function weekRangeLabel(mondayWall: number): string {
-  return rangeFmt.formatRange(mondayWall, mondayWall + 6 * DAY_MS);
+  const sundayWall = mondayWall + 6 * DAY_MS;
+  const sameYear = yearOf.format(mondayWall) === yearOf.format(sundayWall);
+  const start = sameYear ? dayMonthNoYear.format(mondayWall) : dayMonthLong.format(mondayWall);
+  return `${start} – ${dayMonthLong.format(sundayWall)}`;
 }

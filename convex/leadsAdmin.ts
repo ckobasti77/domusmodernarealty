@@ -1,8 +1,8 @@
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import type { Infer } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { logActivity } from "./lib/activity";
 import { assertCanEditAssignment, requireRole } from "./lib/auth";
@@ -39,6 +39,12 @@ const STATUS_SR: Record<LeadStatus, string> = {
 /** Rows read per kanban column; the column count reads "100+" beyond it. */
 const KANBAN_SCAN = 100;
 const LOSS_REASON_MAX = 300;
+/** A next step further than this from today is a typo, not a plan. */
+const NEXT_ACTION_RANGE_MS = 5 * 366 * 24 * 3_600_000;
+/** Office viewings may run this long; a reassigned viewing's clash check looks back this far. */
+const LONGEST_VIEWING_MS = 3 * 3_600_000;
+/** Author shown when a user row has no display name (never an email address). */
+const TEAM_MEMBER = "Član tima";
 
 const leadRowV = v.object({
   _id: v.id("leads"),
@@ -51,6 +57,8 @@ const leadRowV = v.object({
   contactEmail: v.optional(v.string()),
   contactPhone: v.optional(v.string()),
   contactAnonymized: v.boolean(),
+  /** A phone typed into a later web form; unverified, not the contact's. */
+  submittedPhone: v.optional(v.string()),
   listingRef: v.optional(v.string()),
   listingTitle: v.optional(v.string()),
   listingId: v.optional(v.id("listings")),
@@ -80,6 +88,7 @@ async function toRow(ctx: QueryCtx, doc: Doc<"leads">) {
     ...(contact?.email !== undefined ? { contactEmail: contact.email } : {}),
     ...(contact?.phone !== undefined ? { contactPhone: contact.phone } : {}),
     contactAnonymized: contact?.anonymizedAt !== undefined,
+    ...(doc.submittedPhone !== undefined ? { submittedPhone: doc.submittedPhone } : {}),
     ...(listing !== null ? { listingRef: listing.ref, listingTitle: listing.title.sr } : {}),
     ...(doc.listingId !== undefined ? { listingId: doc.listingId } : {}),
     ...(doc.agentId !== undefined ? { agentId: doc.agentId } : {}),
@@ -253,11 +262,7 @@ export const list = query({
     status: v.optional(leadStatusV),
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(leadRowV),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(leadRowV),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, CRM);
     const { paginationOpts, ...filters } = args;
@@ -273,7 +278,8 @@ export const list = query({
       if (!ownLeadOnly(viewer, doc) || !matches(doc, filters, scope)) continue;
       page.push(await toRow(ctx, doc));
     }
-    return { page, isDone: result.isDone, continueCursor: result.continueCursor };
+    // The whole result, so `splitCursor` / `pageStatus` reach the client.
+    return { ...result, page };
   },
 });
 
@@ -391,7 +397,7 @@ export const get = query({
       if (id === undefined) return undefined;
       if (names.has(id)) return names.get(id);
       const user = await ctx.db.get("users", id);
-      const name = user === null ? undefined : (user.name ?? user.email);
+      const name = user === null ? undefined : (user.name ?? TEAM_MEMBER);
       names.set(id, name);
       return name;
     };
@@ -503,6 +509,59 @@ async function loadEditableLead(
   return doc;
 }
 
+/** True when the lead's contact was erased under ZZPL (`contacts.anonymize`). */
+async function contactAnonymized(ctx: QueryCtx, lead: Doc<"leads">): Promise<boolean> {
+  const contact = await ctx.db.get("contacts", lead.contactId);
+  return contact?.anonymizedAt !== undefined;
+}
+
+const ERASED = "Kontakt ovog upita je anonimizovan; nove beleške i razlozi se ne beleže.";
+
+/**
+ * Hands the lead's open viewings (requested or confirmed) to the new agent, so
+ * the previous one no longer holds the client's appointment. A viewing that
+ * would clash with the new agent's calendar stays where it is and is counted,
+ * for the office to rebook by hand.
+ */
+async function moveOpenViewings(
+  ctx: MutationCtx,
+  leadId: Id<"leads">,
+  agentId: Id<"agents">,
+): Promise<{ moved: number; clashed: number }> {
+  const viewings = await ctx.db
+    .query("viewings")
+    .withIndex("by_leadId_and_start", (q) => q.eq("leadId", leadId))
+    .take(50);
+  let moved = 0;
+  let clashed = 0;
+  for (const viewing of viewings) {
+    if (viewing.agentId === agentId) continue;
+    if (viewing.status !== "requested" && viewing.status !== "confirmed") continue;
+    const nearby = await ctx.db
+      .query("viewings")
+      .withIndex("by_agentId_and_start", (q) =>
+        q
+          .eq("agentId", agentId)
+          .gte("start", viewing.start - LONGEST_VIEWING_MS)
+          .lt("start", viewing.end),
+      )
+      .take(100);
+    const clash = nearby.some(
+      (item) =>
+        (item.status === "requested" || item.status === "confirmed") &&
+        item.start < viewing.end &&
+        item.end > viewing.start,
+    );
+    if (clash) {
+      clashed += 1;
+      continue;
+    }
+    await ctx.db.patch("viewings", viewing._id, { agentId });
+    moved += 1;
+  }
+  return { moved, clashed };
+}
+
 export const setStatus = mutation({
   args: {
     id: v.id("leads"),
@@ -515,7 +574,11 @@ export const setStatus = mutation({
     const doc = await loadEditableLead(ctx, viewer, args.id);
 
     const reason = (args.lossReason ?? "").trim();
-    if (args.status === "lost" && reason.length === 0) {
+    // An erased person's lead still moves through the pipeline, but takes no
+    // new free text: "Izgubljen" is recorded without a reason.
+    const erased = await contactAnonymized(ctx, doc);
+    if (erased && reason.length > 0) invalidInput(ERASED);
+    if (args.status === "lost" && reason.length === 0 && !erased) {
       invalidInput("Navedite razlog gubitka.");
     }
     if (reason.length > LOSS_REASON_MAX) {
@@ -529,7 +592,7 @@ export const setStatus = mutation({
     await ctx.db.patch("leads", doc._id, {
       status: args.status,
       // A lead taken back out of "Izgubljen" no longer has a loss reason.
-      lossReason: args.status === "lost" ? reason : undefined,
+      lossReason: args.status === "lost" && reason.length > 0 ? reason : undefined,
       ...(doc.firstResponseAt === undefined && args.status !== "new"
         ? { firstResponseAt: now }
         : {}),
@@ -548,14 +611,19 @@ export const setStatus = mutation({
   },
 });
 
+/**
+ * Assigns the lead (managers). The lead's open viewings follow it to the new
+ * agent; `clashedViewings` counts those left behind because the new agent is
+ * busy at that time.
+ */
 export const assign = mutation({
   args: { id: v.id("leads"), agentId: v.optional(v.id("agents")) },
-  returns: v.null(),
+  returns: v.object({ movedViewings: v.number(), clashedViewings: v.number() }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, MANAGERS);
     const doc = await ctx.db.get("leads", args.id);
     if (doc === null) notFound("Upit");
-    if (doc.agentId === args.agentId) return null;
+    if (doc.agentId === args.agentId) return { movedViewings: 0, clashedViewings: 0 };
 
     const agent =
       args.agentId !== undefined ? await ctx.db.get("agents", args.agentId) : null;
@@ -564,11 +632,21 @@ export const assign = mutation({
       doc.agentId !== undefined ? await ctx.db.get("agents", doc.agentId) : null;
 
     await ctx.db.patch("leads", doc._id, { agentId: args.agentId });
+    const viewings =
+      args.agentId !== undefined
+        ? await moveOpenViewings(ctx, doc._id, args.agentId)
+        : { moved: 0, clashed: 0 };
+    const viewingNote = [
+      viewings.moved > 0 ? `razgledanja preneta: ${viewings.moved}` : undefined,
+      viewings.clashed > 0 ? `u sukobu, ostala kod prethodnog agenta: ${viewings.clashed}` : undefined,
+    ]
+      .filter((part) => part !== undefined)
+      .join("; ");
     await logActivity(ctx, {
       entity: "lead",
       entityId: doc._id,
       action: "lead.assigned",
-      summary: agent?.name ?? "Bez agenta",
+      summary: `${agent?.name ?? "Bez agenta"}${viewingNote.length > 0 ? ` (${viewingNote})` : ""}`,
       diff: [
         {
           field: "agent",
@@ -578,7 +656,7 @@ export const assign = mutation({
       ],
       by: viewer._id,
     });
-    return null;
+    return { movedViewings: viewings.moved, clashedViewings: viewings.clashed };
   },
 });
 
@@ -592,6 +670,7 @@ export const addNote = mutation({
     const body = args.body.trim();
     if (body.length === 0) invalidInput("Beleška ne može biti prazna.");
     if (body.length > 4000) invalidInput("Beleška je predugačka (najviše 4000 znakova).");
+    if (await contactAnonymized(ctx, doc)) invalidInput(ERASED);
 
     const now = Date.now();
     const id = await ctx.db.insert("leadNotes", {
@@ -600,17 +679,29 @@ export const addNote = mutation({
       body,
       at: now,
     });
-    if (doc.firstResponseAt === undefined) {
-      await ctx.db.patch("leads", doc._id, { firstResponseAt: now });
-    }
-    // The preview is scrubbed again by `contacts.anonymize`.
+    // A note means someone is working the lead: it counts as the first
+    // response and takes a new lead to "Kontaktiran".
+    await ctx.db.patch("leads", doc._id, {
+      ...(doc.firstResponseAt === undefined ? { firstResponseAt: now } : {}),
+      ...(doc.status === "new" ? { status: "contacted" as const } : {}),
+    });
+    // No text in the log: the note lives in `leadNotes` (the timeline reads
+    // it there) and is deleted by an anonymization; the log is not.
     await logActivity(ctx, {
       entity: "lead",
       entityId: doc._id,
       action: "lead.note",
-      summary: body.slice(0, 80),
       by: viewer._id,
     });
+    if (doc.status === "new") {
+      await logActivity(ctx, {
+        entity: "lead",
+        entityId: doc._id,
+        action: "lead.status.contacted",
+        summary: `${STATUS_SR.new} → ${STATUS_SR.contacted}`,
+        by: viewer._id,
+      });
+    }
     return { id };
   },
 });
@@ -621,8 +712,12 @@ export const setNextAction = mutation({
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, CRM);
     const doc = await loadEditableLead(ctx, viewer, args.id);
-    if (args.nextActionAt !== undefined && !Number.isFinite(args.nextActionAt)) {
-      invalidInput("Datum sledećeg koraka nije ispravan.");
+    if (
+      args.nextActionAt !== undefined &&
+      (!Number.isFinite(args.nextActionAt) ||
+        Math.abs(args.nextActionAt - Date.now()) > NEXT_ACTION_RANGE_MS)
+    ) {
+      invalidInput("Datum sledećeg koraka mora biti u narednih (ili proteklih) pet godina.");
     }
     if (doc.nextActionAt === args.nextActionAt) return null;
 

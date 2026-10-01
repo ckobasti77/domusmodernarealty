@@ -130,7 +130,8 @@ export const agentPublicV = v.object({
 export type AgentPublic = Infer<typeof agentPublicV>;
 
 export function monogramOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter((part) => part.length > 0);
+  // Letters and digits only: "Ana (agent)" is AA, not A(.
+  const parts = name.split(/[^\p{L}\p{N}]+/u).filter((part) => part.length > 0);
   if (parts.length === 0) return "ME";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -193,7 +194,8 @@ async function agencyContact(
   const phone = settings?.phones[0];
   return {
     _id: agent._id,
-    slug: agent.slug,
+    // Hidden profiles get name-based slugs ("ana-babic"); never expose them.
+    slug: "agencija",
     name,
     role: AGENCY_ROLE,
     monogram: monogramOf(name),

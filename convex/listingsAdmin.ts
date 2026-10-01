@@ -15,7 +15,7 @@ import {
   checklistContext,
   publishChecklist,
 } from "./lib/checklist";
-import { applyCountDelta } from "./lib/counts";
+import { applyCountDelta, statusCounts } from "./lib/counts";
 import { deleteListingCascade } from "./lib/listingCascade";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
@@ -417,34 +417,20 @@ const STATUSES = [
   "archived",
 ] as const;
 
-/** Status tab badges. Capped at 501 per status: Convex has no count operator. */
+/**
+ * Status tab badges, from the denormalized `listingStatusCounts` (one indexed
+ * read of at most 8 rows): agency-wide, or the agent's own listings for an
+ * agent. Exact, not capped.
+ */
 export const counts = query({
   args: {},
   returns: v.array(v.object({ status: listingStatusV, count: v.number() })),
   handler: async (ctx) => {
     const viewer = await requireRole(ctx, EDITORS);
     const agentId = scopedAgentId(viewer, undefined);
-    const out = [];
-    for (const status of STATUSES) {
-      if (agentId === null) {
-        out.push({ status, count: 0 });
-        continue;
-      }
-      const rows =
-        agentId !== undefined
-          ? await ctx.db
-              .query("listings")
-              .withIndex("by_agentId_and_status_and_updatedAt", (q) =>
-                q.eq("agentId", agentId).eq("status", status),
-              )
-              .take(501)
-          : await ctx.db
-              .query("listings")
-              .withIndex("by_status_and_updatedAt", (q) => q.eq("status", status))
-              .take(501);
-      out.push({ status, count: rows.length });
-    }
-    return out;
+    if (agentId === null) return STATUSES.map((status) => ({ status, count: 0 }));
+    const byStatus = await statusCounts(ctx, agentId ?? "all");
+    return STATUSES.map((status) => ({ status, count: byStatus[status] ?? 0 }));
   },
 });
 
@@ -699,6 +685,7 @@ export const create = mutation({
 
     const derived = applyDerived(base, [...Object.values(city.name).flat()], false);
     const id = await ctx.db.insert("listings", { ...base, ...derived });
+    await applyCountDelta(ctx, null, await ctx.db.get("listings", id));
 
     await logActivity(ctx, {
       entity: "listing",
@@ -1091,6 +1078,7 @@ export const duplicate = mutation({
     const names = await locationNamesFor(ctx, base);
     const derived = applyDerived(base, names, false);
     const id = await ctx.db.insert("listings", { ...base, ...derived });
+    await applyCountDelta(ctx, null, await ctx.db.get("listings", id));
 
     const storedMedia = stored(source.media);
     const storedPlans = stored(source.floorPlans);
@@ -1203,6 +1191,8 @@ export const bulk = mutation({
           continue;
         }
         await ctx.db.patch("listings", id, { agentId: args.agentId, updatedAt: now });
+        // The per-agent status counters follow the listing to its new agent.
+        await applyCountDelta(ctx, before, await ctx.db.get("listings", id));
         done += 1;
         continue;
       }
@@ -1323,8 +1313,25 @@ export const rotatePreviewToken = mutation({
 });
 
 /**
+ * True when the contact has a lead not assigned to `agentId` (or more leads
+ * than are worth checking): editing it would reach into a colleague's client.
+ */
+async function hasForeignLeads(
+  ctx: MutationCtx,
+  contactId: Id<"contacts">,
+  agentId: Id<"agents">,
+): Promise<boolean> {
+  const leads = await ctx.db
+    .query("leads")
+    .withIndex("by_contactId", (q) => q.eq("contactId", contactId))
+    .take(51);
+  return leads.length > 50 || leads.some((lead) => lead.agentId !== agentId);
+}
+
+/**
  * The seller's private contact (PRD B3 "Pravno"). Never exposed publicly: the
  * public DTOs do not read `ownerContactId`. Passing `name: ""` unlinks it.
+ * Owner contacts are tagged "vlasnik", and public forms never attach to them.
  */
 export const setOwner = mutation({
   args: {
@@ -1367,8 +1374,14 @@ export const setOwner = mutation({
     };
     if (doc.ownerContactId !== undefined) {
       const existing = await ctx.db.get("contacts", doc.ownerContactId);
-      // An anonymized contact stays erased: new details get a new contact.
-      if (existing !== null && existing.anonymizedAt === undefined) {
+      // An anonymized contact stays erased, and a contact that is also another
+      // agent's client (it has leads outside this listing's agent) is not this
+      // editor's to rewrite: in both cases the new details get a new contact.
+      if (
+        existing !== null &&
+        existing.anonymizedAt === undefined &&
+        !(await hasForeignLeads(ctx, existing._id, doc.agentId))
+      ) {
         // `undefined` clears a field the editor emptied.
         await ctx.db.patch("contacts", existing._id, {
           name,

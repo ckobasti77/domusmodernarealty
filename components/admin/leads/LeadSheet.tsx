@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { CalendarPlus, CheckCheck, ExternalLink, Loader2, Mail, Phone, X } from "lucide-react";
 import Link from "next/link";
 import { useId, useState } from "react";
+import { toast } from "sonner";
 import { DetailSheet, FactList, SheetSection } from "@/components/admin/common/DetailSheet";
 import { DotBadge, type DotTone } from "@/components/admin/common/StatusBadge";
 import { useMutationAction } from "@/components/admin/common/useMutationAction";
@@ -202,6 +203,26 @@ function LeadBody({
                   "—"
                 ),
             },
+            ...(lead.submittedPhone !== undefined
+              ? [
+                  {
+                    label: "Telefon iz forme",
+                    value: (
+                      <span>
+                        <a
+                          href={telHref(lead.submittedPhone)}
+                          className="tabular-nums underline-offset-4 hover:underline"
+                        >
+                          {lead.submittedPhone}
+                        </a>
+                        <span className="block text-xs text-muted-foreground">
+                          Upisan uz ovaj upit, nije potvrđen. Kontakt menjate samo Vi, ručno.
+                        </span>
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             { label: "Jezik upita", value: LOCALE_LABEL[lead.locale] },
             {
               label: "Izvor",
@@ -303,7 +324,7 @@ function LeadBody({
         </SheetSection>
       ) : null}
 
-      <NotesSection leadId={lead._id} notes={data.notes} />
+      <NotesSection leadId={lead._id} notes={data.notes} erased={lead.contactAnonymized} />
 
       <SheetSection title="Istorija">
         <LeadTimeline items={data.timeline} />
@@ -364,10 +385,15 @@ function AgentField({
       <Select
         value={lead.agentId ?? NO_AGENT}
         disabled={agents === undefined || assign.pending}
-        onValueChange={(value) => {
+        onValueChange={async (value) => {
           const agentId = agents?.find((agent) => agent._id === value)?._id;
           if (value !== NO_AGENT && agentId === undefined) return;
-          void assign.run({ id: lead._id, ...(agentId !== undefined ? { agentId } : {}) });
+          const result = await assign.run({ id: lead._id, ...(agentId !== undefined ? { agentId } : {}) });
+          if (result !== undefined && result.clashedViewings > 0) {
+            toast.warning(
+              `Razgledanja u sukobu sa rasporedom novog agenta: ${result.clashedViewings}. Ostala su kod prethodnog agenta; zakažite ih ponovo.`,
+            );
+          }
         }}
       >
         <SelectTrigger id={id} data-testid="lead-agent-select" className="w-full">
@@ -431,53 +457,73 @@ function NextActionField({ lead }: { lead: LeadRow }) {
   );
 }
 
-function NotesSection({ leadId, notes }: { leadId: Id<"leads">; notes: LeadDetail["notes"] }) {
+function NotesSection({
+  leadId,
+  notes,
+  erased,
+}: {
+  leadId: Id<"leads">;
+  notes: LeadDetail["notes"];
+  /** The contact was anonymized: the server takes no new notes. */
+  erased: boolean;
+}) {
   const id = useId();
   const [body, setBody] = useState("");
   const addNote = useMutationAction(useMutation(api.leadsAdmin.addNote), "Beleška je dodata.");
 
   return (
     <SheetSection title="Beleške">
-      <form
-        className="grid gap-2"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          if (body.trim().length === 0) return;
-          const result = await addNote.run({ id: leadId, body });
-          if (result !== undefined) setBody("");
-        }}
-      >
-        <Label htmlFor={id} className="sr-only">
-          Nova beleška
-        </Label>
-        <Textarea
-          id={id}
-          data-testid="lead-note-input"
-          value={body}
-          maxLength={4000}
-          rows={3}
-          placeholder="Šta je dogovoreno, šta klijent traži, kada se javljate…"
-          onChange={(event) => setBody(event.target.value)}
-        />
-        <div className="flex justify-end">
-          <Button type="submit" size="sm" disabled={addNote.pending || body.trim().length === 0} data-testid="lead-note-submit">
-            {addNote.pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
-            Dodaj belešku
-          </Button>
-        </div>
-      </form>
+      {erased ? (
+        <p className="text-sm text-muted-foreground">
+          Kontakt je anonimizovan: beleške su obrisane i nove se ne beleže.
+        </p>
+      ) : (
+        <form
+          className="grid gap-2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (body.trim().length === 0) return;
+            const result = await addNote.run({ id: leadId, body });
+            if (result !== undefined) setBody("");
+          }}
+        >
+          <Label htmlFor={id} className="sr-only">
+            Nova beleška
+          </Label>
+          <Textarea
+            id={id}
+            data-testid="lead-note-input"
+            value={body}
+            maxLength={4000}
+            rows={3}
+            placeholder="Šta je dogovoreno, šta klijent traži, kada se javljate…"
+            onChange={(event) => setBody(event.target.value)}
+          />
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              size="sm"
+              disabled={addNote.pending || body.trim().length === 0}
+              data-testid="lead-note-submit"
+            >
+              {addNote.pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+              Dodaj belešku
+            </Button>
+          </div>
+        </form>
+      )}
       {notes.length > 0 ? (
         <ul className="mt-4 space-y-3">
           {notes.map((note) => (
             <li key={note._id} className="rounded-md bg-muted/50 px-3 py-2">
               <p className="text-sm whitespace-pre-wrap">{note.body}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {note.authorName ?? "Sistem"} · {formatDateTime(note.at)}
+                {note.authorName ?? "Član tima"} · {formatDateTime(note.at)}
               </p>
             </li>
           ))}
         </ul>
-      ) : (
+      ) : erased ? null : (
         <p className="mt-3 text-sm text-muted-foreground">Još nema beleški.</p>
       )}
     </SheetSection>

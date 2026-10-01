@@ -122,6 +122,24 @@ export default defineSchema({
     rent: v.number(),
   }).index("by_locationId", { fields: ["locationId"] }),
 
+  /**
+   * Denormalized listing counts per status: agency-wide (`bucket: "all"`) and
+   * per assigned agent. Kept by `lib/counts.ts::applyCountDelta`; rebuilt by
+   * `countsMigrations.recountListingStatus`.
+   */
+  listingStatusCounts: defineTable({
+    bucket: v.union(v.literal("all"), v.id("agents")),
+    status: listingStatusV,
+    count: v.number(),
+  }).index("by_bucket_and_status", { fields: ["bucket", "status"] }),
+
+  /** What `listingStatusCounts` currently counts each listing as, so adjustments are idempotent. */
+  listingCountKeys: defineTable({
+    listingId: v.id("listings"),
+    status: listingStatusV,
+    agentId: v.id("agents"),
+  }).index("by_listingId", { fields: ["listingId"] }),
+
   agents: defineTable({
     userId: v.optional(v.id("users")),
     slug: v.string(),
@@ -399,6 +417,11 @@ export default defineSchema({
     message: v.optional(v.string()),
     answers: v.optional(answersV),
     valuation: v.optional(valuationResultV),
+    /**
+     * A phone typed into a public form for an EXISTING contact: kept on the
+     * lead, unverified, never copied onto the contact (anyone may type it).
+     */
+    submittedPhone: v.optional(v.string()),
     source: leadSourceV,
     locale: localeV,
     utm: v.optional(utmV),
@@ -475,6 +498,8 @@ export default defineSchema({
       fields: ["status", "category", "publishedAt"],
     })
     .index("by_scheduledAt", { fields: ["scheduledAt"] })
+    // Removing an agent profile must not orphan the posts it signs.
+    .index("by_authorAgentId", { fields: ["authorAgentId"] })
     .index("by_isDemo", { fields: ["isDemo"] }),
 
   pages: defineTable({
@@ -495,7 +520,8 @@ export default defineSchema({
     order: v.number(),
     isDemo: v.boolean(),
   })
-    .index("by_verified_and_order", { fields: ["verified", "order"] })
+    /** The public list: verified, never demo, in the editors' order. */
+    .index("by_verified_and_isDemo_and_order", { fields: ["verified", "isDemo", "order"] })
     .index("by_order", { fields: ["order"] })
     .index("by_isDemo", { fields: ["isDemo"] }),
 
@@ -558,8 +584,9 @@ export default defineSchema({
     .index("by_at", { fields: ["at"] })
     .index("by_entity_and_at", { fields: ["entity", "at"] })
     .index("by_entityId_and_at", { fields: ["entityId", "at"] })
-    // The activity log's user filter.
-    .index("by_by_and_at", { fields: ["by", "at"] }),
+    // The activity log's user filter, alone and combined with the entity filter.
+    .index("by_by_and_at", { fields: ["by", "at"] })
+    .index("by_by_and_entity_and_at", { fields: ["by", "entity", "at"] }),
 
   /** Prepared for V2 (email alerts); no functions read it yet. */
   savedSearches: defineTable({

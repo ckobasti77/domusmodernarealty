@@ -9,6 +9,7 @@ import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
 import { artImage, mediaImage } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { headingNode, ledeNode, type HomeCopy } from "./copy";
 import { ProcessSteps } from "./ProcessSteps";
 
 /**
@@ -20,13 +21,13 @@ import { ProcessSteps } from "./ProcessSteps";
 /** "Ornate historic facades and a street lamp in central Belgrade". */
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1655245934655-bde35a9dae80";
 
-const STEPS = [1, 2, 3, 4, 5] as const;
-
-export async function Process({ locale }: { locale: Locale }) {
+export async function Process({ locale, copy }: { locale: Locale; copy: HomeCopy["process"] }) {
   const t = await getTranslations({ locale, namespace: "home" });
-  const steps = STEPS.map((n) => ({
-    title: t(`processStep${n}Title`),
-    body: fixTypography(t(`processStep${n}Body`)),
+  const steps = copy.steps.map((step) => ({
+    title: step.title.text,
+    body: fixTypography(step.body.text),
+    ...(step.title.lang !== undefined ? { titleLang: step.title.lang } : {}),
+    ...(step.body.lang !== undefined ? { bodyLang: step.body.lang } : {}),
   }));
 
   return (
@@ -39,8 +40,8 @@ export async function Process({ locale }: { locale: Locale }) {
             <SectionHeading
               id="process-title"
               eyebrow={t("processEyebrow")}
-              title={t("processHeading")}
-              lede={t("processLede")}
+              title={headingNode(copy.heading)}
+              lede={ledeNode(copy.lede)}
             />
             <Link href="/sell" prefetch={false} className={cn(buttonClasses({ variant: "primary" }), "mt-10")}>
               <span>{t("processCta")}</span>

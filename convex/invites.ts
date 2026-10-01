@@ -156,6 +156,7 @@ export const create = mutation({
     const open = await ctx.db
       .query("invites")
       .withIndex("by_email", (q) => q.eq("email", email))
+      .order("desc")
       .take(20);
     for (const invite of open) {
       if (invite.acceptedAt === undefined && invite.revokedAt === undefined) {

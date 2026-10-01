@@ -9,7 +9,7 @@ import type { Viewer } from "./lib/auth";
 import { DAY_MS } from "./lib/belgradeTime";
 import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
 import { leadStatusV, leadTypeV, viewingModeV, viewingStatusV } from "./lib/validators";
-import type { ViewingStatus } from "./lib/validators";
+import type { ListingStatus, ViewingStatus } from "./lib/validators";
 
 /**
  * Viewings in the admin (PRD B5): calendar, list, detail, status workflow,
@@ -68,6 +68,8 @@ const TRANSITIONS: Record<ViewingStatus, readonly ViewingStatus[]> = {
 const OUTCOMES: readonly ViewingStatus[] = ["done", "no_show"];
 /** Statuses that hold the agent's time. */
 const BLOCKING: readonly ViewingStatus[] = ["requested", "confirmed"];
+/** Listings that are not on the market (or not yet) take no new viewings. */
+const NOT_BOOKABLE: readonly ListingStatus[] = ["draft", "withdrawn", "archived", "sold", "rented"];
 
 const viewingRowV = v.object({
   _id: v.id("viewings"),
@@ -114,16 +116,27 @@ async function agentOf(ctx: QueryCtx, lookups: Lookups, id: Id<"agents">) {
   return lookups.agents.get(id) ?? null;
 }
 
-async function contactOf(ctx: QueryCtx, doc: Doc<"viewings">) {
+/**
+ * The person behind a viewing, when the viewer may see them: admin and manager
+ * always; an agent only while the viewing's lead is assigned to them. After a
+ * lead is reassigned, the previous agent keeps the calendar entry but no
+ * longer reads the client's name, phone or email through it.
+ */
+async function contactOf(ctx: QueryCtx, viewer: Viewer, doc: Doc<"viewings">) {
   if (doc.leadId === undefined) return null;
   const lead = await ctx.db.get("leads", doc.leadId);
-  return lead !== null ? await ctx.db.get("contacts", lead.contactId) : null;
+  if (lead === null) return null;
+  const allowed =
+    viewer.role === "admin" ||
+    viewer.role === "manager" ||
+    (lead.agentId !== undefined && isOwnAgent(viewer, lead.agentId));
+  return allowed ? await ctx.db.get("contacts", lead.contactId) : null;
 }
 
-async function toRow(ctx: QueryCtx, lookups: Lookups, doc: Doc<"viewings">) {
+async function toRow(ctx: QueryCtx, viewer: Viewer, lookups: Lookups, doc: Doc<"viewings">) {
   const listing = await listingOf(ctx, lookups, doc.listingId);
   const agent = await agentOf(ctx, lookups, doc.agentId);
-  const contact = await contactOf(ctx, doc);
+  const contact = await contactOf(ctx, viewer, doc);
   return {
     _id: doc._id,
     listingId: doc.listingId,
@@ -223,13 +236,44 @@ async function assertSlotFree(
   if (clash) appError("SLOT_TAKEN", "Agent već ima razgledanje u tom terminu.");
 }
 
-/** A lead with a confirmed viewing has reached the viewing stage of the pipeline. */
-async function advanceLead(ctx: MutationCtx, leadId: Id<"leads"> | undefined): Promise<void> {
+const EARLY_STAGE: Record<"new" | "contacted", string> = {
+  new: "Novi",
+  contacted: "Kontaktiran",
+};
+
+/**
+ * A lead with a confirmed viewing has reached the viewing stage of the
+ * pipeline. Booking it counts as the first response, and the stage change is
+ * logged on the lead like any other (PRD B4).
+ */
+async function advanceLead(
+  ctx: MutationCtx,
+  leadId: Id<"leads"> | undefined,
+  by: Id<"users">,
+): Promise<void> {
   if (leadId === undefined) return;
   const lead = await ctx.db.get("leads", leadId);
-  if (lead !== null && (lead.status === "new" || lead.status === "contacted")) {
-    await ctx.db.patch("leads", lead._id, { status: "viewing" });
-  }
+  if (lead === null || (lead.status !== "new" && lead.status !== "contacted")) return;
+  await ctx.db.patch("leads", lead._id, {
+    status: "viewing",
+    ...(lead.firstResponseAt === undefined ? { firstResponseAt: Date.now() } : {}),
+  });
+  await logActivity(ctx, {
+    entity: "lead",
+    entityId: lead._id,
+    action: "lead.status.viewing",
+    summary: `${EARLY_STAGE[lead.status]} → Razgledanje`,
+    by,
+  });
+}
+
+/** True when the viewing's lead belongs to a contact erased under ZZPL. */
+async function leadContactAnonymized(ctx: QueryCtx, leadId: Id<"leads"> | undefined): Promise<boolean> {
+  if (leadId === undefined) return false;
+  const lead = await ctx.db.get("leads", leadId);
+  if (lead === null) return false;
+  const contact = await ctx.db.get("contacts", lead.contactId);
+  return contact?.anonymizedAt !== undefined;
 }
 
 /**
@@ -266,7 +310,7 @@ export const range = query({
     const out = [];
     for (const doc of docs) {
       if (doc.end <= args.from) continue;
-      out.push(await toRow(ctx, lookups, doc));
+      out.push(await toRow(ctx, viewer, lookups, doc));
     }
     return out;
   },
@@ -311,7 +355,7 @@ export const list = query({
 
     const lookups = newLookups();
     const page = [];
-    for (const doc of result.page) page.push(await toRow(ctx, lookups, doc));
+    for (const doc of result.page) page.push(await toRow(ctx, viewer, lookups, doc));
     return { page, isDone: result.isDone, continueCursor: result.continueCursor };
   },
 });
@@ -331,8 +375,8 @@ export const get = query({
     const doc = await ctx.db.get("viewings", id);
     if (doc === null || !canSee(viewer, doc)) return null;
 
-    const row = await toRow(ctx, newLookups(), doc);
-    const contact = await contactOf(ctx, doc);
+    const row = await toRow(ctx, viewer, newLookups(), doc);
+    const contact = await contactOf(ctx, viewer, doc);
     return {
       ...row,
       ...(contact?.email !== undefined ? { contactEmail: contact.email } : {}),
@@ -462,7 +506,7 @@ export const setStatus = mutation({
     }
 
     await ctx.db.patch("viewings", doc._id, { status: args.status });
-    if (args.status === "confirmed") await advanceLead(ctx, doc.leadId);
+    if (args.status === "confirmed") await advanceLead(ctx, doc.leadId, viewer._id);
 
     await logActivity(ctx, {
       entity: "viewing",
@@ -492,14 +536,25 @@ export const setFeedback = mutation({
     }
     const next = feedback.length > 0 ? feedback : undefined;
     if (next === doc.feedback) return null;
+    // An erased person gets no new free text about them; clearing stays allowed.
+    if (next !== undefined && (await leadContactAnonymized(ctx, doc.leadId))) {
+      invalidInput("Kontakt ovog razgledanja je anonimizovan; utisak se više ne beleži.");
+    }
 
     await ctx.db.patch("viewings", doc._id, { feedback: next });
+    // Only THAT it changed: the text is staff free text about a person and
+    // must not outlive an anonymization in the activity log.
     await logActivity(ctx, {
       entity: "viewing",
       entityId: doc._id,
       action: "viewing.feedback",
-      summary: next !== undefined ? next.slice(0, 80) : "Utisak obrisan",
-      diff: diffFields({ feedback: doc.feedback }, { feedback: next }),
+      summary:
+        next === undefined
+          ? "Utisak obrisan"
+          : doc.feedback === undefined
+            ? "Utisak dodat"
+            : "Utisak izmenjen",
+      diff: [{ field: "feedback" }],
       by: viewer._id,
     });
     return null;
@@ -544,6 +599,9 @@ export const create = mutation({
     if (viewer.role === "agent" && !isOwnAgent(viewer, listing.agentId)) {
       forbidden("zakazivanje razgledanja ove nekretnine");
     }
+    if (NOT_BOOKABLE.includes(listing.status)) {
+      invalidInput("Ova nekretnina nije u ponudi, pa se razgledanje ne zakazuje.");
+    }
     const agent = await ctx.db.get("agents", args.agentId);
     if (agent === null) notFound("Agent");
 
@@ -553,6 +611,10 @@ export const create = mutation({
       const lead = await ctx.db.get("leads", args.leadId);
       if (lead === null) notFound("Upit");
       assertCanEditAssignment(viewer, lead);
+      // The viewing must be of the property the client asked about.
+      if (lead.listingId !== args.listingId) {
+        invalidInput("Upit se odnosi na drugu nekretninu.");
+      }
     }
 
     await assertSlotFree(ctx, args.agentId, args.start, args.end);
@@ -567,7 +629,7 @@ export const create = mutation({
       status: "confirmed",
       isDemo: false,
     });
-    await advanceLead(ctx, args.leadId);
+    await advanceLead(ctx, args.leadId, viewer._id);
 
     // The listing funnel counts every viewing, not only web requests.
     const stats = await ctx.db

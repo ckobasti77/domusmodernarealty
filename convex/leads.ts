@@ -55,69 +55,75 @@ function assertPrivacyConsent(privacy: boolean): void {
   }
 }
 
-/** Dedupes by email first, then phone. Anonymized contacts are never reused. */
+/** Listing owners (`listingsAdmin.setOwner`) carry this tag; web forms never attach to them. */
+const OWNER_TAG = "vlasnik";
+
+/**
+ * The contact a public form submission belongs to: the newest live contact
+ * with this (normalized) email that is not a listing owner's private record.
+ * Anonymized contacts have no email left, so they are never matched. There is
+ * deliberately no fallback match by phone: anyone can type someone's number.
+ */
+export async function matchWebContact(
+  ctx: MutationCtx,
+  email: string,
+): Promise<Doc<"contacts"> | null> {
+  const sameEmail = await ctx.db
+    .query("contacts")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .order("desc")
+    .take(10);
+  return (
+    sameEmail.find(
+      (contact) => contact.anonymizedAt === undefined && !contact.tags.includes(OWNER_TAG),
+    ) ?? null
+  );
+}
+
+/** Where a submission landed, and a phone the visitor typed that the contact does not hold. */
+type WebContact = { contactId: Id<"contacts">; submittedPhone?: string };
+
+/**
+ * Finds or creates the contact for a submission. A public form NEVER changes
+ * an existing contact: not its phone, locale or consents (whoever knows a
+ * client's email could otherwise swap in their own number or opt the client in
+ * or out of marketing). The submitted phone and this submission's consent are
+ * kept on the lead instead; editing a contact is an admin action.
+ */
 async function upsertContact(
   ctx: MutationCtx,
   input: ContactInput,
   locale: Locale,
   marketing: boolean,
   now: number,
-): Promise<Id<"contacts">> {
+): Promise<WebContact> {
   const name = requireText(input.name, "Ime", 120, 2);
   const email = requireEmail(input.email);
   const phone = optionalPhone(input.phone);
   // Fresh session keys are free for a script; an address is not.
   await consumeEmailLimit(ctx, "leadPerEmail", email);
 
-  const consent = {
-    privacy: true,
-    marketing,
-    textVersion: CONSENT_TEXT_VERSION,
-    at: now,
-    channel: "web",
-  };
-
-  let existing: Doc<"contacts"> | null = await ctx.db
-    .query("contacts")
-    .withIndex("by_email", (q) => q.eq("email", email))
-    .first();
-
-  if (existing === null && phone !== undefined) {
-    existing = await ctx.db
-      .query("contacts")
-      .withIndex("by_phone", (q) => q.eq("phone", phone))
-      .first();
+  const existing = await matchWebContact(ctx, email);
+  if (existing !== null) {
+    return {
+      contactId: existing._id,
+      ...(phone !== undefined && phone !== existing.phone ? { submittedPhone: phone } : {}),
+    };
   }
 
-  if (existing !== null && existing.anonymizedAt === undefined) {
-    // Never overwrite an identifier from a public form: anyone who knows a
-    // client's email could otherwise replace their phone number with their own
-    // and have the agent call them about the client's property. Only fill gaps;
-    // changing an existing value is an admin action (`contacts.merge`).
-    const addsPhone = existing.phone === undefined && phone !== undefined;
-    await ctx.db.patch("contacts", existing._id, {
-      ...(addsPhone
-        ? {
-            phone,
-            searchText: contactSearchText({ name: existing.name, email: existing.email, phone }),
-          }
-        : {}),
-      locale,
-      consents: [...existing.consents.slice(-19), consent],
-    });
-    return existing._id;
-  }
-
-  return await ctx.db.insert("contacts", {
+  const contactId = await ctx.db.insert("contacts", {
     name,
     email,
     ...(phone !== undefined ? { phone } : {}),
     searchText: contactSearchText({ name, email, phone }),
     locale,
     tags: ["web"],
-    consents: [consent],
+    consents: [
+      { privacy: true, marketing, textVersion: CONSENT_TEXT_VERSION, at: now, channel: "web" },
+    ],
     isDemo: false,
   });
+  return { contactId };
 }
 
 async function bumpListingLeads(
@@ -155,7 +161,7 @@ async function createLead(
   args: {
     type: LeadType;
     locale: Locale;
-    contactId: Id<"contacts">;
+    contact: WebContact;
     marketing: boolean;
     now: number;
     listingId?: Id<"listings">;
@@ -171,7 +177,10 @@ async function createLead(
     status: "new",
     ...(args.listingId !== undefined ? { listingId: args.listingId } : {}),
     ...(args.agentId !== undefined ? { agentId: args.agentId } : {}),
-    contactId: args.contactId,
+    contactId: args.contact.contactId,
+    ...(args.contact.submittedPhone !== undefined
+      ? { submittedPhone: args.contact.submittedPhone }
+      : {}),
     ...(args.message !== undefined ? { message: args.message } : {}),
     ...(args.answers !== undefined ? { answers: args.answers } : {}),
     ...(args.valuation !== undefined ? { valuation: args.valuation } : {}),
@@ -222,7 +231,7 @@ export const createInquiry = mutation({
 
     const now = Date.now();
     const message = requireText(args.message, "Poruka", 2000, 10);
-    const contactId = await upsertContact(
+    const contact = await upsertContact(
       ctx,
       args.contact,
       args.locale,
@@ -233,7 +242,7 @@ export const createInquiry = mutation({
     const leadId = await createLead(ctx, {
       type: "inquiry",
       locale: args.locale,
-      contactId,
+      contact,
       marketing: args.marketing,
       now,
       listingId: listing._id,
@@ -310,7 +319,7 @@ export const createValuation = mutation({
     });
 
     const now = Date.now();
-    const contactId = await upsertContact(
+    const contact = await upsertContact(
       ctx,
       args.contact,
       args.locale,
@@ -336,7 +345,7 @@ export const createValuation = mutation({
     const leadId = await createLead(ctx, {
       type: "valuation",
       locale: args.locale,
-      contactId,
+      contact,
       marketing: args.marketing,
       now,
       answers,
@@ -404,7 +413,7 @@ export const createSeller = mutation({
     }
 
     const now = Date.now();
-    const contactId = await upsertContact(
+    const contact = await upsertContact(
       ctx,
       args.contact,
       args.locale,
@@ -416,7 +425,7 @@ export const createSeller = mutation({
     const leadId = await createLead(ctx, {
       type: "seller",
       locale: args.locale,
-      contactId,
+      contact,
       marketing: args.marketing,
       now,
       answers,
@@ -444,7 +453,7 @@ export const createGeneral = mutation({
 
     const now = Date.now();
     const message = requireText(args.message, "Poruka", 2000, 10);
-    const contactId = await upsertContact(
+    const contact = await upsertContact(
       ctx,
       args.contact,
       args.locale,
@@ -456,7 +465,7 @@ export const createGeneral = mutation({
     const leadId = await createLead(ctx, {
       type: "general",
       locale: args.locale,
-      contactId,
+      contact,
       marketing: args.marketing,
       now,
       message,

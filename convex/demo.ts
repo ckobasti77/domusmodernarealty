@@ -7,6 +7,7 @@ import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
 import { applyCountDelta } from "./lib/counts";
 import { invalidInput } from "./lib/errors";
+import { deleteBlobIfPresent } from "./lib/storage";
 
 const ADMINS = ["admin"] as const;
 
@@ -188,7 +189,7 @@ async function deleteDemoListings(ctx: MutationCtx, limit: number): Promise<numb
     await applyCountDelta(ctx, doc, null);
     for (const item of [...doc.media, ...doc.floorPlans]) {
       if (item.image.kind === "storage") {
-        await ctx.storage.delete(item.image.storageId);
+        await deleteBlobIfPresent(ctx, item.image.storageId);
       }
     }
     const scenes = await ctx.db
@@ -277,7 +278,7 @@ export async function purgeDemoTable(
         .take(limit);
       for (const doc of docs) {
         if (doc.cover?.kind === "storage") {
-          await ctx.storage.delete(doc.cover.storageId);
+          await deleteBlobIfPresent(ctx, doc.cover.storageId);
         }
         await ctx.db.delete("posts", doc._id);
       }
@@ -314,12 +315,28 @@ export async function purgeDemoTable(
           .withIndex("by_agentId", (q) => q.eq("agentId", doc._id))
           .take(1);
         if (used.length > 0) continue;
+        if (doc.userId !== undefined) continue;
+        const invites = await ctx.db
+          .query("invites")
+          .withIndex("by_agentId", (q) => q.eq("agentId", doc._id))
+          .take(20);
+        if (invites.some((invite) => invite.acceptedAt === undefined && invite.revokedAt === undefined)) continue;
+        const realLead = await ctx.db
+          .query("leads")
+          .withIndex("by_agentId", (q) => q.eq("agentId", doc._id))
+          .take(50);
+        if (realLead.some((lead) => !lead.isDemo)) continue;
+        const realViewing = await ctx.db
+          .query("viewings")
+          .withIndex("by_agentId_and_start", (q) => q.eq("agentId", doc._id))
+          .take(50);
+        if (realViewing.some((viewing) => !viewing.isDemo)) continue;
         docs.push(doc);
         if (docs.length >= limit) break;
       }
       for (const doc of docs) {
         if (doc.photo?.kind === "storage") {
-          await ctx.storage.delete(doc.photo.storageId);
+          await deleteBlobIfPresent(ctx, doc.photo.storageId);
         }
         if (doc.userId !== undefined) {
           await ctx.db.patch("users", doc.userId, { agentId: undefined });
@@ -357,7 +374,7 @@ export async function purgeDemoTable(
           .unique();
         if (counts !== null) await ctx.db.delete("locationCounts", counts._id);
         if (doc.cover?.kind === "storage") {
-          await ctx.storage.delete(doc.cover.storageId);
+          await deleteBlobIfPresent(ctx, doc.cover.storageId);
         }
         await ctx.db.delete("locations", doc._id);
       }

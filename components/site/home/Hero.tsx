@@ -12,6 +12,7 @@ import {
   type ResponsiveImage,
 } from "@/lib/media";
 import { LANDSCAPE, PORTRAIT } from "./art-direction";
+import type { HomeCopy } from "./copy";
 import { HeroSearch } from "./HeroSearch";
 import { HeroStage } from "./HeroStage";
 import type { LocationOption } from "./types";
@@ -78,7 +79,16 @@ function preloadPoster(poster: ResponsiveImage, posterMobile: ResponsiveImage | 
   }
 }
 
-export async function Hero({ locale, locations }: { locale: Locale; locations: readonly LocationOption[] }) {
+export async function Hero({
+  locale,
+  locations,
+  copy,
+}: {
+  locale: Locale;
+  locations: readonly LocationOption[];
+  /** Headline and lede, managed in the admin (`home` → `hero`). */
+  copy: HomeCopy["hero"];
+}) {
   const t = await getTranslations({ locale, namespace: "home" });
   const { poster, posterMobile } = heroMedia();
   preloadPoster(poster, posterMobile);
@@ -105,18 +115,21 @@ export async function Hero({ locale, locations }: { locale: Locale; locations: r
           <div className="mt-6 grid grid-cols-4 items-end gap-x-6 gap-y-8 lg:mt-8 lg:grid-cols-12">
             <h1
               id="hero-title"
+              lang={copy.headline.lang}
+              data-testid="hero-headline"
               data-hero-title=""
               data-hero-reveal="title"
               className="col-span-4 max-w-[14ch] font-display text-display-xl font-normal text-ivory max-lg:[@media(max-height:47rem)]:text-[3rem] md:max-lg:portrait:text-[11.5vw] lg:col-span-8 lg:[@media(max-height:51rem)]:text-[min(9vw,12svh)]"
             >
               {/* Display-xl: only a pair this short may be joined, or it would not fit a phone. */}
-              {fixWidows(t("heroHeadline"), 10)}
+              {fixWidows(copy.headline.text, 10)}
             </h1>
             <p
+              lang={copy.lede.lang}
               data-hero-reveal="lede"
               className="col-span-4 max-w-[40ch] text-pretty text-body-l text-ivory/85 lg:col-span-4 lg:pb-3"
             >
-              {fixTypography(t("heroLede"))}
+              {fixTypography(copy.lede.text)}
             </p>
           </div>
 

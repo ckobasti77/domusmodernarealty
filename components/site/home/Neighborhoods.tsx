@@ -8,6 +8,7 @@ import { textLinkClasses } from "@/components/site/TextLink";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { remoteResponsiveImage } from "@/lib/media";
+import { headingNode, ledeNode, type HomeCopy } from "./copy";
 import { NeighborhoodIndex } from "./NeighborhoodIndex";
 import type { NeighborhoodItem } from "./types";
 
@@ -25,7 +26,15 @@ import type { NeighborhoodItem } from "./types";
 /** "Sava river with Belgrade Waterfront residential towers and Belgrade Tower, Savski Venac". */
 const BELGRADE_AERIAL = "https://images.unsplash.com/photo-1708253832369-ce7e621df31a";
 
-export async function Neighborhoods({ locale, items }: { locale: Locale; items: readonly NeighborhoodItem[] }) {
+export async function Neighborhoods({
+  locale,
+  items,
+  copy,
+}: {
+  locale: Locale;
+  items: readonly NeighborhoodItem[];
+  copy: HomeCopy["neighborhoods"];
+}) {
   if (items.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "home" });
 
@@ -54,8 +63,8 @@ export async function Neighborhoods({ locale, items }: { locale: Locale; items: 
             id="neighborhoods-title"
             eyebrowTone="dark"
             eyebrow={t("neighborhoodsEyebrow")}
-            title={t("neighborhoodsHeading")}
-            lede={t("neighborhoodsLede")}
+            title={headingNode(copy.heading)}
+            lede={ledeNode(copy.lede)}
             size="display-l"
             tone="dark"
           />

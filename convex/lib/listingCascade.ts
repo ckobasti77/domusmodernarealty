@@ -1,6 +1,7 @@
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { applyCountDelta } from "./counts";
+import { deleteBlobIfPresent } from "./storage";
 
 /**
  * Deletes a listing and everything that hangs off it. Leads and viewings are
@@ -10,10 +11,10 @@ export async function deleteListingCascade(ctx: MutationCtx, doc: Doc<"listings"
   await applyCountDelta(ctx, doc, null);
 
   for (const item of doc.media) {
-    if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
+    if (item.image.kind === "storage") await deleteBlobIfPresent(ctx, item.image.storageId);
   }
   for (const item of doc.floorPlans) {
-    if (item.image.kind === "storage") await ctx.storage.delete(item.image.storageId);
+    if (item.image.kind === "storage") await deleteBlobIfPresent(ctx, item.image.storageId);
   }
 
   const scenes = await ctx.db

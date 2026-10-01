@@ -2,6 +2,7 @@ import { HOUR, MINUTE, RateLimiter, SECOND } from "@convex-dev/rate-limiter";
 import { components } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 import { appError, invalidInput } from "./errors";
+import { hashToken } from "./tokens";
 import type { Utm } from "./validators";
 
 /**
@@ -87,6 +88,15 @@ export async function consumeLimit(
 }
 
 /**
+ * The per-email bucket's key: a SHA-256 digest, never the address itself. The
+ * limiter's rows live in a component table that `contacts.anonymize` cannot
+ * reach, so a plaintext key would outlive the erasure of the person.
+ */
+export async function emailLimitKey(email: string): Promise<string> {
+  return await hashToken(`rate-limit:email:${email}`);
+}
+
+/**
  * One token from the per-email bucket. Call it with the normalized address
  * from `requireEmail`, after the per-session check.
  */
@@ -95,7 +105,7 @@ export async function consumeEmailLimit(
   limit: "leadPerEmail" | "viewingPerEmail",
   email: string,
 ): Promise<void> {
-  const result = await rateLimiter.limit(ctx, limit, { key: email });
+  const result = await rateLimiter.limit(ctx, limit, { key: await emailLimitKey(email) });
   if (!result.ok) {
     appError("RATE_LIMITED", "Previše zahteva. Pokušajte ponovo kasnije.", {
       retryAfter: result.retryAfter,

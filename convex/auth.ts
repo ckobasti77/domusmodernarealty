@@ -92,9 +92,16 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         appError("FORBIDDEN", INVITE_ONLY);
       }
 
+      // The promised profile must still exist and be free (an admin may have
+      // removed or linked it since the invite was sent).
+      const agent = invite.agentId !== undefined ? await ctx.db.get("agents", invite.agentId) : null;
+      if (invite.agentId !== undefined && (agent === null || agent.userId !== undefined)) {
+        appError("FORBIDDEN", INVITE_ONLY);
+      }
+
       const userId: Id<"users"> = await ctx.db.insert("users", {
         email,
-        name: profile.name ?? invite.name,
+        name: (profile.name ?? invite.name)?.trim().slice(0, 120),
         // The role comes from the invite, never from the sign-up form.
         role: invite.role,
         status: "active",
@@ -104,7 +111,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       await ctx.db.patch("invites", invite._id, { acceptedAt: Date.now() });
 
       if (invite.agentId !== undefined) {
-        await ctx.db.patch("agents", invite.agentId, { userId });
+        await ctx.db.patch("agents", invite.agentId, { userId, isDemo: false });
       }
 
       await ctx.db.insert("activity", {

@@ -2,8 +2,9 @@
 
 import { useQuery } from "convex/react";
 import { TriangleAlert } from "lucide-react";
+import Link from "next/link";
 import { api } from "@/convex/_generated/api";
-import { hasRole, MANAGER_ROLES, useMe } from "./me";
+import { ADMIN_ROLES, hasRole, MANAGER_ROLES, useMe } from "./me";
 
 /**
  * Serbian brokerage law Art. 18: every public listing shows the agency name and
@@ -26,8 +27,18 @@ export function DemoDataBanner() {
       <TriangleAlert className="mt-0.5 size-4 shrink-0 text-[var(--color-warning-text)] dark:text-[var(--color-warning)]" aria-hidden="true" />
       <p>
         <span className="font-medium">Podaci agencije su još probni.</span> PIB i broj iz Registra
-        posrednika ({settings.registryNo}) prikazuju se na svakom oglasu; pre puštanja sajta u rad
-        unesite prave vrednosti u Podešavanjima agencije.
+        posrednika ({settings.registryNo}) prikazuju se na svakom oglasu; pre puštanja sajta u rad{" "}
+        {hasRole(me, ADMIN_ROLES) ? (
+          <>
+            unesite prave vrednosti u{" "}
+            <Link href="/admin/podesavanja" className="font-medium underline underline-offset-4">
+              Podešavanjima agencije
+            </Link>
+            .
+          </>
+        ) : (
+          "administrator treba da unese prave vrednosti u Podešavanjima agencije."
+        )}
       </p>
     </div>
   );

@@ -336,3 +336,152 @@ describe("awaitingResponse", () => {
     expect(mine.map((row) => row._id)).toEqual([ids.leadA]);
   });
 });
+
+describe("audit fixes", () => {
+  const HOUR = 3_600_000;
+
+  async function viewing(
+    t: Awaited<ReturnType<typeof setup>>["t"],
+    fields: { listingId: Id<"listings">; agentId: Id<"agents">; leadId?: Id<"leads">; start: number; status?: "requested" | "confirmed" | "done" },
+  ): Promise<Id<"viewings">> {
+    return await t.run(async (ctx) =>
+      ctx.db.insert("viewings", {
+        listingId: fields.listingId,
+        agentId: fields.agentId,
+        ...(fields.leadId !== undefined ? { leadId: fields.leadId } : {}),
+        start: fields.start,
+        end: fields.start + HOUR,
+        mode: "in_person",
+        status: fields.status ?? "requested",
+        isDemo: false,
+      }),
+    );
+  }
+
+  test("reassigning a lead hands its open viewings over; a clash stays and the old agent loses the contact", async () => {
+    const { t, ids } = await setup();
+    const start = Date.now() + 3 * 24 * HOUR;
+    const open = await viewing(t, { listingId: ids.listing, agentId: ids.agentA, leadId: ids.leadA, start });
+    const clashing = await viewing(t, {
+      listingId: ids.listing,
+      agentId: ids.agentA,
+      leadId: ids.leadA,
+      start: start + 5 * HOUR,
+      status: "confirmed",
+    });
+    const held = await viewing(t, { listingId: ids.listing, agentId: ids.agentA, leadId: ids.leadA, start: start - 24 * HOUR, status: "done" });
+    // Agent B is busy when the second viewing takes place.
+    await viewing(t, { listingId: ids.listing, agentId: ids.agentB, start: start + 5 * HOUR + 30 * 60_000, status: "confirmed" });
+
+    const asManager = t.withIdentity({ subject: ids.manager });
+    const result = await asManager.mutation(api.leadsAdmin.assign, { id: ids.leadA, agentId: ids.agentB });
+    expect(result).toEqual({ movedViewings: 1, clashedViewings: 1 });
+
+    const state = await t.run(async (ctx) => ({
+      open: await ctx.db.get("viewings", open),
+      clashing: await ctx.db.get("viewings", clashing),
+      held: await ctx.db.get("viewings", held),
+    }));
+    expect(state.open?.agentId).toBe(ids.agentB);
+    expect(state.clashing?.agentId).toBe(ids.agentA);
+    expect(state.held?.agentId).toBe(ids.agentA);
+
+    // Agent A still has the clashing viewing in the calendar, but no longer the client.
+    const asAgent = t.withIdentity({ subject: ids.agentUser });
+    const detail = await asAgent.query(api.viewingsAdmin.get, { id: clashing });
+    expect(detail).not.toBeNull();
+    expect(detail?.contactName).toBeUndefined();
+    expect(detail?.contactEmail).toBeUndefined();
+  });
+
+  test("a note answers a new lead: no note text in the log, stage moves to contacted", async () => {
+    const { t, ids } = await setup();
+    const asAgent = t.withIdentity({ subject: ids.agentUser });
+    await asAgent.mutation(api.leadsAdmin.addNote, { id: ids.leadA, body: "Tajna beleška o klijentu." });
+
+    const state = await t.run(async (ctx) => ({
+      lead: await ctx.db.get("leads", ids.leadA),
+      activity: await ctx.db
+        .query("activity")
+        .withIndex("by_entityId_and_at", (q) => q.eq("entityId", ids.leadA))
+        .take(10),
+    }));
+    expect(state.lead?.status).toBe("contacted");
+    expect(state.lead?.firstResponseAt).toBeTypeOf("number");
+    expect(state.activity.map((row) => row.action)).toEqual(
+      expect.arrayContaining(["lead.note", "lead.status.contacted"]),
+    );
+    expect(JSON.stringify(state.activity)).not.toContain("Tajna");
+  });
+
+  test("the next action date is bounded and the list returns the full pagination result", async () => {
+    const { t, ids } = await setup();
+    const asManager = t.withIdentity({ subject: ids.manager });
+    await expect(
+      asManager.mutation(api.leadsAdmin.setNextAction, {
+        id: ids.leadA,
+        nextActionAt: Date.now() + 10 * 366 * 24 * HOUR,
+      }),
+    ).rejects.toThrow(/pet godina/);
+
+    const page = await asManager.query(api.leadsAdmin.list, { paginationOpts: { cursor: null, numItems: 2 } });
+    expect(page.page).toHaveLength(2);
+    expect(page.isDone).toBe(false);
+    expect(typeof page.continueCursor).toBe("string");
+  });
+
+  test("confirming a viewing advances the lead, counts as a response and is logged on the lead", async () => {
+    const { t, ids } = await setup();
+    const requested = await viewing(t, {
+      listingId: ids.listing,
+      agentId: ids.agentA,
+      leadId: ids.leadA,
+      start: Date.now() + 2 * 24 * HOUR,
+    });
+    const asAgent = t.withIdentity({ subject: ids.agentUser });
+    await asAgent.mutation(api.viewingsAdmin.setStatus, { id: requested, status: "confirmed" });
+
+    const state = await t.run(async (ctx) => ({
+      lead: await ctx.db.get("leads", ids.leadA),
+      activity: await ctx.db
+        .query("activity")
+        .withIndex("by_entityId_and_at", (q) => q.eq("entityId", ids.leadA))
+        .take(10),
+    }));
+    expect(state.lead?.status).toBe("viewing");
+    expect(state.lead?.firstResponseAt).toBeTypeOf("number");
+    expect(state.activity.find((row) => row.action === "lead.status.viewing")).toMatchObject({
+      by: ids.agentUser,
+      summary: "Novi → Razgledanje",
+    });
+  });
+
+  test("an office booking must match the lead's listing and a listing on the market", async () => {
+    const { t, ids } = await setup();
+    const other = await t.run(async (ctx) => makeListing(ctx, 9, ids.city, ids.agentA, { status: "draft" }));
+    const asManager = t.withIdentity({ subject: ids.manager });
+    const start = Date.now() + 4 * 24 * HOUR;
+
+    await expect(
+      asManager.mutation(api.viewingsAdmin.create, {
+        listingId: other,
+        agentId: ids.agentA,
+        start,
+        end: start + HOUR,
+        mode: "in_person",
+      }),
+    ).rejects.toThrow(/nije u ponudi/);
+
+    await t.run(async (ctx) => ctx.db.patch("listings", other, { status: "published" }));
+    await expect(
+      asManager.mutation(api.viewingsAdmin.create, {
+        listingId: other,
+        agentId: ids.agentA,
+        leadId: ids.leadA,
+        start,
+        end: start + HOUR,
+        mode: "in_person",
+      }),
+    ).rejects.toThrow(/drugu nekretninu/);
+  });
+});

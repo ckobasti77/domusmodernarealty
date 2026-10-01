@@ -3,10 +3,10 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { diffFields, logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
-import { forbidden, invalidInput, notFound } from "./lib/errors";
+import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
 import { requireEmail } from "./lib/rateLimit";
 import { slugify } from "./lib/slug";
-import { assertImageRef, releaseReplacedImage } from "./lib/storage";
+import { assertImageRef, releaseReplacedImage, deleteBlobIfPresent } from "./lib/storage";
 import {
   availabilitySlotV,
   imageV,
@@ -63,7 +63,10 @@ export const list = query({
   args: {},
   returns: v.array(agentAdminRowV),
   handler: async (ctx) => {
-    await requireRole(ctx, READERS);
+    const viewer = await requireRole(ctx, READERS);
+    // Only the profile editors (admin, manager) get the raw photo reference;
+    // anyone else could otherwise attach and later delete a colleague's blob.
+    const showPhotoRef = viewer.role === "admin" || viewer.role === "manager";
     const docs = await ctx.db.query("agents").take(TEAM_CAP);
     docs.sort((a, b) => a.order - b.order || a._creationTime - b._creationTime);
 
@@ -87,7 +90,7 @@ export const list = query({
         name: doc.name,
         role: doc.role,
         ...(doc.bio !== undefined ? { bio: doc.bio } : {}),
-        ...(doc.photo !== undefined ? { photo: doc.photo } : {}),
+        ...(doc.photo !== undefined && showPhotoRef ? { photo: doc.photo } : {}),
         ...(photoUrl !== null ? { photoUrl } : {}),
         languages: doc.languages,
         ...(doc.phone !== undefined ? { phone: doc.phone } : {}),
@@ -256,6 +259,7 @@ export async function openInvitesForAgent(
   const invites = await ctx.db
     .query("invites")
     .withIndex("by_agentId", (q) => q.eq("agentId", agentId))
+    .order("desc")
     .take(20);
   return invites.filter(
     (invite) =>
@@ -272,13 +276,14 @@ function profileSnapshot(doc: Partial<Doc<"agents">>): Record<string, unknown> {
     slug: doc.slug,
     role: doc.role,
     bio: doc.bio,
-    photo: doc.photo === undefined ? undefined : doc.photo.kind === "url" ? doc.photo.url : "otpremljena slika",
+    // The storage id itself, so replacing one upload with another is a change.
+    photo: doc.photo === undefined ? undefined : doc.photo.kind === "url" ? doc.photo.url : `slika:${doc.photo.storageId}`,
     languages: doc.languages?.join(", "),
     phone: doc.phone,
     viber: doc.viber,
     whatsapp: doc.whatsapp,
     email: doc.email,
-    areas: doc.areas?.length,
+    areas: doc.areas?.join(","),
     licenseId: doc.licenseId,
     isPublic: doc.isPublic,
   };
@@ -344,6 +349,9 @@ export const upsert = mutation({
     }
 
     const requestedSlug = args.slug !== undefined ? slugify(args.slug) : undefined;
+    if (requestedSlug !== undefined && (requestedSlug.length < 2 || requestedSlug === "x")) {
+      invalidInput("Adresa profila (slug) mora imati bar dva slova ili broja latinicom.");
+    }
 
     if (existing !== null) {
       const slug = requestedSlug ?? existing.slug;
@@ -353,7 +361,8 @@ export const upsert = mutation({
       const diff = diffFields(profileSnapshot(existing), profileSnapshot({ ...fields, slug }));
       if (diff.length === 0) return { id: existing._id, slug };
 
-      await ctx.db.patch("agents", existing._id, { ...fields, slug });
+      // Editing a seeded profile makes it the agency's own (demo purge keeps it).
+      await ctx.db.patch("agents", existing._id, { ...fields, slug, isDemo: false });
       await releaseReplacedImage(ctx, existing.photo, fields.photo);
       await logActivity(ctx, {
         entity: "agent",
@@ -390,7 +399,7 @@ export const setPublic = mutation({
     const agent = await ctx.db.get("agents", args.id);
     if (agent === null) notFound("Agent");
     if (agent.isPublic === args.isPublic) return null;
-    await ctx.db.patch("agents", args.id, { isPublic: args.isPublic });
+    await ctx.db.patch("agents", args.id, { isPublic: args.isPublic, isDemo: false });
     await logActivity(ctx, {
       entity: "agent",
       entityId: args.id,
@@ -467,7 +476,7 @@ export const setAvailability = mutation({
     );
     if (diff.length === 0) return null;
 
-    await ctx.db.patch("agents", args.id, { availability });
+    await ctx.db.patch("agents", args.id, { availability, isDemo: false });
     await logActivity(ctx, {
       entity: "agent",
       entityId: args.id,
@@ -489,6 +498,11 @@ export const reorder = mutation({
     if (args.ids.length > TEAM_CAP) invalidInput("Previše profila u jednom redosledu.");
     if (new Set(args.ids).size !== args.ids.length) {
       invalidInput("Redosled sadrži isti profil dva puta.");
+    }
+    const team = await ctx.db.query("agents").take(TEAM_CAP + 1);
+    const listed = new Set<string>(args.ids);
+    if (team.length !== args.ids.length || team.some((doc) => !listed.has(doc._id))) {
+      appError("CONFLICT", "Spisak profila se promenio u međuvremenu. Osvežite stranicu i pokušajte ponovo.");
     }
     let order = 0;
     let moved = 0;
@@ -548,6 +562,13 @@ export const remove = mutation({
         "Agent ima upite ili razgledanja u istoriji. Umesto brisanja isključite javni profil.",
       );
     }
+    const posts = await ctx.db
+      .query("posts")
+      .withIndex("by_authorAgentId", (q) => q.eq("authorAgentId", args.id))
+      .take(1);
+    if (posts.length > 0) {
+      invalidInput("Agent je autor tekstova u Magazinu. Prvo im promenite autora ili isključite javni profil.");
+    }
 
     const user = agent.userId !== undefined ? await ctx.db.get("users", agent.userId) : null;
     if (user !== null && user.status === "active" && user.agentId === agent._id) {
@@ -565,7 +586,7 @@ export const remove = mutation({
       await ctx.db.patch("users", user._id, { agentId: undefined });
     }
     if (agent.photo?.kind === "storage") {
-      await ctx.storage.delete(agent.photo.storageId);
+      await deleteBlobIfPresent(ctx, agent.photo.storageId);
     }
     await ctx.db.delete("agents", args.id);
     await logActivity(ctx, {

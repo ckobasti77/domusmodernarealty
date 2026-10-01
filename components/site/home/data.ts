@@ -7,6 +7,7 @@ import { getPublicSettings } from "@/components/site/Footer";
 import { api } from "@/convex/_generated/api";
 import type { ListingCard } from "@/convex/lib/dto";
 import type { Locale } from "@/i18n/routing";
+import { getPage, type PublicPage } from "@/lib/content/pages";
 import { pickL10n } from "@/lib/l10n";
 import type { LocationOption, NeighborhoodItem } from "./types";
 
@@ -29,6 +30,8 @@ export type HomeData = {
   posts: PostCard[];
   testimonials: Testimonial[];
   settings: PublicSettings | null;
+  /** The managed landing copy (`pages.home`); `null` → the built-in texts. */
+  home: PublicPage | null;
 };
 
 function settled<T, F>(result: PromiseSettledResult<T>, fallback: F, label: string): T | F {
@@ -41,12 +44,13 @@ function settled<T, F>(result: PromiseSettledResult<T>, fallback: F, label: stri
 }
 
 export async function loadHomeData(): Promise<HomeData> {
-  const [featured, locations, posts, testimonials, settings] = await Promise.allSettled([
+  const [featured, locations, posts, testimonials, settings, home] = await Promise.allSettled([
     fetchQuery(api.listings.featured, { limit: 6 }),
     fetchQuery(api.locations.tree, {}),
     fetchQuery(api.posts.list, { paginationOpts: { numItems: 3, cursor: null } }),
     fetchQuery(api.testimonials.verified, { limit: 6 }),
     getPublicSettings(),
+    getPage("home"),
   ]);
 
   return {
@@ -55,6 +59,7 @@ export async function loadHomeData(): Promise<HomeData> {
     posts: settled(posts, null, "posts.list")?.page ?? [],
     testimonials: settled(testimonials, [], "testimonials.verified"),
     settings: settled(settings, null, "settings.publicSettings"),
+    home: settled(home, null, "pages.get(home)"),
   };
 }
 

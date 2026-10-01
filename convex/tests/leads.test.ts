@@ -179,8 +179,11 @@ describe("public lead mutations", () => {
       return { contacts, leads };
     });
     expect(state.contacts).toHaveLength(1);
-    expect(state.contacts[0].consents.length).toBe(2);
+    // A later form never edits the contact (audit M6): each submission's
+    // consent is recorded on its own lead.
+    expect(state.contacts[0].consents.length).toBe(1);
     expect(state.leads).toHaveLength(2);
+    expect(state.leads.map((lead) => lead.consent.marketing).sort()).toEqual([false, true]);
     expect(ids.listing).toBeDefined();
   });
 });

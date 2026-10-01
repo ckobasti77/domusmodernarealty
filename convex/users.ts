@@ -212,6 +212,12 @@ export const setStatus = mutation({
       forbidden("deaktivaciju sopstvenog naloga");
     }
     if (target.status === args.status) return null;
+    if (args.status === "active" && target.role === "agent") {
+      const profile = target.agentId !== undefined ? await ctx.db.get("agents", target.agentId) : null;
+      if (profile === null) {
+        invalidInput("Agent mora imati profil pre aktivacije. Povežite nalog sa profilom agenta.");
+      }
+    }
     if (target.role === "admin" && target.status === "active") {
       await assertAnotherActiveAdmin(ctx, target._id);
     }
@@ -266,7 +272,7 @@ export const linkAgent = mutation({
       if ((await openInvitesForAgent(ctx, next._id, Date.now())).length > 0) {
         invalidInput("Za taj profil postoji otvorena pozivnica. Prvo je opozovite.");
       }
-      await ctx.db.patch("agents", next._id, { userId: target._id });
+      await ctx.db.patch("agents", next._id, { userId: target._id, isDemo: false });
     }
     if (previous !== null && previous.userId === target._id) {
       await ctx.db.patch("agents", previous._id, { userId: undefined });

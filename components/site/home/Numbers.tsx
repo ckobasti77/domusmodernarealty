@@ -6,29 +6,24 @@ import { Picture } from "@/components/site/Picture";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
-import { pickL10n } from "@/lib/l10n";
 import { artImage, mediaImage } from "@/lib/media";
-import { parseStat, type PublicSettings } from "./data";
+import { headingNode, type HomeCopy } from "./copy";
+import { parseStat } from "./data";
 
 /**
- * Numbers (DESIGN §6.9), on ivory-2: the four figures the owner keeps in
- * Settings, each counting up once. Nothing here is invented — the values and
- * their labels come from `settings.stats`, and while any of them is still the
- * seeded demo value the section says so in plain words under the figures.
- * With no stats at all the section is left out.
+ * Numbers (DESIGN §6.9), on ivory-2: the four figures the owner keeps in the
+ * landing's `numbers` block (Sadržaj sajta; `settings.stats` only when the
+ * block is absent), each counting up once. Nothing here is invented: while
+ * any figure is still flagged `isDemo` the section says so in plain words
+ * under the figures. With no figures at all the section is left out.
  */
 
 /** "Ornate historic facades and a street lamp in central Belgrade". */
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1655245934655-bde35a9dae80";
 
-export async function Numbers({
-  locale,
-  stats,
-}: {
-  locale: Locale;
-  stats: PublicSettings["stats"];
-}) {
+export async function Numbers({ locale, copy }: { locale: Locale; copy: HomeCopy["numbers"] }) {
+  const { stats } = copy;
   if (stats.length === 0) return null;
   const t = await getTranslations({ locale, namespace: "home" });
   const anyDemo = stats.some((stat) => stat.isDemo);
@@ -41,12 +36,12 @@ export async function Numbers({
       <Container>
         <div className="grid grid-cols-4 gap-x-6 gap-y-14 lg:grid-cols-12 lg:items-start">
           <div className="col-span-4 lg:col-span-6">
-            <SectionHeading id="numbers-title" title={t("numbersHeading")} />
+            <SectionHeading id="numbers-title" title={headingNode(copy.heading)} />
 
             <dl className="mt-12 grid grid-cols-2 border-t border-hairline-light lg:mt-16">
               {stats.slice(0, 4).map((stat, index) => {
                 const parsed = parseStat(stat.value);
-                const label = pickL10n(stat.label, locale);
+                const label = stat.label;
                 return (
                   // `<dt>` first, as the content model requires; the column is
                   // reversed so the figure still reads above its label.
@@ -55,7 +50,7 @@ export async function Numbers({
                     className="flex flex-col-reverse justify-end gap-3 border-b border-hairline-light py-8 odd:pr-6 even:border-l even:pl-6 lg:py-10 lg:even:pl-10"
                   >
                     <dt
-                      lang={label.lang !== locale ? label.lang : undefined}
+                      lang={label.lang}
                       className="min-h-[2lh] max-w-[14ch] font-mono text-label uppercase text-stone-text md:min-h-0 md:max-w-none md:whitespace-nowrap"
                     >
                       {label.text}
@@ -78,7 +73,7 @@ export async function Numbers({
             </dl>
 
             {anyDemo ? (
-              <p className="mt-8 max-w-[52ch] text-pretty text-small text-stone-text">
+              <p data-testid="numbers-demo-note" className="mt-8 max-w-[52ch] text-pretty text-small text-stone-text">
                 {fixTypography(t("numbersDemo"))}
               </p>
             ) : null}

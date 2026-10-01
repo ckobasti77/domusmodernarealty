@@ -145,7 +145,9 @@ export function LeadsKanban({
         tabIndex={0}
         data-testid="leads-kanban"
         className={cn(
-          "-mx-1 flex gap-3 overflow-x-auto px-1 pb-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 transition-opacity duration-150",
+          // `relative`: absolutely positioned descendants (sr-only labels) stay inside the scroll box
+          // instead of widening the whole page.
+          "relative -mx-1 flex gap-3 overflow-x-auto px-1 pb-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 transition-opacity duration-150",
           refreshing && "opacity-60",
         )}
       >
@@ -324,9 +326,12 @@ function CardBody({
           ) : (
             <p className="truncate text-sm font-medium">{lead.contactName}</p>
           )}
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {LEAD_TYPE_LABEL[lead.type]}
-            {lead.listingRef !== undefined ? <span className="font-mono">{` · ${lead.listingRef}`}</span> : null}
+          <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="truncate">
+              {LEAD_TYPE_LABEL[lead.type]}
+              {lead.listingRef !== undefined ? <span className="font-mono">{` · ${lead.listingRef}`}</span> : null}
+            </span>
+            {lead.isDemo ? <DemoTag /> : null}
           </p>
         </div>
         {menu}
@@ -337,22 +342,24 @@ function CardBody({
       {lead.status === "lost" && lead.lossReason !== undefined ? (
         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground italic">{lead.lossReason}</p>
       ) : null}
-      <div className="mt-2 flex items-center justify-between gap-2">
+      {/* An unanswered lead shows only its timer (it already says how old the lead is). */}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         {lead.firstResponseAt === undefined ? (
           <ResponseTimer createdAt={lead.createdAt} firstResponseAt={undefined} now={now} />
-        ) : lead.nextActionAt !== undefined ? (
-          <span className="text-xs text-muted-foreground">
-            Sledeći korak: <NextActionDate at={lead.nextActionAt} now={now} />
-          </span>
         ) : (
-          <span />
+          <>
+            {lead.nextActionAt !== undefined ? (
+              <span className="text-xs text-muted-foreground">
+                Sledeći korak: <NextActionDate at={lead.nextActionAt} now={now} />
+              </span>
+            ) : (
+              <span />
+            )}
+            <time dateTime={new Date(lead.createdAt).toISOString()} className="text-xs whitespace-nowrap text-muted-foreground">
+              {formatRelative(lead.createdAt, now)}
+            </time>
+          </>
         )}
-        <span className="flex items-center gap-1.5">
-          {lead.isDemo ? <DemoTag /> : null}
-          <time dateTime={new Date(lead.createdAt).toISOString()} className="text-xs whitespace-nowrap text-muted-foreground">
-            {formatRelative(lead.createdAt, now)}
-          </time>
-        </span>
       </div>
     </div>
   );

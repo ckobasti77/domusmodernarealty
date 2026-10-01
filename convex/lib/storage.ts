@@ -14,6 +14,22 @@ export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 export const MAX_PDF_BYTES = 15 * 1024 * 1024;
 
+/**
+ * A blob may be linked to a document only within this long after it was
+ * uploaded. Nothing records which staff member uploaded which blob, so without
+ * it anyone who learns an older storage id (e.g. a colleague's photo) could
+ * attach it to their own record and then delete it by replacing the image.
+ * Six hours covers an editor who uploads, then finishes the form after lunch.
+ */
+export const UPLOAD_LINK_WINDOW_MS = 6 * 60 * 60 * 1000;
+
+/** Refuses a blob uploaded longer ago than `UPLOAD_LINK_WINDOW_MS`. */
+export function assertFresh(uploadedAt: number): void {
+  if (uploadedAt < Date.now() - UPLOAD_LINK_WINDOW_MS) {
+    invalidInput("Fajl je otpremljen pre više od 6 sati. Otpremite ga ponovo.");
+  }
+}
+
 /** Hosts a `{ kind: "url" }` image may point at (the CSP `img-src` list). */
 const IMAGE_URL_HOSTS = ["images.unsplash.com"] as const;
 
@@ -28,6 +44,7 @@ export async function assertImageUpload(
 ): Promise<void> {
   const meta = await ctx.db.system.get("_storage", storageId);
   if (meta === null) notFound("Fajl");
+  assertFresh(meta._creationTime);
   if (meta.size > MAX_IMAGE_BYTES) {
     invalidInput(`Slika je prevelika (${mb(meta.size)} MB, dozvoljeno ${mb(MAX_IMAGE_BYTES)} MB).`);
   }
@@ -46,6 +63,7 @@ export async function assertPdfUpload(
 ): Promise<void> {
   const meta = await ctx.db.system.get("_storage", storageId);
   if (meta === null) notFound("Fajl");
+  assertFresh(meta._creationTime);
   if (meta.size > MAX_PDF_BYTES) {
     invalidInput(`PDF je prevelik (${mb(meta.size)} MB, dozvoljeno ${mb(MAX_PDF_BYTES)} MB).`);
   }
@@ -77,7 +95,9 @@ export async function assertImageRef(ctx: MutationCtx, image: ImageRef): Promise
 
 /**
  * Deletes the blob a replaced image pointed at, when the new value no longer
- * references it. URL images own no blob.
+ * references it. URL images own no blob. A blob that is already gone (deleted
+ * through another record that pointed at it) is skipped, so the record can
+ * still change its image.
  */
 export async function releaseReplacedImage(
   ctx: MutationCtx,
@@ -86,5 +106,11 @@ export async function releaseReplacedImage(
 ): Promise<void> {
   if (before?.kind !== "storage") return;
   if (after?.kind === "storage" && after.storageId === before.storageId) return;
-  await ctx.storage.delete(before.storageId);
+  await deleteBlobIfPresent(ctx, before.storageId);
+}
+
+/** `ctx.storage.delete` throws on a missing blob; this does not. */
+export async function deleteBlobIfPresent(ctx: MutationCtx, storageId: Id<"_storage">): Promise<void> {
+  const meta = await ctx.db.system.get("_storage", storageId);
+  if (meta !== null) await ctx.storage.delete(storageId);
 }

@@ -7,7 +7,8 @@ import { Fragment, type ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { formatRelative } from "@/lib/admin/format";
-import { activityHref, activityLabel, activitySummary, diffCountLabel } from "./activity-labels";
+import { actionLabel, targetHref } from "@/components/admin/activity/labels";
+import { activitySummary, diffCountLabel } from "./activity-labels";
 import { DashCard } from "./DashCard";
 import { isoOf } from "./format";
 
@@ -39,7 +40,7 @@ function collapse(rows: readonly ActivityRow[]): FeedItem[] {
   const items: FeedItem[] = [];
   for (const row of rows) {
     const summary = activitySummary(row.action, row.summary);
-    const href = activityHref(row.entity, row.entityId, row.action);
+    const href = row.target !== undefined && row.action !== "listing.deleted" ? targetHref(row.target) : null;
     const key = [row.action, summary ?? "", href ?? "", row.byName ?? ""].join("\u0000");
     const last = items[items.length - 1];
     if (last !== undefined && last.key === key) {
@@ -49,7 +50,7 @@ function collapse(rows: readonly ActivityRow[]): FeedItem[] {
     }
     items.push({
       key,
-      label: activityLabel(row.action),
+      label: actionLabel(row.action),
       summary,
       href,
       byName: row.byName,

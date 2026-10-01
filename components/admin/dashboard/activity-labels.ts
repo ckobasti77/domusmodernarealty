@@ -1,80 +1,12 @@
 /**
- * Short Serbian phrases for the activity log's action keys (`listing.created`,
- * `listing.status.sold`, …). Unknown keys fall back to the raw key, so a new
- * server action never disappears from the feed.
+ * Dashboard feed wording on top of the activity log's own vocabulary
+ * (`components/admin/activity/labels.ts` owns the action labels and links):
+ * summaries with raw enum keys get Serbian words, repeated labels are dropped.
  */
+import { actionLabel } from "@/components/admin/activity/labels";
 import type { ListingStatus } from "@/convex/lib/validators";
 import { STATUS_LABEL } from "@/lib/admin/labels";
 import { pluralSr } from "./format";
-
-const EXACT: Record<string, string> = {
-  "listing.created": "Nova nekretnina",
-  "listing.updated": "Izmena",
-  "listing.published": "Objavljeno",
-  "listing.duplicated": "Kopija nekretnine",
-  "listing.deleted": "Nekretnina obrisana",
-  "listing.slug.regenerated": "Nova adresa stranice",
-  "media.video": "Video",
-  "lead.created": "Novi upit",
-  "lead.assigned": "Upit dodeljen",
-  "lead.responded": "Odgovor na upit",
-  "lead.note": "Beleška uz upit",
-  "lead.nextAction": "Sledeći korak upita",
-  "viewing.requested": "Zahtev za razgledanje",
-  "viewing.created": "Zakazano razgledanje",
-  "viewing.feedback": "Utisak sa razgledanja",
-  "contact.anonymized": "Kontakt anonimizovan",
-  "contact.merged": "Kontakti spojeni",
-  "contact.note": "Beleška o kontaktu",
-  "contact.exported": "Izvoz kontakata (CSV)",
-  "invite.created": "Poslata pozivnica",
-  "invite.accepted": "Pozivnica prihvaćena",
-  "invite.revoked": "Pozivnica opozvana",
-  "invite.renewed": "Novi link pozivnice",
-  "user.role": "Promena uloge",
-  "user.status": "Status naloga",
-  "user.agentLinked": "Nalog povezan sa agentom",
-  "agent.published": "Profil agenta prikazan na sajtu",
-  "agent.hidden": "Profil agenta sakriven sa sajta",
-  "testimonial.verified": "Utisak potvrđen",
-  "testimonial.unverified": "Utisak nepotvrđen",
-  "demo.purge.started": "Brisanje demo sadržaja pokrenuto",
-  "demo.purge.finished": "Demo sadržaj obrisan",
-  "settings.updated": "Podešavanja",
-};
-
-/** Longest prefix first, so `listing.status.` wins over `listing.`. */
-const PREFIX: readonly (readonly [string, string])[] = [
-  ["listing.status.", "Promena statusa"],
-  ["listing.bulk.", "Grupna izmena"],
-  ["listing.owner.", "Vlasnik nekretnine"],
-  ["lead.status.", "Status upita"],
-  ["viewing.status.", "Status razgledanja"],
-  ["media.", "Fotografije"],
-  ["tour.", "360° tura"],
-  ["listing.", "Nekretnina"],
-  ["lead.", "Upit"],
-  ["viewing.", "Razgledanje"],
-  ["contact.", "Kontakt"],
-  ["invite.", "Pozivnica"],
-  ["user.", "Nalog"],
-  ["agent.", "Agent"],
-  ["location.", "Lokacija"],
-  ["post.", "Magazin"],
-  ["page.", "Stranica"],
-  ["testimonial.", "Utisak"],
-  ["settings.", "Podešavanja"],
-  ["demo.", "Demo sadržaj"],
-];
-
-export function activityLabel(action: string): string {
-  const exact = EXACT[action];
-  if (exact !== undefined) return exact;
-  for (const [prefix, label] of PREFIX) {
-    if (action.startsWith(prefix)) return label;
-  }
-  return action;
-}
 
 function isListingStatus(value: string): value is ListingStatus {
   return Object.hasOwn(STATUS_LABEL, value);
@@ -112,7 +44,7 @@ function withoutLabel(summary: string, label: string): string {
  */
 export function activitySummary(action: string, summary: string | undefined): string | undefined {
   if (summary === undefined || summary.length === 0) return undefined;
-  return withoutLabel(rawSummary(action, summary), activityLabel(action));
+  return withoutLabel(rawSummary(action, summary), actionLabel(action));
 }
 
 function rawSummary(action: string, summary: string): string {
@@ -135,14 +67,4 @@ function rawSummary(action: string, summary: string): string {
 /** `3 polja` — how many fields a `listing.updated` row changed. */
 export function diffCountLabel(count: number): string {
   return `${count} ${pluralSr(count, "polje", "polja")}`;
-}
-
-/**
- * The listing editor is the only admin detail screen so far. Media rows carry
- * the listing id too; deleted listings get no link.
- */
-export function activityHref(entity: string, entityId: string | undefined, action: string): string | null {
-  if (entityId === undefined || action === "listing.deleted") return null;
-  if (entity === "listing" || entity === "media") return `/admin/nekretnine/${entityId}`;
-  return null;
 }

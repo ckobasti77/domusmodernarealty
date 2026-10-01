@@ -14,7 +14,8 @@ import { gsap, MOTION_QUERIES, ScrollTrigger, useGSAP } from "@/components/motio
  * tells assistive technology the order.
  */
 
-export type ProcessStep = { title: string; body: string };
+/** `titleLang` / `bodyLang`: set only when the text is not in the page's language. */
+export type ProcessStep = { title: string; body: string; titleLang?: string; bodyLang?: string };
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -107,7 +108,8 @@ export function ProcessSteps({ steps }: { steps: readonly ProcessStep[] }) {
 
       <ol className="flex flex-col gap-12 lg:gap-16">
         {steps.map((step, index) => (
-          <li key={step.title} data-process-step="" className="relative grid grid-cols-[11px_1fr] gap-x-6 lg:gap-x-10">
+          // Editable copy: two steps may share a title, the position never repeats.
+          <li key={index} data-process-step="" className="relative grid grid-cols-[11px_1fr] gap-x-6 lg:gap-x-10">
             <span
               data-process-marker=""
               aria-hidden="true"
@@ -117,8 +119,12 @@ export function ProcessSteps({ steps }: { steps: readonly ProcessStep[] }) {
               <p aria-hidden="true" data-numeric="" className="font-mono text-label text-bronze-text">
                 {pad(index + 1)}
               </p>
-              <h3 className="mt-3 font-display text-h3 font-normal lg:text-h2">{step.title}</h3>
-              <p className="mt-3 max-w-[48ch] text-pretty text-body text-stone-text">{step.body}</p>
+              <h3 lang={step.titleLang} className="mt-3 font-display text-h3 font-normal lg:text-h2">
+                {step.title}
+              </h3>
+              <p lang={step.bodyLang} className="mt-3 max-w-[48ch] text-pretty text-body text-stone-text">
+                {step.body}
+              </p>
             </div>
           </li>
         ))}

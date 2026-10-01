@@ -39,7 +39,7 @@ export function LocaleTabs({
       }}
       className={cn("gap-3", className)}
     >
-      <TabsList aria-label={label} className="h-9">
+      <TabsList aria-label={label} className="h-9 max-md:h-11">
         {L10N_KEYS.map((locale) => (
           <TabsTrigger key={locale} value={locale} className="gap-1.5 px-3">
             {trigger !== undefined ? (

@@ -8,6 +8,7 @@ import { applyDerived, locationNamesFor } from "./lib/derive";
 import { invalidInput, notFound } from "./lib/errors";
 import { imageV, l10nV, mediaItemV, roomTagV } from "./lib/validators";
 import type { MediaItem } from "./lib/validators";
+import { assertFresh, deleteBlobIfPresent } from "./lib/storage";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
 
@@ -103,6 +104,9 @@ export const attach = mutation({
     for (const item of args.items) {
       if (item.image.kind === "storage") {
         await assertUploadOk(ctx, item.image.storageId, "image");
+        // A gallery item is always a new link: refuse an old (someone else's) blob.
+        const meta = await ctx.db.system.get("_storage", item.image.storageId);
+        if (meta !== null) assertFresh(meta._creationTime);
       }
       added.push({
         id: nextId([...current, ...added]),
@@ -275,7 +279,7 @@ export const remove = mutation({
     });
 
     if (victim.image.kind === "storage") {
-      await ctx.storage.delete(victim.image.storageId);
+      await deleteBlobIfPresent(ctx, victim.image.storageId);
     }
 
     await logActivity(ctx, {

@@ -303,7 +303,8 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
         </div>
       ) : null}
 
-      <table className="sr-only">
+      <div className="sr-only">
+      <table>
         <caption>Pregledi i upiti po danu</caption>
         <thead>
           <tr>
@@ -322,6 +323,7 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

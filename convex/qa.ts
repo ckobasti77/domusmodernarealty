@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { deleteListingCascade } from "./lib/listingCascade";
 import { leadTypeV, leadStatusV, pageBlockV, pageKeyV, viewingModeV, viewingStatusV } from "./lib/validators";
+import { deleteBlobIfPresent } from "./lib/storage";
 
 /**
  * Test-only helpers for the Playwright suite. Both are INTERNAL, so no browser
@@ -302,7 +303,7 @@ export const purgeE2EPosts = internalMutation({
     let removed = 0;
     for (const doc of rows) {
       if (!doc.title.sr.startsWith(E2E_TITLE)) continue;
-      if (doc.cover?.kind === "storage") await ctx.storage.delete(doc.cover.storageId);
+      if (doc.cover?.kind === "storage") await deleteBlobIfPresent(ctx, doc.cover.storageId);
       await ctx.db.delete("posts", doc._id);
       removed += 1;
     }
@@ -317,18 +318,38 @@ export const purgeE2EPosts = internalMutation({
  */
 export const pageSnapshot = internalQuery({
   args: { key: pageKeyV },
-  returns: v.union(v.null(), v.object({ blocks: v.array(pageBlockV), isDemo: v.boolean() })),
+  returns: v.union(
+    v.null(),
+    v.object({
+      blocks: v.array(pageBlockV),
+      isDemo: v.boolean(),
+      updatedAt: v.number(),
+      updatedBy: v.optional(v.id("users")),
+    }),
+  ),
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query("pages")
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .unique();
-    return doc === null ? null : { blocks: doc.blocks, isDemo: doc.isDemo };
+    if (doc === null) return null;
+    return {
+      blocks: doc.blocks,
+      isDemo: doc.isDemo,
+      updatedAt: doc.updatedAt,
+      ...(doc.updatedBy !== undefined ? { updatedBy: doc.updatedBy } : {}),
+    };
   },
 });
 
 export const restorePage = internalMutation({
-  args: { key: pageKeyV, blocks: v.array(pageBlockV), isDemo: v.boolean() },
+  args: {
+    key: pageKeyV,
+    blocks: v.array(pageBlockV),
+    isDemo: v.boolean(),
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.id("users")),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const doc = await ctx.db
@@ -336,7 +357,13 @@ export const restorePage = internalMutation({
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .unique();
     if (doc === null) throw new Error(`No page with key ${args.key}`);
-    await ctx.db.patch("pages", doc._id, { blocks: args.blocks, isDemo: args.isDemo });
+    // `updatedBy: undefined` clears it, so a restored seeded page is seeded again.
+    await ctx.db.patch("pages", doc._id, {
+      blocks: args.blocks,
+      isDemo: args.isDemo,
+      updatedAt: args.updatedAt,
+      updatedBy: args.updatedBy,
+    });
     return null;
   },
 });

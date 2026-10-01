@@ -9,6 +9,7 @@ import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
 import { artImage, mediaImage, mediaVideo } from "@/lib/media";
 import { searchQuery } from "@/lib/search-params";
+import { headingNode, type HomeCopy } from "./copy";
 import { ToursStage } from "./ToursStage";
 
 /**
@@ -25,7 +26,15 @@ import { ToursStage } from "./ToursStage";
 /** "Warmly lit open-plan living room and kitchen at night with city lights through tall windows". */
 const FALLBACK_BACKDROP = "https://images.unsplash.com/photo-1680416124510-5eae1beca412";
 
-export async function ToursTeaser({ locale, listing }: { locale: Locale; listing: ListingCard | null }) {
+export async function ToursTeaser({
+  locale,
+  listing,
+  copy,
+}: {
+  locale: Locale;
+  listing: ListingCard | null;
+  copy: HomeCopy["tours"];
+}) {
   const t = await getTranslations({ locale, namespace: "home" });
 
   return (
@@ -35,7 +44,7 @@ export async function ToursTeaser({ locale, listing }: { locale: Locale; listing
           <SectionHeading
             id="tours-title"
             eyebrow={t("toursEyebrow")}
-            title={t("toursHeading")}
+            title={headingNode(copy.heading)}
             size="display-l"
             tone="dark"
             // Narrow enough that the bound "pre nego što" moves to the second
@@ -43,7 +52,9 @@ export async function ToursTeaser({ locale, listing }: { locale: Locale; listing
             className="col-span-4 lg:col-span-7 lg:max-w-[min(45vw,44rem)]"
           />
           <div className="col-span-4 lg:col-span-4 lg:col-start-9 lg:pb-2">
-            <p className="max-w-[40ch] text-pretty text-body-l text-mist">{fixTypography(t("toursLede"))}</p>
+            <p lang={copy.lede.lang} className="max-w-[40ch] text-pretty text-body-l text-mist">
+              {fixTypography(copy.lede.text)}
+            </p>
             <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-5">
               {listing !== null ? (
                 <Link

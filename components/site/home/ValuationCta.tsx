@@ -5,6 +5,7 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import type { Locale } from "@/i18n/routing";
 import { fixTypography } from "@/lib/format";
 import { artImage, mediaImage } from "@/lib/media";
+import { headingNode, ledeNode, type HomeCopy } from "./copy";
 import type { LocationOption } from "./types";
 import { ValuationForm } from "./ValuationForm";
 
@@ -22,7 +23,15 @@ import { ValuationForm } from "./ValuationForm";
 /** "Sunny study with a long desk beneath a row of windows and built-in bookshelves". */
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1777896193454-8b4863264f0b";
 
-export async function ValuationCta({ locale, locations }: { locale: Locale; locations: readonly LocationOption[] }) {
+export async function ValuationCta({
+  locale,
+  locations,
+  copy,
+}: {
+  locale: Locale;
+  locations: readonly LocationOption[];
+  copy: HomeCopy["valuation"];
+}) {
   const t = await getTranslations({ locale, namespace: "home" });
 
   return (
@@ -42,14 +51,17 @@ export async function ValuationCta({ locale, locations }: { locale: Locale; loca
           <SectionHeading
             id="valuation-title"
             eyebrow={t("valuationEyebrow")}
-            title={t("valuationHeading")}
-            lede={t("valuationLede")}
+            title={headingNode(copy.heading)}
+            lede={ledeNode(copy.lede)}
             size="display-l"
             tone="dark"
           />
           <ValuationForm locations={locations} />
-          <p className="mt-8 w-full border-t border-hairline-dark pt-6 text-pretty text-small text-mist">
-            {fixTypography(t("valuationNote"))}
+          <p
+            lang={copy.note.lang}
+            className="mt-8 w-full border-t border-hairline-dark pt-6 text-pretty text-small text-mist"
+          >
+            {fixTypography(copy.note.text)}
           </p>
         </div>
       </div>

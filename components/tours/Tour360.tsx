@@ -180,8 +180,26 @@ export default function Tour360({ scenes, title }: Props) {
       viewer = createViewer();
     }, 0);
 
+    // PSV's navbar buttons and gallery thumbnails are focusable <div>s with
+    // only a `title`; give each one a button role and a name as it appears.
+    const name = () => {
+      for (const button of container.querySelectorAll<HTMLElement>(".psv-button:not([role])")) {
+        button.setAttribute("role", "button");
+        const label = button.getAttribute("title");
+        if (label !== null && label !== "") button.setAttribute("aria-label", label);
+      }
+      for (const item of container.querySelectorAll<HTMLElement>(".psv-gallery-item:not([role])")) {
+        item.setAttribute("role", "button");
+        const label = titleOf.get(item.dataset.psvGalleryItem ?? "");
+        if (label !== undefined) item.setAttribute("aria-label", label);
+      }
+    };
+    const observer = new MutationObserver(name);
+    observer.observe(container, { childList: true, subtree: true });
+
     return () => {
       window.clearTimeout(timer);
+      observer.disconnect();
       tourRef.current = null;
       viewer?.destroy();
     };

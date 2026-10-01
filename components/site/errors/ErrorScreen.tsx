@@ -70,15 +70,16 @@ export function ErrorScreen({
 }: ErrorScreenProps) {
   return (
     <div className="relative isolate flex min-h-svh flex-col overflow-hidden bg-ink text-ivory">
-      {/* The figure is texture, not content: the eyebrow says it in words. */}
+      {/* The figure is texture, not content: the eyebrow says it in words. It
+          is drawn by a pseudo-element, so it is not text that has to meet a
+          contrast ratio (axe would otherwise judge the 4.5% ivory as copy). */}
       {code !== undefined ? (
-        <p
+        <span
           aria-hidden="true"
           data-numeric
-          className="pointer-events-none absolute -bottom-[0.18em] -right-[0.04em] -z-10 select-none font-display text-[clamp(11rem,30vw,30rem)] leading-none tracking-[-0.04em] text-ivory/[0.045]"
-        >
-          {code}
-        </p>
+          data-code={code}
+          className="pointer-events-none absolute -bottom-[0.18em] -right-[0.04em] -z-10 select-none font-display text-[clamp(11rem,30vw,30rem)] leading-none tracking-[-0.04em] text-ivory/[0.045] before:content-[attr(data-code)]"
+        />
       ) : null}
 
       <Container className="flex flex-1 flex-col justify-center pb-section pt-[calc(var(--header-h,85px)+3rem)] lg:pb-32 lg:pt-[calc(var(--header-h,85px)+5rem)]">

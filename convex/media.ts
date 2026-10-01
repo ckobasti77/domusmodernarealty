@@ -17,6 +17,7 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const MAX_PANO_BYTES = 40 * 1024 * 1024;
 const MAX_SPLAT_BYTES = 200 * 1024 * 1024;
 const MAX_MEDIA_PER_LISTING = 60;
+const ACTIVE_CONTENT = /^text\/|html|xml|javascript|ecmascript/i;
 
 export const generateUploadUrl = mutation({
   args: {},
@@ -51,10 +52,13 @@ async function assertUploadOk(
   }
   if (
     (kind === "image" || kind === "panorama") &&
-    meta.contentType !== undefined &&
-    !(IMAGE_TYPES as readonly string[]).includes(meta.contentType)
+    (meta.contentType === undefined || !(IMAGE_TYPES as readonly string[]).includes(meta.contentType))
   ) {
     invalidInput("Dozvoljeni formati su JPEG, PNG, WebP i AVIF.");
+  }
+  // A model is served from our storage domain: never anything a browser would run or render as a page.
+  if (kind === "splat" && meta.contentType !== undefined && ACTIVE_CONTENT.test(meta.contentType)) {
+    invalidInput("Ovaj tip fajla nije dozvoljen za 3D model.");
   }
   return {
     size: meta.size,

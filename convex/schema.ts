@@ -350,6 +350,8 @@ export default defineSchema({
       }),
     ),
     planXY: v.optional(v.array(v.number())),
+    /** Source/licence line, shown to visitors with the tour (e.g. "Poly Haven (CC0), https://…"). */
+    credit: v.optional(v.string()),
   }).index("by_listingId_and_order", { fields: ["listingId", "order"] }),
 
   splatAssets: defineTable({

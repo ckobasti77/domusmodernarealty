@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { normalizeTour360, prepareWalk3d, releaseWalk3dBlobs } from "./lib/tourAssets";
 import type { Infer } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
@@ -767,9 +768,17 @@ export const update = mutation({
               }
             : { ...legalRest, docsVerifiedAt: now, docsVerifiedBy: viewer._id };
     }
+    // Tour data from the editor's autosave gets the same checks as toursAdmin.
+    const tour360 = normalizeTour360(args.patch.tour360);
+    const walk3d =
+      args.patch.walk3d !== undefined
+        ? await prepareWalk3d(ctx, before.walk3d, args.patch.walk3d)
+        : undefined;
     const { videoUrl: _rawVideoUrl, ...patchRest } = args.patch;
     const cleanPatch = {
       ...patchRest,
+      ...(walk3d !== undefined ? { walk3d } : {}),
+      ...(tour360 !== undefined ? { tour360 } : {}),
       ...(legalPatch !== undefined ? { legal: legalPatch } : {}),
       ...(videoUrl !== undefined
         ? { videoUrl: videoUrl.length > 0 ? videoUrl : undefined }
@@ -855,6 +864,7 @@ export const update = mutation({
     };
 
     await ctx.db.patch("listings", before._id, patch);
+    if (walk3d !== undefined) await releaseWalk3dBlobs(ctx, before.walk3d, walk3d);
     const after = await ctx.db.get("listings", before._id);
     if (after === null) notFound("Nekretnina");
 

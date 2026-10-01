@@ -1,3 +1,4 @@
+import { deleteListingTours } from "./lib/tourBlobs";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -192,11 +193,7 @@ async function deleteDemoListings(ctx: MutationCtx, limit: number): Promise<numb
         await deleteBlobIfPresent(ctx, item.image.storageId);
       }
     }
-    const scenes = await ctx.db
-      .query("tourScenes")
-      .withIndex("by_listingId_and_order", (q) => q.eq("listingId", doc._id))
-      .take(60);
-    for (const scene of scenes) await ctx.db.delete("tourScenes", scene._id);
+    await deleteListingTours(ctx, doc);
 
     const splats = await ctx.db
       .query("splatAssets")

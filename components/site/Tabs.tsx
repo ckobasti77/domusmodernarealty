@@ -48,9 +48,14 @@ export function Tabs({
     >
       <TabsPrimitive.List
         aria-label={ariaLabel}
+        // One row that scrolls sideways on phones instead of wrapping. The
+        // hairline is a background line, not a border: a scroll container
+        // clips its border box, which would cut the active tab's underline.
         className={cn(
-          "flex flex-wrap gap-x-8",
-          tone === "dark" ? "hairline-b-dark" : "hairline-b",
+          "-mx-1 flex gap-x-8 overflow-x-auto px-1 pt-1 [scrollbar-width:none]",
+          tone === "dark"
+            ? "bg-[linear-gradient(to_top,var(--color-hairline-dark)_1px,transparent_1px)]"
+            : "bg-[linear-gradient(to_top,var(--color-hairline-light)_1px,transparent_1px)]",
         )}
       >
         {tabs.map((tab) => (
@@ -58,7 +63,7 @@ export function Tabs({
             key={tab.value}
             value={tab.value}
             className={cn(
-              "relative -mb-px flex min-h-11 items-center pb-3 pt-1",
+              "relative flex min-h-11 shrink-0 items-center whitespace-nowrap pb-3 pt-1",
               "font-sans text-small font-medium uppercase tracking-[0.12em]",
               "transition-colors duration-200 ease-out",
               "after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0",

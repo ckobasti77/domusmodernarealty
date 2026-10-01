@@ -26,6 +26,7 @@ import { SimilarRail } from "@/components/site/listing/SimilarRail";
 import { VideoFacade } from "@/components/site/listing/VideoFacade";
 import { ViewTracker } from "@/components/site/listing/ViewTracker";
 import { Tabs, type SiteTab } from "@/components/site/Tabs";
+import { toTourScenes, toWalkData } from "@/components/tours/data";
 import { Tour360Slot, Walk3DSlot } from "@/components/tours/TourSlot";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { ListingDetail } from "@/convex/lib/dto";
@@ -34,7 +35,14 @@ import { htmlLang, routing, type Locale } from "@/i18n/routing";
 import { fixTypography, fixWidows, formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
 import { breadcrumbJsonLd, listingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
-import { getListingBySlug, getListingPreview, getPublicSettings, getSimilarListings } from "@/lib/listing-data";
+import {
+  getListingBySlug,
+  getListingPreview,
+  getPublicSettings,
+  getSimilarListings,
+  getTourScenes,
+  getWalk3d,
+} from "@/lib/listing-data";
 import { floorLabel, placeLine, placeShort, structureShort, structureTitle } from "@/lib/listing-text";
 import { absoluteUrl, localizedAlternates } from "@/lib/seo";
 
@@ -198,27 +206,46 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
       content: <VideoFacade url={listing.videoUrl} title={title.text} />,
     });
   }
-  if (listing.tour360 !== undefined && listing.sceneCount + (listing.tour360.url !== undefined ? 1 : 0) > 0) {
+  // Tour data is read only for listings that have a tour; the viewers load on click.
+  const selfTour = listing.tour360?.provider === "self" && listing.sceneCount > 0;
+  const [rawScenes, rawWalk] = await Promise.all([
+    selfTour || listing.hasWalk3d ? getTourScenes(listing._id) : Promise.resolve([]),
+    listing.hasWalk3d ? getWalk3d(listing._id) : Promise.resolve(null),
+  ]);
+  const scenes = toTourScenes(rawScenes, locale);
+  const walk = rawWalk !== null ? toWalkData(rawWalk, locale) : null;
+  const tour360 = listing.tour360;
+  const externalTour = tour360 !== undefined && tour360.provider !== "self" && tour360.embedUrl !== undefined;
+  if (tour360 !== undefined && ((tour360.provider === "self" && scenes.length > 0) || externalTour)) {
     mediaTabs.push({
       value: "tour360",
       label: t("tabs.tour360"),
       content: (
         <Tour360Slot
-          listingId={listing._id}
           title={title.text}
+          isDemo={listing.isDemo}
           poster={listing.cover}
-          sceneCount={listing.sceneCount}
-          provider={listing.tour360.provider}
-          {...(listing.tour360.url !== undefined ? { externalUrl: listing.tour360.url } : {})}
+          provider={tour360.provider}
+          scenes={scenes}
+          {...(tour360.embedUrl !== undefined ? { embedUrl: tour360.embedUrl } : {})}
         />
       ),
     });
   }
-  if (listing.hasWalk3d) {
+  if (walk !== null) {
     mediaTabs.push({
       value: "walk3d",
       label: t("tabs.walk3d"),
-      content: <Walk3DSlot listingId={listing._id} title={title.text} poster={listing.cover} />,
+      content: (
+        <Walk3DSlot
+          title={title.text}
+          isDemo={listing.isDemo}
+          poster={listing.cover}
+          {...(rawWalk?.posterUrl !== undefined ? { posterUrl: rawWalk.posterUrl } : {})}
+          walk={walk}
+          scenes={scenes}
+        />
+      ),
     });
   }
 

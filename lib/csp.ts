@@ -6,6 +6,8 @@
  * embeds third-party tour iframes and map tiles.
  */
 
+import { EXTERNAL_TOUR_HOSTS, SPLAT_HOSTS as SPLAT_HOSTNAMES } from "../convex/lib/tours";
+
 const isDev = process.env.NODE_ENV !== "production";
 
 /** Convex deployment (websocket + HTTP actions + file storage). */
@@ -13,7 +15,8 @@ const CONVEX = ["https://*.convex.cloud", "wss://*.convex.cloud", "https://*.con
 
 /** Verified demo asset hosts from docs/assets/demo-media.json. */
 const DEMO_IMAGE_HOSTS = ["https://images.unsplash.com", "https://dl.polyhaven.org"];
-const SPLAT_HOSTS = ["https://d28zzqy0iyovbz.cloudfront.net", "https://storage.googleapis.com"];
+/** Splat walkthrough hosts (the viewer fetches models with `fetch`). */
+const SPLAT_HOSTS = SPLAT_HOSTNAMES.map((host) => `https://${host}`);
 
 const MAP_TILES = "https://tiles.openfreemap.org";
 
@@ -55,8 +58,7 @@ export const publicCsp = serialize({
     ...SPLAT_HOSTS,
   ],
   "frame-src": [
-    "https://my.matterport.com",
-    "https://kuula.co",
+    ...Object.values(EXTERNAL_TOUR_HOSTS).map((host) => `https://${host}`),
     "https://www.youtube-nocookie.com",
     "https://player.vimeo.com",
   ],
@@ -67,7 +69,8 @@ export const adminCsp = serialize({
   "img-src": ["'self'", "data:", "blob:", ...DEMO_IMAGE_HOSTS, "https://*.convex.cloud", MAP_TILES],
   // Address search goes through the `geocode.search` Convex action (it must
   // send an identifying User-Agent and share one rate limit), never from here.
-  "connect-src": ["'self'", ...CONVEX, MAP_TILES],
+  // Splat hosts: the tours tab measures a model's size before it is saved.
+  "connect-src": ["'self'", ...CONVEX, MAP_TILES, ...SPLAT_HOSTS],
   "frame-src": ["'none'"],
 });
 

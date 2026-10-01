@@ -347,14 +347,15 @@ test.describe("server rendering and tracking", () => {
 });
 
 test.describe("media tabs and calculators", () => {
-  test("the 360° and 3D tabs show their poster and the Uskoro state", async ({ page }) => {
+  test("the 360° and 3D tabs show their poster and launch button", async ({ page }) => {
     await quietVisit(page, "/sr/nekretnine/penthaus-na-24-spratu-u-beogradu-na-vodi-pogled-na-savu-me-1049");
     const tabs = page.getByRole("tablist", { name: "Fotografije, planovi i obilasci" });
     await tabs.getByRole("tab", { name: "360° tura" }).click();
     await expect(page.locator('[data-tour-slot="tour360"]')).toBeVisible();
-    await expect(page.locator('[data-tour-slot="tour360"]')).toContainText("Uskoro");
+    await expect(page.locator('[data-launch="tour360"]')).toBeVisible();
     await tabs.getByRole("tab", { name: "3D šetnja" }).click();
     await expect(page.locator('[data-tour-slot="walk3d"]')).toBeVisible();
+    await expect(page.locator('[data-launch="walk3d"], [data-walk-unsupported]')).toBeVisible();
     await tabs.getByRole("tab", { name: "Fotografije" }).click();
     await expect(page.getByRole("button", { name: /Otvorite fotografiju 1 od/ })).toBeVisible();
   });

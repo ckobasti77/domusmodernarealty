@@ -6,6 +6,7 @@
  * The return validators below make a leak a type error, not a review finding.
  */
 import { v } from "convex/values";
+import { externalTourEmbedUrl } from "./tours";
 import type { Infer } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
@@ -298,9 +299,8 @@ export const listingDetailV = listingCardV.extend({
   media: v.array(publicImageV),
   floorPlans: v.array(publicImageV),
   videoUrl: v.optional(v.string()),
-  tour360: v.optional(
-    v.object({ provider: tourProviderV, url: v.optional(v.string()), externalId: v.optional(v.string()) }),
-  ),
+  /** `embedUrl` is the checked player URL of a Matterport/Kuula tour (`externalTourEmbedUrl`). */
+  tour360: v.optional(v.object({ provider: tourProviderV, embedUrl: v.optional(v.string()) })),
   hasWalk3d: v.boolean(),
   sceneCount: v.number(),
   bedrooms: v.optional(v.number()),
@@ -529,6 +529,10 @@ export async function toDetail(
 
   const showStreet = listing.location.addressVisibility === "exact";
   const tourPublished = listing.tour360?.published === true;
+  const embedUrl =
+    listing.tour360 !== undefined && listing.tour360.provider !== "self"
+      ? externalTourEmbedUrl(listing.tour360.provider, listing.tour360.url, listing.tour360.externalId)
+      : null;
 
   return {
     ...card,
@@ -539,17 +543,17 @@ export async function toDetail(
     ...(listing.videoUrl !== undefined ? { videoUrl: listing.videoUrl } : {}),
     ...(tourPublished && listing.tour360 !== undefined
       ? {
-          tour360: {
-            provider: listing.tour360.provider,
-            ...(listing.tour360.url !== undefined ? { url: listing.tour360.url } : {}),
-            ...(listing.tour360.externalId !== undefined
-              ? { externalId: listing.tour360.externalId }
-              : {}),
-          },
+          tour360:
+            listing.tour360.provider === "self"
+              ? { provider: "self" as const }
+              : {
+                  provider: listing.tour360.provider,
+                  ...(embedUrl !== null ? { embedUrl } : {}),
+                },
         }
       : {}),
     hasWalk3d: listing.walk3d?.published === true,
-    sceneCount: tourPublished ? scenes.length : 0,
+    sceneCount: tourPublished && listing.tour360?.provider === "self" ? scenes.length : 0,
     ...(listing.bedrooms !== undefined ? { bedrooms: listing.bedrooms } : {}),
     ...(listing.bathrooms !== undefined ? { bathrooms: listing.bathrooms } : {}),
     ...(listing.registeredAreaM2 !== undefined

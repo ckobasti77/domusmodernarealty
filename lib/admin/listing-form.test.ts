@@ -17,6 +17,7 @@ import {
   invalidKeys,
   listingFormSchema,
   localeCompleteness,
+  parseFloorPolygon,
   structureName,
   withKeys,
   type ListingDoc,
@@ -90,7 +91,7 @@ function sampleDoc(overrides: Partial<ListingDoc> = {}): ListingDoc {
     media: [],
     floorPlans: [],
     walk3d: {
-      desktop: { source: { kind: "url", url: "https://cdn.example/scene.sog" }, format: "sog" },
+      desktop: { source: { kind: "url", url: "https://d28zzqy0iyovbz.cloudfront.net/scene/v1/meta.json" }, format: "sog" },
       credits: "Snimak: agencija",
       aiGenerated: false,
       eyeHeight: 1.6,
@@ -323,6 +324,10 @@ describe("optional fields", () => {
         credits: "",
         aiGenerated: false,
         published: false,
+        spawn: { x: null, y: null, z: null, yaw: null },
+        eyeHeight: null,
+        floorPolygon: [],
+        hotspots: [],
       };
     });
     expect(buildSave(values, ["videoUrl", "tour360", "walk3d"])).toEqual({
@@ -489,10 +494,185 @@ describe("helpers", () => {
     expect(localeCompleteness("", "  ")).toBe("empty");
   });
 
-  it("detects splat formats from URLs", () => {
+  it("detects splat formats from URLs and file names", () => {
     expect(detectAssetFormat("https://cdn.example/room.SOG?v=2")).toBe("sog");
     expect(detectAssetFormat("https://cdn.example/room.ksplat")).toBe("ksplat");
-    expect(detectAssetFormat("https://cdn.example/room.zip")).toBeNull();
+    // A bundled SOG is a zip; an unpacked one is read through its meta.json.
+    expect(detectAssetFormat("https://cdn.example/room.zip")).toBe("sog");
+    expect(detectAssetFormat("https://d28zzqy0iyovbz.cloudfront.net/9917211a/v1/meta.json")).toBe("sog");
+    expect(detectAssetFormat("meta.json")).toBe("sog");
+    expect(detectAssetFormat("room-collision.glb")).toBe("glb");
+    expect(detectAssetFormat("https://cdn.example/other.json")).toBeNull();
+    expect(detectAssetFormat("https://cdn.example/room")).toBeNull();
+  });
+
+  it("reads a floor polygon pasted as JSON", () => {
+    expect(parseFloorPolygon("[[0, 0], [2.5, 0], [2.5, -3]]")).toEqual({
+      ok: true,
+      points: [
+        [0, 0],
+        [2.5, 0],
+        [2.5, -3],
+      ],
+    });
+    expect(parseFloorPolygon("  ")).toEqual({ ok: true, points: [] });
+    expect(parseFloorPolygon("[[0, 0], [1, 1]")).toMatchObject({ ok: false, error: "Tekst nije ispravan JSON." });
+    expect(parseFloorPolygon('{"x": 1}')).toMatchObject({ ok: false });
+    expect(parseFloorPolygon("[[0, 0, 1], [1, 1, 1], [2, 2, 2]]")).toMatchObject({ ok: false });
+    expect(parseFloorPolygon('[[0, 0], [1, "1"], [2, 2]]')).toMatchObject({ ok: false });
+    expect(parseFloorPolygon("[[0, 0], [1, 1]]")).toMatchObject({ ok: false, error: "Tlocrt mora imati od 3 do 64 tačaka." });
+    const many = JSON.stringify(Array.from({ length: 65 }, (_, i) => [i, i % 2]));
+    expect(parseFloorPolygon(many)).toMatchObject({ ok: false });
+  });
+});
+
+describe("3D walkthrough and 360° tour", () => {
+  const SOG = "https://d28zzqy0iyovbz.cloudfront.net/9917211a/v1/meta.json";
+  const valid = docToForm(sampleDoc());
+
+  function issuesFor(values: ListingForm): string[] {
+    const result = listingFormSchema.safeParse(values);
+    return result.success ? [] : result.error.issues.map((issue) => issue.path.join("."));
+  }
+
+  function walkDoc(walk: NonNullable<ListingDoc["walk3d"]>): ListingDoc {
+    return sampleDoc({ walk3d: walk });
+  }
+
+  it("round-trips spawn, eye height, floor polygon and hotspots", () => {
+    const walk: NonNullable<ListingDoc["walk3d"]> = {
+      desktop: { source: { kind: "url", url: SOG }, format: "sog", bytes: 43_087_848 },
+      spawn: { x: 3.8, y: 0, z: 1.8, yaw: 1.23 },
+      eyeHeight: 2.75,
+      floorPolygon: [
+        [-4.7, 2.85],
+        [4.9, 2.85],
+        [4.9, -1.5],
+      ],
+      hotspots: [{ label: { sr: "Kuhinja", en: "Kitchen" }, x: 4.4, z: 2.2, yaw: -1.16 }],
+      credits: "ethan3111 (CC BY 4.0)",
+      aiGenerated: false,
+      published: true,
+    };
+    const form = docToForm(walkDoc(walk));
+    expect(form.walk3d.spawn).toEqual({ x: 3.8, y: 0, z: 1.8, yaw: 1.23 });
+    expect(form.walk3d.eyeHeight).toBe(2.75);
+    expect(form.walk3d.hotspots).toEqual([{ label: { sr: "Kuhinja", en: "Kitchen", ru: "", de: "" }, x: 4.4, z: 2.2, yaw: -1.16 }]);
+    expect(issuesFor(form)).toEqual([]);
+    expect(formToPatch(form, ["walk3d"]).walk3d).toEqual(walk);
+  });
+
+  it("maps a walkthrough without the optional parts to empty inputs and back", () => {
+    const form = docToForm(walkDoc({ desktop: { source: { kind: "url", url: SOG }, format: "sog" }, published: false }));
+    expect(form.walk3d.spawn).toEqual({ x: null, y: null, z: null, yaw: null });
+    expect(form.walk3d.eyeHeight).toBeNull();
+    expect(form.walk3d.floorPolygon).toEqual([]);
+    expect(form.walk3d.hotspots).toEqual([]);
+    expect(formToPatch(form, ["walk3d"]).walk3d).toEqual({
+      desktop: { source: { kind: "url", url: SOG }, format: "sog" },
+      aiGenerated: false,
+      published: false,
+    });
+  });
+
+  it("trims hotspot names and lets blank translations fall back to Serbian", () => {
+    const values = edit(valid, (d) => {
+      d.walk3d.hotspots = [{ label: { sr: "  Dnevna soba ", en: " ", ru: "", de: "Wohnzimmer" }, x: 1, z: -2, yaw: 0 }];
+    });
+    expect(formToPatch(values, ["walk3d"]).walk3d?.hotspots).toEqual([
+      { label: { sr: "Dnevna soba", de: "Wohnzimmer" }, x: 1, z: -2, yaw: 0 },
+    ]);
+  });
+
+  it("removes the walkthrough when only empty start point, polygon and hotspots are left", () => {
+    const values = edit(valid, (d) => {
+      d.walk3d = {
+        desktop: { url: "", format: "spz" },
+        mobile: { url: "", format: "spz" },
+        collision: { url: "", format: "spz" },
+        posterUrl: "",
+        credits: "",
+        aiGenerated: false,
+        published: false,
+        spawn: { x: null, y: null, z: null, yaw: null },
+        eyeHeight: null,
+        floorPolygon: [],
+        hotspots: [],
+      };
+    });
+    expect(buildSave(values, ["walk3d"])).toEqual({ patch: {}, unsets: ["walk3d"], held: [] });
+    // Any one of them keeps it.
+    const withHotspot = edit(values, (d) => {
+      d.walk3d.hotspots = [{ label: { sr: "Hodnik", en: "", ru: "", de: "" }, x: 0, z: 0, yaw: 0 }];
+    });
+    expect(buildSave(withHotspot, ["walk3d"]).patch.walk3d?.hotspots).toHaveLength(1);
+  });
+
+  it("accepts only model URLs on the allowed splat hosts", () => {
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.desktop.url = "https://example.com/room.spz")))).toEqual([
+      "walk3d.desktop.url",
+    ]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.mobile.url = "http://d28zzqy0iyovbz.cloudfront.net/a.sog")))).toEqual([
+      "walk3d.mobile.url",
+      "walk3d.mobile.url",
+    ]);
+    expect(
+      issuesFor(edit(valid, (d) => void (d.walk3d.collision.url = "https://storage.googleapis.com/bucket/room.glb"))),
+    ).toEqual([]);
+  });
+
+  it("accepts an https poster or one shipped with the site", () => {
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "/media/tours/demo/living-room.jpg")))).toEqual([]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "https://images.unsplash.com/photo-1")))).toEqual([]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "http://example.com/poster.jpg")))).toEqual([
+      "walk3d.posterUrl",
+    ]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "/media/../secret.jpg")))).toEqual(["walk3d.posterUrl"]);
+  });
+
+  it("wants all four start-point values or none", () => {
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.spawn = { x: 1, y: null, z: 2, yaw: null })))).toEqual([
+      "walk3d.spawn.y",
+      "walk3d.spawn.yaw",
+    ]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.spawn = { x: 1, y: 0, z: Number.NaN, yaw: 0 })))).toEqual([
+      "walk3d.spawn.z",
+    ]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.spawn = { x: -1.5, y: 0, z: 2, yaw: -3 })))).toEqual([]);
+  });
+
+  it("keeps the eye height between 0.2 and 20 model units", () => {
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.eyeHeight = 0.1)))).toEqual(["walk3d.eyeHeight"]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.eyeHeight = 21)))).toEqual(["walk3d.eyeHeight"]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.eyeHeight = null)))).toEqual([]);
+  });
+
+  it("checks the floor polygon size and the hotspot list", () => {
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.floorPolygon = [[0, 0], [1, 1]])))).toEqual(["walk3d.floorPolygon"]);
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.floorPolygon = [[0, 0], [1, 1], [1]])))).toEqual([
+      "walk3d.floorPolygon",
+    ]);
+    const hotspot = { label: { sr: "Soba", en: "", ru: "", de: "" }, x: 0, z: 0, yaw: 0 };
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.hotspots = Array.from({ length: 13 }, () => hotspot))))).toEqual([
+      "walk3d.hotspots",
+    ]);
+    expect(
+      issuesFor(edit(valid, (d) => void (d.walk3d.hotspots = [{ ...hotspot, label: { ...hotspot.label, sr: " " }, x: null }]))),
+    ).toEqual(["walk3d.hotspots.0.label.sr", "walk3d.hotspots.0.x"]);
+  });
+
+  it("validates Matterport and Kuula tours the way the server does", () => {
+    const tour = (patch: Partial<ListingForm["tour360"]>) =>
+      edit(valid, (d) => void (d.tour360 = { provider: "matterport", externalId: "", url: "", published: false, ...patch }));
+    expect(issuesFor(tour({}))).toEqual([]);
+    expect(issuesFor(tour({ published: true }))).toEqual(["tour360.url"]);
+    expect(issuesFor(tour({ url: "https://my.matterport.com/show/?m=SxQL3iGyoDo" }))).toEqual([]);
+    expect(issuesFor(tour({ url: "https://example.com/show/?m=SxQL3iGyoDo" }))).toEqual(["tour360.url"]);
+    expect(issuesFor(tour({ externalId: "SxQL3iGyoDo", published: true }))).toEqual([]);
+    expect(issuesFor(tour({ externalId: "x" }))).toEqual(["tour360.externalId"]);
+    expect(issuesFor(tour({ provider: "kuula", url: "https://kuula.co/share/collection/7lVLq" }))).toEqual([]);
+    expect(issuesFor(tour({ provider: "kuula", url: "https://kuula.co/x" }))).toEqual(["tour360.url"]);
+    expect(issuesFor(tour({ provider: "self", published: true }))).toEqual([]);
   });
 });
 

@@ -3,6 +3,7 @@
  * index drivers (`scope`, `pricePerM2`, `floorNum`, `hasTour`, `searchText`,
  * `mandateEnd`) can never drift from the source fields.
  */
+import { externalTourEmbedUrl } from "./tours";
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { floorToNumber } from "./money";
@@ -50,8 +51,12 @@ export function applyDerived(
 
   // Only what the detail page will actually open: an unpublished 360° tour's
   // scenes must not earn the card a "360°" badge.
+  const tour = listing.tour360;
   const tour360Live =
-    listing.tour360?.published === true && (hasTourScenes || listing.tour360.url !== undefined);
+    tour?.published === true &&
+    (tour.provider === "self"
+      ? hasTourScenes
+      : externalTourEmbedUrl(tour.provider, tour.url, tour.externalId) !== null);
   const hasTour = tour360Live || listing.walk3d?.published === true;
 
   return {

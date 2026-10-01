@@ -1,95 +1,174 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
-import type { Id } from "@/convex/_generated/dataModel";
-import type { PublicImage } from "@/convex/lib/dto";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/site/Badge";
+import type { PublicImage } from "@/convex/lib/dto";
+import { Credits } from "./Credits";
+import { ExternalTourFacade, ExternalTourStart } from "./ExternalTourFacade";
+import { Tour360Launcher } from "./Tour360Launcher";
+import type { TourScene, WalkData } from "./types";
+import { Walk3DLauncher } from "./Walk3DLauncher";
 
 /**
- * Placeholders for the listing page's "360° tura" and "3D šetnja" tabs until
- * step 11 ships the real viewers. They render a poster and an "Uskoro" state so
- * the tabs already exist, are keyboard-reachable and are tested.
- *
- * PROP CONTRACT (step 11 keeps these shapes and swaps the body for a
- * `next/dynamic({ ssr: false })` import of `Tour360` / `Walk3D`, wrapped in
- * `data-lenis-prevent`):
- *
- *  - `Tour360SlotProps.listingId` feeds `api.tours.scenes({ listingId })`;
- *    `sceneCount` is `listing.sceneCount` from `listings.bySlug`, already 0 when
- *    the tour is unpublished; `provider` / `externalUrl` come from
- *    `listing.tour360` — "self" means our Photo Sphere Viewer scenes,
- *    "matterport" / "kuula" mean an iframe behind a click-to-activate overlay.
- *  - `Walk3DSlotProps.listingId` feeds `api.tours.walk3d({ listingId })`, which
- *    returns the splat assets, spawn point, floor polygon and credits.
- *  - `poster` is the listing cover; `title` is the localized listing title,
- *    used for the viewer's accessible name.
+ * The listing page's "360° tura" and "3D šetnja" tabs. Each renders a poster
+ * panel on the server and a small client launcher; the viewers themselves
+ * (Photo Sphere Viewer, three.js + Spark) are `next/dynamic` imports that
+ * download only after the visitor clicks, so the listing page's own bundle
+ * does not grow (IMPLEMENTATION-PLAN step 11).
  */
 
-export type Tour360SlotProps = {
-  listingId: Id<"listings">;
-  title: string;
-  poster?: PublicImage;
-  sceneCount: number;
-  provider: "self" | "matterport" | "kuula";
-  externalUrl?: string;
-};
-
-export type Walk3DSlotProps = {
-  listingId: Id<"listings">;
-  title: string;
-  poster?: PublicImage;
-};
-
-async function SoonPanel({
+function TourPanel({
+  kind,
   heading,
-  detail,
+  meta,
   poster,
   alt,
-  kind,
+  badges,
+  footer,
+  children,
 }: {
-  heading: string;
-  detail?: string;
-  poster?: PublicImage;
-  alt: string;
   kind: "tour360" | "walk3d";
+  heading: string;
+  /** The mono line above the heading ("4 prostorije"). */
+  meta?: string;
+  poster?: { url: string; unoptimized?: boolean };
+  alt: string;
+  badges?: ReactNode;
+  footer?: ReactNode;
+  children: ReactNode;
 }) {
-  const t = await getTranslations("listing");
   return (
     <div
       data-tour-slot={kind}
-      className="relative flex aspect-[4/3] w-full items-end overflow-hidden bg-ink-2 md:aspect-[21/9]"
+      className="relative flex min-h-[26rem] w-full items-end overflow-hidden bg-ink-2 md:aspect-[16/9] md:min-h-0 lg:aspect-[21/9]"
     >
       {poster !== undefined ? (
-        <Image src={poster.url} alt={alt} fill sizes="100vw" className="object-cover opacity-45" />
+        <Image
+          src={poster.url}
+          alt={alt}
+          fill
+          sizes="(min-width: 1440px) 1344px, 100vw"
+          unoptimized={poster.unoptimized}
+          className="object-cover"
+        />
       ) : null}
-      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-transparent" />
-      <div className="relative flex max-w-2xl flex-col gap-4 p-6 md:p-12">
-        <Badge tone="dark" className="self-start">
-          {t("soon")}
-        </Badge>
-        <h3 className="font-display text-h2 text-ivory">{heading}</h3>
-        {detail !== undefined ? (
-          <p className="font-mono text-label uppercase tracking-[0.08em] text-mist">{detail}</p>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/35 via-40% to-transparent to-75%"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 hidden bg-gradient-to-r from-ink/60 to-transparent to-50% md:block"
+      />
+      <div className="relative flex max-w-2xl flex-col items-start gap-4 p-6 md:p-12">
+        {badges !== undefined || meta !== undefined ? (
+          <div className="flex flex-wrap items-center gap-3">
+            {badges}
+            {meta !== undefined ? (
+              <p className="font-mono text-label uppercase tracking-[0.08em] text-ivory">{meta}</p>
+            ) : null}
+          </div>
         ) : null}
-        <p className="text-body text-mist">{t("tourSlot.soonBody")}</p>
+        <h3 className="font-display text-display-m text-ivory">{heading}</h3>
+        {children}
+        {footer}
       </div>
     </div>
   );
 }
 
-export async function Tour360Slot({ title, poster, sceneCount }: Tour360SlotProps) {
+export type Tour360SlotProps = {
+  title: string;
+  /** Demo listings say so on their tours (the scenes are stock panoramas). */
+  isDemo: boolean;
+  poster?: PublicImage;
+  provider: "self" | "matterport" | "kuula";
+  /** Self-hosted scenes (provider "self"). */
+  scenes: TourScene[];
+  /** Checked Matterport/Kuula player URL (`listing.tour360.embedUrl`). */
+  embedUrl?: string;
+};
+
+export async function Tour360Slot({ title, isDemo, poster, provider, scenes, embedUrl }: Tour360SlotProps) {
   const t = await getTranslations("listing.tourSlot");
+  const tTours = await getTranslations("tours");
+
+  if (provider !== "self") {
+    if (embedUrl === undefined) return null;
+    return (
+      <ExternalTourFacade embedUrl={embedUrl} title={title}>
+        <TourPanel
+          kind="tour360"
+          heading={t("heading360")}
+          poster={poster}
+          alt={title}
+          badges={isDemo ? <Badge tone="dark">{tTours("demo")}</Badge> : undefined}
+        >
+          <ExternalTourStart provider={provider === "matterport" ? "Matterport" : "Kuula"} />
+        </TourPanel>
+      </ExternalTourFacade>
+    );
+  }
+
+  const credit = scenes.find((scene) => scene.credit !== undefined)?.credit;
+  // The first room itself is the poster: the centre band of its 2:1 panorama crops well.
+  const firstPano = scenes[0]?.panoMobileUrl ?? scenes[0]?.panoUrl;
   return (
-    <SoonPanel
+    <TourPanel
       kind="tour360"
       heading={t("heading360")}
-      detail={sceneCount > 0 ? t("scenes", { count: sceneCount }) : undefined}
-      poster={poster}
+      meta={t("scenes", { count: scenes.length })}
+      poster={firstPano !== undefined ? { url: firstPano, unoptimized: !firstPano.startsWith("/") } : poster}
       alt={title}
-    />
+      badges={isDemo ? <Badge tone="dark">{tTours("demo")}</Badge> : undefined}
+      footer={
+        credit !== undefined ? (
+          <p className="text-[11px] text-mist">
+            <Credits text={credit} label={(name) => tTours("panoCredit", { credit: name })} />
+          </p>
+        ) : null
+      }
+    >
+      <Tour360Launcher scenes={scenes} title={title} />
+    </TourPanel>
   );
 }
 
-export async function Walk3DSlot({ title, poster }: Walk3DSlotProps) {
+export type Walk3DSlotProps = {
+  title: string;
+  isDemo: boolean;
+  poster?: PublicImage;
+  /** The walkthrough's own poster (admin), preferred over the listing cover. */
+  posterUrl?: string;
+  walk: WalkData;
+  /** The listing's 360° scenes, offered when the walk cannot run here. */
+  scenes: TourScene[];
+};
+
+export async function Walk3DSlot({ title, isDemo, poster, posterUrl, walk, scenes }: Walk3DSlotProps) {
   const t = await getTranslations("listing.tourSlot");
-  return <SoonPanel kind="walk3d" heading={t("heading3d")} poster={poster} alt={title} />;
+  const tTours = await getTranslations("tours");
+  return (
+    <TourPanel
+      kind="walk3d"
+      heading={t("heading3d")}
+      poster={posterUrl !== undefined ? { url: posterUrl, unoptimized: !posterUrl.startsWith("/") } : poster}
+      alt={title}
+      badges={
+        <>
+          <Badge tone="dark">{tTours("beta")}</Badge>
+          {isDemo ? <Badge tone="dark">{tTours("demo")}</Badge> : null}
+        </>
+      }
+      footer={
+        walk.credits !== undefined ? (
+          <p className="text-[11px] text-mist">
+            <Credits text={walk.credits} label={(credits) => tTours("attribution", { credits })} />
+          </p>
+        ) : null
+      }
+    >
+      <Walk3DLauncher walk={walk} title={title} scenes={scenes} />
+    </TourPanel>
+  );
 }

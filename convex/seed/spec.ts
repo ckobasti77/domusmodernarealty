@@ -287,7 +287,6 @@ export const SEED_LISTINGS: SeedListing[] = [
     roomTags: ["living", "living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "view", "building"],
     mandateMonths: 12,
     hasTourScenes: true,
-    has3dWalk: true,
     poi: [
       { kind: "park", name: "Karađorđev park", distanceM: 480 },
       { kind: "school", name: "OŠ „Sveti Sava”", distanceM: 350 },
@@ -541,7 +540,6 @@ export const SEED_LISTINGS: SeedListing[] = [
     photos: ["villa", "villa", "living", "living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace"],
     roomTags: ["exterior", "exterior", "living", "living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace"],
     mandateMonths: 12,
-    has3dWalk: true,
     poi: [
       { kind: "park", name: "Park Dedinje", distanceM: 400 },
       { kind: "school", name: "Internacionalna škola Beograd", distanceM: 1200 },

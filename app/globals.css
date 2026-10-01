@@ -678,3 +678,30 @@ body.admin :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------------------------------------
+   Photo Sphere Viewer chrome in the site palette (step 11). PSV's own CSS is
+   unlayered and loads with the viewer chunk, so these stay unlayered and win
+   on specificity rather than order.
+--------------------------------------------------------------------------- */
+[data-tour360] .psv-container {
+  background: var(--color-ink);
+}
+[data-tour360] .psv-navbar {
+  background: rgb(14 13 11 / 0.82);
+  font-family: var(--font-sans);
+}
+[data-tour360] .psv-button {
+  color: var(--color-ivory);
+}
+[data-tour360] .psv-button--active {
+  background: rgb(176 141 87 / 0.25);
+}
+[data-tour360] .psv-loader {
+  color: var(--color-bronze);
+}
+[data-tour360] .psv-loader-text {
+  font: 500 12px var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

@@ -35,6 +35,13 @@ import { z } from "zod";
 import type { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { ChecklistListing } from "@/convex/lib/checklist";
+import {
+  TOUR_LIMITS,
+  externalTourEmbedUrl,
+  isAllowedSplatUrl,
+  isSitePanoPath,
+  isValidFloorPolygon,
+} from "@/convex/lib/tours";
 import { FEATURE_KEYS, L10N_KEYS, type ImageRef, type L10n, type L10nKey, type L10nList } from "@/convex/lib/validators";
 import { fromDateInput, toDateInput } from "@/lib/admin/format";
 import {
@@ -64,6 +71,7 @@ export type ListingPatch = FunctionArgs<typeof api.listingsAdmin.update>["patch"
 
 type Walk3dDoc = NonNullable<ListingDoc["walk3d"]>;
 type AssetDoc = NonNullable<Walk3dDoc["desktop"]>;
+type HotspotDoc = NonNullable<Walk3dDoc["hotspots"]>[number];
 export type AssetFormat = AssetDoc["format"];
 
 /* ------------------------------------------------------------ constants */
@@ -89,6 +97,9 @@ export const VIDEO_URL_PATTERN =
 /** What `slugify` produces: lowercase ASCII words joined by single hyphens. */
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SLUG_MAX = 80;
+
+/** Longest room name for a walkthrough hotspot (`prepareWalk3d`). */
+export const HOTSPOT_LABEL_MAX = 60;
 
 export const ASSET_FORMAT_LABEL: Record<AssetFormat, string> = {
   spz: "SPZ",
@@ -230,11 +241,48 @@ const mandateSchema = z
   });
 
 const assetSchema = z.object({
-  url: httpsOrEmpty,
+  // `prepareWalk3d`: the public viewer may only fetch models from the CSP's splat hosts.
+  url: httpsOrEmpty.refine((value) => value.trim() === "" || isAllowedSplatUrl(value), {
+    error: "Model mora biti na serveru d28zzqy0iyovbz.cloudfront.net ili storage.googleapis.com (ili otpremljen fajl).",
+  }),
   storageId: storageIdSchema.optional(),
   format: enumOf(ASSET_FORMAT_LABEL),
   bytes: z.number().optional(),
   splats: z.number().optional(),
+});
+
+/** A coordinate or an angle: any finite number, `null` while its input is empty. */
+const coordinate = z
+  .number({ error: (issue) => (issue.input === null || issue.input === undefined ? MSG.required : MSG.number) })
+  .nullable();
+
+/** A `coordinate` that must be filled; the explicit `boolean` keeps the output `number | null` (see `requiredNumber`). */
+const requiredCoordinate = coordinate.refine((value): boolean => value !== null, { error: MSG.required });
+
+/** Where the walkthrough starts: all four values or none. */
+const spawnSchema = z
+  .object({ x: coordinate, y: coordinate, z: coordinate, yaw: coordinate })
+  .superRefine((spawn, ctx) => {
+    const keys = ["x", "y", "z", "yaw"] as const;
+    const filled = keys.filter((key) => spawn[key] !== null).length;
+    if (filled === 0 || filled === keys.length) return;
+    for (const key of keys) {
+      if (spawn[key] === null) {
+        ctx.addIssue({ code: "custom", path: [key], message: "Unesite sve četiri vrednosti početne tačke." });
+      }
+    }
+  });
+
+const hotspotSchema = z.object({
+  label: z.object({
+    sr: text(HOTSPOT_LABEL_MAX).refine((value) => value.trim() !== "", { error: "Unesite naziv na srpskom." }),
+    en: text(HOTSPOT_LABEL_MAX),
+    ru: text(HOTSPOT_LABEL_MAX),
+    de: text(HOTSPOT_LABEL_MAX),
+  }),
+  x: requiredCoordinate,
+  z: requiredCoordinate,
+  yaw: requiredCoordinate,
 });
 
 const imageRefSchema = z.discriminatedUnion("kind", [
@@ -353,9 +401,26 @@ const shape = {
       published: z.boolean(),
     })
     .superRefine((tour, ctx) => {
-      // `derive.ts`: an external tour is live only with a URL to embed.
-      if (tour.published && tour.provider !== "self" && tour.provider !== "none" && tour.url.trim() === "") {
-        ctx.addIssue({ code: "custom", path: ["url"], message: "Za objavu unesite adresu ture." });
+      // `assertTour360` and `derive.ts`: an external tour must resolve to a
+      // player on the provider's own host, from the share URL or the ID.
+      if (tour.provider !== "matterport" && tour.provider !== "kuula") return;
+      const url = tour.url.trim();
+      const id = tour.externalId.trim();
+      if (url === "" && id === "") {
+        if (tour.published) {
+          ctx.addIssue({ code: "custom", path: ["url"], message: "Za objavu unesite adresu ili ID ture." });
+        }
+        return;
+      }
+      if (externalTourEmbedUrl(tour.provider, url, id) === null) {
+        ctx.addIssue({
+          code: "custom",
+          path: [url !== "" ? "url" : "externalId"],
+          message:
+            tour.provider === "matterport"
+              ? "Unesite adresu https://my.matterport.com/show/?m=… ili ID modela (6–32 slova i cifre)."
+              : "Unesite adresu https://kuula.co/share/… ili ID ture.",
+        });
       }
     }),
   walk3d: z
@@ -363,14 +428,28 @@ const shape = {
       desktop: assetSchema,
       mobile: assetSchema,
       collision: assetSchema,
-      posterUrl: httpsOrEmpty,
+      // `prepareWalk3d`: an https image or one shipped with the site (the demo walk).
+      posterUrl: z
+        .string()
+        .max(2000, { error: "Adresa je predugačka." })
+        .refine((value) => blank(value) || HTTPS_PATTERN.test(value.trim()) || isSitePanoPath(value.trim()), {
+          error: "Adresa mora počinjati sa https:// (ili biti slika sajta iz /media/tours/).",
+        }),
       posterStorageId: storageIdSchema.optional(),
       credits: text(300),
       aiGenerated: z.boolean(),
       published: z.boolean(),
-      spawn: z.object({ x: z.number(), y: z.number(), z: z.number(), yaw: z.number() }).optional(),
-      eyeHeight: z.number().optional(),
-      floorPolygon: z.array(z.array(z.number())).optional(),
+      spawn: spawnSchema,
+      eyeHeight: optionalNumber({ min: TOUR_LIMITS.eyeHeight.min, max: TOUR_LIMITS.eyeHeight.max }),
+      // Empty: no polygon, so the viewer does not clamp the camera.
+      floorPolygon: z
+        .array(z.array(z.number()))
+        .refine((points) => points.length === 0 || isValidFloorPolygon(points), {
+          error: `Tlocrt poda mora imati od 3 do ${TOUR_LIMITS.floorPoints} tačaka [x, z].`,
+        }),
+      hotspots: z
+        .array(hotspotSchema)
+        .max(TOUR_LIMITS.hotspots, { error: `Najviše ${TOUR_LIMITS.hotspots} prostorija za skok.` }),
     })
     .superRefine((walk, ctx) => {
       if (walk.published && !hasAsset(walk.desktop)) {
@@ -419,6 +498,8 @@ export type ListingForm = z.infer<typeof listingFormSchema>;
 export type L10nForm = Record<L10nKey, string>;
 export type Walk3dForm = ListingForm["walk3d"];
 export type AssetForm = Walk3dForm["desktop"];
+export type SpawnForm = Walk3dForm["spawn"];
+export type HotspotForm = Walk3dForm["hotspots"][number];
 export type Tour360Form = ListingForm["tour360"];
 export type MandateForm = ListingForm["mandate"];
 
@@ -537,6 +618,12 @@ function assetIn(asset: AssetDoc | undefined): AssetForm {
   return asset.source.kind === "storage" ? { ...base, storageId: asset.source.storageId } : base;
 }
 
+export const EMPTY_SPAWN: SpawnForm = { x: null, y: null, z: null, yaw: null };
+
+function hotspotIn(hotspot: HotspotDoc): HotspotForm {
+  return { label: l10nIn(hotspot.label), x: hotspot.x, z: hotspot.z, yaw: hotspot.yaw };
+}
+
 function walkIn(walk: Walk3dDoc | undefined): Walk3dForm {
   return {
     desktop: assetIn(walk?.desktop),
@@ -547,10 +634,10 @@ function walkIn(walk: Walk3dDoc | undefined): Walk3dForm {
     credits: walk?.credits ?? "",
     aiGenerated: walk?.aiGenerated === true,
     published: walk?.published === true,
-    // Set by the scene editor, not here; carried along so a save keeps them.
-    ...(walk?.spawn !== undefined ? { spawn: { ...walk.spawn } } : {}),
-    ...(walk?.eyeHeight !== undefined ? { eyeHeight: walk.eyeHeight } : {}),
-    ...(walk?.floorPolygon !== undefined ? { floorPolygon: walk.floorPolygon.map((row) => [...row]) } : {}),
+    spawn: walk?.spawn !== undefined ? { ...walk.spawn } : { ...EMPTY_SPAWN },
+    eyeHeight: walk?.eyeHeight ?? null,
+    floorPolygon: walk?.floorPolygon?.map((row) => [...row]) ?? [],
+    hotspots: walk?.hotspots?.map(hotspotIn) ?? [],
   };
 }
 
@@ -776,6 +863,21 @@ function assetOut(asset: AssetForm): AssetDoc | undefined {
   return { source: { kind: "url", url: asset.url.trim() }, format: asset.format, ...extra };
 }
 
+/** The stored start point, or `undefined` unless all four values are numbers. */
+function spawnOut(spawn: SpawnForm): Walk3dDoc["spawn"] {
+  const { x, y, z, yaw } = spawn;
+  return isNum(x) && isNum(y) && isNum(z) && isNum(yaw) ? { x, y, z, yaw } : undefined;
+}
+
+/** Stored hotspots: trimmed names (`prepareWalk3d` checks the Serbian one); blank translations fall back to Serbian. */
+function hotspotsOut(hotspots: readonly HotspotForm[]): HotspotDoc[] {
+  return hotspots.flatMap(({ label, x, z, yaw }) =>
+    isNum(x) && isNum(z) && isNum(yaw)
+      ? [{ label: l10nOut({ sr: label.sr.trim(), en: label.en.trim(), ru: label.ru.trim(), de: label.de.trim() }), x, z, yaw }]
+      : [],
+  );
+}
+
 /** `null` when nothing is left of the walkthrough (the stored one is then removed). */
 export function walkOut(walk: Walk3dForm): Walk3dDoc | null {
   const desktop = assetOut(walk.desktop);
@@ -787,6 +889,10 @@ export function walkOut(walk: Walk3dForm): Walk3dDoc | null {
       : blank(walk.posterUrl)
         ? undefined
         : { kind: "url", url: walk.posterUrl.trim() };
+  const spawn = spawnOut(walk.spawn);
+  const eyeHeight = isNum(walk.eyeHeight) ? walk.eyeHeight : undefined;
+  const floorPolygon = walk.floorPolygon.length > 0 ? walk.floorPolygon.map((point) => [...point]) : undefined;
+  const hotspots = hotspotsOut(walk.hotspots);
   const empty =
     desktop === undefined &&
     mobile === undefined &&
@@ -795,18 +901,20 @@ export function walkOut(walk: Walk3dForm): Walk3dDoc | null {
     blank(walk.credits) &&
     !walk.aiGenerated &&
     !walk.published &&
-    walk.spawn === undefined &&
-    walk.eyeHeight === undefined &&
-    walk.floorPolygon === undefined;
+    spawn === undefined &&
+    eyeHeight === undefined &&
+    floorPolygon === undefined &&
+    hotspots.length === 0;
   if (empty) return null;
   return {
     ...(desktop !== undefined ? { desktop } : {}),
     ...(mobile !== undefined ? { mobile } : {}),
     ...(collision !== undefined ? { collision } : {}),
     ...(poster !== undefined ? { poster } : {}),
-    ...(walk.spawn !== undefined ? { spawn: walk.spawn } : {}),
-    ...(walk.eyeHeight !== undefined ? { eyeHeight: walk.eyeHeight } : {}),
-    ...(walk.floorPolygon !== undefined ? { floorPolygon: walk.floorPolygon } : {}),
+    ...(spawn !== undefined ? { spawn } : {}),
+    ...(eyeHeight !== undefined ? { eyeHeight } : {}),
+    ...(floorPolygon !== undefined ? { floorPolygon } : {}),
+    ...(hotspots.length > 0 ? { hotspots } : {}),
     ...(blank(walk.credits) ? {} : { credits: walk.credits }),
     aiGenerated: walk.aiGenerated,
     published: walk.published,
@@ -1208,13 +1316,44 @@ export function localeCompleteness(title: string, description: string): Complete
   return "empty";
 }
 
-/** Guesses a splat format from the file extension in a URL. */
+/**
+ * Guesses a splat format from the extension of a URL or a file name. A SOG
+ * comes bundled (`.sog`, a zip) or unpacked and read through its `meta.json`.
+ */
 export function detectAssetFormat(url: string): AssetFormat | null {
   const path = url.trim().split(/[?#]/)[0]?.toLowerCase() ?? "";
+  if (/(?:^|\/)meta\.json$/.test(path)) return "sog";
   const match = /\.([a-z0-9]+)$/.exec(path);
   if (match === null) return null;
   const ext = match[1];
+  if (ext === "zip") return "sog";
   return ext !== undefined && Object.prototype.hasOwnProperty.call(ASSET_FORMAT_LABEL, ext) ? (ext as AssetFormat) : null;
+}
+
+/**
+ * Reads a floor polygon pasted as JSON (`[[x, z], …]`); empty text clears it.
+ * Returns the points, or the Serbian reason they cannot be used.
+ */
+export function parseFloorPolygon(text: string): { ok: true; points: number[][] } | { ok: false; error: string } {
+  if (text.trim() === "") return { ok: true, points: [] };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { ok: false, error: "Tekst nije ispravan JSON." };
+  }
+  const isPoint = (point: unknown): point is [number, number] =>
+    Array.isArray(point) &&
+    point.length === 2 &&
+    point.every((value) => typeof value === "number" && Number.isFinite(value));
+  if (!Array.isArray(parsed) || !parsed.every(isPoint)) {
+    return { ok: false, error: "Očekuje se niz tačaka oblika [[x, z], [x, z], …]." };
+  }
+  const points = parsed.map(([x, z]) => [x, z]);
+  if (!isValidFloorPolygon(points)) {
+    return { ok: false, error: `Tlocrt mora imati od 3 do ${TOUR_LIMITS.floorPoints} tačaka.` };
+  }
+  return { ok: true, points };
 }
 
 /** Whole days from `now` until `ms` (negative once passed). */

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import { assetFormatV, l10nV } from "./lib/validators";
+import { assetFormatV, l10nV, walkHotspotV } from "./lib/validators";
 import { imageUrl } from "./lib/dto";
 import { isPublicScope } from "./lib/search";
 
@@ -20,6 +20,7 @@ const sceneV = v.object({
     }),
   ),
   planXY: v.optional(v.array(v.number())),
+  credit: v.optional(v.string()),
 });
 
 /** Scenes for the self-hosted 360° tour. Empty unless the tour is published. */
@@ -29,7 +30,8 @@ export const scenes = query({
   handler: async (ctx, args) => {
     const listing = await ctx.db.get("listings", args.listingId);
     if (listing === null || !isPublicScope(listing.scope)) return [];
-    if (listing.tour360?.published !== true) return [];
+    // Scenes stay stored when the tour switches to Matterport/Kuula; only a live self-hosted tour shows them.
+    if (listing.tour360?.published !== true || listing.tour360.provider !== "self") return [];
 
     const docs = await ctx.db
       .query("tourScenes")
@@ -54,6 +56,7 @@ export const scenes = query({
         ...(doc.initialView !== undefined ? { initialView: doc.initialView } : {}),
         links: doc.links,
         ...(doc.planXY !== undefined ? { planXY: doc.planXY } : {}),
+        ...(doc.credit !== undefined ? { credit: doc.credit } : {}),
       });
     }
     return out;
@@ -67,8 +70,10 @@ export const walk3d = query({
     v.object({
       desktopUrl: v.optional(v.string()),
       desktopFormat: v.optional(assetFormatV),
+      desktopBytes: v.optional(v.number()),
       mobileUrl: v.optional(v.string()),
       mobileFormat: v.optional(assetFormatV),
+      mobileBytes: v.optional(v.number()),
       collisionUrl: v.optional(v.string()),
       posterUrl: v.optional(v.string()),
       spawn: v.optional(
@@ -76,6 +81,7 @@ export const walk3d = query({
       ),
       eyeHeight: v.optional(v.number()),
       floorPolygon: v.optional(v.array(v.array(v.number()))),
+      hotspots: v.optional(v.array(walkHotspotV)),
       credits: v.optional(v.string()),
       aiGenerated: v.optional(v.boolean()),
     }),
@@ -101,8 +107,10 @@ export const walk3d = query({
     return {
       ...(desktopUrl !== null ? { desktopUrl } : {}),
       ...(walk.desktop !== undefined ? { desktopFormat: walk.desktop.format } : {}),
+      ...(walk.desktop?.bytes !== undefined ? { desktopBytes: walk.desktop.bytes } : {}),
       ...(mobileUrl !== null ? { mobileUrl } : {}),
       ...(walk.mobile !== undefined ? { mobileFormat: walk.mobile.format } : {}),
+      ...(walk.mobile?.bytes !== undefined ? { mobileBytes: walk.mobile.bytes } : {}),
       ...(collisionUrl !== null ? { collisionUrl } : {}),
       ...(posterUrl !== null ? { posterUrl } : {}),
       ...(walk.spawn !== undefined ? { spawn: walk.spawn } : {}),
@@ -110,6 +118,7 @@ export const walk3d = query({
       ...(walk.floorPolygon !== undefined
         ? { floorPolygon: walk.floorPolygon }
         : {}),
+      ...(walk.hotspots !== undefined ? { hotspots: walk.hotspots } : {}),
       ...(walk.credits !== undefined ? { credits: walk.credits } : {}),
       ...(walk.aiGenerated !== undefined ? { aiGenerated: walk.aiGenerated } : {}),
     };

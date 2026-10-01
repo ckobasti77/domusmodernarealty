@@ -337,6 +337,15 @@ export const tour360V = v.object({
   published: v.boolean(),
 });
 
+/** A room the visitor can jump to in the splat walkthrough (world x/z on the floor, yaw in radians). */
+export const walkHotspotV = v.object({
+  label: l10nV,
+  x: v.number(),
+  z: v.number(),
+  yaw: v.number(),
+});
+export type WalkHotspot = Infer<typeof walkHotspotV>;
+
 export const walk3dV = v.object({
   desktop: v.optional(assetV),
   mobile: v.optional(assetV),
@@ -347,10 +356,12 @@ export const walk3dV = v.object({
   ),
   eyeHeight: v.optional(v.number()),
   floorPolygon: v.optional(v.array(v.array(v.number()))),
+  hotspots: v.optional(v.array(walkHotspotV)),
   credits: v.optional(v.string()),
   aiGenerated: v.optional(v.boolean()),
   published: v.boolean(),
 });
+export type Walk3d = Infer<typeof walk3dV>;
 
 export const seoV = v.object({
   metaTitle: v.optional(l10nV),

@@ -40,3 +40,23 @@ export const getListingPreview = cache(async (slug: string, token: string) => {
     return null;
   }
 });
+
+/** Self-hosted 360° scenes; empty unless the tour is published. A failure hides the tab's viewer. */
+export const getTourScenes = cache(async (listingId: Id<"listings">) => {
+  try {
+    return await fetchQuery(api.tours.scenes, { listingId });
+  } catch (error) {
+    console.error("[listing] tours.scenes failed:", error);
+    return [];
+  }
+});
+
+/** Splat walkthrough settings; `null` unless published. */
+export const getWalk3d = cache(async (listingId: Id<"listings">) => {
+  try {
+    return await fetchQuery(api.tours.walk3d, { listingId });
+  } catch (error) {
+    console.error("[listing] tours.walk3d failed:", error);
+    return null;
+  }
+});

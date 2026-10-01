@@ -7,7 +7,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { DEMO_TABLES, purgeDemoTable } from "./demo";
-import { applyDerived } from "./lib/derive";
+import { applyDerived, locationNamesFor } from "./lib/derive";
 import { FIRST_REF_NUMBER, formatRef, listingSlug } from "./lib/slug";
 import { l10nValues } from "./lib/derive";
 import { roleV } from "./lib/validators";
@@ -25,7 +25,8 @@ import { SEED_AGENTS } from "./seed/agents";
 import { SEED_LOCATIONS } from "./seed/locations";
 import type { SeedLocation } from "./seed/locations";
 import { SEED_LISTINGS } from "./seed/spec";
-import { DEMO_PANORAMAS, DEMO_PHOTOS, DEMO_SPLATS } from "./seed/media.generated";
+import { DEMO_PHOTOS } from "./seed/media.generated";
+import { DEMO_WALK3D, writeDemoScenes } from "./seed/tours";
 import { buildPhotoPlan, pickPhoto, photoUrl, toMediaItems } from "./seed/media";
 import { LISTING_COPY_1 } from "./seed/content/listings1";
 import { LISTING_COPY_2 } from "./seed/content/listings2";
@@ -635,20 +636,7 @@ export const seedListings = internalMutation({
         ...(spec.hasTourScenes === true
           ? { tour360: { provider: "self" as const, published: true } }
           : {}),
-        ...(spec.has3dWalk === true && DEMO_SPLATS.length > 0
-          ? {
-              walk3d: {
-                desktop: {
-                  source: { kind: "url" as const, url: DEMO_SPLATS[0].url },
-                  format: "sog" as const,
-                },
-                credits: DEMO_SPLATS[0].desc.slice(0, 300),
-                aiGenerated: false,
-                eyeHeight: 1.6,
-                published: true,
-              },
-            }
-          : {}),
+        ...(spec.has3dWalk === true ? { walk3d: DEMO_WALK3D } : {}),
         poi: spec.poi,
         ...(publishedAt !== undefined ? { publishedAt } : {}),
         updatedAt: now - index * DAY,
@@ -681,36 +669,59 @@ export const seedListings = internalMutation({
         lastViewedAt: now - (index % 7) * DAY,
       });
 
-      if (spec.hasTourScenes === true && DEMO_PANORAMAS.length >= 3) {
-        const sceneIds: Id<"tourScenes">[] = [];
-        const titles: L10n[] = [
-          { sr: "Dnevna soba", en: "Living room", ru: "Гостиная", de: "Wohnzimmer" },
-          { sr: "Kuhinja", en: "Kitchen", ru: "Кухня", de: "Küche" },
-          { sr: "Terasa", en: "Terrace", ru: "Терраса", de: "Terrasse" },
-        ];
-        for (let sceneIndex = 0; sceneIndex < 3; sceneIndex += 1) {
-          const pano = DEMO_PANORAMAS[(index + sceneIndex) % DEMO_PANORAMAS.length];
-          const id = await ctx.db.insert("tourScenes", {
-            listingId,
-            order: sceneIndex,
-            title: titles[sceneIndex],
-            pano: { kind: "url", url: pano.url },
-            links: [],
-          });
-          sceneIds.push(id);
-          scenes += 1;
-        }
-        // Link the scenes into a ring so the virtual tour can be walked.
-        for (let sceneIndex = 0; sceneIndex < sceneIds.length; sceneIndex += 1) {
-          const next = sceneIds[(sceneIndex + 1) % sceneIds.length];
-          await ctx.db.patch("tourScenes", sceneIds[sceneIndex], {
-            links: [{ toSceneId: next, yaw: 0, pitch: 0 }],
-          });
-        }
+      if (spec.hasTourScenes === true) {
+        // The listing with the 3D walk is the showcase: it also gets the 4-scene tour.
+        scenes += await writeDemoScenes(ctx, listingId, spec.has3dWalk === true ? "showcase" : index);
       }
     }
 
     return { listings, scenes };
+  },
+});
+
+/**
+ * Re-applies the demo tours (convex/seed/tours.ts) to already-seeded demo
+ * listings: self-hosted scenes for every spec with `hasTourScenes`, the 3D walk
+ * only on the showcase listing. Non-demo listings are never touched.
+ *   npx convex run seedStages:applyDemoTours '{}'
+ */
+export const applyDemoTours = internalMutation({
+  args: {},
+  returns: v.object({ listings: v.number(), scenes: v.number(), walks: v.number() }),
+  handler: async (ctx) => {
+    let listings = 0;
+    let scenes = 0;
+    let walks = 0;
+    for (const [index, spec] of SEED_LISTINGS.entries()) {
+      const ref = formatRef(FIRST_REF_NUMBER + index);
+      const listing = await ctx.db
+        .query("listings")
+        .withIndex("by_ref", (q) => q.eq("ref", ref))
+        .unique();
+      if (listing === null || !listing.isDemo) continue;
+
+      const hasScenes = spec.hasTourScenes === true;
+      const hasWalk = spec.has3dWalk === true;
+      if (!hasScenes && !hasWalk && listing.walk3d === undefined) continue;
+
+      if (hasScenes) {
+        scenes += await writeDemoScenes(ctx, listing._id, hasWalk ? "showcase" : index);
+      }
+      if (hasWalk) walks += 1;
+      const next = {
+        ...listing,
+        ...(hasScenes ? { tour360: { provider: "self" as const, published: true } } : {}),
+        walk3d: hasWalk ? DEMO_WALK3D : undefined,
+      };
+      const names = await locationNamesFor(ctx, next);
+      await ctx.db.patch("listings", listing._id, {
+        ...(hasScenes ? { tour360: next.tour360 } : {}),
+        walk3d: next.walk3d,
+        ...applyDerived(next, names, hasScenes),
+      });
+      listings += 1;
+    }
+    return { listings, scenes, walks };
   },
 });
 

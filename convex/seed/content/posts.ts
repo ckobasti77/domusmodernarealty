@@ -99,7 +99,7 @@ export const POST_COPY: SeedPostCopy[] = [
       sr: "Povraćaj PDV-a za prvi stan: uslovi, obrasci, primer",
       en: "VAT refund on your first flat: conditions, forms and an example",
       ru: "Возврат НДС при покупке первой квартиры: условия, формы и пример",
-      de: "MwSt.-Rückerstattung für die erste Wohnung: Voraussetzungen, Formulare, Beispiel",
+      de: "Erste Wohnung: MwSt.-Rückerstattung, Formulare und ein Beispiel",
     },
     excerpt: {
       sr: "Ko ostvaruje pravo, koliko kvadrata ulazi u povraćaj, koji obrasci i rokovi važe, i u čemu se razlikuje od oslobođenja od poreza na prenos. Sa izračunatim primerom.",

@@ -86,22 +86,33 @@ export const baseSecurityHeaders = [
 ] as const;
 
 /**
- * `headers()` entries for next.config.ts. HSTS is deliberately left to the
- * hosting platform and documented as a production follow-up in docs/HANDOFF.md.
+ * HSTS, production only. A browser that has seen it refuses plain HTTP for
+ * the whole max-age, so it must never reach localhost, `next start` on a
+ * laptop or a preview URL: it is sent only when Vercel marks the deployment
+ * as production (`VERCEL_ENV=production`). Two years with `includeSubDomains`
+ * and `preload` is what the hstspreload.org list requires; submit the custom
+ * domain there only once every subdomain serves HTTPS.
  */
+const hsts =
+  process.env.VERCEL_ENV === "production"
+    ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]
+    : [];
+
+/** `headers()` entries for next.config.ts. */
 export function securityHeaders() {
   return [
     {
       source: "/admin/:path*",
       headers: [
         ...baseSecurityHeaders,
+        ...hsts,
         { key: "Content-Security-Policy", value: adminCsp },
         { key: "X-Robots-Tag", value: "noindex, nofollow" },
       ],
     },
     {
       source: "/:path*",
-      headers: [...baseSecurityHeaders, { key: "Content-Security-Policy", value: publicCsp }],
+      headers: [...baseSecurityHeaders, ...hsts, { key: "Content-Security-Policy", value: publicCsp }],
     },
   ];
 }

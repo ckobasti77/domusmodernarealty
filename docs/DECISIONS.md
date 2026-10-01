@@ -218,3 +218,49 @@ Format: `- YYYY-MM-DD [step] Decision. Why.`
 - 2026-10-01 [11] **Serbian UI says "360° tura" everywhere** (tab, heading, buttons). "Obilazak" is the word the site uses for a physical visit ("Zakažite obilazak"), and the tab already said "tura". German uses "360°-Tour" for the same reason ("Besichtigung" is the physical viewing).
 - 2026-10-01 [11] **convex-auditor pass (0 High, 2 Medium, 11 Low).** Fixed: public scenes only for a live self-hosted tour (M1, also `sceneCount`); deleting a listing or purging demo data deletes its scene panoramas and walkthrough uploads (M2, `convex/lib/tourBlobs.ts`); images/panoramas must declare an image content type and a "model" may not be HTML/XML/JS/text (L1), thumbnails are checked as 20 MB images; uploaded model sizes always come from storage and client sizes/splat counts must be sane (L2); URL posters are site files or an allowed image host (L3); length caps on credits, hotspot labels and tour URLs/IDs, a self-hosted tour stores no URL/ID, and the public DTO returns only the checked `embedUrl` (L4); `planXY` validated (L5); `reorderScenes` bounded (L6); one blob cannot fill two slots of a scene (L7, minimal form); tour activity rows point at the listing (L8); the credit hint says it is public (L9); the demo reseed releases replaced uploads (L10). Not taken: an ownership ledger for blobs (the documented 6 h window stays the boundary, see [09]); an undo for clearing the walkthrough in the editor (its blobs go on the next autosave, like every other replaced upload); a migration recomputing `hasTour` for the changed external-tour rule (no stored listing differs: the dev data has no external tours and the demo tours were re-derived by `applyDemoTours`).
 - 2026-10-01 [11] **Admin "360° / 3D" tab.** Scenes save through `toursAdmin` with an explicit "Sačuvaj scenu" (they are separate documents, not listing fields), so the page's leave-guard does not cover them; the scene panel asks before switching or closing with unsaved changes. Adding a scene uploads the original (≤ 40 MB, a warning when not 2:1) plus a 2048×1024 phone version and a 512×256 thumbnail made in the browser with canvas (only the original when the browser cannot decode it). The mini PSV preview (with the markers plugin showing link positions) is created one animation frame after mount: under Strict Mode the first viewer's teardown aborted the panorama download the second one shared. "Izmeri veličinu" measures a URL model with HEAD (a SOG `meta.json` sums the files it lists), which is why the admin CSP allows the splat hosts. The walkthrough's movement settings (eye height, start point, floor polygon drawn on an SVG grid or pasted as JSON, jump-to rooms) autosave with the listing; an unnamed new room holds that autosave back until it has a Serbian name.
+- 2026-10-01 [12] **Next's default `htmlLimitedBots` list is kept; the SEO audit crawls as Bingbot.**
+  - Next 16 streams `generateMetadata` output into `<body>` for browsers and for Googlebot, which runs JavaScript. It renders it blocking in `<head>` for the "HTML-limited" bots on its default list: Bing, Yandex (the Russian market), Facebook, X, WhatsApp, LinkedIn and others.
+  - Overriding the list to `/.*/` would hold every visitor's first byte for the metadata.
+  - `scripts/seo-audit.mjs` therefore reads pages the way the strictest crawler does, as Bingbot: everything must be in `<head>`.
+- 2026-10-01 [12] **Long titles drop the brand suffix** (`documentTitle` in `lib/seo.ts`). A page title over 50 characters becomes `{ absolute }` instead of "… — Mihajlo Estate", so search results do not cut it mid-word. The brand stays in `og:site_name` and the sitewide JSON-LD.
+- 2026-10-01 [12] **The agency is one JSON-LD node.**
+  - The locale layout renders a full `RealEstateAgent` on every page, with `@id` `<origin>/#agency`. It carries:
+    - name and legal name;
+    - `identifier`: the broker-registry number (Art. 18), plus the MB;
+    - `taxID`: the PIB;
+    - the parsed postal address, `areaServed` (Beograd, Srbija), office hours and geo.
+  - The contact page (`ContactPage.mainEntity`), the about page, an agent's `worksFor` and every listing's `offers.seller` point at it by `@id`. They no longer repeat their own partial copies.
+  - Identifiers still holding owner instructions (no digits) are left out, as the contact page did before.
+- 2026-10-01 [12] **Share images are Route Handlers at localized public paths, all drawn with `lib/og.tsx`.** This follows [07] for the same reason as before. There are three:
+  - `/{locale}/opengraph-image`: the site default, the hero photo or the admin's uploaded share picture under an ink wash, plus the landing headline;
+  - the listing card;
+  - `/{locale}/{journal}/<slug>/opengraph-image`: the article card. The editor's own share picture still wins.
+
+  Every page gets `og:image` and a `summary_large_image` Twitter card. Cyrillic was checked on `/ru`.
+- 2026-10-01 [12] **What the sitemap includes.** Every `<url>` carries all 5 hreflang alternates, and Next's serializer does not escape, so `app/sitemap.ts` XML-escapes `&` in image URLs itself. It is regenerated hourly (`revalidate = 3600`).
+  - **In:** static pages, listed sale and rent listings (up to 5 images each), published posts, public agents, and locations that have an introduction or at least one listing.
+  - **Out:** favorites, compare, search filter states, the styleguide, and sold or rented listings.
+  - The unused `listings.slugsForSitemap` is replaced by `convex/sitemap.ts`.
+- 2026-10-01 [12] **The translators' seed fixes were applied as reviewed patch files, and demo copy in the database is refreshed in place.**
+  - The three `i18n-translator` agents edited only their own `messages/<locale>.json`. Each wrote its seed changes as unique find/replace pairs; 236 entries were applied in en → ru → de order.
+  - `contentMigrations:refreshSeededCopy` rewrites only `isDemo` listings, posts, locations, agents and the demo settings texts, recomputing listing `searchText` through `applyDerived`. It never touches slugs, prices or dates. Pages and tours use the existing `refreshSeededPages` and `applyDemoTours`.
+  - Place names in en/de stay Serbian per 04-CONTENT ("Beograd na vodi", "Blok 70", "Profesorska kolonija"); ru uses the glossary's Cyrillic forms.
+- 2026-10-01 [12] **Font preloads are cut to what the first paint uses.** next/font self-hosts every subset and `subsets` only controls the preload, so:
+  - only latin + latin-ext of the upright EB Garamond and of Manrope are preloaded (4 files instead of 12);
+  - the italic serif is a separate non-preloaded family (`--font-display-italic`, used for pull quotes and the error subtitle);
+  - mono and Cyrillic load on demand by `unicode-range`.
+- 2026-10-01 [12] **Public forms validate with `zod/mini`, imported as a namespace (`import * as z`).**
+  - `import { z }` imports a namespace *value*, which stopped Turbopack from tree-shaking zod core: 393 KB raw on every form page, which also shared a chunk with the admin's classic zod.
+  - Lowering `experimental.turbopackChunking.requestCost` was tried and changed nothing, so it was not kept.
+  - `lib/search-params.ts` no longer uses zod at all.
+  - The admin keeps classic zod.
+- 2026-10-01 [12] **`PropertyCard` prefetches normally.** This supersedes [10], which kept `prefetch={false}` there: in Next 16 a dynamic route's default (`auto`) prefetch stops at the nearest `loading.js`, so a 24-card grid does not prefetch 24 full listing pages.
+- 2026-10-01 [12] **Not done.**
+  - The client `messages` are not split per namespace. All namespaces (55 KB raw, ~12 KB gzip) still reach the client. Several shared components that are not marked `"use client"` render on the client and read namespaces a grep cannot see, so a wrong pick would surface as `MISSING_MESSAGE` at runtime. The saving does not justify that risk.
+- 2026-10-01 [12] **HSTS is production-only** (`lib/csp.ts`): `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` is sent only when `VERCEL_ENV=production`. It is never sent on localhost, `next start` or preview URLs, where a cached HSTS policy would lock browsers out of plain HTTP. Submit the domain to the preload list only once every subdomain serves HTTPS.
+- 2026-10-01 [12] **The admin's classic zod runs `jitless`** (`lib/admin/zod.ts`, now the only place admin code imports `z` from). Classic zod checks whether `eval` is allowed by running `new Function("")` inside a try/catch. The admin CSP has no `'unsafe-eval'`, so the browser reported a CSP violation on every admin form, starting with `/admin/login`. `z.config({ jitless: true })` skips that check; the CSP already forced the plain parser anyway. Public forms (`zod/mini`) never ran the check.
+- 2026-10-01 [12] **`<main id="main">` has `tabIndex={-1}`.** The skip link's target was not focusable, so activating it left focus on `<body>`; screen readers and `document.activeElement` saw nothing focused. The cookie banner, which set the attribute itself only after a decision, now relies on it. `#main:focus` has no ring, as before.
+- 2026-10-01 [12] **Security crawl and axe live in the e2e suite.**
+  - `tests/e2e/security-crawl.spec.ts` covers 19 routes × 4 locales plus `/admin/login` and the 360° tour. It requires zero `securitypolicyviolation` events, zero console errors and the full header set.
+  - `tests/e2e/a11y.spec.ts` runs axe with WCAG 2.2 AA tags on 10 pages, failing on any serious or critical issue, plus keyboard checks on the header, the filters, the gallery and the forms.
+  - The only allowlist is failed requests to `tiles.openfreemap.org`, an environment issue (see [07]).

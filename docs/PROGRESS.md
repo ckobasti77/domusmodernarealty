@@ -193,3 +193,70 @@ Each night-run step appends a section:
 - Decisions: 17 `[11]` entries in DECISIONS.md (demo splat + SOG loading, measured walk frame/scale, schema additions, showcase listing, panorama budget, three pin, dialog/StrictMode, controls, tiering + FPS guard, external tours, validation on the autosave path, design pass, 2D link mode, "360° tura", auditor pass, admin tab).
 - Known issues / follow-ups: see night-run/state/steps/11.done.md.
 - Verify: npm run verify -> OK (exit 0). vitest 344/344. Bundle isolation: 41 routes, none loads PSV/three/Spark up front (listing initial JS 286.6 → 289.7 KB gz). E2E: see the done file.
+
+## Step 12 - SEO, i18n quality, performance, security headers (2026-10-02 01:00)
+- Done:
+  - **Metadata:**
+    - every public route has a localized title/description, a self canonical, hreflang for the 4 locales + `x-default`, Open Graph and a `summary_large_image` Twitter card;
+    - the home page now has its own metadata;
+    - long titles drop the brand suffix.
+  - **Sitemap and robots:** `app/sitemap.ts` (static pages, listed listings, locations, posts and agents, with alternates, images and lastmod; backed by `convex/sitemap.ts`; hourly) and `app/robots.ts` (disallows `/admin`, `/api`, `/*/styleguide`).
+  - **Structured data:** a sitewide `RealEstateAgent` JSON-LD (registry number as `identifier`, MB, PIB as `taxID`, address, `areaServed`, hours); contact, about, agent and listing reference it by `@id`.
+  - **Share images:** a site default card and an article card join the listing card, all drawn with `lib/og.tsx`; Cyrillic checked on `/ru`.
+  - **Audit scripts:**
+    - `scripts/seo-audit.mjs`: 344/344 pages pass; sitemap and robots valid;
+    - `scripts/validate-jsonld.mjs`: 336/336 pages valid.
+  - **i18n:**
+    - three parallel `i18n-translator` passes changed en 47, ru 70 and de 95 message strings, plus 236 seed patches;
+    - Serbian plurals and source fixes;
+    - demo copy refreshed in the DB with `contentMigrations:refreshSeededCopy`.
+  - **Performance:**
+    - font preloads cut from 12 to 4;
+    - zod removed from search-params; the public forms use `zod/mini` through a namespace import;
+    - GSAP Flip dropped;
+    - listing cover `fetchPriority="high"`;
+    - Unsplash and Convex preconnects;
+    - the last `prefetch={false}` removed;
+    - initial JS cut by 71–97 KB gzip on home, search, listing and the form pages.
+
+    Lighthouse desktop is 96/96/97 (was 93/93/95); mobile is 75/74/74 (was 68/69/69); CLS ≤ 0.03.
+  - **Security:**
+    - the CSP is final, HSTS is sent for production only, and the security crawl (19 routes × 4 locales + `/admin/login` + the 360° tour) shows zero CSP violations and zero console errors;
+    - fixed the CSP violation from admin zod's `eval` check (`lib/admin/zod.ts`, jitless).
+  - **Accessibility:**
+    - axe on 10 pages: 0 violations;
+    - keyboard tests pass for the header, filters, gallery and forms;
+    - fixed the skip link not moving focus (`<main tabIndex={-1}>`).
+- Files:
+  - `lib/{seo,jsonld,og,csp,search-params}.ts(x)`, `lib/admin/zod.ts`;
+  - `app/{sitemap,robots}.ts`, `app/[locale]/{layout,page}.tsx`, `app/[locale]/opengraph-image/route.tsx`, `app/[locale]/journal/[slug]/opengraph-image/route.tsx`, several `app/[locale]/**/page.tsx`;
+  - `app/fonts.ts`, `app/globals.css`, `i18n/routing.ts`;
+  - `convex/{sitemap,contentMigrations,listings}.ts`, `convex/seed/**`;
+  - `messages/*.json`;
+  - `components/forms/*`, `components/site/{contact,sell,valuation,listing,errors}/*`, `components/motion/gsap.ts`, `components/site/{PropertyCard,CookieConsent}.tsx`, five admin zod importers;
+  - `scripts/{seo-audit,validate-jsonld,lighthouse,analyze-chunks}.mjs`;
+  - `tests/e2e/{security-crawl,a11y}.spec.ts`, `tests/e2e/helpers/routes.ts`;
+  - `docs/reports/{seo-audit,perf}.md`.
+- Decisions: `[12]` entries in DECISIONS.md:
+  - bot metadata (Bingbot audit);
+  - title suffix;
+  - one agency node;
+  - share images;
+  - sitemap scope;
+  - seed patch workflow;
+  - font preloads;
+  - `zod/mini` namespace import;
+  - `PropertyCard` prefetch;
+  - messages not split;
+  - production HSTS;
+  - jitless admin zod;
+  - `main` tabIndex;
+  - security/a11y specs.
+- Known issues / follow-ups: see night-run/state/steps/12.done.md:
+  - mobile Lighthouse is 74 on search and listing, with the causes listed in perf.md;
+  - the intermittent Lighthouse "no meta description" on search;
+  - the `notFound()` SSR shell, which predates this step.
+- Verify: npm run verify -> OK (exit 0).
+  - vitest 344/344; audit-convex: no problems; i18n:check: 1224 × 4.
+  - seo-audit 344/344; JSON-LD 336/336.
+  - e2e: security-crawl + a11y 96/96 (desktop); full suite 330 passed / 1 failed (the de 404 title test with a hard-coded em dash, fixed; pages-routes now 67/67) / 233 skipped (mobile duplicates).

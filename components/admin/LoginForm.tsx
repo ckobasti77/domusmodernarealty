@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { z } from "@/lib/admin/zod";
 import { safeNext } from "@/components/admin/shell/AuthGate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

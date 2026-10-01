@@ -124,7 +124,9 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
               <SkipLink />
               <Header />
               <PageTransition>
-                <main id="main">{children}</main>
+                <main id="main" tabIndex={-1}>
+                  {children}
+                </main>
                 <Footer />
               </PageTransition>
               <CookieConsent />

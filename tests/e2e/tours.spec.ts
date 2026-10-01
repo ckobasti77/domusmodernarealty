@@ -21,7 +21,7 @@ const EXTERNAL_SLUG = "vila-na-dedinju-iz-2019-sa-bazenom-i-vrtom-od-620-m-me-10
 const MATTERPORT_SAMPLE = "https://my.matterport.com/show/?m=SxQL3iGyoDo";
 
 async function openTab(page: Page, name: RegExp) {
-  const tabs = page.getByRole("tablist", { name: "Fotografije, planovi i obilasci" });
+  const tabs = page.getByRole("tablist", { name: "Fotografije, planovi i ture" });
   await tabs.getByRole("tab", { name }).click();
 }
 

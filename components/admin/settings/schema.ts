@@ -6,7 +6,7 @@
  * mistakes show next to the field instead of in a toast.
  */
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
-import { z } from "zod";
+import { z } from "@/lib/admin/zod";
 import { fromL10nValue, toL10nValue } from "@/components/admin/common/L10nInput";
 import type { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";

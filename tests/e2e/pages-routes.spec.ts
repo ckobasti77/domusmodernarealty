@@ -100,8 +100,11 @@ test.describe("content pages in every locale @public", () => {
       // server-rendered <title>, not `<html lang>`.
       const messages = JSON.parse(readFileSync(nodePath.join(process.cwd(), "messages", `${locale}.json`), "utf8")) as {
         errors: { notFoundHeading: string };
+        seo: { titleTemplate: string };
       };
-      expect(html, `${path} has the localized title`).toContain(`<title>${messages.errors.notFoundHeading} — `);
+      // The brand separator is per locale (German uses a spaced en dash).
+      const title = messages.seo.titleTemplate.replace("{title}", messages.errors.notFoundHeading);
+      expect(html, `${path} has the localized title`).toContain(`<title>${title}</title>`);
       expect(html, `${path} offers the search`).toContain("notfound-search");
     });
   }

@@ -76,10 +76,8 @@ export function CookieConsent() {
     const hadFocus = panel.current?.contains(document.activeElement) === true;
     setConsent(categories);
     if (!hadFocus) return;
-    const main = document.getElementById("main");
-    if (main === null) return;
-    main.tabIndex = -1;
-    main.focus({ preventScroll: true });
+    // `<main>` carries tabIndex={-1} (locale layout), so it can take focus.
+    document.getElementById("main")?.focus({ preventScroll: true });
   };
 
   return (

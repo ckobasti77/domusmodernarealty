@@ -31,7 +31,7 @@
  * parent object is sent whole without the key.
  */
 import type { FunctionArgs } from "convex/server";
-import { z } from "zod";
+import { z } from "@/lib/admin/zod";
 import type { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { ChecklistListing } from "@/convex/lib/checklist";

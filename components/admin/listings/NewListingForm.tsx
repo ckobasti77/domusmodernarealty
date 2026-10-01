@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
+import { z } from "@/lib/admin/zod";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";

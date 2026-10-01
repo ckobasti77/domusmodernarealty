@@ -349,7 +349,7 @@ test.describe("server rendering and tracking", () => {
 test.describe("media tabs and calculators", () => {
   test("the 360° and 3D tabs show their poster and launch button", async ({ page }) => {
     await quietVisit(page, "/sr/nekretnine/penthaus-na-24-spratu-u-beogradu-na-vodi-pogled-na-savu-me-1049");
-    const tabs = page.getByRole("tablist", { name: "Fotografije, planovi i obilasci" });
+    const tabs = page.getByRole("tablist", { name: "Fotografije, planovi i ture" });
     await tabs.getByRole("tab", { name: "360° tura" }).click();
     await expect(page.locator('[data-tour-slot="tour360"]')).toBeVisible();
     await expect(page.locator('[data-launch="tour360"]')).toBeVisible();

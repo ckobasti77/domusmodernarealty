@@ -4,7 +4,7 @@
  * `scripts/verify-demo-media.mjs`; nothing here invents an image URL.
  */
 import type { L10n, MediaItem, RoomTag } from "../lib/validators";
-import { DEMO_PHOTOS_BY_CATEGORY } from "./media.generated";
+import { DEMO_PHOTOS, DEMO_PHOTOS_BY_CATEGORY } from "./media.generated";
 import type { DemoPhoto } from "./media.generated";
 import type { PhotoCategory } from "./specTypes";
 
@@ -44,7 +44,7 @@ const ROOM_LABEL: Record<RoomTag, L10n> = {
  * (no photo is used more than twice), and inventing image URLs is forbidden.
  */
 export function buildPhotoPlan(
-  listings: readonly { photos: readonly PhotoCategory[] }[],
+  listings: readonly { photos: readonly PhotoCategory[]; coverPhoto?: string }[],
 ): DemoPhoto[][] {
   const plan: DemoPhoto[][] = listings.map(() => []);
   const usedGlobally = new Set<string>();
@@ -75,8 +75,21 @@ export function buildPhotoPlan(
 
   const usedPerListing = listings.map(() => new Set<string>());
 
-  // Pass 1 — the cover of every listing, so covers get first claim on the pools.
+  // Pass 0 — covers pinned by the spec claim their photos before anyone else.
   for (const [index, listing] of listings.entries()) {
+    if (listing.coverPhoto === undefined) continue;
+    const photo = DEMO_PHOTOS.find((candidate) => candidate.url === listing.coverPhoto);
+    if (photo === undefined) {
+      throw new Error(`Seed listing ${index} pins an unverified cover photo`);
+    }
+    usedGlobally.add(photo.url);
+    usedPerListing[index].add(photo.url);
+    plan[index].push(photo);
+  }
+
+  // Pass 1 — the cover of every other listing, so covers get first claim on the pools.
+  for (const [index, listing] of listings.entries()) {
+    if (listing.coverPhoto !== undefined) continue;
     const category = listing.photos[0];
     if (category === undefined) continue;
     const photo = next(category, usedPerListing[index]);

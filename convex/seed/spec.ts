@@ -97,6 +97,13 @@ export type SeedListing = {
   agent: string;
   /** Photo categories, in gallery order; the seeder picks distinct photos. */
   photos: PhotoCategory[];
+  /**
+   * A verified photo (base URL from `media.generated.ts`) pinned as the cover,
+   * for a listing whose title the next photo of its first category would
+   * contradict. It takes the first gallery slot, so its category should match
+   * `photos[0]`.
+   */
+  coverPhoto?: string;
   /** Room tag per photo slot, same length as `photos`. */
   roomTags: RoomTag[];
   /** €/m² asked in the price-history entry before the current price. */
@@ -603,6 +610,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     mortgageEligible: true,
     agent: "milica-jovanovic",
     photos: ["living", "living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "belgrade", "building"],
+    // The plan's next living photo looks onto a lawn and a garden fence: wrong for a 24th floor.
+    coverPhoto: "https://images.unsplash.com/photo-1678762200388-51e11225d4de",
     roomTags: ["living", "living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "view", "building"],
     mandateMonths: 12,
     hasTourScenes: true,

@@ -188,6 +188,25 @@ describe("what the detail page reveals", () => {
     expect(listing.poi?.map((item) => item.distanceM)).toEqual([250, 500]);
   });
 
+  test("the gallery opens on the cover staff chose, then keeps their order", async () => {
+    const { t, ids } = await setup();
+    const ordered = await t.run(async (ctx) => {
+      const doc = await ctx.db.get("listings", ids.listing);
+      if (doc === null) throw new Error("listing missing");
+      const media = [...doc.media]
+        .sort((a, b) => a.order - b.order)
+        .map((item, index) => ({ ...item, isCover: index === 2 }));
+      await ctx.db.patch("listings", ids.listing, { media });
+      return media.map((item) => item.image);
+    });
+    const listing = await detail(t, ids.listing);
+    const urls = listing.media.map((image) => image.url);
+    const expected = [ordered[2], ordered[0], ordered[1], ...ordered.slice(3)].map((image) =>
+      image.kind === "url" ? image.url : "",
+    );
+    expect(urls.map((url) => url.split("?")[0])).toEqual(expected.map((url) => url.split("?")[0]));
+  });
+
   test("a hidden agent is replaced by the agency's own contact", async () => {
     const { t, ids } = await setup();
     await t.run(async (ctx) =>

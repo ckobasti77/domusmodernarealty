@@ -79,11 +79,17 @@ export async function publicImage(
   };
 }
 
+/**
+ * Public images in the order staff set, except that the chosen cover comes
+ * first: the listing page opens on the same photo as its card and map pin.
+ */
 async function publicImageList(
   ctx: QueryCtx,
   items: readonly MediaItem[],
 ): Promise<PublicImage[]> {
   const sorted = [...items].sort((a, b) => a.order - b.order);
+  const coverAt = sorted.findIndex((item) => item.isCover === true);
+  if (coverAt > 0) sorted.unshift(...sorted.splice(coverAt, 1));
   const out: PublicImage[] = [];
   for (const item of sorted) {
     const resolved = await publicImage(ctx, item);

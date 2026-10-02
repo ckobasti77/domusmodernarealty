@@ -209,6 +209,7 @@
     },
     "map": {
       "label": "Karte mit den Suchergebnissen",
+      "canvas": "Interaktive Karte (Pfeiltasten verschieben, + und − zoomen)",
       "searchAsMove": "Beim Verschieben der Karte suchen",
       "loading": "Karte wird geladen…",
       "cluster": "{count, plural, one {# Immobilie} other {# Immobilien}} an dieser Stelle – zum Anzeigen hineinzoomen",

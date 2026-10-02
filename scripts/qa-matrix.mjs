@@ -243,7 +243,8 @@ async function inspect(page, locale) {
       // Money: every "<digits> €" / "€<digits>" must match the locale's Intl shape.
       const money = [];
       const wrongMoney = [];
-      const moneyRe = /€\s?\d[\d.,   ]*\d|\d[\d.,   ]*\d\s?€/g;
+      // Never across a line break: two adjacent map pins are two amounts.
+      const moneyRe = /€[   ]?\d[\d.,   ]*\d|\d[\d.,   ]*\d[   ]?€/g;
       for (const match of text.matchAll(moneyRe)) {
         const value = match[0];
         money.push(value);

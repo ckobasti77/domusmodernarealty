@@ -336,7 +336,7 @@ export default function SearchMap({
         }
       : DEFAULT_VIEW,
   );
-  const mapLocale = useMapLocale(t("label"));
+  const mapLocale = useMapLocale();
 
   // While new filters load, `useQuery` returns undefined; the last result stays
   // on screen so the pins never flash off between two searches.

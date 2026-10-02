@@ -209,6 +209,7 @@
     },
     "map": {
       "label": "Map of search results",
+      "canvas": "Interactive map (arrow keys pan, + and − zoom)",
       "searchAsMove": "Search as I move the map",
       "loading": "Loading map…",
       "cluster": "{count, plural, one {# property} other {# properties}} here — zoom in to see them",

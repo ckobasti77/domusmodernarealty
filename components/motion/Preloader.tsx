@@ -42,9 +42,12 @@ const SKIP_EVENTS = ["keydown", "pointerdown", "wheel", "touchstart"] as const;
  *    hero can hold its copy above the banner from the very first frame (a
  *    reservation made at hydration would shift the whole hero);
  *  - `data-intro`: reduced motion, a repeat visit or blocked storage all mean
- *    "skip".
+ *    "skip". While it plays, the first key, click, tap or wheel before React
+ *    has hydrated flips it to "skip" (the curtain's CSS needs "play"); once the
+ *    component is up it sets `data-intro-ready` and handles the skip itself,
+ *    with a short fade.
  */
-const GATE_SCRIPT = `(function(){var d=document.documentElement;try{d.setAttribute("data-consent",window.localStorage.getItem("${CONSENT_KEY}")===null?"pending":"decided")}catch(e){d.setAttribute("data-consent","pending")}try{if(window.matchMedia("(prefers-reduced-motion: reduce)").matches||window.sessionStorage.getItem("${KEY}")!==null){d.setAttribute("data-intro","skip");return}window.sessionStorage.setItem("${KEY}","1");d.setAttribute("data-intro","play")}catch(e){d.setAttribute("data-intro","skip")}})();`;
+const GATE_SCRIPT = `(function(){var d=document.documentElement;try{d.setAttribute("data-consent",window.localStorage.getItem("${CONSENT_KEY}")===null?"pending":"decided")}catch(e){d.setAttribute("data-consent","pending")}try{if(window.matchMedia("(prefers-reduced-motion: reduce)").matches||window.sessionStorage.getItem("${KEY}")!==null){d.setAttribute("data-intro","skip");return}window.sessionStorage.setItem("${KEY}","1");d.setAttribute("data-intro","play");var t=["keydown","pointerdown","wheel","touchstart"],o=function(){t.forEach(function(n){window.removeEventListener(n,s,true)})},s=function(){if(d.hasAttribute("data-intro-ready"))return o();d.setAttribute("data-intro","skip");o()};t.forEach(function(n){window.addEventListener(n,s,{capture:true,passive:true})});setTimeout(o,${DONE_AT_MS})}catch(e){d.setAttribute("data-intro","skip")}})();`;
 
 /** Milliseconds since the curtain's keyframes started, from the CSS animation clock. */
 function curtainClock(curtain: HTMLElement): number | null {
@@ -70,6 +73,8 @@ export function Preloader() {
 
   useEffect(() => {
     const curtain = root.current;
+    // From here on this effect owns the skip; the gate script's listener stands down.
+    document.documentElement.setAttribute("data-intro-ready", "");
     if (curtain === null || document.documentElement.dataset.intro !== "play") {
       revealIntro();
       finishIntro();

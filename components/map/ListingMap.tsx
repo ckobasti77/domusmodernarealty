@@ -10,7 +10,6 @@ import {
   type MapStyleDataEvent,
 } from "@vis.gl/react-maplibre";
 import type { Feature, Polygon } from "geojson";
-import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { foldAttributionOnce, MAP_CHROME } from "./chrome";
@@ -58,8 +57,7 @@ type ListingMapEvents = {
 export default function ListingMap({ lat, lng, precision, locale, onLoad, onFailed }: ListingMapProps & ListingMapEvents) {
   const exact = precision === "exact";
   const loaded = useRef(false);
-  const t = useTranslations("listing.locationBlock");
-  const mapLocale = useMapLocale(t("mapLabel"));
+  const mapLocale = useMapLocale();
   return (
     <div className={cn("absolute inset-0", MAP_CHROME)}>
       <Map

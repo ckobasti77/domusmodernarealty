@@ -1035,6 +1035,7 @@
     },
     "map": {
       "label": "Mapa rezultata pretrage",
+      "canvas": "Interaktivna mapa (strelice pomeraju prikaz, + i − menjaju razmeru)",
       "searchAsMove": "Pretraga pri pomeranju mape",
       "loading": "Učitavanje mape…",
       "cluster": "{count, plural, one {# nekretnina} few {# nekretnine} other {# nekretnina}} na ovom mestu — uvećajte mapu",

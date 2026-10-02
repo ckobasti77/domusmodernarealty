@@ -5,6 +5,8 @@ import { securityHeaders } from "./lib/csp";
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
+  // No framework banner in every response.
+  poweredByHeader: false,
   experimental: {
     // Two root layouts (app/[locale] and app/admin) leave no single layout to
     // compose a global 404 from, which is exactly what this flag is for.

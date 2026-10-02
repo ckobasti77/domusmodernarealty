@@ -223,6 +223,47 @@ test.describe("admin access @admin", () => {
     await expect(page).toHaveURL(/\/admin\/login\?next=%2Fadmin$/);
     await expect(sidebar(page)).toHaveCount(0);
   });
+
+  test("the user menu opens the password change and its rules hold before anything is sent @admin", async ({
+    page,
+  }) => {
+    const { email, password } = readAdminCreds();
+    await loginViaUi(page, email, password);
+
+    await page.getByTestId("user-menu").click();
+    await page.getByRole("menuitem", { name: "Promenite lozinku" }).click();
+    const dialog = page.getByRole("dialog", { name: "Promena lozinke" });
+    await expect(dialog).toBeVisible();
+
+    // Client-side rules only: a wrong current password here would count toward
+    // the shared admin's sign-in lockout, so this test never sends one.
+    const sent: string[] = [];
+    page.on("websocket", (socket) =>
+      socket.on("framesent", (frame) => {
+        if (String(frame.payload).includes("changeOwnPassword")) sent.push(String(frame.payload));
+      }),
+    );
+    const save = dialog.getByRole("button", { name: "Sačuvajte lozinku" });
+    await dialog.getByLabel("Trenutna lozinka").fill(password);
+    await dialog.getByLabel("Nova lozinka", { exact: true }).fill("kratka");
+    await save.click();
+    await expect(dialog.getByText("Lozinka mora imati najmanje 10 znakova.")).toBeVisible();
+
+    await dialog.getByLabel("Nova lozinka", { exact: true }).fill("dovoljno-duga-lozinka");
+    await dialog.getByLabel("Ponovite novu lozinku").fill("nesto-sasvim-drugo");
+    await save.click();
+    await expect(dialog.getByText("Lozinke se ne poklapaju.")).toBeVisible();
+
+    await dialog.getByLabel("Nova lozinka", { exact: true }).fill(password);
+    await dialog.getByLabel("Ponovite novu lozinku").fill(password);
+    await save.click();
+    await expect(dialog.getByText("Nova lozinka mora da se razlikuje od trenutne.")).toBeVisible();
+    expect(sent).toHaveLength(0);
+
+    await dialog.getByRole("button", { name: "Otkažite" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByTestId("user-menu")).toBeVisible();
+  });
 });
 
 /* ---------------------------------------------- 4–5: lifecycle and agent */

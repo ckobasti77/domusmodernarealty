@@ -1,7 +1,8 @@
 "use client";
 
-import { ExternalLink, LogOut, Moon, Search, Sun } from "lucide-react";
+import { ExternalLink, KeyRound, LogOut, Moon, Search, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRef, useState } from "react";
 import { useGuardedNavigation } from "@/components/admin/common/LeaveGuard";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ROLE_LABEL } from "@/lib/admin/labels";
 import { useSignOut } from "./AuthGate";
 import { AdminBreadcrumbs } from "./breadcrumbs";
+import { ChangePasswordDialog } from "./ChangePasswordDialog";
 import { useMe } from "./me";
 
 export function Topbar({ onOpenPalette }: { onOpenPalette: () => void }) {
@@ -87,31 +89,55 @@ function UserMenu() {
   const signOut = useSignOut();
   const { leave } = useGuardedNavigation();
   const display = me.name ?? me.email ?? "Korisnik";
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  // The closing menu would pull focus back to its trigger, away from the dialog.
+  const dialogOpening = useRef(false);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="rounded-full" aria-label={`Nalog: ${display}`} data-testid="user-menu">
-          <Avatar className="size-8">
-            <AvatarFallback className="bg-secondary text-xs font-semibold">{initials(display)}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="font-normal">
-          <p className="truncate text-sm font-medium">{display}</p>
-          {me.email !== undefined ? (
-            <p className="truncate text-xs text-muted-foreground">{me.email}</p>
-          ) : null}
-          <p className="mt-1 text-xs text-muted-foreground">{ROLE_LABEL[me.role]}</p>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {/* Unsaved work is saved (or asked about) before the session ends. */}
-        <DropdownMenuItem onSelect={() => leave(() => void signOut())}>
-          <LogOut aria-hidden="true" />
-          Odjavite se
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="rounded-full" aria-label={`Nalog: ${display}`} data-testid="user-menu">
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-secondary text-xs font-semibold">{initials(display)}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-60"
+          onCloseAutoFocus={(event) => {
+            if (!dialogOpening.current) return;
+            dialogOpening.current = false;
+            event.preventDefault();
+          }}
+        >
+          <DropdownMenuLabel className="font-normal">
+            <p className="truncate text-sm font-medium">{display}</p>
+            {me.email !== undefined ? (
+              <p className="truncate text-xs text-muted-foreground">{me.email}</p>
+            ) : null}
+            <p className="mt-1 text-xs text-muted-foreground">{ROLE_LABEL[me.role]}</p>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => {
+              dialogOpening.current = true;
+              setPasswordOpen(true);
+            }}
+            data-testid="change-password"
+          >
+            <KeyRound aria-hidden="true" />
+            Promenite lozinku
+          </DropdownMenuItem>
+          {/* Unsaved work is saved (or asked about) before the session ends. */}
+          <DropdownMenuItem onSelect={() => leave(() => void signOut())}>
+            <LogOut aria-hidden="true" />
+            Odjavite se
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ChangePasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} email={me.email} />
+    </>
   );
 }

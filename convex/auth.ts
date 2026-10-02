@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { DataModel, Id } from "./_generated/dataModel";
 import { appError } from "./lib/errors";
+import { PASSWORD_MAX, PASSWORD_MIN, PASSWORD_PROVIDER as PROVIDER, passwordLengthOk } from "./lib/password";
 import { MIN_TOKEN_LENGTH, hashToken } from "./lib/tokens";
 import type { Role } from "./lib/validators";
 
@@ -14,12 +15,8 @@ type PasswordProfile = {
   pendingInviteToken?: string;
 };
 
-const PROVIDER = "password";
 const INVITE_ONLY =
   "Registracija je moguća samo preko važeće pozivnice. Obratite se administratoru.";
-/** Same bounds as the invite form (`InviteScreen.tsx`); the server is the rule. */
-const PASSWORD_MIN = 10;
-const PASSWORD_MAX = 128;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function trimmed(value: unknown): string {
@@ -85,7 +82,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
               now: Date.now(),
             }));
           if (!allowed) appError("FORBIDDEN", INVITE_ONLY);
-          if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
+          if (!passwordLengthOk(password)) {
             appError(
               "INVALID_INPUT",
               `Lozinka mora imati od ${PASSWORD_MIN} do ${PASSWORD_MAX} znakova.`,

@@ -1,6 +1,10 @@
+import { getAuthSessionId, modifyAccountCredentials, retrieveAccount } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
+  action,
+  internalMutation,
   internalQuery,
   mutation,
   query,
@@ -9,8 +13,9 @@ import {
 } from "./_generated/server";
 import { openInvitesForAgent } from "./agentsAdmin";
 import { logActivity } from "./lib/activity";
-import { getViewer, requireRole } from "./lib/auth";
+import { getViewer, requireRole, requireRoleAction } from "./lib/auth";
 import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
+import { PASSWORD_MAX, PASSWORD_MIN, PASSWORD_PROVIDER, passwordLengthOk } from "./lib/password";
 import { ALL_ROLES, roleV, userStatusV, type Role, type UserStatus } from "./lib/validators";
 
 const ADMINS = ["admin"] as const;
@@ -151,11 +156,17 @@ async function assertAnotherActiveAdmin(ctx: QueryCtx, target: Id<"users">): Pro
  * tokens) are deleted, so no client can renew its access token. Requests made
  * with a still-valid token are refused anyway (`requireUser` checks status).
  */
-async function endSessions(ctx: MutationCtx, userId: Id<"users">): Promise<number> {
-  const sessions = await ctx.db
-    .query("authSessions")
-    .withIndex("userId", (q) => q.eq("userId", userId))
-    .take(100);
+async function endSessions(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  keep?: Id<"authSessions">,
+): Promise<number> {
+  const sessions = (
+    await ctx.db
+      .query("authSessions")
+      .withIndex("userId", (q) => q.eq("userId", userId))
+      .take(100)
+  ).filter((session) => session._id !== keep);
   for (const session of sessions) {
     const tokens = await ctx.db
       .query("authRefreshTokens")
@@ -310,5 +321,92 @@ export const viewerForAction = internalQuery({
     const viewer = await getViewer(ctx);
     if (viewer === null) return null;
     return { _id: viewer._id, role: viewer.role, status: viewer.status };
+  },
+});
+
+/** The password account of a user (its id is the sign-in e-mail), or null. */
+export const passwordAccountId = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.union(v.null(), v.string()),
+  handler: async (ctx, { userId }) => {
+    const account = await ctx.db
+      .query("authAccounts")
+      .withIndex("userIdAndProvider", (q) => q.eq("userId", userId).eq("provider", PASSWORD_PROVIDER))
+      .unique();
+    return account?.providerAccountId ?? null;
+  },
+});
+
+/** Ends every other session of the account and logs the change. */
+export const finishPasswordChange = internalMutation({
+  args: { userId: v.id("users"), keepSessionId: v.optional(v.id("authSessions")) },
+  returns: v.number(),
+  handler: async (ctx, { userId, keepSessionId }) => {
+    const user = await ctx.db.get("users", userId);
+    if (user === null) notFound("Korisnik");
+    const ended = await endSessions(ctx, userId, keepSessionId);
+    await logActivity(ctx, {
+      entity: "user",
+      entityId: userId,
+      action: "user.password",
+      summary:
+        `${labelOf(user)}: lozinka je promenjena` + (ended > 0 ? ` (završene ostale sesije: ${ended})` : ""),
+      by: userId,
+    });
+    return ended;
+  },
+});
+
+/**
+ * "Promenite lozinku" in the admin top bar: any active staff member changes
+ * their own password.
+ *
+ * The current password goes through the library's `retrieveAccount`, the same
+ * check sign-in uses, so wrong answers count toward the sign-in lockout (10 per
+ * hour) and this cannot be used to guess faster. The new hash is written by
+ * `modifyAccountCredentials` with the provider's own Scrypt settings. Every
+ * other session of the account then ends; the one making the change stays.
+ */
+export const changeOwnPassword = action({
+  args: { currentPassword: v.string(), newPassword: v.string() },
+  returns: v.object({ endedSessions: v.number() }),
+  handler: async (ctx, args): Promise<{ endedSessions: number }> => {
+    const viewer = await requireRoleAction(ctx, ALL_ROLES);
+    if (!passwordLengthOk(args.newPassword)) {
+      invalidInput(`Nova lozinka mora imati od ${PASSWORD_MIN} do ${PASSWORD_MAX} znakova.`);
+    }
+    if (args.newPassword === args.currentPassword) {
+      invalidInput("Nova lozinka mora da se razlikuje od trenutne.");
+    }
+    const accountId = await ctx.runQuery(internal.users.passwordAccountId, { userId: viewer._id });
+    if (accountId === null) notFound("Nalog sa lozinkom");
+
+    try {
+      await retrieveAccount(ctx, {
+        provider: PASSWORD_PROVIDER,
+        account: { id: accountId, secret: args.currentPassword },
+      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "";
+      if (reason === "InvalidSecret") invalidInput("Trenutna lozinka nije tačna.");
+      if (reason === "TooManyFailedAttempts") {
+        appError(
+          "RATE_LIMITED",
+          "Previše pogrešnih pokušaja. Provera je privremeno blokirana; pokušajte ponovo za nekoliko minuta.",
+        );
+      }
+      throw error;
+    }
+
+    await modifyAccountCredentials(ctx, {
+      provider: PASSWORD_PROVIDER,
+      account: { id: accountId, secret: args.newPassword },
+    });
+    const sessionId = await getAuthSessionId(ctx);
+    const endedSessions = await ctx.runMutation(internal.users.finishPasswordChange, {
+      userId: viewer._id,
+      ...(sessionId !== null ? { keepSessionId: sessionId } : {}),
+    });
+    return { endedSessions };
   },
 });

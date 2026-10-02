@@ -17,6 +17,7 @@ import { PasswordInput } from "./PasswordInput";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
+import { PASSWORD_MAX, PASSWORD_MIN } from "@/convex/lib/password";
 import { errorData } from "@/lib/admin/errors";
 
 const schema = z
@@ -24,8 +25,8 @@ const schema = z
     name: z.string().trim().min(2, "Unesite ime i prezime.").max(120, "Najviše 120 znakova."),
     password: z
       .string()
-      .min(10, "Lozinka mora imati najmanje 10 znakova.")
-      .max(128, "Najviše 128 znakova."),
+      .min(PASSWORD_MIN, `Lozinka mora imati najmanje ${PASSWORD_MIN} znakova.`)
+      .max(PASSWORD_MAX, `Najviše ${PASSWORD_MAX} znakova.`),
     confirm: z.string(),
   })
   .refine((values) => values.password === values.confirm, {
@@ -172,7 +173,7 @@ export function InviteScreen({ token }: { token: string }) {
           {...form.register("password")}
         />
         <p id="invite-password-hint" className={errors.password ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
-          {errors.password?.message ?? "Najmanje 10 znakova."}
+          {errors.password?.message ?? `Najmanje ${PASSWORD_MIN} znakova.`}
         </p>
       </div>
 

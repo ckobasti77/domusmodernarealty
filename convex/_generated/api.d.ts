@@ -38,6 +38,7 @@ import type * as lib_html from "../lib/html.js";
 import type * as lib_images from "../lib/images.js";
 import type * as lib_listingCascade from "../lib/listingCascade.js";
 import type * as lib_money from "../lib/money.js";
+import type * as lib_password from "../lib/password.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_search from "../lib/search.js";
 import type * as lib_slug from "../lib/slug.js";
@@ -124,6 +125,7 @@ declare const fullApi: ApiFromModules<{
   "lib/images": typeof lib_images;
   "lib/listingCascade": typeof lib_listingCascade;
   "lib/money": typeof lib_money;
+  "lib/password": typeof lib_password;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/search": typeof lib_search;
   "lib/slug": typeof lib_slug;

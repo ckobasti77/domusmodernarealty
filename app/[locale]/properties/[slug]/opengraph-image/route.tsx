@@ -2,16 +2,17 @@ import { ImageResponse } from "next/og";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { defaultLocale, routing, type Locale } from "@/i18n/routing";
-import { formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
+import { formatArea, formatPricePerM2 } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
 import { getListingBySlug } from "@/lib/listing-data";
+import { priceText, sharePhoto } from "@/lib/listing-meta";
 import { structureTitle } from "@/lib/listing-text";
 import { asJpeg, INK, IVORY, MIST, OG_SIZE as size, ogFonts as fonts, Wordmark } from "@/lib/og";
-import { isUnsplash, unsplashAt } from "@/components/site/listing/media";
 
 /**
- * Per-listing share image (PRD A5): the cover photo, the price, m² and €/m²,
- * the neighbourhood and the wordmark, drawn with the shared share-image kit
+ * Per-listing share image (PRD A5): the photograph (the SEO tab's own share
+ * picture when the admin set one, else the cover), the price, m² and €/m², the
+ * neighbourhood and the wordmark, drawn with the shared share-image kit
  * (`lib/og.tsx`: fonts with Cyrillic, JPEG re-encode, wordmark).
  *
  * A Route Handler rather than the `opengraph-image.tsx` file convention: the
@@ -22,7 +23,10 @@ import { isUnsplash, unsplashAt } from "@/components/site/listing/media";
  * `i18n/routing.ts`) and the page points `og:image` at exactly that URL.
  */
 
-/** Prices change; the page adds `?v=<price>` to the URL, so an hour is enough here. */
+/**
+ * The page adds `?v=` to the URL, a fingerprint of everything drawn here
+ * (`shareCardVersion`), so an hour is enough for anything it does not cover.
+ */
 const CACHE = "public, max-age=3600, stale-while-revalidate=86400";
 
 export async function GET(_request: Request, { params }: RouteContext<"/[locale]/properties/[slug]/opengraph-image">) {
@@ -49,21 +53,11 @@ export async function GET(_request: Request, { params }: RouteContext<"/[locale]
   const tUnits = await getTranslations({ locale, namespace: "units" });
   const m2 = tUnits("m2");
   const place = pickL10n(listing.locationLabel, locale).text;
-  const photo =
-    listing.cover !== undefined
-      ? isUnsplash(listing.cover.url)
-        ? unsplashAt(listing.cover.url, 1200)
-        : listing.cover.url
-      : null;
-  const price =
-    listing.priceOnRequest === true
-      ? t("priceOnRequest")
-      : `${formatPrice(listing.price, locale)}${listing.transaction === "rent" ? ` ${tUnits("perMonth")}` : ""}`;
+  const photo = sharePhoto(listing);
+  const price = priceText(listing, locale, tUnits);
   const facts = [
     formatArea(listing.areaM2, locale, m2),
-    listing.transaction === "sale" && listing.priceOnRequest !== true
-      ? formatPricePerM2(listing.pricePerM2, locale, m2)
-      : null,
+    listing.transaction === "sale" ? formatPricePerM2(listing.pricePerM2, locale, m2) : null,
   ]
     .filter((part): part is string => part !== null)
     .join("  ·  ");

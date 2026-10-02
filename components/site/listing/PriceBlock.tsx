@@ -25,7 +25,6 @@ export type PriceBlockProps = {
   price: number;
   pricePerM2: number;
   previousPrice?: number;
-  priceOnRequest: boolean;
   transaction: "sale" | "rent";
   history: readonly { at: number; from: number; price: number }[];
   eurRsd?: number;
@@ -41,7 +40,6 @@ export function PriceBlock({
   price,
   pricePerM2,
   previousPrice,
-  priceOnRequest,
   transaction,
   history,
   eurRsd,
@@ -77,48 +75,42 @@ export function PriceBlock({
     <div className="flex flex-col gap-3">
       {closed ? <p className={cn("eyebrow", dark ? "text-bronze" : "text-bronze-text")}>{closedLabel}</p> : null}
 
-      {priceOnRequest ? (
-        <p className={cn("font-sans text-[2rem] font-medium leading-tight", strong)}>{t("priceOnRequest")}</p>
-      ) : (
-        <>
-          <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <span
-              data-numeric
-              data-testid="listing-price"
-              className={cn(
-                "font-sans font-medium leading-tight",
-                closed ? cn("text-h3", muted) : cn("text-[2rem] md:text-[2.5rem]", strong),
-              )}
-            >
-              {showRsd ? `≈ ${formatRsd(price, eurRsd, locale)}` : formatPrice(price, locale)}
-            </span>
-            {transaction === "rent" ? <span className={cn("text-body", muted)}>{tUnits("perMonth")}</span> : null}
-            {/* €/m² goes beside every price (CLAUDE.md), a monthly rent's too, as on its card. */}
-            {pricePerM2 > 0 && !showRsd ? (
-              <span data-numeric className={cn("text-body", muted)}>
-                {formatPricePerM2(pricePerM2, locale, tUnits("m2"))}
-              </span>
-            ) : null}
-          </p>
-          {showRsd || deposit !== undefined ? (
-            <p data-numeric className={cn("flex flex-wrap gap-x-4 text-small", muted)}>
-              {showRsd ? <span>{formatPrice(price, locale)}</span> : null}
-              {showRsd && pricePerM2 > 0 ? (
-                <span>{formatPricePerM2(pricePerM2, locale, tUnits("m2"))}</span>
-              ) : null}
-              {deposit !== undefined ? <span>{t("price.deposit", { amount: formatPrice(deposit, locale) })}</span> : null}
-            </p>
+      <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span
+          data-numeric
+          data-testid="listing-price"
+          className={cn(
+            "font-sans font-medium leading-tight",
+            closed ? cn("text-h3", muted) : cn("text-[2rem] md:text-[2.5rem]", strong),
+          )}
+        >
+          {showRsd ? `≈ ${formatRsd(price, eurRsd, locale)}` : formatPrice(price, locale)}
+        </span>
+        {transaction === "rent" ? <span className={cn("text-body", muted)}>{tUnits("perMonth")}</span> : null}
+        {/* €/m² goes beside every price (CLAUDE.md), a monthly rent's too, as on its card. */}
+        {pricePerM2 > 0 && !showRsd ? (
+          <span data-numeric className={cn("text-body", muted)}>
+            {formatPricePerM2(pricePerM2, locale, tUnits("m2"))}
+          </span>
+        ) : null}
+      </p>
+      {showRsd || deposit !== undefined ? (
+        <p data-numeric className={cn("flex flex-wrap gap-x-4 text-small", muted)}>
+          {showRsd ? <span>{formatPrice(price, locale)}</span> : null}
+          {showRsd && pricePerM2 > 0 ? (
+            <span>{formatPricePerM2(pricePerM2, locale, tUnits("m2"))}</span>
           ) : null}
-          {showRsd ? (
-            <p className={cn("text-small", muted)}>
-              {t("price.rsdNote", { rate: format.number(eurRsd, { maximumFractionDigits: 2 }) })}
-            </p>
-          ) : null}
-          {vatIncluded === true && !closed ? <p className={cn("text-small", muted)}>{t("price.vatIncluded")}</p> : null}
-        </>
-      )}
+          {deposit !== undefined ? <span>{t("price.deposit", { amount: formatPrice(deposit, locale) })}</span> : null}
+        </p>
+      ) : null}
+      {showRsd ? (
+        <p className={cn("text-small", muted)}>
+          {t("price.rsdNote", { rate: format.number(eurRsd, { maximumFractionDigits: 2 }) })}
+        </p>
+      ) : null}
+      {vatIncluded === true && !closed ? <p className={cn("text-small", muted)}>{t("price.vatIncluded")}</p> : null}
 
-      {!priceOnRequest && !closed && (reduced || showHistory || eurRsd !== undefined) ? (
+      {!closed && (reduced || showHistory || eurRsd !== undefined) ? (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           {reduced ? (
             <span

@@ -367,7 +367,6 @@ export default async function StyleguidePage({
             <Price price={385000} pricePerM2={4045} size="lg" />
             <Price price={264000} pricePerM2={3300} previousPrice={289000} />
             <Price price={1450} pricePerM2={18} transaction="rent" />
-            <Price price={0} priceOnRequest />
           </div>
 
           {/* The locale-aware formatters every listing surface shares. */}

@@ -201,6 +201,18 @@ export function HeroSearch({ locations, className }: HeroSearchProps) {
     if (!open && element.open) element.close();
   }, [open]);
 
+  // The sheet is `md:hidden`, but a modal dialog keeps the page inert even
+  // when it is not displayed: a phone rotated past the breakpoint closes it.
+  useEffect(() => {
+    if (!open) return;
+    const wide = window.matchMedia("(min-width: 48rem)");
+    const onBreakpoint = () => {
+      if (wide.matches) setOpen(false);
+    };
+    wide.addEventListener("change", onBreakpoint);
+    return () => wide.removeEventListener("change", onBreakpoint);
+  }, [open]);
+
   return (
     <div className={className}>
       {/* Tablet and up: the full bar. */}

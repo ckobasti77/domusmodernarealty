@@ -21,7 +21,6 @@ export type CompareItem = Pick<
   | "cover"
   | "price"
   | "pricePerM2"
-  | "priceOnRequest"
   | "previousPrice"
   | "areaM2"
   | "rooms"
@@ -60,7 +59,6 @@ export function toCompareItem(listing: ListingDetail): CompareItem {
     ...(listing.cover !== undefined ? { cover: listing.cover } : {}),
     price: listing.price,
     pricePerM2: listing.pricePerM2,
-    ...(listing.priceOnRequest !== undefined ? { priceOnRequest: listing.priceOnRequest } : {}),
     ...(listing.previousPrice !== undefined ? { previousPrice: listing.previousPrice } : {}),
     areaM2: listing.areaM2,
     rooms: listing.rooms,

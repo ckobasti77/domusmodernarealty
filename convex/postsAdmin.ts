@@ -18,6 +18,7 @@ import {
   deleteBlobIfPresent,
   releaseReplacedImage,
 } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import {
   imageV,
   L10N_KEYS,
@@ -25,7 +26,6 @@ import {
   postCategoryV,
   postStatusV,
   seoV,
-  type ImageRef,
   type L10n,
   type L10nKey,
 } from "./lib/validators";
@@ -244,9 +244,6 @@ function checkL10nLength(value: L10n, max: number, what: string): void {
   }
 }
 
-function sameImage(a: ImageRef | undefined, b: ImageRef | undefined): boolean {
-  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
-}
 
 type EditableFields = Pick<
   Doc<"posts">,

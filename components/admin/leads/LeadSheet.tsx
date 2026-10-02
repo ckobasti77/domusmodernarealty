@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { CalendarPlus, CheckCheck, ExternalLink, Loader2, Mail, Phone, X } from "lucide-react";
 import Link from "next/link";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DetailSheet, FactList, SheetSection } from "@/components/admin/common/DetailSheet";
 import { DotBadge, type DotTone } from "@/components/admin/common/StatusBadge";
@@ -413,6 +413,12 @@ function AgentField({
   );
 }
 
+/** `setNextAction` takes dates within five years of today; a date picked in the calendar is in range. */
+const NEXT_ACTION_RANGE_MS = 5 * 365 * 86_400_000;
+
+/** Quiet time after a complete, plausible date before it saves on its own (a calendar pick). */
+const NEXT_ACTION_SETTLE_MS = 800;
+
 function NextActionField({ lead }: { lead: LeadRow }) {
   const id = useId();
   const setNextAction = useMutationAction(useMutation(api.leadsAdmin.setNextAction), "Sledeći korak je sačuvan.");
@@ -424,12 +430,35 @@ function NextActionField({ lead }: { lead: LeadRow }) {
     setValue(server);
   }
 
+  // Saved once the date is whole, never per keystroke: typing a year digit by
+  // digit passes through 0002, 0020 and 0202. Blur and Enter save at once; a
+  // complete date within range (a calendar pick) also saves after a pause.
+  const latest = useRef({ server, save: (_next: string) => {} });
+  // The value last sent, so a pause and the blur after it do not save it twice.
+  const sent = useRef<string | null>(null);
   const save = (next: string) => {
-    setValue(next);
+    if (next === server || next === sent.current) return;
     const at = next.length > 0 ? fromDateInput(next) : undefined;
     if (next.length > 0 && at === undefined) return;
-    void setNextAction.run({ id: lead._id, ...(at !== undefined ? { nextActionAt: at } : {}) });
+    sent.current = next;
+    void setNextAction.run({ id: lead._id, ...(at !== undefined ? { nextActionAt: at } : {}) }).then((result) => {
+      // Refused (out of range): the same date may be sent again once corrected.
+      if (result === undefined) sent.current = null;
+    });
   };
+  useEffect(() => {
+    latest.current = { server, save };
+  });
+  useEffect(() => {
+    sent.current = null;
+  }, [server]);
+  useEffect(() => {
+    if (value === latest.current.server) return;
+    const at = fromDateInput(value);
+    if (at === undefined || Math.abs(at - Date.now()) > NEXT_ACTION_RANGE_MS) return;
+    const timer = window.setTimeout(() => latest.current.save(value), NEXT_ACTION_SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [value]);
 
   return (
     <div className="grid gap-1.5 sm:col-span-2">
@@ -440,13 +469,27 @@ function NextActionField({ lead }: { lead: LeadRow }) {
           type="date"
           value={value}
           data-testid="lead-next-action"
-          disabled={setNextAction.pending}
-          onChange={(event) => save(event.target.value)}
+          aria-busy={setNextAction.pending || undefined}
+          onChange={(event) => setValue(event.target.value)}
+          onBlur={(event) => save(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            save(event.currentTarget.value);
+          }}
           className="w-full sm:w-44"
           aria-describedby={`${id}-hint`}
         />
         {value.length > 0 ? (
-          <Button variant="ghost" size="icon" aria-label="Uklonite datum sledećeg koraka" onClick={() => save("")}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Uklonite datum sledećeg koraka"
+            onClick={() => {
+              setValue("");
+              save("");
+            }}
+          >
             <X aria-hidden="true" />
           </Button>
         ) : null}

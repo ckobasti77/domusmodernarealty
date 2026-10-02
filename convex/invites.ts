@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { internalQuery, mutation, query, type MutationCtx } from "./_generated/server";
 import {
   DEFAULT_AGENT_ROLE,
   insertAgentProfile,
@@ -313,5 +313,48 @@ export const checkToken = query({
       email: invite.email,
       ...(invite.name !== undefined ? { name: invite.name } : {}),
     };
+  },
+});
+
+/**
+ * Internal: may this e-mail open an account with this invite? `auth.ts` asks
+ * before it calls `createAccount`, because the library's sign-up path treats an
+ * EXISTING account as a password check with no failed-attempt lockout — a
+ * brute-force channel past the sign-in rate limit. So sign-up is refused unless
+ * the invite is open AND no account exists for the address yet, and every
+ * refusal looks the same to the caller.
+ *
+ * `createOrUpdateUser` re-checks the invite inside the account-creating
+ * mutation, which is what makes acceptance atomic.
+ */
+export const canSignUp = internalQuery({
+  args: { tokenHash: v.string(), email: v.string(), now: v.number() },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const invite = await ctx.db
+      .query("invites")
+      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", args.tokenHash))
+      .unique();
+    if (
+      invite === null ||
+      invite.email !== args.email ||
+      invite.acceptedAt !== undefined ||
+      invite.revokedAt !== undefined ||
+      invite.expiresAt < args.now
+    ) {
+      return false;
+    }
+    const account = await ctx.db
+      .query("authAccounts")
+      .withIndex("providerAndAccountId", (q) =>
+        q.eq("provider", "password").eq("providerAccountId", args.email),
+      )
+      .first();
+    if (account !== null) return false;
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    return user === null;
   },
 });

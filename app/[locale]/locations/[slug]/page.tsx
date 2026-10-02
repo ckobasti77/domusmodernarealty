@@ -68,13 +68,18 @@ function titleName(detail: LocationDetail, locale: Locale): string {
   return city !== undefined && detail.location.kind !== "city" ? `${name}, ${placeName(city, locale).text}` : name;
 }
 
+/**
+ * The place, the whole tree it is compared with and the settings are
+ * independent reads, so they start together; `cache()` shares each of them
+ * between `generateMetadata` and the page.
+ */
 async function load(params: Params) {
   const { locale, slug } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
-  const detail = await getLocationBySlug(slug);
+  const [detail, nodes, settings] = await Promise.all([getLocationBySlug(slug), getLocations(), getPublicSettings()]);
   if (detail === null) notFound();
   // The server's clock for the "Novo" badge on the cards, read once per request.
-  return { locale, detail, now: Date.now() };
+  return { locale, detail, nodes, settings, now: Date.now() };
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -92,10 +97,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function LocationPage({ params }: { params: Params }) {
-  const { locale, detail, now } = await load(params);
-  const [nodes, settings, t, tNav, tUnits] = await Promise.all([
-    getLocations(),
-    getPublicSettings(),
+  const { locale, detail, nodes, settings, now } = await load(params);
+  const [t, tNav, tUnits] = await Promise.all([
     getTranslations({ locale, namespace: "locations" }),
     getTranslations({ locale, namespace: "nav" }),
     getTranslations({ locale, namespace: "units" }),

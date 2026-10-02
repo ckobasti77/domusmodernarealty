@@ -28,11 +28,9 @@ export function useFavoriteCount(): number {
   return useFavorites().length;
 }
 
-/** `[isFavorite, toggle]` for a single listing. */
-export function useFavorite(id: string): [boolean, () => void] {
+/** `[isFavorite, toggle]` for a single listing; `toggle` returns true when it added. */
+export function useFavorite(id: string): [boolean, () => boolean] {
   const ids = useFavorites();
-  const toggle = useCallback(() => {
-    favoritesStore.toggle(id);
-  }, [id]);
+  const toggle = useCallback(() => favoritesStore.toggle(id).added, [id]);
   return [ids.includes(id), toggle];
 }

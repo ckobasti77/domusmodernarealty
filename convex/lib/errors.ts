@@ -1,8 +1,8 @@
 import { ConvexError } from "convex/values";
 
 /**
- * Error codes the client switches on. Keep them stable — `lib/errors.ts` on the
- * Next side maps them to localized messages.
+ * Error codes the client switches on. Keep them stable — `lib/errors.ts` maps the
+ * public ones to localized `errors.*` messages; the admin shows `message` as is.
  */
 export type ErrorCode =
   | "UNAUTHENTICATED"

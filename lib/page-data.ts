@@ -39,3 +39,11 @@ export const getAgents = cache(async () => {
 export const getLocations = cache(async () => {
   return await fetchQuery(api.locations.tree, {});
 });
+
+/**
+ * A place's introduction alone (the locations index shows the primary city's;
+ * the tree carries none): one document read, no listing cards.
+ */
+export const getLocationIntro = cache(async (slug: string) => {
+  return fetchQuery(api.locations.intro, { slug });
+});

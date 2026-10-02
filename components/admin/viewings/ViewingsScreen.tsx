@@ -2,11 +2,13 @@
 
 import { useQuery } from "convex/react";
 import { CalendarDays, CalendarRange, Clock, List, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { FilterSelect } from "@/components/admin/common/ListToolbar";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
+import { useNow } from "@/components/admin/common/use-now";
 import { hasRole, LISTING_ROLES, MANAGER_ROLES, useMe } from "@/components/admin/shell/me";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,8 +23,6 @@ import { todayKey, wallOfDayKey } from "./time";
 import { ViewingSheet } from "./ViewingSheet";
 import { ViewingsList } from "./ViewingsList";
 
-/** Below Tailwind's `md`: the agenda replaces the week grid, and "day" is the default view. */
-const PHONE_QUERY = "(max-width: 767.98px)";
 /** The "now" line and the outcome rules move once a minute. */
 const NOW_TICK_MS = 60_000;
 
@@ -32,15 +32,6 @@ const VIEW_OPTIONS: readonly { value: ViewKind; label: string; icon: typeof Cale
   { value: "list", label: "Lista", icon: List },
   { value: "availability", label: "Dostupnost", icon: Clock },
 ];
-
-function useNow(tickMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), tickMs);
-    return () => window.clearInterval(timer);
-  }, [tickMs]);
-  return now;
-}
 
 function ViewingsView() {
   const me = useMe();

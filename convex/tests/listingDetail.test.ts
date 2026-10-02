@@ -103,12 +103,19 @@ describe("viewing slots are Belgrade office hours", () => {
     ).rejects.toThrow(/SLOT_TAKEN|radnom vremenu/);
   });
 
-  test("one open request per address and listing", async () => {
+  test("one open request per address and listing, answered like a success", async () => {
     const { t, ids } = await setup();
     await t.mutation(api.viewings.request, viewing(ids.listing, nextMondayAt(9), "jednom@primer.local", "o1"));
+    // The repeat must not tell a stranger that this address already asked
+    // (review 14, SEC-5): same answer as a first request, nothing stored.
     await expect(
       t.mutation(api.viewings.request, viewing(ids.listing, nextMondayAt(14), "jednom@primer.local", "o2")),
-    ).rejects.toThrow(/ALREADY_REQUESTED/);
+    ).resolves.toBeNull();
+    const stored = await t.run(async (ctx) => ({
+      leads: (await ctx.db.query("leads").take(10)).length,
+      starts: (await ctx.db.query("viewings").take(10)).map((row) => row.start),
+    }));
+    expect(stored).toEqual({ leads: 1, starts: [nextMondayAt(9)] });
   });
 
   test("a non-public agent takes no web bookings", async () => {

@@ -109,7 +109,6 @@ export function buildCompareGroups(
     value === undefined ? null : { text: formatCount(value, locale), value };
 
   const price = items.map((item): CompareCell => {
-    if (item.priceOnRequest === true) return { text: t.listing("priceOnRequest") };
     const figure = formatPrice(item.price, locale);
     const reduced = item.previousPrice !== undefined && item.previousPrice > item.price;
     return {
@@ -122,7 +121,7 @@ export function buildCompareGroups(
   });
 
   const perM2 = items.map((item): CompareCell | null =>
-    item.priceOnRequest === true || item.pricePerM2 <= 0
+    item.pricePerM2 <= 0
       ? null
       : {
           text: formatPricePerM2(item.pricePerM2, locale, m2),

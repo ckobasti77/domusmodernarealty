@@ -27,7 +27,9 @@ describe("journal post bodies", () => {
     expect(htmlProblem("<h1>x</h1>", POST)).toMatch(/<h1>/);
     expect(htmlProblem("<!-- x --><p>y</p>", POST)).toMatch(/komentari/);
     expect(htmlProblem("<p>a < b</p>", POST)).toMatch(/neispravan HTML/);
-    expect(htmlProblem('<ol type="a"><li>x</li></ol>', POST)).toMatch(/type/);
+    // A pasted list keeps its numbering style (a, A, i, I) and nothing else.
+    expect(htmlProblem('<ol type="a"><li>x</li></ol>', POST)).toBeNull();
+    expect(htmlProblem('<ol type="disc"><li>x</li></ol>', POST)).toMatch(/type/);
   });
 
   test("refuse javascript:, data: and off-origin links, also when encoded", () => {

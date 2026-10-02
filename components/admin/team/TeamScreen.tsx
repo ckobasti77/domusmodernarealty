@@ -2,10 +2,10 @@
 
 import { useQuery } from "convex/react";
 import { UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
+import { useNow } from "@/components/admin/common/use-now";
 import { ADMIN_ROLES, hasRole, MANAGER_ROLES, useMe } from "@/components/admin/shell/me";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,15 +21,6 @@ import { UsersPanel } from "./UsersPanel";
 
 /** Relative times ("ističe za 3 dana", "pre 2 sata") refresh once a minute. */
 const NOW_TICK_MS = 60_000;
-
-function useNow(tickMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), tickMs);
-    return () => window.clearInterval(timer);
-  }, [tickMs]);
-  return now;
-}
 
 /**
  * Team (PRD B7). Admins manage accounts, invites and roles; managers see and

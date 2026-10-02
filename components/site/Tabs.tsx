@@ -26,6 +26,7 @@ export function Tabs({
   onValueChange,
   tone = "light",
   ariaLabel,
+  keepMounted = false,
   className,
 }: {
   tabs: readonly SiteTab[];
@@ -36,6 +37,12 @@ export function Tabs({
   tone?: "light" | "dark";
   /** Names the tab strip; required when the tabs are not preceded by a heading. */
   ariaLabel?: string;
+  /**
+   * Keeps every panel mounted and only hides the inactive ones, so state
+   * inside a panel (a half-filled form) survives a tab switch. A hidden panel
+   * is `display: none`: out of the tab order and the accessibility tree.
+   */
+  keepMounted?: boolean;
   className?: string;
 }) {
   const first = defaultValue ?? tabs[0]?.value;
@@ -91,7 +98,13 @@ export function Tabs({
         <TabsPrimitive.Content
           key={tab.value}
           value={tab.value}
-          className="pt-8 focus-visible:outline-2 focus-visible:outline-offset-4"
+          // Radix drops its own `hidden` from a force-mounted panel, so the
+          // inactive one is hidden here.
+          forceMount={keepMounted || undefined}
+          className={cn(
+            "pt-8 focus-visible:outline-2 focus-visible:outline-offset-4",
+            keepMounted && "data-[state=inactive]:hidden",
+          )}
         >
           {tab.content}
         </TabsPrimitive.Content>

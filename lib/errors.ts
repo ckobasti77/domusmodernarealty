@@ -1,11 +1,15 @@
 import { ConvexError } from "convex/values";
+import type { ErrorCode } from "@/convex/lib/errors";
 
 /**
  * Maps a Convex failure to an `errors.*` message key (IMPLEMENTATION-PLAN §5
  * "Errors"). Raw server messages are Serbian and technical, so they never reach
- * the UI; only the stable `code` does.
+ * the UI; only the stable `code` does. Typed against the server's `ErrorCode`, so
+ * a renamed or removed code fails the build. `UNAUTHENTICATED` and `CONFLICT` are
+ * staff-only (the admin shows the server's own Serbian message) and fall back to
+ * the generic text here.
  */
-const KNOWN = new Set([
+const KNOWN: ReadonlySet<string> = new Set<ErrorCode>([
   "FORBIDDEN",
   "NOT_FOUND",
   "RATE_LIMITED",
@@ -14,8 +18,6 @@ const KNOWN = new Set([
   "INVALID_INPUT",
   "SPAM",
   "PUBLISH_BLOCKED",
-  "UPLOAD_REJECTED",
-  "INVITE_INVALID",
 ]);
 
 export type ErrorMessageKey = `errors.${string}`;

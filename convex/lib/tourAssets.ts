@@ -25,7 +25,7 @@ type AssetSlot = "desktop" | "mobile" | "collision";
 const SLOTS: AssetSlot[] = ["desktop", "mobile", "collision"];
 
 
-const MAX_TEXT = 300;
+const MAX_TEXT = TOUR_LIMITS.text;
 const MAX_BYTES = 2_000_000_000;
 
 /**

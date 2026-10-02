@@ -2,7 +2,7 @@
 
 import { Rotate3d } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/site/Button";
 
 /**
@@ -26,17 +26,25 @@ export function ExternalTourFacade({
 }) {
   const t = useTranslations("tours");
   const [playing, setPlaying] = useState(false);
+  const frame = useRef<HTMLIFrameElement>(null);
+
+  // The player replaces the poster and its focused start button: focus moves
+  // into the player instead of dropping to <body>.
+  useEffect(() => {
+    if (playing) frame.current?.focus();
+  }, [playing]);
 
   if (playing) {
     return (
       // `overflow-clip`, not `hidden`: a `[data-lenis-prevent]` box must not be a scroll container.
       <div className="relative aspect-[4/3] w-full overflow-clip bg-ink-2 md:aspect-[21/9]" data-lenis-prevent="" data-tour-external="">
         <iframe
+          ref={frame}
           src={embedUrl}
           title={t("viewer360", { title })}
           allow="fullscreen; xr-spatial-tracking; gyroscope; accelerometer"
           allowFullScreen
-          className="absolute inset-0 size-full border-0"
+          className="absolute inset-0 size-full border-0 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bronze"
         />
       </div>
     );

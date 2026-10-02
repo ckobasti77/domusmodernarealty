@@ -720,7 +720,7 @@ test.describe("admin modules @admin", () => {
     });
     await admin.mutation(api.listingsAdmin.publish, { id: made.id });
     try {
-      requested = await visitor.mutation(api.viewings.request, {
+      await visitor.mutation(api.viewings.request, {
         sessionKey: `e2e-mod-${RUN}-viewing`,
         locale: "sr-Latn",
         listingId: made.id,
@@ -731,6 +731,13 @@ test.describe("admin modules @admin", () => {
         marketing: false,
         privacy: true,
       });
+      // The public answer carries no ids (review 14, SEC-5): read them back.
+      const stored = convexRun<{ leadId: Id<"leads">; listingId?: Id<"listings">; viewing: { viewingId: Id<"viewings"> } | null }[]>(
+        "qa:leadsByEmail",
+        { email: EMAIL.visitor },
+      ).find((lead) => lead.listingId === made.id && lead.viewing !== null);
+      if (stored === undefined || stored.viewing === null) throw new Error("the public viewing request was not stored");
+      requested = { leadId: stored.leadId, viewingId: stored.viewing.viewingId };
       // The office records a viewing held two days ago (on the same lead, so the
       // e-mail purge removes it), with the e2e agent.
       const start = Math.floor((now - 2 * DAY) / HOUR) * HOUR;

@@ -78,57 +78,22 @@ export function FeaturesTab() {
       </Group>
 
       <Group title="Struktura">
-        <NumberField
-          name="rooms"
-          id="f-rooms"
-          label="Broj soba"
-          native
-          step={0.5}
-          min={0}
-          max={20}
-          hint={<RoomsHint optional={roomsOptional} />}
-        />
-        <NumberField name="bedrooms" id="f-bedrooms" label="Spavaće sobe" native step={1} min={0} max={50} />
-        <NumberField name="bathrooms" id="f-bathrooms" label="Kupatila" native step={1} min={0} max={50} />
+        <NumberField name="rooms" id="f-rooms" label="Broj soba" hint={<RoomsHint optional={roomsOptional} />} />
+        <NumberField name="bedrooms" id="f-bedrooms" label="Spavaće sobe" />
+        <NumberField name="bathrooms" id="f-bathrooms" label="Kupatila" />
       </Group>
 
       <Group title="Sprat">
         <FloorField />
-        <NumberField
-          name="totalFloors"
-          id="f-totalFloors"
-          label="Ukupno spratova"
-          native
-          step={1}
-          min={0}
-          max={200}
-          deps={["floor"]}
-        />
+        <NumberField name="totalFloors" id="f-totalFloors" label="Ukupno spratova" deps={["floor"]} />
         <SwitchField name="isDuplex" id="f-isDuplex" label="Dupleks" />
         <SwitchField name="isPenthouse" id="f-isPenthouse" label="Penthaus" />
       </Group>
 
       <Group title="Gradnja">
         <SelectField name="constructionType" id="f-constructionType" label="Vrsta gradnje" options={CONSTRUCTION_OPTIONS} />
-        <NumberField
-          name="yearBuilt"
-          id="f-yearBuilt"
-          label="Godina izgradnje"
-          native
-          step={1}
-          min={1800}
-          max={2100}
-          deps={["renovatedYear"]}
-        />
-        <NumberField
-          name="renovatedYear"
-          id="f-renovatedYear"
-          label="Godina renoviranja"
-          native
-          step={1}
-          min={1800}
-          max={2100}
-        />
+        <NumberField name="yearBuilt" id="f-yearBuilt" label="Godina izgradnje" deps={["renovatedYear"]} />
+        <NumberField name="renovatedYear" id="f-renovatedYear" label="Godina renoviranja" />
         {constructionType === "under_construction" ? (
           <DateField name="completionDate" id="f-completionDate" label="Planirani završetak" />
         ) : null}

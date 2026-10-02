@@ -1,13 +1,13 @@
-import { fetchQuery } from "convex/nextjs";
 import type { FunctionReturnType } from "convex/server";
-import { api } from "@/convex/_generated/api";
-import type { PageBlock, PageKey } from "@/convex/lib/validators";
+import type { api } from "@/convex/_generated/api";
+import type { PageBlock } from "@/convex/lib/validators";
 import type { Locale } from "@/i18n/routing";
 import { type L10nValue, pickL10n } from "@/lib/l10n";
 
 /**
  * Reading the managed site content (PRD B10, `pages` table) on the public
- * site. Pages are read by block `key`; every reader falls back to the
+ * site. Pages are read by block `key` (the page itself through `getSitePage`
+ * in `lib/page-data.ts`, cached per request); every reader falls back to the
  * built-in copy in `messages/*.json` when a page, a block or a field is
  * missing, so removing the demo content or a half-filled block never breaks
  * a page.
@@ -18,11 +18,6 @@ import { type L10nValue, pickL10n } from "@/lib/l10n";
  */
 
 export type PublicPage = NonNullable<FunctionReturnType<typeof api.pages.get>>;
-
-/** One page's content, `null` when the page does not exist. Server-side reads only. */
-export async function getPage(key: PageKey): Promise<PublicPage | null> {
-  return await fetchQuery(api.pages.get, { key });
-}
 
 /**
  * The landing's block contract: which block of the `home` page feeds which

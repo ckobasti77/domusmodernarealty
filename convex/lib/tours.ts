@@ -21,6 +21,8 @@ export const TOUR_LIMITS = {
   linksPerScene: 12,
   floorPoints: 64,
   hotspots: 12,
+  /** An external tour URL or ID, and a 3D model credit line. */
+  text: 300,
   /** Splat eye height in model units (scans are not always metric). */
   eyeHeight: { min: 0.2, max: 20 },
 } as const;

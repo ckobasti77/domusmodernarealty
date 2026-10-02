@@ -19,7 +19,7 @@ import { getPathname } from "@/i18n/navigation";
 import { htmlLang, locales, routing, type Locale } from "@/i18n/routing";
 import { agencyJsonLd } from "@/lib/jsonld";
 import { getPublicSettings } from "@/lib/page-data";
-import { absoluteUrl, defaultShareImage, siteOrigin } from "@/lib/seo";
+import { absoluteUrl, defaultShareImage, seoText, siteOrigin } from "@/lib/seo";
 import "@/app/globals.css";
 
 /** Resting states for everything the motion layer starts hidden. */
@@ -35,19 +35,24 @@ export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
+/**
+ * The title template and the defaults for every page without a title or
+ * description of its own: the admin's sitewide SEO texts (Podešavanja →
+ * Podrazumevani SEO), else the built-in copy.
+ */
 export async function generateMetadata(props: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await props.params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  const t = await getTranslations({ locale, namespace: "seo" });
+  const [t, settings] = await Promise.all([getTranslations({ locale, namespace: "seo" }), getPublicSettings()]);
 
   return {
     metadataBase: new URL(siteOrigin()),
     title: {
-      default: t("defaultTitle"),
+      default: seoText(locale, t("defaultTitle"), settings?.seo.defaultTitle),
       template: t("titleTemplate", { title: "%s" }),
     },
-    description: t("defaultDescription"),
+    description: seoText(locale, t("defaultDescription"), settings?.seo.defaultDescription),
   };
 }
 

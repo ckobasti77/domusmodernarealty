@@ -1,5 +1,6 @@
 /**
- * The publish checklist from PRD B3. `listingsAdmin.publish` enforces it; the
+ * The publish checklist from PRD B3. `listingsAdmin.publish` enforces it, and
+ * `listingsAdmin.update` / `media.remove` keep a public listing within it; the
  * admin editor renders the same list live (it imports this module and runs it
  * over the unsaved form values).
  *
@@ -9,6 +10,7 @@
  */
 import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { belgradeMidnight } from "./belgradeTime";
 import { appError } from "./errors";
 
 export type ChecklistItem = {
@@ -57,6 +59,29 @@ export function isPlaceholderRegistry(registryNo: string): boolean {
   return /^0*$/.test(registryNo.trim());
 }
 
+/** The smallest room structure: a studio ("garsonjera") is 0.5. */
+export const MIN_ROOMS = 0.5;
+
+/** Land and garages have no room structure to state. */
+export function needsRooms(propertyType: ChecklistListing["propertyType"]): boolean {
+  return propertyType !== "land" && propertyType !== "garage";
+}
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * Whether the brokerage contract is in force at `now`. Its dates are whole
+ * Belgrade calendar days (the editor stores each at Belgrade noon), so it runs
+ * from the first moment of its start day to the last moment of its end day.
+ */
+function mandateInForce(mandate: ChecklistListing["mandate"], now: number): boolean {
+  if (mandate === undefined || mandate.number.trim().length === 0) return false;
+  // A day lasts 23 to 25 hours, so its midnight plus 36 hours always falls on
+  // the next day, whatever the clock change.
+  const endsAt = belgradeMidnight(belgradeMidnight(mandate.end) + 36 * HOUR_MS);
+  return belgradeMidnight(mandate.start) <= now && now < endsAt;
+}
+
 /** `now` is passed in so queries never read the wall clock. */
 export function publishChecklist(
   listing: ChecklistListing,
@@ -64,17 +89,12 @@ export function publishChecklist(
   context?: ChecklistContext,
 ): ChecklistItem[] {
   const cover = listing.media.some((item) => item.isCover === true);
-  const needsRooms =
-    listing.propertyType !== "land" && listing.propertyType !== "garage";
 
   const items: ChecklistItem[] = [
     {
       code: "mandate",
       label: "Ugovor o posredovanju je unet i važi",
-      ok:
-        listing.mandate !== undefined &&
-        listing.mandate.number.trim().length > 0 &&
-        listing.mandate.end > now,
+      ok: mandateInForce(listing.mandate, now),
     },
     { code: "price", label: "Cena je uneta", ok: listing.price > 0 },
     {
@@ -89,7 +109,7 @@ export function publishChecklist(
     {
       code: "rooms",
       label: "Struktura (broj soba) je uneta",
-      ok: !needsRooms || listing.rooms > 0,
+      ok: !needsRooms(listing.propertyType) || listing.rooms >= MIN_ROOMS,
     },
     {
       code: "photos",
@@ -161,5 +181,32 @@ export function assertPublishable(
   const reasons = checklistBlockers(publishChecklist(listing, now, context));
   if (reasons.length > 0) {
     appError("PUBLISH_BLOCKED", "Objava je blokirana.", { reasons });
+  }
+}
+
+/**
+ * The guard for an edit that leaves a listing public (`listingsAdmin.update`):
+ * the result must pass the same blocking checklist as `publish`, so no edit can
+ * take a live listing below what publishing requires. A sold or rented listing
+ * (`onMarket: false`) still shows its Art. 18 facts, but its brokerage contract
+ * has run its course (the expiry cron withdraws only listings on the market),
+ * so the contract item is not asked of it. Throws `PUBLISH_BLOCKED`.
+ */
+export function assertStaysPublishable(
+  listing: ChecklistListing,
+  now: number,
+  context: ChecklistContext,
+  onMarket: boolean,
+): void {
+  const items = publishChecklist(listing, now, context).filter(
+    (item) => onMarket || item.code !== "mandate",
+  );
+  const reasons = checklistBlockers(items);
+  if (reasons.length > 0) {
+    appError(
+      "PUBLISH_BLOCKED",
+      `Izmena nije sačuvana: oglas je javan i mora ispunjavati uslove za objavu (${reasons.join("; ")}).`,
+      { reasons },
+    );
   }
 }

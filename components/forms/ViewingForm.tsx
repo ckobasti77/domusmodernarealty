@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "convex/react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod/mini";
 import { Button } from "@/components/site/Button";
@@ -12,12 +12,13 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useHydrated } from "@/hooks/useHydrated";
 import type { Locale } from "@/i18n/routing";
-import { BOOKING_DAYS, BOOKING_LEAD_MS } from "@/convex/lib/belgradeTime";
+import { BOOKING_DAYS } from "@/convex/lib/belgradeTime";
 import { BELGRADE_TZ, belgradeDayKey, nextBelgradeDays } from "@/lib/belgrade-time";
-import { errorMessageKey } from "@/lib/errors";
+import { errorCode, errorMessageKey } from "@/lib/errors";
 import { getSessionKey } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { ConsentFields, contactFields, FormError, SuccessPanel } from "./shared";
+import { isBookableStart, offeredSlotsByDay, type ViewingSlot } from "@/lib/viewing-slots";
+import { ConsentFields, contactFields, FormError, SuccessPanel, useSuccessFocus } from "./shared";
 
 /**
  * Viewing booking (PRD A5) → `viewings.request`, which creates the viewing
@@ -27,23 +28,52 @@ import { ConsentFields, contactFields, FormError, SuccessPanel } from "./shared"
  * confirmed viewings. Hours are Belgrade wall-clock time and the server does
  * every time-zone calculation itself (DST included), so the widget only names
  * the first day and shows the times in Europe/Belgrade, saying so.
+ *
+ * The widget's clock keeps running: a page left open would otherwise go on
+ * offering slots that have slipped inside the booking lead time, which the
+ * server refuses. A picked slot that slips away, or that someone else books
+ * meanwhile, is dropped with a message, and the exact time is checked once
+ * more before the request goes out.
  */
 
-type Slot = { start: number; end: number; taken: boolean };
+/** "Now" to the minute: the instant the slot list is filtered against. */
+function currentMinute(): number {
+  return Math.floor(Date.now() / 60_000) * 60_000;
+}
+
+/** The last check before a request goes out: against the exact time, not the list's minute. */
+function bookableNow(start: number): boolean {
+  return isBookableStart(start, Date.now());
+}
+
+/**
+ * Ticks every 30 s and catches up at once when the tab comes back to the
+ * foreground (background timers are throttled). `refresh` takes a reading on
+ * demand.
+ */
+function useMinuteClock(): { now: number; refresh: () => void } {
+  const [now, setNow] = useState(currentMinute);
+  const refresh = useCallback(() => setNow(currentMinute()), []);
+  useEffect(() => {
+    const timer = window.setInterval(refresh, 30_000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [refresh]);
+  return { now, refresh };
+}
 
 function useSlots(agentId: Id<"agents">, now: number) {
   const days = nextBelgradeDays(now, BOOKING_DAYS);
   const slots = useQuery(api.agents.slots, { agentId, fromDay: days[0].start, days: BOOKING_DAYS });
-
-  const byDay = new Map<string, Slot[]>();
-  for (const slot of slots ?? []) {
-    if (slot.start < now + BOOKING_LEAD_MS) continue;
-    const key = belgradeDayKey(slot.start);
-    const list = byDay.get(key) ?? [];
-    list.push(slot);
-    byDay.set(key, list);
-  }
-  return { days, byDay, loading: slots === undefined };
+  return { days, byDay: offeredSlotsByDay(slots ?? [], now), loading: slots === undefined };
 }
 
 export function ViewingForm({ listingId, agentId }: { listingId: Id<"listings">; agentId: Id<"agents"> }) {
@@ -64,18 +94,31 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
   const tCommon = useTranslations("common");
   const format = useFormatter();
   const request = useMutation(api.viewings.request);
-  const [now] = useState(() => Math.floor(Date.now() / 60_000) * 60_000);
-  const { days, byDay, loading } = useSlots(agentId, now);
+  const clock = useMinuteClock();
+  const { days, byDay, loading } = useSlots(agentId, clock.now);
 
   const [pickedDay, setPickedDay] = useState<string | null>(null);
-  const [slot, setSlot] = useState<Slot | null>(null);
+  const [slot, setSlot] = useState<ViewingSlot | null>(null);
   const [slotError, setSlotError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [booked, setBooked] = useState<Slot | null>(null);
+  const [booked, setBooked] = useState<ViewingSlot | null>(null);
+  const successRef = useSuccessFocus(booked !== null);
 
   const freeOn = (key: string) => (byDay.get(key) ?? []).some((item) => !item.taken);
-  const day = pickedDay ?? days.find((candidate) => freeOn(candidate.key))?.key ?? days[0].key;
+  // A day picked before midnight leaves the strip once the clock passes it.
+  const picked = pickedDay !== null && days.some((candidate) => candidate.key === pickedDay) ? pickedDay : null;
+  const day = picked ?? days.find((candidate) => freeOn(candidate.key))?.key ?? days[0].key;
   const daySlots = byDay.get(day) ?? [];
+
+  // The picked slot only while it is still offered and free: one that slips
+  // inside the booking lead time, or that someone else books, drops out, and
+  // the visitor is told rather than left with a request the server refuses.
+  const selected =
+    slot !== null && (byDay.get(belgradeDayKey(slot.start)) ?? []).some((item) => item.start === slot.start && !item.taken)
+      ? slot
+      : null;
+  const slotGone = tRoot("errors.SLOT_TAKEN");
+  const slotMessage = slot !== null && selected === null && !loading ? slotGone : slotError;
 
   const schema = z.object({
     ...contactFields(t),
@@ -97,10 +140,22 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
   const longDate = (at: number) =>
     format.dateTime(new Date(at), { weekday: "long", day: "numeric", month: "long", timeZone: BELGRADE_TZ });
 
+  /** The picked slot is no longer available: clear it, re-read the clock, and say so by the submit button. */
+  function dropSlot() {
+    setSlot(null);
+    clock.refresh();
+    setServerError(slotGone);
+  }
+
   async function onSubmit(values: Values) {
     setServerError(null);
     if (slot === null) {
       setSlotError(t("viewingSlotRequired"));
+      return;
+    }
+    // The list can trail the clock by a tick, so the exact time decides.
+    if ((selected === null && !loading) || !bookableNow(slot.start)) {
+      dropSlot();
       return;
     }
     try {
@@ -123,17 +178,21 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
       });
       setBooked(slot);
     } catch (error) {
-      setServerError(tRoot(errorMessageKey(error)));
+      // Taken a moment ago, or inside the lead time by the server's clock.
+      if (errorCode(error) === "SLOT_TAKEN") dropSlot();
+      else setServerError(tRoot(errorMessageKey(error)));
     }
   }
 
   if (booked !== null) {
     return (
-      <SuccessPanel
-        heading={t("viewingSuccessHeading")}
-        body={t("successViewing")}
-        detail={t("viewingSelected", { date: longDate(booked.start), time: time(booked.start) })}
-      />
+      <div ref={successRef} tabIndex={-1} className="scroll-mt-28 outline-none">
+        <SuccessPanel
+          heading={t("viewingSuccessHeading")}
+          body={t("successViewing")}
+          detail={t("viewingSelected", { date: longDate(booked.start), time: time(booked.start) })}
+        />
+      </div>
     );
   }
 
@@ -198,7 +257,7 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
         ) : (
           <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
             {daySlots.map((item) => {
-              const active = slot?.start === item.start;
+              const active = selected?.start === item.start;
               return (
                 <li key={item.start}>
                   <button
@@ -209,6 +268,8 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
                     onClick={() => {
                       setSlot(item);
                       setSlotError(null);
+                      // A new pick answers a "no longer available" from the last submit.
+                      setServerError(null);
                     }}
                     className={cn(
                       "flex min-h-11 w-full items-center justify-center border font-sans text-small transition-colors duration-200",
@@ -224,14 +285,14 @@ function ViewingFormClient({ listingId, agentId }: { listingId: Id<"listings">; 
             })}
           </ul>
         )}
-        {slot !== null ? (
+        {selected !== null ? (
           <p className="mt-3 text-small text-ink" aria-live="polite">
-            {t("viewingSelected", { date: longDate(slot.start), time: time(slot.start) })}
+            {t("viewingSelected", { date: longDate(selected.start), time: time(selected.start) })}
           </p>
         ) : null}
-        {slotError !== null ? (
+        {slotMessage !== null ? (
           <p role="alert" className="mt-3 text-small text-danger">
-            {slotError}
+            {slotMessage}
           </p>
         ) : null}
       </fieldset>

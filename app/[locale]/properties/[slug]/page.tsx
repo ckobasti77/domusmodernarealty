@@ -15,7 +15,6 @@ import { FavoriteButton } from "@/components/site/FavoriteButton";
 import { AgentCard } from "@/components/site/listing/AgentCard";
 import { CostCalculator, MortgageCalculator } from "@/components/site/listing/Calculators";
 import { FeatureGroups } from "@/components/site/listing/FeatureGroups";
-import { displayFloor, displayTotalFloors } from "@/components/site/listing/floor";
 import { KeyFacts } from "@/components/site/listing/KeyFacts";
 import { LegalBlock } from "@/components/site/listing/LegalBlock";
 import { ListingGallery } from "@/components/site/listing/ListingGallery";
@@ -30,10 +29,9 @@ import { Tabs, type SiteTab } from "@/components/site/Tabs";
 import { toTourScenes, toWalkData } from "@/components/tours/data";
 import { Tour360Slot, Walk3DSlot } from "@/components/tours/TourSlot";
 import type { Id } from "@/convex/_generated/dataModel";
-import type { ListingDetail } from "@/convex/lib/dto";
 import { getPathname, Link, permanentRedirect } from "@/i18n/navigation";
-import { routing, type Locale } from "@/i18n/routing";
-import { fixTypography, fixWidows, formatArea, formatPrice, formatPricePerM2 } from "@/lib/format";
+import { routing } from "@/i18n/routing";
+import { fixTypography, fixWidows, formatArea } from "@/lib/format";
 import { breadcrumbJsonLd, listingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
 import {
@@ -44,7 +42,8 @@ import {
   getTourScenes,
   getWalk3d,
 } from "@/lib/listing-data";
-import { floorLabel, placeLine, placeShort, structureShort, structureTitle } from "@/lib/listing-text";
+import { listingMetaDescription, listingMetaTitle, priceText, shareCardVersion } from "@/lib/listing-meta";
+import { placeLine, structureShort } from "@/lib/listing-text";
 import { absoluteUrl, documentTitle, localizedAlternates, socialMetadata } from "@/lib/seo";
 
 type Params = PageProps<"/[locale]/properties/[slug]">["params"];
@@ -88,18 +87,6 @@ function displayTitle(text: string): string {
   return fixWidows(fixTypography(text), 18).replace(COMPOUND_TAIL, `$1-${WORD_JOINER}`);
 }
 
-/** "430.000 €" / "1.200 € mesečno" / "Cena na upit" — shared by the title and description. */
-function priceText(
-  listing: ListingDetail,
-  locale: Locale,
-  t: (key: string) => string,
-  tUnits: (key: string) => string,
-): string {
-  if (listing.priceOnRequest === true) return t("priceOnRequest");
-  const base = formatPrice(listing.price, locale);
-  return listing.transaction === "rent" ? `${base} ${tUnits("perMonth")}` : base;
-}
-
 export async function generateMetadata({
   params,
   searchParams,
@@ -116,40 +103,27 @@ export async function generateMetadata({
   const listing = result.listing;
   const t = await getTranslations({ locale, namespace: "listing" });
   const tUnits = await getTranslations({ locale, namespace: "units" });
-  const m2 = tUnits("m2");
-  const price = priceText(listing, locale, t, tUnits);
 
+  // The SEO tab's own title and description win over the generated ones.
   const title =
     listing.seoTitle !== undefined
       ? pickL10n(listing.seoTitle, locale).text
-      : t("seoTitle", {
-          structure: structureTitle(t, listing, locale, m2),
-          place: placeShort(listing, locale),
-          price,
-        });
+      : listingMetaTitle(listing, locale, t, tUnits);
   const description =
     listing.seoDescription !== undefined
       ? pickL10n(listing.seoDescription, locale).text
-      : t("seoDescription", {
-          // Titles often end with a full stop; the pattern adds its own.
-          title: pickL10n(listing.title, locale).text.replace(/[.s]+$/, ""),
-          area: formatArea(listing.areaM2, locale, m2),
-          floor: floorLabel(t, displayFloor(listing.floor, locale), displayTotalFloors(listing.totalFloors, locale)),
-          price,
-          perM2: formatPricePerM2(listing.pricePerM2, locale, m2),
-          ref: listing.ref,
-        });
+      : listingMetaDescription(listing, locale, t, tUnits);
   const alternates = localizedAlternates(href(listing.slug), locale);
   // The share image is a Route Handler at the localized public path (see its
-  // file); `v` changes with the price so caches drop the old figure.
+  // file); `v` changes with anything it draws, so caches drop an old picture.
   const image = {
     url: `${absoluteUrl(
       getPathname({ locale, href: { pathname: "/properties/[slug]/opengraph-image", params: { slug: listing.slug } } }),
-    )}?v=${listing.price}`,
+    )}?v=${shareCardVersion(listing)}`,
     width: 1200,
     height: 630,
     type: "image/jpeg",
-    alt: t("ogAlt", { title: pickL10n(listing.title, locale).text, price }),
+    alt: t("ogAlt", { title: pickL10n(listing.title, locale).text, price: priceText(listing, locale, tUnits) }),
   };
 
   return {
@@ -267,8 +241,8 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
       propertyType: listing.propertyType,
       transaction: listing.transaction,
       price: listing.price,
-      priceOnRequest: listing.priceOnRequest === true,
       closed,
+      reserved: listing.status === "reserved",
       areaM2: listing.areaM2,
       rooms: listing.rooms,
       ...(listing.bedrooms !== undefined ? { bedrooms: listing.bedrooms } : {}),
@@ -309,7 +283,7 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
       : formatArea(listing.areaM2, locale, m2),
   ].join(" · ");
 
-  const showFinance = listing.transaction === "sale" && !closed && listing.priceOnRequest !== true;
+  const showFinance = listing.transaction === "sale" && !closed;
 
   return (
     <>
@@ -374,7 +348,6 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
                 price={listing.price}
                 pricePerM2={listing.pricePerM2}
                 {...(listing.previousPrice !== undefined ? { previousPrice: listing.previousPrice } : {})}
-                priceOnRequest={listing.priceOnRequest === true}
                 transaction={listing.transaction}
                 history={listing.priceHistory}
                 {...(settings?.eurRsd !== undefined ? { eurRsd: settings.eurRsd } : {})}

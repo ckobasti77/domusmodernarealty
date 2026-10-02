@@ -66,7 +66,16 @@ function parse(value: string | null): Consent | null {
 
 function refresh() {
   if (typeof window === "undefined") return;
-  const value = window.localStorage.getItem(KEY);
+  let value: string | null;
+  try {
+    value = window.localStorage.getItem(KEY);
+  } catch {
+    // Site data blocked: merely reading `window.localStorage` throws a
+    // SecurityError. Nothing can be stored, so the visitor counts as
+    // undecided and the banner shows; a choice made then lives only in
+    // `cache` (`setConsent` cannot persist it), until the next full load.
+    return;
+  }
   if (value === raw) return;
   raw = value ?? "";
   cache = parse(value);

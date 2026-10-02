@@ -8,6 +8,7 @@ import { FormProvider, useController, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner";
 import { FormSection, SaveBar } from "@/components/admin/common/form";
 import { ImageField } from "@/components/admin/common/ImageField";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
@@ -17,7 +18,6 @@ import { api } from "@/convex/_generated/api";
 import { formatDateTime } from "@/lib/admin/format";
 import { adminErrorMessage } from "@/lib/admin/errors";
 import { L10nField, TextField } from "./fields";
-import { LeaveGuard } from "./LeaveGuard";
 import { OfficeHoursField } from "./OfficeHoursField";
 import { PdfField } from "./PdfField";
 import { PhonesField } from "./PhonesField";
@@ -87,6 +87,10 @@ function SettingsEditor({ data }: { data: SettingsData }) {
     mode: "onTouched",
   });
   const { isDirty, isSubmitting } = form.formState;
+  useLeaveGuard({
+    dirty: isDirty,
+    description: "Ako sada napustite podešavanja, izmene koje niste sačuvali biće izgubljene.",
+  });
 
   // Another admin's save (or this one's, normalized by the server) arrives
   // here; adopt it unless there is unsaved work in the form.
@@ -144,7 +148,6 @@ function SettingsEditor({ data }: { data: SettingsData }) {
         onReset={() => form.reset(baseline.current)}
         extra={`Poslednja izmena: ${formatDateTime(data.settings.updatedAt)}`}
       />
-      <LeaveGuard dirty={isDirty} />
     </FormProvider>
   );
 }

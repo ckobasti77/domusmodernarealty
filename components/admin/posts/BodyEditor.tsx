@@ -1,9 +1,6 @@
 "use client";
 
-import Image from "@tiptap/extension-image";
-import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import {
   Bold,
   Heading2,
@@ -25,8 +22,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { L10nKey } from "@/convex/lib/validators";
-import { isAllowedHref } from "@/lib/content/sanitize";
 import { cn } from "@/lib/utils";
+import { postBodyExtensions } from "./body-extensions";
 import { ImageDialog, type InsertedImage } from "./ImageDialog";
 import { LinkDialog, type LinkValue } from "./LinkDialog";
 import { POST_PROSE } from "./shared";
@@ -35,7 +32,8 @@ import { POST_PROSE } from "./shared";
  * The article body for one locale (Tiptap 3). Loaded with `next/dynamic`
  * (`ssr: false`) by the editor screen. It produces only what
  * `lib/content/sanitize.ts` keeps: h2/h3, paragraphs, bold, italic,
- * underline, strike, lists, quotes, rules, links and images.
+ * underline, strike, lists, quotes, rules, links and images
+ * (`postBodyExtensions`, pasted content included).
  */
 
 const PLACEHOLDER_STYLES = [
@@ -45,27 +43,6 @@ const PLACEHOLDER_STYLES = [
   "[&_p.is-editor-empty:first-child]:before:text-muted-foreground",
   "[&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]",
 ].join(" ");
-
-function buildExtensions() {
-  return [
-    StarterKit.configure({
-      heading: { levels: [2, 3] },
-      code: false,
-      codeBlock: false,
-      link: {
-        openOnClick: false,
-        autolink: true,
-        linkOnPaste: true,
-        defaultProtocol: "https",
-        isAllowedUri: (url) => isAllowedHref(url),
-        shouldAutoLink: (url) => isAllowedHref(url),
-        HTMLAttributes: { target: null, rel: null, class: null },
-      },
-    }),
-    Image.configure({ inline: false, allowBase64: false }),
-    Placeholder.configure({ placeholder: "Počnite da pišete…" }),
-  ];
-}
 
 /** The editor's HTML, or "" for an empty document (Tiptap reports `<p></p>`). */
 function htmlOf(editor: Editor): string {
@@ -98,7 +75,7 @@ export function BodyEditor({
   // otherwise re-apply them on each keystroke. The content is initial only;
   // later changes arrive through the effect below.
   const [initialContent] = useState(value);
-  const extensions = useMemo(() => buildExtensions(), []);
+  const extensions = useMemo(() => postBodyExtensions(), []);
   const editorProps = useMemo(
     () => ({
       attributes: {

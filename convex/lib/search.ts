@@ -25,9 +25,9 @@ import type {
 import { FEATURE_KEYS } from "./validators";
 
 /**
- * Documents one `listings.search` page reads from its driver index. Convex
- * allows a single `.paginate()` per function, so a page is one window of at
- * least this many documents, post-filtered.
+ * The most documents a post-filtered `listings.search` page spans past its
+ * start: a plain read finds where its `numItems`-th match lies, then the
+ * page's one `.paginate()` covers exactly that far (review 14, CVX-8).
  */
 export const SEARCH_SCAN = 120;
 /** Documents `listings.count` reads (one `.take()`); beyond it the count is "N+". */
@@ -42,13 +42,23 @@ export const TEXT_TAKE = 200;
 
 /**
  * The one normalizer. Used both to build `listings.searchText` and to normalize
- * the user's query, so "Vračar", "vracar" and "VRAČAR" all match.
+ * the user's query, so "Vračar", "vracar", "VRAČAR" and "Врачар" all match.
  */
 export function normalizeText(input: string): string {
   return foldDiacritics(input)
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
     .replace(/\s+/g, " ");
+}
+
+/**
+ * A query the visitor typed that folds to nothing searchable: punctuation, an
+ * emoji, a script the fold does not cover ("###", "😀"). It matches NO listing;
+ * dropping it like a blank query would answer with the whole market. A blank
+ * query is no query at all.
+ */
+export function isUnsearchableQuery(q: string | undefined): boolean {
+  return q !== undefined && q.trim().length > 0 && normalizeText(q).length === 0;
 }
 
 /** The haystack stored on every listing. */
@@ -136,7 +146,8 @@ const PPM2_SORTS: readonly Sort[] = ["ppm2_asc", "ppm2_desc"];
  */
 export function pickDriver(filters: SearchFilters, requested: Sort): DriverPlan {
   // `normalizeText("###")` is empty, and an empty search string is not a valid
-  // search-index query — fall through to the normal drivers.
+  // search-index query — fall through to the normal drivers, where `matches`
+  // rejects every listing for it (`isUnsearchableQuery`).
   if (filters.q !== undefined && normalizeText(filters.q).length > 0) {
     return { driver: "text", orderedInWindow: requested !== "relevance" };
   }
@@ -212,11 +223,14 @@ export function coveredByDriver(filters: SearchFilters, plan: DriverPlan): boole
   );
 }
 
-/** A filter value that constrains anything (a `false` toggle or an empty query does not). */
+/**
+ * A filter value that constrains anything (a `false` toggle or a blank query
+ * does not; an unsearchable one does — it matches nothing).
+ */
 function isActive(key: string, value: unknown): boolean {
   if (value === undefined || value === false) return false;
   if (Array.isArray(value)) return value.length > 0;
-  if (key === "q" && typeof value === "string") return normalizeText(value).length > 0;
+  if (key === "q" && typeof value === "string") return value.trim().length > 0;
   return true;
 }
 
@@ -255,6 +269,9 @@ function matchesFloorBands(
       case "not_ground":
         return listing.floorNum > 0.5;
       case "not_top":
+        // An attic or a penthouse IS the top floor, whether or not the
+        // building's height was entered (PK without it is `floorNum` 1).
+        if (listing.floor === "PK" || listing.isPenthouse === true) return false;
         return (
           listing.totalFloors === undefined ||
           listing.floorNum < listing.totalFloors
@@ -302,9 +319,12 @@ function isFeatureKey(key: string): key is keyof Features {
 
 /**
  * Every predicate the driver index could not express. Shared verbatim with the
- * convex-test fixtures so the tests exercise the production logic.
+ * convex-test fixtures so the tests exercise the production logic. A text
+ * query is the search index's job, except an unsearchable one: no driver can
+ * express "nothing", so it is rejected here, for search, count and map alike.
  */
 export function matches(listing: Doc<"listings">, filters: SearchFilters): boolean {
+  if (isUnsearchableQuery(filters.q)) return false;
   if (listing.visibility !== "public") return false;
   if (listing.transaction !== filters.transaction) return false;
   if (!includesAny(filters.propertyType, listing.propertyType)) return false;

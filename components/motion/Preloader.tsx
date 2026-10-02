@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { Logo } from "@/components/site/Logo";
 import { CONSENT_KEY } from "@/lib/stores/consent";
 import { finishIntro, revealIntro } from "./intro";
+import { holdLenis } from "./lenis-lock";
 
 /**
  * First-visit preloader (DESIGN §6.1): the wordmark's letters rise one by one
@@ -65,11 +66,9 @@ export function Preloader() {
   const root = useRef<HTMLDivElement>(null);
   /** `performance.now()` until which scrolling stays locked. */
   const lockUntil = useRef(0);
+  /** Ends the Lenis hold early when the visitor skips the curtain. */
+  const releaseLenis = useRef<(() => void) | null>(null);
   const lenis = useLenis();
-  const lenisRef = useRef(lenis);
-  useEffect(() => {
-    lenisRef.current = lenis;
-  }, [lenis]);
 
   useEffect(() => {
     const curtain = root.current;
@@ -123,7 +122,7 @@ export function Preloader() {
       revealIntro();
       html.style.overflow = previous;
       lockUntil.current = 0;
-      lenisRef.current?.start();
+      releaseLenis.current?.();
       const fade = curtain.animate([{ opacity: 1 }, { opacity: 0 }], {
         duration: SKIP_FADE_MS,
         easing: "ease-out",
@@ -160,11 +159,13 @@ export function Preloader() {
     if (lenis === undefined) return;
     const remaining = lockUntil.current - performance.now();
     if (remaining <= 0) return;
-    lenis.stop();
-    const timer = window.setTimeout(() => lenis.start(), remaining);
+    const release = holdLenis(lenis);
+    releaseLenis.current = release;
+    const timer = window.setTimeout(release, remaining);
     return () => {
       window.clearTimeout(timer);
-      lenis.start();
+      releaseLenis.current = null;
+      release();
     };
   }, [lenis]);
 

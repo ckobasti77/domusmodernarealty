@@ -2,7 +2,7 @@
 
 import { CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode, type RefObject } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import * as z from "zod/mini";
 import { CheckboxField } from "@/components/site/Field";
@@ -93,6 +93,25 @@ export function FormError({ message }: { message: string | null }) {
       {message}
     </p>
   );
+}
+
+/**
+ * Keeps focus with a form that a success panel replaces (WCAG 2.4.3). When the
+ * submission lands, the element given the returned ref (a `tabIndex={-1}`
+ * wrapper around the panel) takes focus, so the keyboard and the screen reader
+ * follow the swap instead of dropping to <body>; when "send another" brings the
+ * form back, `focusForm` puts focus in its first field.
+ */
+export function useSuccessFocus(sent: boolean, focusForm?: () => void): RefObject<HTMLDivElement | null> {
+  const panel = useRef<HTMLDivElement>(null);
+  const wasSent = useRef(sent);
+  const formBack = useEffectEvent(() => focusForm?.());
+  useEffect(() => {
+    if (sent) panel.current?.focus();
+    else if (wasSent.current) formBack();
+    wasSent.current = sent;
+  }, [sent]);
+  return panel;
 }
 
 export function SuccessPanel({

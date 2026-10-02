@@ -1,7 +1,9 @@
-import { Password } from "@convex-dev/auth/providers/Password";
-import { convexAuth } from "@convex-dev/auth/server";
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
+import { convexAuth, createAccount, retrieveAccount } from "@convex-dev/auth/server";
+import { Scrypt } from "lucia";
+import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { DataModel, Id } from "./_generated/dataModel";
 import { appError } from "./lib/errors";
 import { MIN_TOKEN_LENGTH, hashToken } from "./lib/tokens";
 import type { Role } from "./lib/validators";
@@ -12,46 +14,106 @@ type PasswordProfile = {
   pendingInviteToken?: string;
 };
 
+const PROVIDER = "password";
 const INVITE_ONLY =
   "Registracija je moguća samo preko važeće pozivnice. Obratite se administratoru.";
+/** Same bounds as the invite form (`InviteScreen.tsx`); the server is the rule. */
+const PASSWORD_MIN = 10;
+const PASSWORD_MAX = 128;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function trimmed(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 /**
- * Invite-only Password auth.
+ * Invite-only password auth.
  *
- * `createOrUpdateUser` is the single gate. A brand-new account is accepted only
- * when the caller presents the INVITE TOKEN itself — matching on the invited
- * email alone would let anyone who knows a colleague's address claim their
- * account (and their role) before they read the mail.
+ * The provider is written out (instead of the library's `Password`) because
+ * `Password`'s sign-up path treats an EXISTING account as a password check that
+ * logs the caller in and never counts a failure: an unlimited guessing channel
+ * past the sign-in lockout, and an oracle telling staff addresses apart. Here:
  *
- * The token travels as an extra `signIn` param, through `profile()`, on the
- * transient `users.pendingInviteToken` field; it is never written to the row.
- * The bootstrap (`seed:createAdmin`) mints a real invite and passes its token the
+ * - `signIn` is the library's rate-limited `retrieveAccount` (10 failures/hour
+ *   lock the account), exactly as before.
+ * - `signUp` first asks `invites.canSignUp`: the invite must be open for this
+ *   address AND no account may exist for it yet. Every refusal is the same
+ *   `FORBIDDEN`, and no password is ever compared on this path.
+ * - Any other flow is refused.
+ *
+ * `createOrUpdateUser` stays the single gate that creates a user: it re-checks
+ * the invite token inside the account-creating mutation (atomic acceptance) and
+ * takes the role from the invite. The token travels on the transient
+ * `users.pendingInviteToken` profile field; it is never written to the row. The
+ * bootstrap (`seed:createAdmin`) mints a real invite and passes its token the
  * same way, so there is exactly one code path.
+ *
+ * Hashes use lucia's Scrypt, the same scheme `Password` used, so existing
+ * accounts keep signing in.
  */
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
-    Password({
-      profile(params) {
-        const email = String(params.email ?? "").trim().toLowerCase();
-        const rawName = params.name;
-        const name = typeof rawName === "string" ? rawName.trim() : undefined;
-        const rawToken = params.inviteToken;
-        const inviteToken =
-          typeof rawToken === "string" ? rawToken.trim() : undefined;
-
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    ConvexCredentials<DataModel>({
+      id: PROVIDER,
+      authorize: async (params, ctx) => {
+        const email = trimmed(params.email).toLowerCase();
+        if (!EMAIL_RE.test(email)) {
           appError("INVALID_INPUT", "Unesite ispravnu email adresu.");
         }
-        return {
-          email,
-          ...(name !== undefined && name.length > 0 ? { name } : {}),
-          // Overridden from the invite in `createOrUpdateUser`; never trusted.
-          role: "agent" as Role,
-          status: "active" as const,
-          ...(inviteToken !== undefined && inviteToken.length > 0
-            ? { pendingInviteToken: inviteToken }
-            : {}),
-        };
+        const password = params.password;
+        if (typeof password !== "string" || password.length === 0) {
+          appError("INVALID_INPUT", "Unesite lozinku.");
+        }
+
+        if (params.flow === "signIn") {
+          // Throws on an unknown address, a wrong password or a locked account;
+          // the login form shows one generic message for all three.
+          const { user } = await retrieveAccount(ctx, {
+            provider: PROVIDER,
+            account: { id: email, secret: password },
+          });
+          return { userId: user._id };
+        }
+
+        if (params.flow === "signUp") {
+          const inviteToken = trimmed(params.inviteToken);
+          const allowed =
+            inviteToken.length >= MIN_TOKEN_LENGTH &&
+            (await ctx.runQuery(internal.invites.canSignUp, {
+              tokenHash: await hashToken(inviteToken),
+              email,
+              now: Date.now(),
+            }));
+          if (!allowed) appError("FORBIDDEN", INVITE_ONLY);
+          if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
+            appError(
+              "INVALID_INPUT",
+              `Lozinka mora imati od ${PASSWORD_MIN} do ${PASSWORD_MAX} znakova.`,
+            );
+          }
+          const name = trimmed(params.name);
+          const { user } = await createAccount(ctx, {
+            provider: PROVIDER,
+            account: { id: email, secret: password },
+            profile: {
+              email,
+              ...(name.length > 0 ? { name } : {}),
+              // Overridden from the invite in `createOrUpdateUser`; never trusted.
+              role: "agent" as Role,
+              status: "active" as const,
+              pendingInviteToken: inviteToken,
+            },
+            shouldLinkViaEmail: false,
+            shouldLinkViaPhone: false,
+          });
+          return { userId: user._id };
+        }
+
+        return appError("INVALID_INPUT", "Nepodržan način prijave.");
+      },
+      crypto: {
+        hashSecret: (secret) => new Scrypt().hash(secret),
+        verifySecret: (secret, hash) => new Scrypt().verify(hash, secret),
       },
     }),
   ],

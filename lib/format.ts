@@ -224,9 +224,12 @@ export function formatInputNumber(value: number, locale: Locale): string {
 
 /**
  * Parses what a visitor typed in the locale's own notation: "430.000" and
- * "5,4" in sr/de, "430 000" in ru, "430,000" and "5.4" in en. A bare "5.4" in
- * a comma-decimal locale is still read as 5.4 — nobody types a group separator
- * followed by only one digit.
+ * "5,4" in sr/de, "430 000" in ru, "430,000" and "5.4" in en. The other
+ * notation is read too where it cannot mean anything else: a dot or a comma
+ * followed by only one or two final digits is a decimal mark in every locale
+ * ("5.4" in sr, "5,4" in en; nobody types a group separator there), and where
+ * the group separator is a space (ru) a dot before groups of exactly three
+ * digits is grouping ("430.000").
  */
 export function parseLocaleNumber(input: string, locale: Locale): number | null {
   const parts = new Intl.NumberFormat(INTL_LOCALE[locale]).formatToParts(12345.6);
@@ -234,7 +237,11 @@ export function parseLocaleNumber(input: string, locale: Locale): number | null 
   const decimal = parts.find((part) => part.type === "decimal")?.value ?? ".";
   let text = input.trim().replace(/[\s\u00A0\u202F]/g, "");
   if (text.length === 0) return null;
-  if (decimal === "," && /^\d+\.\d{1,2}$/.test(text)) text = text.replace(".", ",");
+  if (/^\d+[.,]\d{1,2}$/.test(text)) {
+    text = text.replace(/[.,]/, decimal);
+  } else if (/^\s$/.test(group) && /^\d{1,3}(?:\.\d{3})+(?:,\d+)?$/.test(text)) {
+    text = text.split(".").join("");
+  }
   text = text.split(group).join("").replace(decimal, ".");
   const value = Number(text);
   return Number.isFinite(value) ? value : null;

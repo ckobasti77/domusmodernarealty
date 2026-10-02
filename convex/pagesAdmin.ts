@@ -8,6 +8,7 @@ import { imageUrl } from "./lib/dto";
 import { HTML_TAG_RE, htmlProblem, PAGE_HTML } from "./lib/html";
 import { appError, forbidden, invalidInput } from "./lib/errors";
 import { assertImageRef, deleteBlobIfPresent } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import {
   type diffEntryV,
   type ImageRef,
@@ -211,10 +212,6 @@ function checkCount(where: string, count: number, max: number, fixed: number | u
   if (count > max) invalidInput(`${where}: najviše ${max} stavki.`);
 }
 
-function sameImage(a: ImageRef, b: ImageRef): boolean {
-  if (a.kind === "storage") return b.kind === "storage" && a.storageId === b.storageId;
-  return b.kind === "url" && a.url === b.url;
-}
 
 async function checkBlock(
   ctx: MutationCtx,

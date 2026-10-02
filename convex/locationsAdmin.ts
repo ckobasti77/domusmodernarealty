@@ -14,6 +14,7 @@ import { appError, invalidInput } from "./lib/errors";
 import { scopeKey } from "./lib/search";
 import { slugify } from "./lib/slug";
 import { assertImageRef, releaseReplacedImage } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import { imageV, L10N_KEYS, l10nListV, l10nV, locationKindV } from "./lib/validators";
 import type { diffEntryV, ImageRef, L10n, L10nList, LocationKind } from "./lib/validators";
 
@@ -200,11 +201,6 @@ function assertInSerbia(lat: number, lng: number): void {
   }
 }
 
-function sameImage(a: ImageRef | undefined, b: ImageRef | undefined): boolean {
-  if (a === undefined || b === undefined) return a === b;
-  if (a.kind === "storage") return b.kind === "storage" && a.storageId === b.storageId;
-  return b.kind === "url" && a.url === b.url;
-}
 
 async function slugTaken(
   ctx: QueryCtx,

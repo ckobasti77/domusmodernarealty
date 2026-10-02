@@ -1,48 +1,80 @@
 /**
  * Diacritic folding and slugs. `foldDiacritics` is the single source of truth
- * for the sr-Latn → ASCII mapping and is reused by `lib/search.ts`.
+ * for the sr-Latn / Cyrillic → ASCII mapping and is reused by `lib/search.ts`,
+ * the contact search and every client-side filter box.
  */
 
-const FOLD_MAP: Record<string, string> = {
-  č: "c",
-  ć: "c",
-  š: "s",
-  ž: "z",
+/**
+ * Letters that are not a base letter plus combining marks, so NFD cannot fold
+ * them: đ, ß, the Serbian Latin digraph letters, and Serbian and Russian
+ * Cyrillic (lowercase; the input is lowercased first). The Cyrillic mapping
+ * lands on the same tokens as the Latin folding, so "Врачар" is "vracar"
+ * like "Vračar", and the Russian spellings "Дорчол" and "Сеньяк" meet the
+ * Serbian "Дорћол" / "Dorćol" and "Сењак" / "Senjak".
+ */
+const LETTERS: Record<string, string> = {
   đ: "dj",
-  Č: "c",
-  Ć: "c",
-  Š: "s",
-  Ž: "z",
-  Đ: "dj",
-  ä: "a",
-  ö: "o",
-  ü: "u",
   ß: "ss",
-  á: "a",
-  à: "a",
-  â: "a",
-  é: "e",
-  è: "e",
-  ê: "e",
-  í: "i",
-  ì: "i",
-  ó: "o",
-  ò: "o",
-  ô: "o",
-  ú: "u",
-  ù: "u",
-  ñ: "n",
-  ç: "c",
+  ǆ: "dz",
+  ǉ: "lj",
+  ǌ: "nj",
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  ђ: "dj",
+  е: "e",
+  ё: "e",
+  ѐ: "e",
+  ж: "z",
+  з: "z",
+  и: "i",
+  ѝ: "i",
+  й: "j",
+  ј: "j",
+  к: "k",
+  л: "l",
+  љ: "lj",
+  м: "m",
+  н: "n",
+  њ: "nj",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  ћ: "c",
+  у: "u",
+  ф: "f",
+  х: "h",
+  ц: "c",
+  ч: "c",
+  џ: "dz",
+  ш: "s",
+  щ: "sc",
+  ъ: "",
+  ы: "y",
+  ь: "",
+  э: "e",
+  ю: "ju",
+  я: "ja",
 };
 
-/** Lowercases and folds every diacritic we care about to ASCII. */
+const COMBINING_MARKS = /\p{M}/gu;
+
+/**
+ * Lowercases, transliterates Cyrillic and folds every diacritic to its base
+ * letter ("Čačak", "Ча́чак" and "Cac\u030Cak" are all "cacak").
+ * NFC first, so a decomposed "й" (и + breve) is still one letter, "j"; the
+ * marks left after the letter table are dropped through NFD.
+ */
 export function foldDiacritics(input: string): string {
   let out = "";
-  for (const char of input) {
-    const mapped = FOLD_MAP[char];
-    out += mapped ?? char;
+  for (const char of input.normalize("NFC").toLowerCase()) {
+    out += LETTERS[char] ?? char;
   }
-  return out.toLowerCase();
+  return out.normalize("NFD").replace(COMBINING_MARKS, "");
 }
 
 /** ASCII, hyphen-separated slug. Never empty (falls back to "x"). */

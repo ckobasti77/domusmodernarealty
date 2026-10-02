@@ -1,19 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "@/convex/_generated/dataModel";
+import { floorToNumber } from "@/convex/lib/money";
 import {
   activeChips,
   clearFilters,
   EMPTY_STATE,
   effectiveSort,
+  FLOOR_OPTIONS,
+  floorToNum,
   isCurated,
   NO_LOCATIONS,
   parseSearchParams,
   publishedAfter,
   removeChip,
+  ROOM_OPTIONS,
+  searchKey,
   searchQuery,
   toConvexFilters,
   toQuery,
   toQueryString,
+  type FloorValue,
 } from "./search-params";
 import { effectiveSlugs, indexLocations, resolveLocations, type LocationNode } from "./search-locations";
 
@@ -72,6 +78,34 @@ describe("parseSearchParams", () => {
   it("reads a Next searchParams record with repeated keys", () => {
     expect(parseSearchParams({ type: ["house", "apartment"] }).types).toEqual(["house"]);
   });
+
+  it("cuts the text query by code points, never inside an emoji", () => {
+    const state = parseSearchParams({ q: `${"a".repeat(79)}😀` });
+    expect(state.q).toBe(`${"a".repeat(79)}😀`);
+    expect(state.q?.isWellFormed()).toBe(true);
+    expect(() => searchKey(state)).not.toThrow();
+    expect(toConvexFilters(state, NO_LOCATIONS, 0).q?.isWellFormed()).toBe(true);
+
+    expect(parseSearchParams({ q: `${"a".repeat(80)}😀` }).q).toBe("a".repeat(80));
+    expect(parseSearchParams({ q: `${"a".repeat(79)} 😀` }).q).toBe(`${"a".repeat(79)}`);
+    expect(parseSearchParams({ q: "\uD83D" }).q).toBeUndefined();
+  });
+
+  it("takes `added` from its own windows only, never from the prototype", () => {
+    for (const added of ["constructor", "__proto__", "toString", "hasOwnProperty"]) {
+      const state = parseSearchParams({ added });
+      expect(state.added, added).toBeUndefined();
+      expect(toConvexFilters(state, NO_LOCATIONS, Date.UTC(2026, 9, 2)).publishedAfter).toBeUndefined();
+    }
+    expect(parseSearchParams({ added: "14d" }).added).toBe("14d");
+  });
+
+  it("offers every structure as a chip, 4.5 rooms included", () => {
+    expect(ROOM_OPTIONS).toContain(4.5);
+    const state = parseSearchParams({ rooms: "4.5,5" });
+    expect(state.rooms).toEqual([4.5, 5]);
+    expect(toConvexFilters(state, NO_LOCATIONS, 0).rooms).toEqual([4.5, 5]);
+  });
 });
 
 describe("serialization", () => {
@@ -90,6 +124,13 @@ describe("serialization", () => {
       priceMax: "250000",
       hasTour: "1",
     });
+  });
+
+  it("encodes a hand-built state holding half an emoji instead of throwing", () => {
+    const state = { ...EMPTY_STATE, q: "stan \uD83D", locations: ["vra\uDE00car"] };
+    expect(toQueryString(state)).toBe("location=vracar&q=stan");
+    expect(toConvexFilters(state, NO_LOCATIONS, 0).q).toBe("stan");
+    expect(toQuery({ ...EMPTY_STATE, q: "\uD83D" })).toEqual({});
   });
 });
 
@@ -129,6 +170,17 @@ describe("derivations", () => {
       hasTour: true,
     });
     expect(filters.cityId).toBeUndefined();
+  });
+
+  it("puts the floor selects on the server's floorNum scale", () => {
+    const named: FloorValue[] = ["SUT", "PSUT", "PR", "VPR", 1, 30];
+    expect(named.map(floorToNum)).toEqual([-1, -0.5, 0, 0.5, 1, 30]);
+    expect(FLOOR_OPTIONS.map(floorToNum)).toEqual(FLOOR_OPTIONS.map((value) => floorToNumber(value)));
+    const scale = FLOOR_OPTIONS.map(floorToNum);
+    expect(scale.every((value, index) => index === 0 || value > scale[index - 1])).toBe(true);
+    // The attic is not a select value: it sits above the building, floor 1 at least.
+    expect(floorToNumber("PK", 4)).toBe(5);
+    expect(floorToNumber("PK")).toBe(1);
   });
 
   it("chips remove exactly one value and 'clear all' keeps transaction + sort", () => {

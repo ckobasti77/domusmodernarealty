@@ -6,7 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { FormError } from "@/components/forms/shared";
+import { FormError, useSuccessFocus } from "@/components/forms/shared";
 import { Button } from "@/components/site/Button";
 import { TextAreaField } from "@/components/site/Field";
 import { api } from "@/convex/_generated/api";
@@ -69,6 +69,8 @@ export function OnsiteRequest({ leadId }: { leadId: Id<"leads"> }) {
   const [days] = useState(() => visitDays(Date.now()));
   const [sent, setSent] = useState<Sent | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  // The confirmation replaces the form the visitor was in: take focus with it.
+  const successRef = useSuccessFocus(sent !== null);
   const resolver = useMemo(() => zodResolver(onsiteSchema({ tForms, t })), [tForms, t]);
 
   const {
@@ -118,7 +120,13 @@ export function OnsiteRequest({ leadId }: { leadId: Id<"leads"> }) {
       </div>
 
       {sent !== null ? (
-        <div role="status" data-testid="onsite-success" className="flex flex-col items-start gap-3 hairline-t pt-6">
+        <div
+          ref={successRef}
+          tabIndex={-1}
+          role="status"
+          data-testid="onsite-success"
+          className="flex scroll-mt-28 flex-col items-start gap-3 hairline-t pt-6 outline-none"
+        >
           <CheckCircle2 aria-hidden="true" strokeWidth={1.25} className="size-7 text-success-text" />
           <p className="font-display text-h3 text-ink">{t("onsite.successHeading")}</p>
           <p className="text-body text-ink">{sent.already ? t("onsite.already") : t("onsite.success")}</p>

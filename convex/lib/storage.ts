@@ -31,7 +31,20 @@ export function assertFresh(uploadedAt: number): void {
 }
 
 /** Hosts a `{ kind: "url" }` image may point at (the CSP `img-src` list). */
-const IMAGE_URL_HOSTS = ["images.unsplash.com"] as const;
+export const IMAGE_URL_HOSTS = ["images.unsplash.com"] as const;
+
+/**
+ * The rule `assertImageRef` applies to a URL image: https on an allowed host.
+ * Pure, so the admin forms check it before anything is sent.
+ */
+export function isAllowedImageUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && (IMAGE_URL_HOSTS as readonly string[]).includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 function mb(bytes: number): number {
   return Math.round(bytes / 1_048_576);
@@ -88,7 +101,7 @@ export async function assertImageRef(ctx: MutationCtx, image: ImageRef): Promise
   } catch {
     invalidInput("Adresa slike nije ispravna.");
   }
-  if (parsed.protocol !== "https:" || !(IMAGE_URL_HOSTS as readonly string[]).includes(parsed.hostname)) {
+  if (!isAllowedImageUrl(parsed.href)) {
     invalidInput("Slika sa te adrese nije dozvoljena. Otpremite je sa računara.");
   }
 }

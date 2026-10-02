@@ -3,24 +3,28 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod/mini";
-import { ConsentFields, contactFields, FormError, SuccessPanel } from "@/components/forms/shared";
+import { ConsentFields, contactFields, FormError, SuccessPanel, useSuccessFocus } from "@/components/forms/shared";
 import { Button } from "@/components/site/Button";
 import { TextAreaField, TextField } from "@/components/site/Field";
 import { api } from "@/convex/_generated/api";
 import type { Locale } from "@/i18n/routing";
 import { errorMessageKey } from "@/lib/errors";
 import { getSessionKey } from "@/lib/session";
+import { CONTACT_MESSAGE } from "./prefill";
 
 /**
  * The general contact form (PRD A10) → `leads.createGeneral`, a lead of type
  * `general`. The client checks the same limits as the server (subject ≤ 160,
  * message 10–2000) so the visitor gets a localized message at once; the server
  * still decides (honeypot, consent, rate limit).
+ *
+ * `initialMessage` pre-fills the message (a link's `?message=`, see
+ * `prefill.ts`); "send another" starts from an empty form.
  */
-export function ContactForm() {
+export function ContactForm({ initialMessage = "" }: { initialMessage?: string }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("forms");
   const tContact = useTranslations("contact.form");
@@ -28,7 +32,6 @@ export function ContactForm() {
   const createGeneral = useMutation(api.leads.createGeneral);
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const successRef = useRef<HTMLDivElement>(null);
 
   const schema = z.object({
     ...contactFields(t),
@@ -38,8 +41,8 @@ export function ContactForm() {
       .check(
         z.trim(),
         z.minLength(1, t("requiredField")),
-        z.minLength(10, t("tooShort", { min: 10 })),
-        z.maxLength(2000, t("tooLong", { max: 2000 })),
+        z.minLength(CONTACT_MESSAGE.min, t("tooShort", { min: CONTACT_MESSAGE.min })),
+        z.maxLength(CONTACT_MESSAGE.max, t("tooLong", { max: CONTACT_MESSAGE.max })),
       ),
   });
   type Values = z.infer<typeof schema>;
@@ -59,13 +62,11 @@ export function ContactForm() {
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults });
-
+  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { ...defaults, message: initialMessage } });
   // The panel replaces a taller form: bring it, and the screen reader, to it.
-  useEffect(() => {
-    if (sent) successRef.current?.focus();
-  }, [sent]);
+  const successRef = useSuccessFocus(sent, () => setFocus("name"));
 
   async function onSubmit(values: Values) {
     setServerError(null);

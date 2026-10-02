@@ -2,8 +2,8 @@
 
 import { useQuery } from "convex/react";
 import { Building2, CornerDownLeft, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useDeferredValue, useEffect, useState } from "react";
+import { useGuardedNavigation } from "@/components/admin/common/LeaveGuard";
 import {
   Command,
   CommandDialog,
@@ -31,7 +31,7 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
 }) {
   const me = useMe();
-  const router = useRouter();
+  const { navigate } = useGuardedNavigation();
   const [search, setSearch] = useState("");
   const deferred = useDeferredValue(search.trim());
   const canListings = hasRole(me, LISTING_ROLES);
@@ -52,10 +52,11 @@ export function CommandPalette({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onOpenChange]);
 
+  // Through the leave guard: an editor with unsaved changes saves or asks first.
   const go = (href: string) => {
     onOpenChange(false);
     setSearch("");
-    router.push(href);
+    navigate(href);
   };
 
   const needle = search.trim().toLowerCase();

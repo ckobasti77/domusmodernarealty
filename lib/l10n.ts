@@ -4,8 +4,9 @@ import type { Locale } from "@/i18n/routing";
  * Client-safe reader for the localized content shape Convex stores.
  *
  * Convex rejects object keys containing a hyphen, so `sr-Latn` is stored as
- * `sr` (see docs/DECISIONS.md, step 03). This is the browser-side twin of
- * `convex/lib/derive.ts::pickLocale`; keep the two in sync.
+ * `sr` (see docs/DECISIONS.md, step 03). `LOCALE_FIELD` below mirrors
+ * `convex/lib/validators.ts::LOCALE_FIELD` (that module is not imported here
+ * because its validators would ship to the browser); keep the two in sync.
  */
 
 export type L10nValue = {

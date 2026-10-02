@@ -19,7 +19,6 @@ export type PriceProps = {
   /** Omit to hide the per-m² figure (e.g. land without a stated area). */
   pricePerM2?: number;
   previousPrice?: number;
-  priceOnRequest?: boolean;
   transaction?: "sale" | "rent";
   size?: "sm" | "md" | "lg";
   tone?: "light" | "dark";
@@ -36,7 +35,6 @@ export function Price({
   price,
   pricePerM2,
   previousPrice,
-  priceOnRequest = false,
   transaction = "sale",
   size = "md",
   tone = "light",
@@ -47,12 +45,6 @@ export function Price({
   const tUnits = useTranslations("units");
 
   const muted = tone === "dark" ? "text-mist" : "text-stone-text";
-
-  if (priceOnRequest) {
-    return (
-      <p className={cn("font-sans font-medium", SIZE[size], className)}>{t("priceOnRequest")}</p>
-    );
-  }
 
   const reduced = previousPrice !== undefined && previousPrice > price;
   const delta = reduced ? priceDeltaPct(previousPrice, price) : 0;

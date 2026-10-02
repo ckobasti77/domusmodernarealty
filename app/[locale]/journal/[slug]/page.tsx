@@ -33,18 +33,14 @@ type Props = PageProps<"/[locale]/journal/[slug]">;
  * row (after the body on a phone). Related posts and three listings follow.
  */
 
-async function resolve(params: Props["params"]) {
-  const { locale, slug } = await params;
-  if (!hasLocale(routing.locales, locale)) notFound();
-  return { locale, post: await getPost(slug) };
-}
-
 function articleHref(slug: string) {
   return { pathname: "/journal/[slug]" as const, params: { slug } };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, post } = await resolve(params);
+  const { locale, slug } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  const post = await getPost(slug);
   if (post === null) return {};
   const title = pickL10n(post.seo?.metaTitle ?? post.title, locale).text;
   const description = pickL10n(post.seo?.metaDescription ?? post.excerpt, locale).text;
@@ -70,15 +66,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const { locale, post } = await resolve(params);
-  if (post === null) notFound();
-
-  const [extras, settings, t, tNav] = await Promise.all([
-    getArticleExtras(post.slug),
+  const { locale, slug } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  // The related posts and listings need only the URL's slug, so they start
+  // with the article itself (shared with `generateMetadata` through `cache()`).
+  const [post, extras, settings, t, tNav] = await Promise.all([
+    getPost(slug),
+    getArticleExtras(slug),
     getPublicSettings(),
     getTranslations({ locale, namespace: "journal" }),
     getTranslations({ locale, namespace: "nav" }),
   ]);
+  if (post === null) notFound();
 
   const lang = htmlLang[locale];
   const title = pickL10n(post.title, locale);

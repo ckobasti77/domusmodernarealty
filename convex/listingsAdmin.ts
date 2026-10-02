@@ -10,14 +10,18 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { diffFields, logActivity } from "./lib/activity";
 import { assertCanEditListing, requireRole } from "./lib/auth";
 import type { Viewer } from "./lib/auth";
+import { DAY_MS } from "./lib/belgradeTime";
 import {
+  MIN_ROOMS,
   assertPublishable,
+  assertStaysPublishable,
   checklistBlockers,
   checklistContext,
+  needsRooms,
   publishChecklist,
 } from "./lib/checklist";
 import { applyCountDelta, statusCounts } from "./lib/counts";
-import { deleteListingCascade } from "./lib/listingCascade";
+import { deleteListingCascade, demoListingKeepReason } from "./lib/listingCascade";
 import { applyDerived, locationNamesFor } from "./lib/derive";
 import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
 import {
@@ -27,11 +31,14 @@ import {
   refNumber,
   slugify,
 } from "./lib/slug";
-import { isPublicScope, normalizeText } from "./lib/search";
+import { bucketOf, isListedScope, isPublicScope, normalizeText, scopeKey } from "./lib/search";
 import { optionalPhone, requireEmail } from "./lib/rateLimit";
+import { assertImageRef } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import { randomToken } from "./lib/tokens";
 import { isVideoUrl } from "./lib/video";
 import {
+  LISTING_TEXT_LIMITS,
   addressVisibilityV,
   conditionV,
   constructionTypeV,
@@ -56,6 +63,7 @@ import {
   walk3dV,
   legalV,
 } from "./lib/validators";
+import type { ImageRef, L10n } from "./lib/validators";
 import { contactSearchText } from "./lib/contactSearch";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
@@ -79,7 +87,6 @@ const listingPatchV = v.object({
   highlights: v.optional(l10nListV),
 
   price: v.optional(v.number()),
-  priceOnRequest: v.optional(v.boolean()),
   vatIncluded: v.optional(v.boolean()),
   vatRefundEligible: v.optional(v.boolean()),
   mortgageEligible: v.optional(v.boolean()),
@@ -174,6 +181,170 @@ const clearableFieldV = v.union(
   v.literal("availableFrom"),
   v.literal("commissionText"),
 );
+
+type ListingPatch = Infer<typeof listingPatchV>;
+
+/** The top-level patch key holding a NaN or ±Infinity, if any (`v.number()` admits both). */
+function nonFiniteKey(patch: ListingPatch): string | undefined {
+  const bad = (value: unknown): boolean =>
+    typeof value === "number"
+      ? !Number.isFinite(value)
+      : typeof value === "object" && value !== null && Object.values(value).some(bad);
+  return Object.entries(patch).find(([, value]) => bad(value))?.[0];
+}
+
+/** Quantities that cannot be negative, under the names the editor shows. */
+const NON_NEGATIVE: ReadonlyArray<readonly [string, (patch: ListingPatch) => number | undefined]> = [
+  ["Cena", (patch) => patch.price],
+  ["Kvadratura", (patch) => patch.areaM2],
+  ["Površina u katastru", (patch) => patch.registeredAreaM2],
+  ["Površina placa", (patch) => patch.plotAreaM2],
+  ["Terase i spoljni prostor", (patch) => patch.outdoorAreaM2],
+  ["Broj soba", (patch) => patch.rooms],
+  ["Spavaće sobe", (patch) => patch.bedrooms],
+  ["Kupatila", (patch) => patch.bathrooms],
+  ["Ukupno spratova", (patch) => patch.totalFloors],
+  ["Infostan", (patch) => patch.costs?.infostan],
+  ["Održavanje zgrade", (patch) => patch.costs?.maintenance],
+  ["Mesečna zakupnina", (patch) => patch.rent?.monthly],
+  ["Depozit", (patch) => patch.rent?.deposit],
+  ["Minimalni zakup", (patch) => patch.rent?.minLeaseMonths],
+];
+
+/**
+ * Number rules for every status, drafts included: each number is finite,
+ * quantities are not negative, rooms come in half steps (a studio is 0.5),
+ * coordinates lie on the globe and a contract ends after it starts.
+ */
+function assertPatchNumbers(patch: ListingPatch): void {
+  const key = nonFiniteKey(patch);
+  if (key !== undefined) invalidInput(`Neispravan broj u polju „${key}”.`);
+  for (const [label, pick] of NON_NEGATIVE) {
+    const value = pick(patch);
+    if (value !== undefined && value < 0) {
+      invalidInput(`Polje „${label}” ne može imati negativnu vrednost.`);
+    }
+  }
+  if (patch.poi?.some((place) => place.distanceM < 0) === true) {
+    invalidInput("Udaljenost mesta u blizini ne može biti negativna.");
+  }
+  if (patch.rooms !== undefined && !Number.isInteger(patch.rooms * 2)) {
+    invalidInput("Broj soba se unosi u koracima od 0,5.");
+  }
+  if (
+    patch.location !== undefined &&
+    (Math.abs(patch.location.lat) > 90 || Math.abs(patch.location.lng) > 180)
+  ) {
+    invalidInput("Koordinate nisu ispravne.");
+  }
+  if (patch.mandate !== undefined && patch.mandate.end <= patch.mandate.start) {
+    invalidInput("Kraj ugovora mora biti posle početka.");
+  }
+}
+
+/**
+ * For a hidden listing past the draft stage (in review, withdrawn, …): the
+ * Art. 18 figures a patch sets must be real, a price and an area above zero
+ * and a room structure where the type has one. A public listing is held to
+ * the whole publish checklist instead, and a draft may keep the zeros
+ * `create` starts it with.
+ */
+function assertMarketFigures(
+  patch: ListingPatch,
+  propertyType: Doc<"listings">["propertyType"],
+): void {
+  if (patch.price !== undefined && patch.price <= 0) invalidInput("Cena mora biti veća od nule.");
+  if (patch.areaM2 !== undefined && patch.areaM2 <= 0) {
+    invalidInput("Kvadratura mora biti veća od nule.");
+  }
+  if (patch.rooms !== undefined && needsRooms(propertyType) && patch.rooms < MIN_ROOMS) {
+    invalidInput("Broj soba mora biti najmanje 0,5 (garsonjera).");
+  }
+}
+
+/** "10.000": a limit as the editor prints it. */
+function grouped(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/** Refuses text over `max` characters; `subject` names the field. */
+function assertLength(subject: string, value: string | undefined, max: number): void {
+  if (value !== undefined && value.length > max) {
+    invalidInput(`${subject} može imati najviše ${grouped(max)} znakova.`);
+  }
+}
+
+/** Each locale of a localized text is held to the cap on its own. */
+function assertL10nLength(field: string, value: L10n | undefined, max: number): void {
+  if (value === undefined) return;
+  for (const text of [value.sr, value.en, value.ru, value.de]) {
+    assertLength(`Polje „${field}”`, text, max);
+  }
+}
+
+/** `LISTING_TEXT_LIMITS` (and the postal code format) for the text a patch carries. */
+function assertTextLimits(patch: ListingPatch): void {
+  const limits = LISTING_TEXT_LIMITS;
+  assertL10nLength("Naslov", patch.title, limits.title);
+  assertL10nLength("Opis", patch.description, limits.description);
+  if (patch.highlights !== undefined) {
+    const { sr, en, ru, de } = patch.highlights;
+    for (const items of [sr, en, ru, de]) {
+      if (items === undefined) continue;
+      if (items.length > limits.highlightItems) {
+        invalidInput(
+          `Polje „Istaknute stavke” može imati najviše ${limits.highlightItems} stavki po jeziku.`,
+        );
+      }
+      for (const item of items) {
+        assertLength("Stavka u polju „Istaknute stavke”", item, limits.highlightLength);
+      }
+    }
+  }
+  if (patch.view !== undefined) {
+    if (patch.view.length > limits.viewTags) {
+      invalidInput(`Polje „Oznake pogleda” može imati najviše ${limits.viewTags} oznaka.`);
+    }
+    for (const tag of patch.view) assertLength("Oznaka pogleda", tag, limits.viewTagLength);
+  }
+  if (patch.poi !== undefined) {
+    if (patch.poi.length > limits.poiCount) {
+      invalidInput(`Polje „Mesta u blizini” može imati najviše ${limits.poiCount} mesta.`);
+    }
+    for (const place of patch.poi) assertLength("Naziv mesta u blizini", place.name, limits.poiName);
+  }
+  assertL10nLength("Meta naslov", patch.seo?.metaTitle, limits.metaTitle);
+  assertL10nLength("Meta opis", patch.seo?.metaDescription, limits.metaDescription);
+  assertL10nLength("Tekst o proviziji", patch.commissionText, limits.commissionText);
+  assertLength("Polje „Ulica”", patch.location?.street, limits.street);
+  assertLength("Polje „Broj”", patch.location?.streetNo, limits.streetNo);
+  const postalCode = patch.location?.postalCode;
+  if (postalCode !== undefined && !/^\d{5}$/.test(postalCode)) {
+    invalidInput("Poštanski broj ima 5 cifara.");
+  }
+  assertLength("Polje „Broj ugovora”", patch.mandate?.number, limits.mandateNumber);
+  assertLength("Polje „Udeo u vlasništvu”", patch.legal?.ownershipShare, limits.ownershipShare);
+  assertLength("Polje „Teret / hipoteka”", patch.legal?.encumbrance, limits.encumbrance);
+}
+
+
+/**
+ * A share image that is new or changed follows the rules of every image field:
+ * it is one of the listing's own gallery photos (what the SEO tab offers), or
+ * else a fresh image upload or an https URL on an allowed host
+ * (`assertImageRef`). It ends up in the public share card and its renderer.
+ */
+async function assertOgImage(
+  ctx: MutationCtx,
+  before: Doc<"listings">,
+  ogImage: ImageRef | undefined,
+): Promise<void> {
+  if (ogImage === undefined) return;
+  const stored = before.seo?.ogImage;
+  if (stored !== undefined && sameImage(stored, ogImage)) return;
+  if (before.media.some((item) => sameImage(item.image, ogImage))) return;
+  await assertImageRef(ctx, ogImage);
+}
 
 const checklistItemV = v.object({
   code: v.string(),
@@ -619,6 +790,7 @@ export const create = mutation({
 
     const city = await ctx.db.get("locations", args.cityId);
     if (city === null) notFound("Grad");
+    assertLength("Polje „Naslov”", args.titleSr.trim(), LISTING_TEXT_LIMITS.title);
 
     const ref = await nextRef(ctx);
     const titleSr = args.titleSr.trim().length > 0 ? args.titleSr.trim() : "Nova nekretnina";
@@ -714,12 +886,8 @@ export const update = mutation({
     ) {
       forbidden("prebacivanje nekretnine na drugog agenta");
     }
-    if (args.patch.price !== undefined && args.patch.price < 0) {
-      invalidInput("Cena ne može biti negativna.");
-    }
-    if (args.patch.areaM2 !== undefined && args.patch.areaM2 < 0) {
-      invalidInput("Kvadratura ne može biti negativna.");
-    }
+    assertPatchNumbers(args.patch);
+    assertTextLimits(args.patch);
     // An empty string clears the video; anything else must be a YouTube or
     // Vimeo page (the public page embeds only those two players).
     const videoUrl = args.patch.videoUrl?.trim();
@@ -734,6 +902,7 @@ export const update = mutation({
         invalidInput("Objavljenu nekretninu možete dodeliti samo agentu koji je vidljiv na sajtu.");
       }
     }
+    await assertOgImage(ctx, before, args.patch.seo?.ogImage);
 
     const now = Date.now();
 
@@ -792,57 +961,67 @@ export const update = mutation({
       "neighborhoodId" in cleared;
     if (placeTouched) await assertPlaceChain(ctx, merged);
 
-    // Flipping `visibility` to public is a second route onto the market: a
-    // reserved listing with `visibility: "private"` sits in the `hidden` bucket
-    // until this patch moves it. It has to clear the same Art. 18 checklist as
-    // `publish`, or a price-0, photo-less, mandate-less listing goes live.
-    if (args.patch.visibility === "public" && before.visibility !== "public") {
-      assertPublishable(merged, now, await checklistContext(ctx, merged));
+    // Slug: an explicit rename keeps a redirect from the old value. A taken
+    // candidate gets a suffix, which can lead back to the current slug: then
+    // nothing is renamed.
+    const slug =
+      args.patch.slug !== undefined
+        ? await ensureUniqueSlug(ctx, slugify(args.patch.slug), before._id)
+        : before.slug;
+    const next = { ...merged, slug, updatedAt: now };
+
+    // A listing the public sees after this patch must still pass `publish`'s
+    // checklist, so no edit can take a live listing below it, and flipping
+    // `visibility` to public (a second route onto the market, e.g. for a
+    // reserved listing that was hidden) clears the same bar. A hidden listing
+    // past the draft stage keeps real Art. 18 figures. Nothing is written
+    // before this point.
+    const context = await checklistContext(ctx, next);
+    const scope = scopeKey(bucketOf(next.status, next.visibility), next.transaction);
+    if (isPublicScope(scope)) {
+      assertStaysPublishable(next, now, context, isListedScope(scope));
+    } else if (before.status !== "draft") {
+      assertMarketFigures(args.patch, next.propertyType);
     }
 
-    // Slug: explicit rename keeps a redirect from the old value.
-    let slug = before.slug;
-    if (args.patch.slug !== undefined) {
-      const candidate = slugify(args.patch.slug);
-      if (candidate !== before.slug) {
-        slug = await ensureUniqueSlug(ctx, candidate, before._id);
-        await ctx.db.insert("slugRedirects", {
-          from: before.slug,
-          listingId: before._id,
-          at: now,
-        });
-      }
+    if (slug !== before.slug) {
+      await ctx.db.insert("slugRedirects", {
+        from: before.slug,
+        listingId: before._id,
+        at: now,
+      });
     }
 
-    // Price history + the denormalized previousPrice badge source.
-    let previousPrice = before.previousPrice;
-    if (args.patch.price !== undefined && args.patch.price !== before.price) {
+    // Price history, and the denormalized source of the "price reduced" badge.
+    // The badge speaks to visitors who saw the higher price, so only a change
+    // made while the listing was public moves it: a cut sets it, a rise clears
+    // it (`undefined`). Corrections before that leave it alone, and the first
+    // `publish` clears it.
+    const badge: Partial<Pick<Doc<"listings">, "previousPrice">> = {};
+    const newPrice = args.patch.price;
+    if (newPrice !== undefined && newPrice !== before.price) {
       await ctx.db.insert("priceChanges", {
         listingId: before._id,
         from: before.price,
-        to: args.patch.price,
+        to: newPrice,
         at: now,
         by: viewer._id,
       });
-      previousPrice = before.price > args.patch.price ? before.price : undefined;
+      if (before.publishedAt !== undefined && isPublicScope(before.scope)) {
+        badge.previousPrice = before.price > newPrice ? before.price : undefined;
+      }
     }
 
     const names = await locationNamesFor(ctx, {
-      cityId: merged.cityId,
-      municipalityId: merged.municipalityId,
-      neighborhoodId: merged.neighborhoodId,
+      cityId: next.cityId,
+      municipalityId: next.municipalityId,
+      neighborhoodId: next.neighborhoodId,
     });
     const sceneCount = await ctx.db
       .query("tourScenes")
       .withIndex("by_listingId_and_order", (q) => q.eq("listingId", before._id))
       .take(1);
 
-    const next = {
-      ...merged,
-      slug,
-      ...(previousPrice !== undefined ? { previousPrice } : {}),
-      updatedAt: now,
-    };
     const derived = applyDerived(next, names, sceneCount.length > 0);
     const patch = {
       ...cleanPatch,
@@ -850,11 +1029,7 @@ export const update = mutation({
       slug,
       updatedAt: now,
       ...derived,
-      // `applyDerived` does not carry `previousPrice`, so write it explicitly.
-      // `undefined` is the right value on a price increase: it clears the badge.
-      ...(args.patch.price !== undefined && args.patch.price !== before.price
-        ? { previousPrice }
-        : {}),
+      ...badge,
     };
 
     await ctx.db.patch("listings", before._id, patch);
@@ -872,12 +1047,24 @@ export const update = mutation({
       by: viewer._id,
     });
 
-    return {
-      slug,
-      checklist: publishChecklist(after, now, await checklistContext(ctx, after)),
-    };
+    // `context` belongs to `next`, which has the same agent as `after`.
+    return { slug, checklist: publishChecklist(after, now, context) };
   },
 });
+
+/**
+ * `publishedAt` for a listing going live. The first publication also clears
+ * `previousPrice`: a "reduced" badge left by corrections made before anyone
+ * could see the listing would be false.
+ */
+function publication(
+  before: Doc<"listings">,
+  now: number,
+): Pick<Doc<"listings">, "publishedAt" | "previousPrice"> {
+  return before.publishedAt !== undefined
+    ? { publishedAt: before.publishedAt }
+    : { publishedAt: now, previousPrice: undefined };
+}
 
 export const publish = mutation({
   args: { id: v.id("listings") },
@@ -906,7 +1093,7 @@ export const publish = mutation({
     await ctx.db.patch("listings", before._id, {
       status: "published",
       visibility: "public",
-      publishedAt: before.publishedAt ?? now,
+      ...publication(before, now),
       updatedAt: now,
       ...derived,
     });
@@ -1032,13 +1219,17 @@ export const duplicate = mutation({
     assertCanEditListing(viewer, source);
 
     const ref = await nextRef(ctx);
-    const titleSr = `${source.title.sr} (kopija)`;
+    const suffix = " (kopija)";
+    const titleSr = `${source.title.sr.slice(0, LISTING_TEXT_LIMITS.title - suffix.length).trimEnd()}${suffix}`;
     const slug = await ensureUniqueSlug(ctx, listingSlug(titleSr, ref));
     const now = Date.now();
 
     const {
       _id: _dropId,
       _creationTime: _dropCreation,
+      // The copy is staff work even when the source is a seeded example: a
+      // demo flag would let "Obriši demo" delete it, uploads and all.
+      isDemo: _dropIsDemo,
       scope: _dropScope,
       searchText: _dropSearch,
       pricePerM2: _dropPpm2,
@@ -1091,6 +1282,7 @@ export const duplicate = mutation({
       status: "draft" as const,
       visibility: "private" as const,
       isFeatured: false,
+      isDemo: false,
       title: { ...source.title, sr: titleSr },
       legal,
       ...(sourceTour !== undefined ? { tour360: { ...sourceTour, published: false } } : {}),
@@ -1187,6 +1379,12 @@ export const bulk = mutation({
           skipped.push({ ref: before.ref, reason: "Nije demo nekretnina" });
           continue;
         }
+        // A seeded listing staff have made their own stays, as in the demo purge.
+        const keep = await demoListingKeepReason(ctx, before);
+        if (keep !== null) {
+          skipped.push({ ref: before.ref, reason: keep });
+          continue;
+        }
         // One transaction per listing: a cascade can touch hundreds of rows,
         // and several of them in one call could exceed the write limits.
         await ctx.scheduler.runAfter(0, internal.listingsInternal.deleteDemoListing, {
@@ -1262,7 +1460,7 @@ export const bulk = mutation({
       await ctx.db.patch("listings", id, {
         status,
         visibility,
-        ...(status === "published" ? { publishedAt: before.publishedAt ?? now } : {}),
+        ...(status === "published" ? publication(before, now) : {}),
         updatedAt: now,
         ...derived,
       });
@@ -1299,10 +1497,10 @@ export const regenerateSlug = mutation({
     if (doc === null) notFound("Nekretnina");
     assertCanEditListing(viewer, doc);
 
-    const candidate = listingSlug(doc.title.sr, doc.ref);
-    if (candidate === doc.slug) return { slug: doc.slug };
-
-    const slug = await ensureUniqueSlug(ctx, candidate, doc._id);
+    // A taken candidate gets a suffix, which can lead back to the current slug:
+    // then there is nothing to rename and no old address to redirect.
+    const slug = await ensureUniqueSlug(ctx, listingSlug(doc.title.sr, doc.ref), doc._id);
+    if (slug === doc.slug) return { slug };
     const now = Date.now();
     await ctx.db.insert("slugRedirects", {
       from: doc.slug,
@@ -1373,6 +1571,10 @@ async function hasForeignLeads(
  * The seller's private contact (PRD B3 "Pravno"). Never exposed publicly: the
  * public DTOs do not read `ownerContactId`. Passing `name: ""` unlinks it.
  * Owner contacts are tagged "vlasnik", and public forms never attach to them.
+ *
+ * A real owner makes a seeded listing the agency's own: it stops being demo
+ * (as an adopted demo agent does, DECISIONS [09]), so "Obriši demo" can never
+ * delete it. Ordinary edits leave the flag alone.
  */
 export const setOwner = mutation({
   args: {
@@ -1415,12 +1617,14 @@ export const setOwner = mutation({
     };
     if (doc.ownerContactId !== undefined) {
       const existing = await ctx.db.get("contacts", doc.ownerContactId);
-      // An anonymized contact stays erased, and a contact that is also another
-      // agent's client (it has leads outside this listing's agent) is not this
-      // editor's to rewrite: in both cases the new details get a new contact.
+      // An anonymized contact stays erased, a demo contact goes with the demo
+      // purge, and a contact that is also another agent's client (it has leads
+      // outside this listing's agent) is not this editor's to rewrite: in all
+      // three cases the new details get a new contact.
       if (
         existing !== null &&
         existing.anonymizedAt === undefined &&
+        !existing.isDemo &&
         !(await hasForeignLeads(ctx, existing._id, doc.agentId))
       ) {
         // `undefined` clears a field the editor emptied.
@@ -1431,6 +1635,8 @@ export const setOwner = mutation({
           searchText: contactSearchText({ name, phone, email }),
           tags: existing.tags.includes("vlasnik") ? existing.tags : [...existing.tags, "vlasnik"],
         });
+        // A real owner adopts a seeded listing (see above).
+        if (doc.isDemo) await ctx.db.patch("listings", doc._id, { isDemo: false, updatedAt: Date.now() });
         await logActivity(ctx, {
           entity: "listing",
           entityId: doc._id,
@@ -1449,7 +1655,12 @@ export const setOwner = mutation({
       consents: [],
       isDemo: false,
     });
-    await ctx.db.patch("listings", doc._id, { ownerContactId: contactId, updatedAt: Date.now() });
+    // `isDemo: false`: a real owner adopts a seeded listing (see above).
+    await ctx.db.patch("listings", doc._id, {
+      ownerContactId: contactId,
+      isDemo: false,
+      updatedAt: Date.now(),
+    });
     await logActivity(ctx, {
       entity: "listing",
       entityId: doc._id,
@@ -1491,7 +1702,7 @@ export const todos = query({
               .withIndex("by_status_and_updatedAt", (q) => q.eq("status", "published"))
               .order("desc")
               .take(300);
-    // Reserved listings are still advertised, so their mandates and gaps count too.
+    // Reserved listings are still advertised, so their gaps count too.
     const reserved =
       agentId === null
         ? []
@@ -1512,7 +1723,6 @@ export const todos = query({
     const missingPhotos = [];
     const missingFloorPlan = [];
     const missingTranslations = [];
-    const mandateExpiring = [];
 
     for (const doc of [...docs, ...reserved]) {
       if (!visibleToViewer(viewer, doc)) continue;
@@ -1538,13 +1748,27 @@ export const todos = query({
       if (missing.length > 0) {
         missingTranslations.push({ id: doc._id, ref: doc.ref, locales: missing });
       }
-      if (
-        doc.mandateEnd !== undefined &&
-        doc.mandateEnd > args.now &&
-        doc.mandateEnd < args.now + 14 * 86_400_000
-      ) {
-        mandateExpiring.push({ id: doc._id, ref: doc.ref, end: doc.mandateEnd });
+    }
+
+    // Contracts ending within two weeks come from the mandate index, not from
+    // the recently edited listings above: the listing nobody has touched for
+    // months is the one to catch before the expiry cron withdraws it.
+    const mandateExpiring = [];
+    if (agentId !== null) {
+      const until = args.now + 14 * DAY_MS;
+      for (const status of ["published", "reserved"] as const) {
+        const ending = await ctx.db
+          .query("listings")
+          .withIndex("by_status_and_mandateEnd", (q) =>
+            q.eq("status", status).gt("mandateEnd", args.now).lte("mandateEnd", until),
+          )
+          .take(200);
+        for (const doc of ending) {
+          if (doc.mandateEnd === undefined || !visibleToViewer(viewer, doc)) continue;
+          mandateExpiring.push({ id: doc._id, ref: doc.ref, end: doc.mandateEnd });
+        }
       }
+      mandateExpiring.sort((a, b) => a.end - b.end);
     }
 
     return {

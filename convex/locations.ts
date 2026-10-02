@@ -69,18 +69,19 @@ export const tree = query({
   },
 });
 
-export const featured = query({
-  args: { limit: v.optional(v.number()) },
-  returns: v.array(locationNodeV),
+/**
+ * Only a place's editorial intro: the locations index shows the primary
+ * city's intro and needs none of `bySlug`'s tree walk or listing cards.
+ */
+export const intro = query({
+  args: { slug: v.string() },
+  returns: v.union(l10nV, v.null()),
   handler: async (ctx, args) => {
-    const limit = Math.min(Math.max(args.limit ?? 6, 1), 24);
-    const docs = await ctx.db
+    const doc = await ctx.db
       .query("locations")
-      .withIndex("by_featured_and_order", (q) => q.eq("featured", true))
-      .take(limit);
-    const out = [];
-    for (const doc of docs) out.push(await toNode(ctx, doc));
-    return out;
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .unique();
+    return doc?.intro ?? null;
   },
 });
 

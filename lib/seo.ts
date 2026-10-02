@@ -1,12 +1,29 @@
 import type { Metadata } from "next";
 import { getPathname } from "@/i18n/navigation";
 import { defaultLocale, htmlLang, locales, type Locale } from "@/i18n/routing";
+import { pickL10n, type L10nValue } from "@/lib/l10n";
 
 type Href = Parameters<typeof getPathname>[0]["href"];
 
-/** The absolute site origin; `metadataBase` in the root layout uses the same value. */
+/**
+ * The absolute site origin; `metadataBase` in the root layout uses the same
+ * value. NEXT_PUBLIC_SITE_URL wins; a Vercel deployment without it falls back
+ * to the project's production domain, so canonical, hreflang, sitemap and
+ * share-image URLs never point at localhost, and a production deployment with
+ * neither fails loudly instead. Everything else (`next dev`, a local
+ * `next build && next start`, the e2e suite) gets http://localhost:3000.
+ */
 export function siteOrigin(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  if (configured !== undefined && configured.length > 0) return configured.replace(/\/$/, "");
+  const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercelDomain !== undefined && vercelDomain.length > 0) return `https://${vercelDomain}`;
+  if (process.env.VERCEL_ENV === "production") {
+    throw new Error(
+      "NEXT_PUBLIC_SITE_URL is not set: canonical, hreflang, sitemap and share-image URLs need the public origin (e.g. https://mihajlo-estate.rs).",
+    );
+  }
+  return "http://localhost:3000";
 }
 
 export function absoluteUrl(path: string): string {
@@ -41,6 +58,22 @@ const MAX_TEMPLATED_TITLE = 50;
 
 export function documentTitle(title: string): NonNullable<Metadata["title"]> {
   return title.length > MAX_TEMPLATED_TITLE ? { absolute: title } : title;
+}
+
+/**
+ * A title or description in `locale`: the first of `sources` that has text
+ * (its translation, else its Serbian source, as `pickL10n` reads it), else
+ * `builtIn`. Callers pass the page's own SEO field first, then the admin's
+ * sitewide default (Podešavanja → Podrazumevani SEO); `builtIn` is the copy
+ * in `messages`.
+ */
+export function seoText(locale: Locale, builtIn: string, ...sources: ReadonlyArray<L10nValue | undefined>): string {
+  for (const source of sources) {
+    if (source === undefined) continue;
+    const text = pickL10n(source, locale).text.trim();
+    if (text.length > 0) return text;
+  }
+  return builtIn;
 }
 
 /** A share picture for `og:image` / `twitter:image`. */

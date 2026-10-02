@@ -14,6 +14,10 @@ type Tab = "inquiry" | "viewing";
  * Any link carrying `data-contact-tab` (the agent card's buttons, the mobile
  * bar's "Zakaži") switches the tab as it scrolls here, and a visitor arriving
  * on `#razgledanje` lands on the booking tab.
+ *
+ * Both forms stay mounted once shown, so switching tabs never wipes what the
+ * visitor typed. The booking form mounts on the first visit to its tab: until
+ * then nobody needs the agent's live calendar.
  */
 export function ContactForms({
   listingId,
@@ -26,6 +30,8 @@ export function ContactForms({
 }) {
   const t = useTranslations("listing");
   const [tab, setTab] = useState<Tab>("inquiry");
+  const [bookingShown, setBookingShown] = useState(false);
+  if (tab === "viewing" && !bookingShown) setBookingShown(true);
 
   useEffect(() => {
     const fromHash = () => {
@@ -56,6 +62,7 @@ export function ContactForms({
         ariaLabel={t("formTabs.label")}
         value={tab}
         onValueChange={(value) => setTab(value === "viewing" ? "viewing" : "inquiry")}
+        keepMounted
         tabs={[
           {
             value: "inquiry",
@@ -65,7 +72,7 @@ export function ContactForms({
           {
             value: "viewing",
             label: t("formTabs.viewing"),
-            content: <ViewingForm listingId={listingId} agentId={agentId} />,
+            content: bookingShown ? <ViewingForm listingId={listingId} agentId={agentId} /> : null,
           },
         ]}
       />

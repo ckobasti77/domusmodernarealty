@@ -8,6 +8,7 @@ import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
 import { applyCountDelta } from "./lib/counts";
 import { invalidInput } from "./lib/errors";
+import { demoListingKeepReason } from "./lib/listingCascade";
 import { deleteBlobIfPresent } from "./lib/storage";
 
 const ADMINS = ["admin"] as const;
@@ -179,14 +180,19 @@ export async function locationIsReferenced(
   return false;
 }
 
-/** Removes a demo listing and everything that hangs off it. */
+/**
+ * Removes up to `limit` demo listings and everything that hangs off them. A
+ * demo listing staff have made their own (`demoListingKeepReason`) stays, like
+ * a demo agent or place that real records still use; the scan reads past those
+ * (they are seeded rows, so few) and stops once `limit` listings are gone.
+ */
 async function deleteDemoListings(ctx: MutationCtx, limit: number): Promise<number> {
-  const docs = await ctx.db
+  let removed = 0;
+  for await (const doc of ctx.db
     .query("listings")
-    .withIndex("by_isDemo", (q) => q.eq("isDemo", true))
-    .take(limit);
+    .withIndex("by_isDemo", (q) => q.eq("isDemo", true))) {
+    if ((await demoListingKeepReason(ctx, doc)) !== null) continue;
 
-  for (const doc of docs) {
     await applyCountDelta(ctx, doc, null);
     for (const item of [...doc.media, ...doc.floorPlans]) {
       if (item.image.kind === "storage") {
@@ -195,22 +201,18 @@ async function deleteDemoListings(ctx: MutationCtx, limit: number): Promise<numb
     }
     await deleteListingTours(ctx, doc);
 
-    const splats = await ctx.db
-      .query("splatAssets")
-      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
-      .take(20);
-    for (const splat of splats) await ctx.db.delete("splatAssets", splat._id);
-
     const stats = await ctx.db
       .query("listingStats")
       .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
       .unique();
     if (stats !== null) await ctx.db.delete("listingStats", stats._id);
 
+    // The listing's old addresses: a redirect is written for the slug a
+    // listing leaves, so it is found by the listing, never by its current slug.
     const redirects = await ctx.db
       .query("slugRedirects")
-      .withIndex("by_from", (q) => q.eq("from", doc.slug))
-      .take(10);
+      .withIndex("by_listingId", (q) => q.eq("listingId", doc._id))
+      .take(100);
     for (const row of redirects) await ctx.db.delete("slugRedirects", row._id);
 
     const changes = await ctx.db
@@ -220,8 +222,10 @@ async function deleteDemoListings(ctx: MutationCtx, limit: number): Promise<numb
     for (const change of changes) await ctx.db.delete("priceChanges", change._id);
 
     await ctx.db.delete("listings", doc._id);
+    removed += 1;
+    if (removed >= limit) break;
   }
-  return docs.length;
+  return removed;
 }
 
 /** Deletes up to `limit` demo rows from one table. Returns how many went. */

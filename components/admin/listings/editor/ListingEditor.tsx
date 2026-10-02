@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm, useFormState } from "react-hook-form";
 import { toast } from "sonner";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { RequireRole } from "@/components/admin/common/RequireRole";
 import { useBreadcrumbLabel } from "@/components/admin/shell/breadcrumbs";
 import { LISTING_ROLES, MANAGER_ROLES, hasRole, useMe } from "@/components/admin/shell/me";
@@ -14,7 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { EDITOR_TABS, docToForm, listingFormSchema, type EditorTab, type ListingForm } from "@/lib/admin/listing-form";
+import {
+  EDITOR_TABS,
+  EDITOR_TAB_LABEL,
+  docToForm,
+  listingFormSchema,
+  type EditorTab,
+  type ListingForm,
+} from "@/lib/admin/listing-form";
+import type { AutosaveEngine } from "./autosave-engine";
 import { BasicsTab } from "./BasicsTab";
 import { DescriptionTab } from "./DescriptionTab";
 import { EditorHeader } from "./EditorHeader";
@@ -22,7 +31,6 @@ import { EditorSkeleton } from "./EditorSkeleton";
 import { EditorProvider, type EditorData } from "./editor-context";
 import { errorsByTab } from "./error-count";
 import { FeaturesTab } from "./FeaturesTab";
-import { LeaveGuard } from "./LeaveGuard";
 import { LegalTab } from "./LegalTab";
 import { LocationTab } from "./LocationTab";
 import { MediaTab } from "./MediaTab";
@@ -30,19 +38,7 @@ import { PriceTab } from "./PriceTab";
 import { PublishPanel } from "./PublishPanel";
 import { SeoTab } from "./SeoTab";
 import { ToursTab } from "./ToursTab";
-import { useAutosave } from "./use-autosave";
-
-const TAB_LABEL: Record<EditorTab, string> = {
-  osnovno: "Osnovno",
-  lokacija: "Lokacija",
-  karakteristike: "Karakteristike",
-  cena: "Cena",
-  opis: "Opis",
-  mediji: "Mediji",
-  "3d": "360° / 3D",
-  pravno: "Pravno",
-  seo: "SEO",
-};
+import { useAutosave, useSaveSnapshot } from "./use-autosave";
 
 function parseTab(value: string | undefined): EditorTab {
   return EDITOR_TABS.find((tab) => tab === value) ?? "osnovno";
@@ -165,11 +161,33 @@ function EditorShell({ data, now, initialTab }: { data: EditorData; now: number;
               )}
             </Tabs>
           </div>
-          <LeaveGuard engine={engine} />
+          <AutosaveLeaveGuard engine={engine} />
         </div>
       </EditorProvider>
     </FormProvider>
   );
+}
+
+/**
+ * Leaving the editor (link, ⌘K, Back) first sends what is saveable and goes
+ * on once it has landed; only if that fails or fields stay unsaved (errors,
+ * a refusal) is the user asked. Its own component, so a change of the save
+ * state re-renders this, not the editor.
+ */
+function AutosaveLeaveGuard({ engine }: { engine: AutosaveEngine }) {
+  const { state } = useSaveSnapshot(engine);
+  useLeaveGuard({
+    dirty: state !== "saved",
+    isDirty: () => engine.isBusy() && !engine.isDiscarded,
+    description:
+      "Neke izmene nisu sačuvane (greška pri čuvanju ili polja sa greškom). Ako sada napustite stranicu, biće izgubljene.",
+    flush: async () => {
+      const result = await engine.flush();
+      return result.ok && result.pending.length === 0;
+    },
+    discard: () => engine.discard(),
+  });
+  return null;
 }
 
 function TabBody({ tab, data }: { tab: EditorTab; data: EditorData }) {
@@ -212,7 +230,7 @@ function EditorTabsList() {
           const count = counts[value];
           return (
             <TabsTrigger key={value} value={value} data-testid={`tab-${value}`} className="flex-none px-2.5">
-              {TAB_LABEL[value]}
+              {EDITOR_TAB_LABEL[value]}
               {count > 0 ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-destructive">
                   <span aria-hidden="true" className="size-1.5 rounded-full bg-destructive" />

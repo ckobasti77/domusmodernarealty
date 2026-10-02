@@ -51,8 +51,9 @@ export type ListingJsonLdInput = {
   propertyType: string;
   transaction: "sale" | "rent";
   price: number;
-  priceOnRequest: boolean;
+  /** Sold or rented: the listing stays online with a ribbon (PRD A5). */
   closed: boolean;
+  reserved: boolean;
   areaM2: number;
   rooms: number;
   bedrooms?: number;
@@ -99,11 +100,17 @@ export function listingJsonLd(input: ListingJsonLdInput): JsonLd {
     "@id": agencyId(new URL(input.agency.url).origin),
     name: input.agency.name,
     url: input.agency.url,
-    identifier: {
-      "@type": "PropertyValue",
-      propertyID: "Registar posrednika",
-      value: input.agency.registryNo,
-    },
+    // Same rule as the sitewide agency node, so one `@id` never carries two
+    // different identifiers (the demo placeholder has no digits).
+    ...(hasDigits(input.agency.registryNo)
+      ? {
+          identifier: {
+            "@type": "PropertyValue",
+            propertyID: "Registar posrednika",
+            value: input.agency.registryNo,
+          },
+        }
+      : {}),
   };
 
   const offer: JsonLd = {
@@ -111,20 +118,22 @@ export function listingJsonLd(input: ListingJsonLdInput): JsonLd {
     url: input.url,
     businessFunction:
       input.transaction === "rent" ? "http://purl.org/goodrelations/v1#LeaseOut" : "http://purl.org/goodrelations/v1#Sell",
-    availability: input.closed ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+    availability: input.closed
+      ? "https://schema.org/SoldOut"
+      : input.reserved
+        ? "https://schema.org/Reserved"
+        : "https://schema.org/InStock",
     seller,
-    ...(input.priceOnRequest
-      ? {}
-      : input.transaction === "rent"
-        ? {
-            priceSpecification: {
-              "@type": "UnitPriceSpecification",
-              price: input.price,
-              priceCurrency: "EUR",
-              unitCode: "MON",
-            },
-          }
-        : { price: input.price, priceCurrency: "EUR" }),
+    ...(input.transaction === "rent"
+      ? {
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: input.price,
+            priceCurrency: "EUR",
+            unitCode: "MON",
+          },
+        }
+      : { price: input.price, priceCurrency: "EUR" }),
   };
 
   return {

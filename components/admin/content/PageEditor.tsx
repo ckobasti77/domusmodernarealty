@@ -7,7 +7,9 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "rea
 import { toast } from "sonner";
 import { FormSection, SaveBar } from "@/components/admin/common/form";
 import { EMPTY_L10N } from "@/components/admin/common/L10nInput";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { DotBadge } from "@/components/admin/common/StatusBadge";
+import { useNow } from "@/components/admin/common/use-now";
 import { hasRole, MANAGER_ROLES, useMe } from "@/components/admin/shell/me";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +20,6 @@ import { formatDateTime, formatRelative } from "@/lib/admin/format";
 import { PAGE_KEY_LABEL } from "@/lib/admin/labels";
 import { BlockFields } from "./BlockFields";
 import { blockInfo } from "./labels";
-import { useNow } from "./use-now";
 import {
   fingerprint,
   fromForm,
@@ -121,16 +122,7 @@ function PageForm({ page, onDirtyChange }: { page: EditorPage; onDirtyChange: (d
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
-
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  useLeaveGuard({ dirty, description: "Izmene na ovoj stranici nisu sačuvane i biće izgubljene." });
 
   // Ctrl/⌘+S saves, as in the listing editor.
   useEffect(() => {

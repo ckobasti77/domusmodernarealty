@@ -7,7 +7,12 @@ export type Condition = Infer<typeof conditionV>;
 export type FloorValue = Infer<typeof floorV>;
 export type ValuationResult = Infer<typeof valuationResultV>;
 
-/** Sortable storey. PK (attic) sits just above the top floor. */
+/**
+ * Sortable storey, the scale of `listings.floorNum` and of the public floor
+ * filter (`lib/search-params.ts` maps its selects through this too). PK
+ * (attic) sits just above the top floor; without the building's height that
+ * is floor 1 at least, so "not the top floor" tests PK itself (`lib/search.ts`).
+ */
 export function floorToNumber(floor: FloorValue, totalFloors?: number): number {
   if (typeof floor === "number") return floor;
   switch (floor) {
@@ -67,17 +72,4 @@ export function computeValuation(input: {
     pricePerM2,
     basis: "Prosečna cena po m² u odabranoj lokaciji, korigovana za stanje, sprat i lift.",
   };
-}
-
-/** Monthly annuity payment. `rate` is a yearly percentage, e.g. 5.4. */
-export function monthlyPayment(
-  principal: number,
-  ratePercent: number,
-  years: number,
-): number {
-  const monthlyRate = ratePercent / 100 / 12;
-  const n = years * 12;
-  if (monthlyRate === 0) return principal / n;
-  const factor = Math.pow(1 + monthlyRate, n);
-  return (principal * monthlyRate * factor) / (factor - 1);
 }

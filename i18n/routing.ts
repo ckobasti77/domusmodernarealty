@@ -148,4 +148,10 @@ export const routing = defineRouting({
   defaultLocale,
   localePrefix: { mode: "always", prefixes: localePrefixes },
   pathnames,
+  // The HTML (`lib/seo.ts`) and the sitemap carry the complete hreflang set.
+  // next-intl's own `Link` response header would contradict them: its
+  // x-default is the unprefixed URL (a language redirect, not `/sr`), it drops
+  // the query of a curated search and it uses the request host, not
+  // NEXT_PUBLIC_SITE_URL.
+  alternateLinks: false,
 });

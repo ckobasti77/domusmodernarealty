@@ -4,7 +4,6 @@ import { authTables } from "@convex-dev/auth/server";
 import {
   addressVisibilityV,
   answersV,
-  assetV,
   availabilitySlotV,
   conditionV,
   consentV,
@@ -112,8 +111,7 @@ export default defineSchema({
   })
     .index("by_slug", { fields: ["slug"] })
     .index("by_kind_and_order", { fields: ["kind", "order"] })
-    .index("by_parentId_and_order", { fields: ["parentId", "order"] })
-    .index("by_featured_and_order", { fields: ["featured", "order"] }),
+    .index("by_parentId_and_order", { fields: ["parentId", "order"] }),
 
   /** Denormalized listing counts per location; never counted at read time. */
   locationCounts: defineTable({
@@ -160,8 +158,7 @@ export default defineSchema({
     isDemo: v.boolean(),
   })
     .index("by_slug", { fields: ["slug"] })
-    .index("by_isPublic_and_order", { fields: ["isPublic", "order"] })
-    .index("by_userId", { fields: ["userId"] }),
+    .index("by_isPublic_and_order", { fields: ["isPublic", "order"] }),
 
   listings: defineTable({
     ref: v.string(),
@@ -185,9 +182,8 @@ export default defineSchema({
     highlights: l10nListV,
 
     price: v.number(),
-    /** derived: price / areaM2 (monthly rent per m² for rentals). */
+    /** derived: price / areaM2 (monthly rent per m² for rentals); 0 without an area. */
     pricePerM2: v.number(),
-    priceOnRequest: v.optional(v.boolean()),
     /** Last higher asking price, denormalized for the "price reduced" badge. */
     previousPrice: v.optional(v.number()),
     vatIncluded: v.optional(v.boolean()),
@@ -266,7 +262,12 @@ export default defineSchema({
     poi: v.optional(v.array(poiV)),
     seo: v.optional(seoV),
 
-    /** derived: `${status}:${transaction}` — the driver key for every index. */
+    /**
+     * derived: `${bucket}:${transaction}`, where the bucket is `listed`
+     * (published/reserved), `closed` (sold/rented) or `hidden` (everything
+     * else, or a non-public `visibility`); see `lib/search.ts::bucketOf`. The
+     * driver key for every public index.
+     */
     scope: v.string(),
     /** derived: diacritic-folded haystack for the search index. */
     searchText: v.string(),
@@ -354,13 +355,6 @@ export default defineSchema({
     credit: v.optional(v.string()),
   }).index("by_listingId_and_order", { fields: ["listingId", "order"] }),
 
-  splatAssets: defineTable({
-    listingId: v.id("listings"),
-    label: v.string(),
-    asset: assetV,
-    credits: v.optional(v.string()),
-  }).index("by_listingId", { fields: ["listingId"] }),
-
   listingStats: defineTable({
     listingId: v.id("listings"),
     views: v.number(),
@@ -374,6 +368,15 @@ export default defineSchema({
 
   /** One row per (listing, browser session): makes trackView idempotent. */
   listingViews: defineTable({
+    listingId: v.id("listings"),
+    sessionKey: v.string(),
+    at: v.number(),
+  }).index("by_listingId_and_sessionKey", {
+    fields: ["listingId", "sessionKey"],
+  }),
+
+  /** One row per (listing, browser session): makes trackFavorite idempotent. */
+  listingFavorites: defineTable({
     listingId: v.id("listings"),
     sessionKey: v.string(),
     at: v.number(),
@@ -403,7 +406,6 @@ export default defineSchema({
     isDemo: v.boolean(),
   })
     .index("by_email", { fields: ["email"] })
-    .index("by_phone", { fields: ["phone"] })
     .index("by_isDemo", { fields: ["isDemo"] })
     .searchIndex("search_text", { searchField: "searchText" })
     // Fallback for contacts written without `searchText` (diacritics exact).

@@ -3,10 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import * as z from "zod/mini";
-import { ConsentFields, contactFields, FormError, SuccessPanel } from "@/components/forms/shared";
+import { ConsentFields, contactFields, FormError, SuccessPanel, useSuccessFocus } from "@/components/forms/shared";
 import { Button } from "@/components/site/Button";
 import { SelectField, TextAreaField, TextField } from "@/components/site/Field";
 import { hasLayout, PROPERTY_TYPES } from "@/components/site/valuation/schema";
@@ -49,7 +49,6 @@ export function SellForm({ groups, phone }: { groups: readonly LocationGroup[]; 
   const createSeller = useMutation(api.leads.createSeller);
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const successRef = useRef<HTMLDivElement>(null);
   const optional = (label: string) => `${label} (${tForms("optional")})`;
   const roomLabel = (rooms: number) => {
     if (rooms <= 0.5) return t("roomsStudio");
@@ -128,6 +127,7 @@ export function SellForm({ groups, phone }: { groups: readonly LocationGroup[]; 
     register,
     handleSubmit,
     reset,
+    setFocus,
     control,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
@@ -138,9 +138,7 @@ export function SellForm({ groups, phone }: { groups: readonly LocationGroup[]; 
   const layout = isPropertyType(propertyType) && hasLayout(propertyType);
 
   // The panel replaces a taller form: bring it, and the screen reader, to it.
-  useEffect(() => {
-    if (sent) successRef.current?.focus();
-  }, [sent]);
+  const successRef = useSuccessFocus(sent, () => setFocus("propertyType"));
 
   async function onSubmit(values: Values) {
     setServerError(null);

@@ -17,21 +17,30 @@ import { ValuationCta } from "@/components/site/home/ValuationCta";
 import { buildHomeCopy } from "@/components/site/home/copy";
 import { loadHomeData, locationOptions, neighborhoodItems, tourListing } from "@/components/site/home/data";
 import { routing } from "@/i18n/routing";
-import { localizedText } from "@/lib/content/pages";
-import { getSitePage } from "@/lib/page-data";
-import { localizedAlternates, socialMetadata } from "@/lib/seo";
+import { getPublicSettings, getSitePage } from "@/lib/page-data";
+import { localizedAlternates, seoText, socialMetadata } from "@/lib/seo";
 
 /**
  * The landing's title is the brand line itself, so it opts out of the
  * layout's "… — Mihajlo Estate" template. The admin's SEO fields on the home
- * page (Sadržaj sajta → Početna) win over the built-in copy.
+ * page (Sadržaj sajta → Početna) win over the sitewide defaults (Podešavanja →
+ * Podrazumevani SEO), which win over the built-in copy.
  */
 export async function generateMetadata({ params }: PageProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
-  const [t, page] = await Promise.all([getTranslations({ locale, namespace: "seo" }), getSitePage("home")]);
-  const title = localizedText(page?.seo?.metaTitle, locale)?.text ?? t("defaultTitle");
-  const description = localizedText(page?.seo?.metaDescription, locale)?.text ?? t("defaultDescription");
+  const [t, page, settings] = await Promise.all([
+    getTranslations({ locale, namespace: "seo" }),
+    getSitePage("home"),
+    getPublicSettings(),
+  ]);
+  const title = seoText(locale, t("defaultTitle"), page?.seo?.metaTitle, settings?.seo.defaultTitle);
+  const description = seoText(
+    locale,
+    t("defaultDescription"),
+    page?.seo?.metaDescription,
+    settings?.seo.defaultDescription,
+  );
   const ogImage = page?.seo?.ogImage;
   const alternates = localizedAlternates("/", locale);
   return {

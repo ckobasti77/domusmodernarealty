@@ -6,6 +6,7 @@ import { Newspaper, Plus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { EmptyState, FilterSelect, ListToolbar, LoadMore, optionsFrom, SearchInput } from "@/components/admin/common/ListToolbar";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
@@ -38,7 +39,6 @@ type PostRow = FunctionReturnType<typeof api.postsAdmin.list>["page"][number];
 const PAGE_SIZE = 25;
 /** A title search filters pages on the server; top short pages up, within reason. */
 const MAX_AUTO_LOADS = 8;
-const PHONE_QUERY = "(max-width: 767.98px)";
 const NEW_POST_HREF = `${POSTS_PATH}/novi`;
 const CATEGORIES = Object.keys(POST_CATEGORY_LABEL) as PostCategory[];
 const PHASE_OPTIONS = optionsFrom<PostPhase>({

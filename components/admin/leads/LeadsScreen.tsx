@@ -2,9 +2,11 @@
 
 import { useQuery } from "convex/react";
 import { Columns3, List } from "lucide-react";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
+import { useNow } from "@/components/admin/common/use-now";
 import { hasRole, LISTING_ROLES, MANAGER_ROLES, useMe } from "@/components/admin/shell/me";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,7 +20,7 @@ import { LeadsFilters } from "./LeadsFilters";
 import { LeadsKanban, type KanbanArgs } from "./LeadsKanban";
 import { LeadsList, type ListArgs } from "./LeadsList";
 import { UNASSIGNED, leadParamsHref, useLeadParams, type LeadParams } from "./params";
-import { PHONE_QUERY, dayEnd, dayStart, useNow } from "./shared";
+import { dayEnd, dayStart } from "./shared";
 import { useLeadStatus } from "./useLeadStatus";
 
 /** Timers and relative times refresh twice a minute. */

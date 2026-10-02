@@ -180,6 +180,9 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   // Escape closes, focus starts on the close button, and focus is trapped while
   // the overlay is up. Body scroll is locked so the page behind cannot move.
+  // The overlay is `lg:hidden`, so a phone rotated (or a window widened) past
+  // that breakpoint closes it; otherwise the page would stay locked behind a
+  // menu nobody can see.
   useEffect(() => {
     if (!open) return;
 
@@ -187,6 +190,12 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     const previouslyFocused = document.activeElement as HTMLElement | null;
     document.documentElement.style.overflow = "hidden";
     closeButton.current?.focus();
+
+    const desktop = window.matchMedia("(min-width: 64rem)");
+    const onBreakpoint = () => {
+      if (desktop.matches) onClose();
+    };
+    desktop.addEventListener("change", onBreakpoint);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -217,6 +226,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 
     document.addEventListener("keydown", onKeyDown);
     return () => {
+      desktop.removeEventListener("change", onBreakpoint);
       document.removeEventListener("keydown", onKeyDown);
       document.documentElement.style.overflow = previousOverflow;
       previouslyFocused?.focus();

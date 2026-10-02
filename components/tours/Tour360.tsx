@@ -166,9 +166,14 @@ export default function Tour360({ scenes, title }: Props) {
           }),
         ],
       });
-      const tour = instance.getPlugin<VirtualTourPlugin>(VirtualTourPlugin);
-      tourRef.current = tour;
-      tour.addEventListener("node-changed", ({ node }) => setCurrentId(node.id));
+      // Typed as always present, but when PSV cannot start (no WebGL, or site
+      // storage blocked so its touch probe throws) it shows its own localized
+      // error overlay and never creates the plugins.
+      const tour: VirtualTourPlugin | undefined = instance.getPlugin<VirtualTourPlugin>(VirtualTourPlugin);
+      if (tour !== undefined) {
+        tourRef.current = tour;
+        tour.addEventListener("node-changed", ({ node }) => setCurrentId(node.id));
+      }
       return instance;
     };
 

@@ -8,8 +8,8 @@ import type { Doc } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { floorToNumber } from "./money";
 import { bucketOf, buildSearchText, scopeKey } from "./search";
-import { L10N_KEYS, LOCALE_FIELD } from "./validators";
-import type { L10n, Locale } from "./validators";
+import { L10N_KEYS } from "./validators";
+import type { L10n } from "./validators";
 
 export type ListingDoc = Doc<"listings">;
 /** A listing without system fields and without the derived fields. */
@@ -26,12 +26,6 @@ export function l10nValues(value: L10n | undefined): string[] {
   );
 }
 
-/** Localized read with the mandated fallback to sr-Latn. */
-export function pickLocale(value: L10n, locale: Locale): string {
-  const candidate = value[LOCALE_FIELD[locale]];
-  return candidate !== undefined && candidate.length > 0 ? candidate : value.sr;
-}
-
 export type DerivedFields = Pick<
   ListingDoc,
   "scope" | "pricePerM2" | "floorNum" | "hasTour" | "searchText" | "mandateEnd"
@@ -46,8 +40,10 @@ export function applyDerived(
   locationNames: readonly string[],
   hasTourScenes = false,
 ): DerivedFields {
-  const area = listing.areaM2 > 0 ? listing.areaM2 : 1;
-  const pricePerM2 = Math.round((listing.price / area) * 100) / 100;
+  // Without an area there is no price per m²: dividing by a stand-in 1 m²
+  // would publish the whole price as the per-m² figure.
+  const pricePerM2 =
+    listing.areaM2 > 0 ? Math.round((listing.price / listing.areaM2) * 100) / 100 : 0;
 
   // Only what the detail page will actually open: an unpublished 360° tour's
   // scenes must not earn the card a "360°" badge.

@@ -7,7 +7,7 @@ import type { MediaItem } from "./lib/validators";
 import { logActivity } from "./lib/activity";
 import { applyCountDelta } from "./lib/counts";
 import { applyDerived, locationNamesFor } from "./lib/derive";
-import { deleteListingCascade } from "./lib/listingCascade";
+import { deleteListingCascade, demoListingKeepReason } from "./lib/listingCascade";
 import { deleteBlobIfPresent } from "./lib/storage";
 
 /**
@@ -235,7 +235,9 @@ export const deleteDemoListing = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const doc = await ctx.db.get("listings", args.id);
-    if (doc === null || !doc.isDemo) return null;
+    // Re-checked at run time: staff may have adopted the listing (an upload, a
+    // real lead) between the bulk action and this scheduled delete.
+    if (doc === null || !doc.isDemo || (await demoListingKeepReason(ctx, doc)) !== null) return null;
     await deleteListingCascade(ctx, doc);
     await logActivity(ctx, {
       entity: "listing",

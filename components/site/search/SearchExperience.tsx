@@ -8,12 +8,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SearchMapLoader } from "@/components/map/SearchMapLoader";
 import type { CardMortgage } from "@/components/site/PropertyCard";
 import { api } from "@/convex/_generated/api";
-import type { ListingCard } from "@/convex/lib/dto";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { Locale } from "@/i18n/routing";
 import { formatCount } from "@/lib/format";
 import { pickL10n } from "@/lib/l10n";
+import type { SearchCard } from "@/lib/search-cards";
 import { indexLocations, resolveLocations, type LocationNode } from "@/lib/search-locations";
 import {
   PAGE_SIZE,
@@ -44,7 +44,8 @@ import { useSearchUrl } from "./useSearchUrl";
 export type SearchInitial = {
   /** `searchKey()` of the state the server rendered. */
   key: string;
-  page: ListingCard[];
+  /** The first page, projected for the request locale (`toSearchCard`). */
+  page: SearchCard[];
   status: "CanLoadMore" | "Exhausted";
   count: ResultCount;
 };
@@ -61,13 +62,13 @@ export type SearchExperienceProps = {
 /** Extra index windows read automatically when a page comes back short. */
 const MAX_AUTO_WINDOWS = 8;
 
-type Shown = { key: string; cards: readonly ListingCard[]; status: ResultsStatus; signature: string };
+type Shown = { key: string; cards: readonly SearchCard[]; status: ResultsStatus; signature: string };
 
 /**
  * Identity of a result page by content (ids + prices), so the derived state
  * below updates exactly when what is on screen would change.
  */
-function signatureOf(cards: readonly ListingCard[]): string {
+function signatureOf(cards: readonly SearchCard[]): string {
   return cards.map((card) => `${card._id}:${card.price}:${card.status}`).join(",");
 }
 

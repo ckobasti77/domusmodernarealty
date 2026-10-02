@@ -7,11 +7,11 @@ import { appError, forbidden, invalidInput, notFound } from "./lib/errors";
 import { requireEmail } from "./lib/rateLimit";
 import { slugify } from "./lib/slug";
 import { assertImageRef, releaseReplacedImage, deleteBlobIfPresent } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import {
   availabilitySlotV,
   imageV,
   l10nV,
-  type ImageRef,
   type L10n,
 } from "./lib/validators";
 
@@ -289,12 +289,6 @@ function profileSnapshot(doc: Partial<Doc<"agents">>): Record<string, unknown> {
   };
 }
 
-function sameImage(a: ImageRef | undefined, b: ImageRef | undefined): boolean {
-  if (a === undefined || b === undefined) return a === b;
-  if (a.kind === "storage" && b.kind === "storage") return a.storageId === b.storageId;
-  if (a.kind === "url" && b.kind === "url") return a.url === b.url;
-  return false;
-}
 
 /* ---------------------------------------------------------------- mutations */
 

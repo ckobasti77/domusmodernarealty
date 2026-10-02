@@ -33,15 +33,34 @@ export type MortgageResult = {
 /** The two presets PRD A5 asks for; 20% is the usual bank minimum. */
 export const DOWN_PAYMENT_PRESETS = [20, 10] as const;
 
+/**
+ * The same bounds the admin accepts for the site-wide defaults
+ * (`settingsAdmin`), so a default is never silently cut. A 100% down payment
+ * is a cash purchase: no loan, no instalment.
+ */
 export const MORTGAGE_LIMITS = {
-  downPct: { min: 0, max: 90 },
-  years: { min: 1, max: 30 },
-  ratePct: { min: 0, max: 20 },
+  downPct: { min: 0, max: 100 },
+  years: { min: 1, max: 40 },
+  ratePct: { min: 0, max: 30 },
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * The inputs the maths actually uses: each one inside `MORTGAGE_LIMITS`, the
+ * term in whole years, the price never negative. The calculator shows these
+ * back in its fields, so a clamped value is never a silent one.
+ */
+export function normalizeMortgageInput(input: MortgageInput): MortgageInput {
+  return {
+    price: Math.max(0, Number.isFinite(input.price) ? input.price : 0),
+    downPct: clamp(input.downPct, MORTGAGE_LIMITS.downPct.min, MORTGAGE_LIMITS.downPct.max),
+    years: Math.round(clamp(input.years, MORTGAGE_LIMITS.years.min, MORTGAGE_LIMITS.years.max)),
+    ratePct: clamp(input.ratePct, MORTGAGE_LIMITS.ratePct.min, MORTGAGE_LIMITS.ratePct.max),
+  };
 }
 
 /**
@@ -56,10 +75,7 @@ export function annuityPayment(principal: number, annualRatePct: number, months:
 }
 
 export function computeMortgage(input: MortgageInput): MortgageResult {
-  const price = Math.max(0, Number.isFinite(input.price) ? input.price : 0);
-  const downPct = clamp(input.downPct, MORTGAGE_LIMITS.downPct.min, MORTGAGE_LIMITS.downPct.max);
-  const years = Math.round(clamp(input.years, MORTGAGE_LIMITS.years.min, MORTGAGE_LIMITS.years.max));
-  const ratePct = clamp(input.ratePct, MORTGAGE_LIMITS.ratePct.min, MORTGAGE_LIMITS.ratePct.max);
+  const { price, downPct, years, ratePct } = normalizeMortgageInput(input);
 
   const downPayment = (price * downPct) / 100;
   const principal = price - downPayment;

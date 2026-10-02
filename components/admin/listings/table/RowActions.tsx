@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/admin/common/ConfirmDialog";
+import { isOnSite, publicPath } from "@/components/admin/listings/editor/preview";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,12 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/convex/_generated/api";
-import { PUBLIC_STATUSES, type ListingStatus } from "@/convex/lib/validators";
 import { adminErrorMessage } from "@/lib/admin/errors";
 import type { AdminRow } from "./types";
-
-/** Statuses whose listing page is reachable on the public site. */
-const ON_SITE: ReadonlySet<ListingStatus> = new Set<ListingStatus>(PUBLIC_STATUSES);
 
 export function RowActions({ row, canDelete }: { row: AdminRow; canDelete: boolean }) {
   const router = useRouter();
@@ -73,9 +70,10 @@ export function RowActions({ row, canDelete }: { row: AdminRow; canDelete: boole
               Uredi
             </Link>
           </DropdownMenuItem>
-          {ON_SITE.has(row.status) ? (
+          {/* Status AND visibility: a hidden or private listing has no public page. */}
+          {isOnSite(row) ? (
             <DropdownMenuItem asChild>
-              <a href={`/sr/nekretnine/${row.slug}`} target="_blank" rel="noopener noreferrer">
+              <a href={publicPath(row.slug)} target="_blank" rel="noopener noreferrer">
                 <ExternalLink aria-hidden="true" />
                 Pogledaj na sajtu
                 <span className="sr-only"> (otvara se u novoj kartici)</span>

@@ -708,7 +708,7 @@ test.describe("listing card (PRD A4)", () => {
     for (const id of ids) {
       const data = byId.get(id);
       expect(data, `card ${id} is a listed sale`).toBeDefined();
-      if (data === undefined || data.priceOnRequest === true) continue;
+      if (data === undefined) continue;
       const card = page.locator(`article[data-listing-id="${id}"]`);
       const text = (await card.textContent()) ?? "";
       const perM2 = /([\d.]+)[\s  ]*€\/m²/.exec(text);

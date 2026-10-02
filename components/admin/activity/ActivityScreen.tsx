@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useCallback, useId, useState } from "react";
 import { activitySummary } from "@/components/admin/dashboard/activity-labels";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { EmptyState, ListToolbar, LoadMore } from "@/components/admin/common/ListToolbar";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
@@ -29,8 +30,6 @@ import { actionLabel, targetHref, type ActivityRow } from "./labels";
 
 const PAGE_SIZE = 30;
 const ALL = "__all__";
-/** Below Tailwind's `md`: stacked rows instead of the table. */
-const PHONE_QUERY = "(max-width: 767.98px)";
 
 function isEntity(value: string): value is ActivityEntity {
   return Object.hasOwn(ACTIVITY_ENTITY_LABEL, value);

@@ -3,12 +3,12 @@ import "server-only";
 import { fetchQuery } from "convex/nextjs";
 import type { FunctionReturnType } from "convex/server";
 import { unstable_rethrow } from "next/navigation";
-import { getPublicSettings } from "@/components/site/Footer";
 import { api } from "@/convex/_generated/api";
 import type { ListingCard } from "@/convex/lib/dto";
 import type { Locale } from "@/i18n/routing";
-import { getPage, type PublicPage } from "@/lib/content/pages";
+import type { PublicPage } from "@/lib/content/pages";
 import { pickL10n } from "@/lib/l10n";
+import { getPublicSettings, getSitePage } from "@/lib/page-data";
 import type { LocationOption, NeighborhoodItem } from "./types";
 
 /**
@@ -16,7 +16,8 @@ import type { LocationOption, NeighborhoodItem } from "./types";
  * (IMPLEMENTATION-PLAN §1.3). `allSettled`, not `all`: the landing is the one
  * page that must never turn into an error screen because the journal or a
  * counter query failed — each section degrades on its own and the failure is
- * logged on the server.
+ * logged on the server. The settings and the `home` page go through the same
+ * `cache()`d reads as `generateMetadata`, so each is fetched once per request.
  */
 
 export type LocationNode = FunctionReturnType<typeof api.locations.tree>[number];
@@ -50,7 +51,7 @@ export async function loadHomeData(): Promise<HomeData> {
     fetchQuery(api.posts.list, { paginationOpts: { numItems: 3, cursor: null } }),
     fetchQuery(api.testimonials.verified, { limit: 6 }),
     getPublicSettings(),
-    getPage("home"),
+    getSitePage("home"),
   ]);
 
   return {

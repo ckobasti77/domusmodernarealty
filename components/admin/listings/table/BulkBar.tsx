@@ -116,10 +116,13 @@ export function BulkBar({
   selected,
   agents,
   onClear,
+  onDone,
 }: {
   selected: readonly AdminRow[];
   agents: readonly AgentOption[] | undefined;
   onClear: () => void;
+  /** After a run: the ids it did not get to (a failed batch and those after it) stay selected. */
+  onDone: (unprocessed: readonly Id<"listings">[]) => void;
 }) {
   const bulk = useMutation(api.listingsAdmin.bulk);
   // The action outlives `open` so the dialog text does not change while it
@@ -147,10 +150,12 @@ export function BulkBar({
     const size = chunkSize(action);
     let done = 0;
     const skipped: Skipped[] = [];
+    // Each batch is one transaction: a failed one changed nothing.
+    let next = 0;
     try {
-      for (let start = 0; start < ids.length; start += size) {
+      for (; next < ids.length; next += size) {
         const result = await bulk({
-          ids: ids.slice(start, start + size),
+          ids: ids.slice(next, next + size),
           action,
           ...(action === "assign" && agentId !== undefined ? { agentId } : {}),
         });
@@ -159,11 +164,11 @@ export function BulkBar({
       }
     } catch (error) {
       toast.error(adminErrorMessage(error));
-      // Nothing changed: keep the dialog open so the action can be retried.
-      if (done === 0) return false;
+      // Nothing was processed: keep the dialog open so the action can be retried.
+      if (next === 0) return false;
     }
     reportResult(action, done, skipped);
-    onClear();
+    onDone(ids.slice(next));
     return true;
   };
 

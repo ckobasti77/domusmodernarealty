@@ -1,14 +1,14 @@
 "use client";
 
 import { AlertTriangle, Check, CircleDot, Eye, Loader2, Save } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useFormState, useWatch } from "react-hook-form";
 import { StatusBadge } from "@/components/admin/common/StatusBadge";
+import { useNow } from "@/components/admin/common/use-now";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatRelative } from "@/lib/admin/format";
-import type { ListingForm } from "@/lib/admin/listing-form";
+import { EDITOR_TAB_LABEL, TAB_OF_KEY, type ListingForm } from "@/lib/admin/listing-form";
 import { cn } from "@/lib/utils";
 import { useEditor, type EditorData } from "./editor-context";
 import { countErrors } from "./error-count";
@@ -51,6 +51,7 @@ export function EditorHeader({ data, onSave }: { data: EditorData; onSave: () =>
           </Tooltip>
         </div>
       </div>
+      <SaveProblem />
     </header>
   );
 }
@@ -61,21 +62,11 @@ function LiveTitle() {
   return text !== "" ? text : <span className="text-muted-foreground">Bez naslova</span>;
 }
 
-/** Ticks so "pre 2 minuta" stays true without re-rendering anything else. */
-function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
-}
-
 const STATE_TEXT = {
   saved: "Sačuvano",
   saving: "Čuvanje…",
   dirty: "Nesačuvane izmene",
-  error: "Greška pri čuvanju — pokušajte ponovo",
+  error: "Nije sačuvano",
 } as const;
 
 function SaveIndicator() {
@@ -111,23 +102,55 @@ function SaveIndicator() {
             · {formatRelative(snapshot.savedAt, Math.max(now, snapshot.savedAt))}
           </span>
         ) : null}
-        {state === "error" && snapshot.error !== null ? <span className="sr-only">: {snapshot.error}</span> : null}
       </span>
-      {state === "error" ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="outline" size="xs" onClick={() => void engine.flush()}>
-              Pokušaj ponovo
-            </Button>
-          </TooltipTrigger>
-          {snapshot.error !== null ? <TooltipContent>{snapshot.error}</TooltipContent> : null}
-        </Tooltip>
-      ) : null}
       {invalid > 0 ? (
         <span className="font-medium whitespace-nowrap text-destructive">
           · {invalid} {invalid === 1 ? "polje sa greškom" : "polja sa greškom"}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Why the last save failed, in full under the header row: the request's error,
+ * or each field the server refused with its reason and tab. Refused fields are
+ * also marked on the form; autosave leaves them until they change.
+ */
+function SaveProblem() {
+  const { engine } = useEditor();
+  const snapshot = useSaveSnapshot(engine);
+  if (snapshot.state !== "error" || snapshot.error === null) return null;
+
+  // One line per reason: fields saved together (price and rent terms) share theirs.
+  const reasons = new Map<string, Set<string>>();
+  for (const { key, message } of snapshot.refused) {
+    const tabs = reasons.get(message) ?? new Set<string>();
+    tabs.add(EDITOR_TAB_LABEL[TAB_OF_KEY[key]]);
+    reasons.set(message, tabs);
+  }
+
+  return (
+    <div
+      role="alert"
+      data-testid="save-error"
+      className="mt-3 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+    >
+      <AlertTriangle aria-hidden="true" className="mt-px size-3.5 shrink-0" />
+      {reasons.size > 0 ? (
+        <ul className="min-w-0 flex-1 space-y-0.5">
+          {[...reasons].map(([message, tabs]) => (
+            <li key={message}>
+              <span className="font-medium">{[...tabs].join(", ")}:</span> {message}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="min-w-0 flex-1">{snapshot.error}</p>
+      )}
+      <Button type="button" variant="outline" size="xs" onClick={() => void engine.flush()}>
+        Pokušaj ponovo
+      </Button>
     </div>
   );
 }

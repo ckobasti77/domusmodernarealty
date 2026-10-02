@@ -10,6 +10,11 @@ import { useEffect, useRef, type ReactNode } from "react";
  * `data-lenis-prevent` keeps smooth scrolling from eating wheel and touch
  * input meant for the viewer. The viewer is a child that mounts with the
  * dialog and unmounts (and disposes its WebGL context) when it closes.
+ *
+ * A dialog can also be swapped out while open (the 3D walk's "open the 360°
+ * tour instead"). Removing an open dialog skips the native close and its focus
+ * restore, so the unmount hands focus back to whatever opened it; the next
+ * dialog then records that launcher as its own opener.
  */
 export function TourDialog({
   label,
@@ -22,6 +27,7 @@ export function TourDialog({
 }) {
   const t = useTranslations("tours");
   const ref = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -30,7 +36,10 @@ export function TourDialog({
   useEffect(() => {
     const dialog = ref.current;
     if (dialog === null) return;
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      dialog.showModal();
+    }
     const root = document.documentElement;
     const previousOverflow = root.style.overflow;
     root.style.overflow = "hidden";
@@ -42,6 +51,9 @@ export function TourDialog({
     return () => {
       dialog.removeEventListener("close", handleClose);
       root.style.overflow = previousOverflow;
+      // Still open but already out of the document: swapped out, not closed
+      // (Strict Mode's replay leaves it connected, so it does not count).
+      if (dialog.open && !dialog.isConnected) opener.current?.focus();
     };
   }, []);
 

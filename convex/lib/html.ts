@@ -89,6 +89,8 @@ const anyRel: AttrRule = (raw) => /^[a-z ]*$/.test(raw);
 const blankTarget: AttrRule = (raw) => raw === "_blank";
 /** `<ol start>`: Tiptap writes it when a list starts at another number ("3. "). */
 const listStart: AttrRule = (raw) => /^\d{1,3}$/.test(raw);
+/** `<ol type>`: the editors keep the numbering style of a pasted list (a, A, i, I). */
+const listType: AttrRule = (raw) => /^[1aAiI]$/.test(raw);
 
 /** Link schemes the legal-page editor accepts. */
 export const PAGE_LINK_SCHEMES = ["https:", "http:", "mailto:", "tel:"] as const;
@@ -98,11 +100,7 @@ export const PAGE_HTML: HtmlAllowlist = {
   p: NONE,
   h3: NONE,
   ul: NONE,
-  ol: {
-    start: listStart,
-    // The editor keeps the style of a pasted list (a, A, i, I).
-    type: (raw) => /^[1aAiI]$/.test(raw),
-  },
+  ol: { start: listStart, type: listType },
   li: NONE,
   strong: NONE,
   em: NONE,
@@ -150,7 +148,7 @@ export function postHtml(inlineUrls: ReadonlySet<string>): HtmlAllowlist {
       rel: anyRel,
     },
     ul: NONE,
-    ol: { start: listStart },
+    ol: { start: listStart, type: listType },
     li: NONE,
     blockquote: NONE,
     img: {

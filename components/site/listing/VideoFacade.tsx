@@ -2,7 +2,8 @@
 
 import { Play } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { parseVideoUrl } from "@/convex/lib/video";
 
 /**
  * Privacy-friendly video embed. Nothing from YouTube or Vimeo loads until the
@@ -13,36 +14,41 @@ import { useState } from "react";
 
 type Embed = { provider: "YouTube" | "Vimeo"; src: string } | { provider: string; src: null };
 
-export function parseVideoUrl(url: string): Embed {
-  let parsed: URL;
+/**
+ * The player for a stored video URL. It reads the URL with the server's own
+ * parser (`convex/lib/video.ts`), so every URL the editor and the server accept
+ * (`m.`/`player.` hosts, a YouTube start time) gets its embed.
+ */
+function embedFor(url: string): Embed {
+  const video = parseVideoUrl(url);
+  if (video?.provider === "youtube") {
+    const start = video.start !== undefined ? `&start=${video.start}` : "";
+    return {
+      provider: "YouTube",
+      src: `https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1${start}`,
+    };
+  }
+  if (video?.provider === "vimeo") {
+    return { provider: "Vimeo", src: `https://player.vimeo.com/video/${video.id}?autoplay=1&dnt=1` };
+  }
   try {
-    parsed = new URL(url);
+    return { provider: new URL(url).hostname.replace(/^www\./, ""), src: null };
   } catch {
     return { provider: url, src: null };
   }
-  const host = parsed.hostname.replace(/^www\./, "");
-  let youtubeId: string | null = null;
-  if (host === "youtu.be") youtubeId = parsed.pathname.slice(1);
-  else if (host.endsWith("youtube.com")) {
-    youtubeId = parsed.searchParams.get("v") ?? parsed.pathname.match(/^\/(?:embed|shorts)\/([\w-]{6,})/)?.[1] ?? null;
-  }
-  if (youtubeId !== null && /^[\w-]{6,}$/.test(youtubeId)) {
-    return {
-      provider: "YouTube",
-      src: `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`,
-    };
-  }
-  if (host === "vimeo.com" || host === "player.vimeo.com") {
-    const id = parsed.pathname.match(/(\d{5,})/)?.[1];
-    if (id !== undefined) return { provider: "Vimeo", src: `https://player.vimeo.com/video/${id}?autoplay=1&dnt=1` };
-  }
-  return { provider: host, src: null };
 }
 
 export function VideoFacade({ url, title }: { url: string; title: string }) {
   const t = useTranslations("listing.video");
   const [playing, setPlaying] = useState(false);
-  const embed = parseVideoUrl(url);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const embed = embedFor(url);
+
+  // The player replaces the focused play button: focus moves into the player
+  // instead of dropping to <body>.
+  useEffect(() => {
+    if (playing) frame.current?.focus();
+  }, [playing]);
 
   if (embed.src === null) {
     return (
@@ -63,11 +69,12 @@ export function VideoFacade({ url, title }: { url: string; title: string }) {
     <div className="relative aspect-video w-full overflow-clip bg-ink-2" data-lenis-prevent="">
       {playing ? (
         <iframe
+          ref={frame}
           src={embed.src}
           title={title}
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
-          className="absolute inset-0 size-full border-0"
+          className="absolute inset-0 size-full border-0 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bronze"
         />
       ) : (
         <button

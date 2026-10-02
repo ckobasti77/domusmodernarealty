@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { describedBy, FieldShell, FormSection, SaveBar } from "@/components/admin/common/form";
 import { ImageField } from "@/components/admin/common/ImageField";
 import type { L10nValue } from "@/components/admin/common/L10nInput";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { RequireRole } from "@/components/admin/common/RequireRole";
 import { DotBadge } from "@/components/admin/common/StatusBadge";
@@ -42,7 +43,6 @@ import {
   validateForm,
   type PostForm,
 } from "./form";
-import { LeaveGuard } from "./LeaveGuard";
 import { PublishCard } from "./PublishCard";
 import { SeoFields } from "./SeoFields";
 import { CONTENT_ROLES, PHASE_LABEL, PHASE_TONE, phaseOf, POSTS_PATH } from "./shared";
@@ -149,6 +149,7 @@ function EditorForm({ data, onDeleting }: { data: EditorData; onDeleting: (delet
   }
 
   const dirty = !sameForm(form, baseline);
+  useLeaveGuard({ dirty, description: "Ako sada napustite stranicu, izmene u ovom tekstu biće izgubljene." });
   const errors = showErrors ? validateForm(form) : {};
   const phase = phaseOf(data.post);
   const canDelete = hasRole(me, MANAGER_ROLES);
@@ -226,136 +227,133 @@ function EditorForm({ data, onDeleting }: { data: EditorData; onDeleting: (delet
   const title = data.post.title.sr.trim();
 
   return (
-    <>
-      <form ref={formRef} onSubmit={onSubmit} noValidate className="mx-auto max-w-[1600px]">
-        <PageHeader
-          eyebrow="Magazin"
-          title={title.length > 0 ? title : <span className="text-muted-foreground">Bez naslova</span>}
-          description={
-            data.post.isDemo
-              ? "Demo tekst: briše se zajedno sa ostalim demo sadržajem."
-              : "Tekst na srpskom je izvor; prevodi su opcioni i na sajtu zamenjuju srpski kada postoje."
-          }
-          actions={<DotBadge tone={PHASE_TONE[phase]}>{PHASE_LABEL[phase]}</DotBadge>}
-        />
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="mx-auto max-w-[1600px]">
+      <PageHeader
+        eyebrow="Magazin"
+        title={title.length > 0 ? title : <span className="text-muted-foreground">Bez naslova</span>}
+        description={
+          data.post.isDemo
+            ? "Demo tekst: briše se zajedno sa ostalim demo sadržajem."
+            : "Tekst na srpskom je izvor; prevodi su opcioni i na sajtu zamenjuju srpski kada postoje."
+        }
+        actions={<DotBadge tone={PHASE_TONE[phase]}>{PHASE_LABEL[phase]}</DotBadge>}
+      />
 
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <Tabs
-            value={view}
-            onValueChange={(next) => setView(next === "preview" ? "preview" : "text")}
-            className="min-w-0 gap-4"
-          >
-            <TabsList variant="line" aria-label="Prikaz teksta" className="h-9 w-full justify-start border-b">
-              <TabsTrigger value="text" className="flex-none px-3" data-testid="post-tab-text">
-                Tekst
-              </TabsTrigger>
-              <TabsTrigger value="preview" className="flex-none px-3" data-testid="post-tab-preview">
-                Pregled
-              </TabsTrigger>
-            </TabsList>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <Tabs
+          value={view}
+          onValueChange={(next) => setView(next === "preview" ? "preview" : "text")}
+          className="min-w-0 gap-4"
+        >
+          <TabsList variant="line" aria-label="Prikaz teksta" className="h-9 w-full justify-start border-b">
+            <TabsTrigger value="text" className="flex-none px-3" data-testid="post-tab-text">
+              Tekst
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex-none px-3" data-testid="post-tab-preview">
+              Pregled
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="text">
-              <LocaleTabs
-                label="Jezik teksta"
-                value={locale}
-                onValueChange={setLocale}
-                trigger={(key) => <LocaleTrigger locale={key} done={written(form, key)} />}
-              >
-                {(key) => (
-                  <LocaleFields
-                    locale={key}
+          <TabsContent value="text">
+            <LocaleTabs
+              label="Jezik teksta"
+              value={locale}
+              onValueChange={setLocale}
+              trigger={(key) => <LocaleTrigger locale={key} done={written(form, key)} />}
+            >
+              {(key) => (
+                <LocaleFields
+                  locale={key}
+                  form={form}
+                  postId={data.post._id}
+                  titleError={key === "sr" ? errors.title : undefined}
+                  onTitle={setTitle}
+                  onChange={update}
+                />
+              )}
+            </LocaleTabs>
+          </TabsContent>
+
+          <TabsContent value="preview">
+            <LocaleTabs
+              label="Jezik pregleda"
+              value={locale}
+              onValueChange={setLocale}
+              trigger={(key) => <LocaleTrigger locale={key} done={written(form, key)} />}
+            >
+              {(key) => (
+                <div className="rounded-xl border bg-card px-4 py-6 md:px-8">
+                  <PostPreview
                     form={form}
-                    postId={data.post._id}
-                    titleError={key === "sr" ? errors.title : undefined}
-                    onTitle={setTitle}
-                    onChange={update}
+                    locale={key}
+                    coverUrl={coverPreviewUrl}
+                    readingMinutes={data.post.readingMinutes}
                   />
-                )}
-              </LocaleTabs>
-            </TabsContent>
+                </div>
+              )}
+            </LocaleTabs>
+          </TabsContent>
+        </Tabs>
 
-            <TabsContent value="preview">
-              <LocaleTabs
-                label="Jezik pregleda"
-                value={locale}
-                onValueChange={setLocale}
-                trigger={(key) => <LocaleTrigger locale={key} done={written(form, key)} />}
-              >
-                {(key) => (
-                  <div className="rounded-xl border bg-card px-4 py-6 md:px-8">
-                    <PostPreview
-                      form={form}
-                      locale={key}
-                      coverUrl={coverPreviewUrl}
-                      readingMinutes={data.post.readingMinutes}
-                    />
-                  </div>
-                )}
-              </LocaleTabs>
-            </TabsContent>
-          </Tabs>
+        <div className="flex min-w-0 flex-col gap-4">
+          <PublishCard data={data} dirty={dirty} save={save} canDelete={canDelete} onDeleting={onDeleting} />
 
-          <div className="flex min-w-0 flex-col gap-4">
-            <PublishCard data={data} dirty={dirty} save={save} canDelete={canDelete} onDeleting={onDeleting} />
+          <FormSection title="Adresa i razvrstavanje" columns={1}>
+            <SlugField
+              value={form.slug}
+              auto={slugAuto}
+              published={data.post.publishedAt !== undefined}
+              error={errors.slug}
+              onChange={(slug) => {
+                setSlugAuto(false);
+                update({ slug });
+              }}
+              onRegenerate={() => {
+                setSlugAuto(true);
+                if (form.title.sr.trim().length > 0) update({ slug: slugify(form.title.sr) });
+              }}
+            />
+            <CategoryField value={form.category} onChange={(category) => update({ category })} />
+            <TagsField value={form.tags} onChange={(tags) => update({ tags })} />
+            <AuthorField
+              value={form.authorAgentId}
+              agents={agents}
+              onChange={(authorAgentId) => update({ authorAgentId })}
+            />
+            <FeaturedField value={form.featured} onChange={(featured) => update({ featured })} />
+          </FormSection>
 
-            <FormSection title="Adresa i razvrstavanje" columns={1}>
-              <SlugField
-                value={form.slug}
-                auto={slugAuto}
-                published={data.post.publishedAt !== undefined}
-                error={errors.slug}
-                onChange={(slug) => {
-                  setSlugAuto(false);
-                  update({ slug });
-                }}
-                onRegenerate={() => {
-                  setSlugAuto(true);
-                  if (form.title.sr.trim().length > 0) update({ slug: slugify(form.title.sr) });
-                }}
-              />
-              <CategoryField value={form.category} onChange={(category) => update({ category })} />
-              <TagsField value={form.tags} onChange={(tags) => update({ tags })} />
-              <AuthorField
-                value={form.authorAgentId}
-                agents={agents}
-                onChange={(authorAgentId) => update({ authorAgentId })}
-              />
-              <FeaturedField value={form.featured} onChange={(featured) => update({ featured })} />
-            </FormSection>
+          <FormSection
+            title="Naslovna slika"
+            description="Prikazuje se u listi tekstova, na vrhu članka i pri deljenju na mrežama."
+            columns={1}
+          >
+            <ImageField
+              label="Naslovna slika"
+              value={form.cover}
+              previewUrl={coverPreviewUrl}
+              onChange={(cover) => update({ cover })}
+              aspect="video"
+              testId="post-cover"
+            />
+          </FormSection>
 
-            <FormSection
-              title="Naslovna slika"
-              description="Prikazuje se u listi tekstova, na vrhu članka i pri deljenju na mrežama."
-              columns={1}
-            >
-              <ImageField
-                label="Naslovna slika"
-                value={form.cover}
-                previewUrl={coverPreviewUrl}
-                onChange={(cover) => update({ cover })}
-                aspect="video"
-                testId="post-cover"
-              />
-            </FormSection>
-
-            <FormSection
-              title="Pretraživači (SEO)"
-              description="Opciono. Ako ostane prazno, koriste se naslov i kratak opis teksta."
-              columns={1}
-            >
-              <SeoFields
-                metaTitle={form.metaTitle}
-                metaDescription={form.metaDescription}
-                onChange={(next) => update(next)}
-              />
-            </FormSection>
-          </div>
+          <FormSection
+            title="Pretraživači (SEO)"
+            description="Opciono. Ako ostane prazno, koriste se naslov i kratak opis teksta."
+            columns={1}
+          >
+            <SeoFields
+              metaTitle={form.metaTitle}
+              metaDescription={form.metaDescription}
+              onChange={(next) => update(next)}
+            />
+          </FormSection>
         </div>
+      </div>
 
-        <SaveBar dirty={dirty} saving={saving} onReset={() => setForm(baseline)} />
-      </form>
-      <LeaveGuard dirty={dirty} />
-    </>
+      <SaveBar dirty={dirty} saving={saving} onReset={() => setForm(baseline)} />
+    </form>
   );
 }
 

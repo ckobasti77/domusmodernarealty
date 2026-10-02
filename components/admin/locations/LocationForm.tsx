@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/admin/common/ConfirmDialog";
 import { describedBy, FieldShell, FormSection, SaveBar } from "@/components/admin/common/form";
 import { ImageField } from "@/components/admin/common/ImageField";
 import { fromL10nValue, L10nInput, toL10nValue, type L10nValue } from "@/components/admin/common/L10nInput";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { insideSerbia, parseCoordinate, type CoordAxis } from "@/components/admin/listings/location/coords";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,14 +231,7 @@ export function LocationForm({
 
   const dirty = comparable(draft) !== comparable(baseline);
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
-
-  // A reload or closed tab would lose the draft.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useLeaveGuard({ dirty, description: "Izmene ove lokacije još nisu sačuvane. Ako sada napustite stranicu, biće izgubljene." });
 
   const errors = validate(draft, kind);
   const shown: Errors = submitted

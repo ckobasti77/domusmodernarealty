@@ -338,11 +338,12 @@ describe("exportCsv", () => {
       await makeContact(ctx, { name: '=HYPERLINK("http://zlo.example","klik")', email: "a@b.local" });
       await makeContact(ctx, { name: "Marko; \"Mare\"\nMarković", email: "m@b.local" });
       await makeContact(ctx, { name: "@SUM(A1)", phone: "-1+1" });
+      await makeContact(ctx, { name: "Ana Anić", phone: "+381-60-1234567" });
     });
     const asManager = t.withIdentity({ subject: ids.manager });
     const { csv, rows, truncated } = await asManager.mutation(api.contacts.exportCsv, {});
 
-    expect(rows).toBe(4);
+    expect(rows).toBe(5);
     expect(truncated).toBe(false);
     const lines = csv.split("\r\n");
     expect(lines[0]?.split(";")[0]).toBe("Ime");
@@ -350,8 +351,12 @@ describe("exportCsv", () => {
     expect(csv).toContain(`"Marko; ""Mare""\nMarković"`);
     expect(csv).toContain("'@SUM(A1)");
     expect(csv).toContain("'-1+1");
-    // The phone starts with "+": kept as text, not a formula.
-    expect(csv).toContain(`'${PHONE}`);
+    // A plain international number ("+", digits, spaces) is no formula: it is
+    // written as typed, quoted, without a visible apostrophe…
+    expect(csv).toContain(`;"${PHONE}";`);
+    expect(csv).not.toContain(`'${PHONE}`);
+    // …while "+" followed by arithmetic still gets the text prefix.
+    expect(csv).toContain("'+381-60-1234567");
     expect(csv).not.toMatch(/(^|;)[=+@-]/m);
 
     // M5: the audit row commits with the export, with the real count.
@@ -359,7 +364,7 @@ describe("exportCsv", () => {
       (await ctx.db.query("activity").take(50)).filter((row) => row.action === "contact.exported"),
     );
     expect(audit).toHaveLength(1);
-    expect(audit[0]).toMatchObject({ by: ids.manager, summary: "CSV izvoz: 4 kontakata" });
+    expect(audit[0]).toMatchObject({ by: ids.manager, summary: "CSV izvoz: 5 kontakata" });
   });
 });
 

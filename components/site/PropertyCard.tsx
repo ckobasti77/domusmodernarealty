@@ -33,6 +33,9 @@ import { setHoveredListing, useIsHovered } from "./search/hover-store";
  * without nesting interactive elements inside an anchor.
  */
 
+/** What the card draws of a photograph; a `PublicImage` passes as is. */
+export type CardFrame = Pick<PublicImage, "id" | "url" | "alt" | "blurDataURL">;
+
 /** Only the fields the card renders, so a caller can pass a card DTO directly. */
 export type PropertyCardListing = {
   _id: string;
@@ -45,14 +48,12 @@ export type PropertyCardListing = {
   locationLabel: L10nValue;
   price: number;
   pricePerM2: number;
-  priceOnRequest?: boolean;
   previousPrice?: number;
   areaM2: number;
   rooms: number;
   floor: Floor;
   totalFloors?: number;
-  cover?: PublicImage;
-  photoCount: number;
+  cover?: CardFrame;
   isExclusive: boolean;
   hasTour: boolean;
   publishedAt?: number;
@@ -71,7 +72,7 @@ const MAX_BADGES = 2;
 export type PropertyCardProps = {
   listing: PropertyCardListing;
   /** Extra gallery frames. With 0 or 1 image the carousel chrome is not rendered. */
-  images?: readonly PublicImage[];
+  images?: readonly CardFrame[];
   ratio?: "4/5" | "3/2";
   sizes?: string;
   priority?: boolean;
@@ -141,12 +142,12 @@ export function PropertyCard({
   );
 
   const monthly =
-    mortgage !== undefined && listing.transaction === "sale" && listing.priceOnRequest !== true
+    mortgage !== undefined && listing.transaction === "sale"
       ? computeMortgage({ price: listing.price, downPct: mortgage.downPct, years: mortgage.years, ratePct: mortgage.rate })
           .monthlyPayment
       : null;
 
-  const frames: readonly PublicImage[] =
+  const frames: readonly CardFrame[] =
     images !== undefined && images.length > 0
       ? images
       : listing.cover !== undefined
@@ -239,7 +240,6 @@ export function PropertyCard({
             price={listing.price}
             pricePerM2={listing.pricePerM2}
             previousPrice={listing.previousPrice}
-            priceOnRequest={listing.priceOnRequest}
             transaction={listing.transaction}
             size="md"
           />
@@ -463,7 +463,7 @@ function Gallery({
   alt,
 }: {
   slug: string;
-  frames: readonly PublicImage[];
+  frames: readonly CardFrame[];
   ratio: "4/5" | "3/2";
   sizes: string;
   priority: boolean;
@@ -479,6 +479,13 @@ function Gallery({
     align: "start",
   });
   const [index, setIndex] = useState(0);
+  // Only the first photo is in the server HTML: every frame's srcset, on a
+  // page of cards, would outweigh the rest of the page. The others mount
+  // once the visitor reaches for the carousel (a pointer over it, a touch,
+  // focus on an arrow) into slides that are already there, so Embla keeps
+  // its snaps and the swipe that mounts them is not cut short.
+  const [engaged, setEngaged] = useState(false);
+  const engage = useCallback(() => setEngaged(true), []);
 
   useEffect(() => {
     if (embla === undefined) return;
@@ -490,8 +497,14 @@ function Gallery({
     };
   }, [embla]);
 
-  const prev = useCallback(() => embla?.scrollPrev(), [embla]);
-  const next = useCallback(() => embla?.scrollNext(), [embla]);
+  const prev = useCallback(() => {
+    setEngaged(true);
+    embla?.scrollPrev();
+  }, [embla]);
+  const next = useCallback(() => {
+    setEngaged(true);
+    embla?.scrollNext();
+  }, [embla]);
 
   const aspect = ratio === "4/5" ? "aspect-[4/5]" : "aspect-[3/2]";
 
@@ -518,6 +531,9 @@ function Gallery({
     <div
       className={cn("relative overflow-hidden bg-ivory-2", aspect)}
       aria-roledescription={single ? undefined : "carousel"}
+      onPointerEnter={single ? undefined : engage}
+      onPointerDown={single ? undefined : engage}
+      onFocus={single ? undefined : engage}
     >
       {/* The title's stretched link covers the card, so on a touch screen the
           photos sit above it: a swipe reaches Embla, and a tap (Embla swallows
@@ -531,20 +547,19 @@ function Gallery({
         }
       >
         <div className="flex h-full">
-          {frames.map((frame, i) => {
-            const frameAlt = pickL10n(frame.alt, locale);
-            return (
-              <div
-                key={frame.id}
-                // Clips its own photo: the 1.04 hover scale must not show a
-                // sliver of the next slide at the card's edge.
-                className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden"
-                role={single ? undefined : "group"}
-                aria-roledescription={single ? undefined : "slide"}
-                aria-label={single ? undefined : `${i + 1} / ${frames.length}`}
-              >
-                {/* The featured rail's parallax moves this wrapper, so it never
-                    fights the photo's own hover transition. */}
+          {frames.map((frame, i) => (
+            <div
+              key={frame.id}
+              // Clips its own photo: the 1.04 hover scale must not show a
+              // sliver of the next slide at the card's edge.
+              className="relative h-full min-w-0 flex-[0_0_100%] overflow-hidden"
+              role={single ? undefined : "group"}
+              aria-roledescription={single ? undefined : "slide"}
+              aria-label={single ? undefined : `${i + 1} / ${frames.length}`}
+            >
+              {i === 0 || engaged ? (
+                // The featured rail's parallax moves this wrapper, so it never
+                // fights the photo's own hover transition.
                 <div data-card-parallax="" className="absolute inset-0">
                   <Image
                     data-card-image=""
@@ -555,7 +570,7 @@ function Gallery({
                       frame.url,
                       ratio === "4/5" ? 1.25 : 2 / 3,
                     )}
-                    alt={frameAlt.text}
+                    alt={pickL10n(frame.alt, locale).text}
                     fill
                     sizes={sizes}
                     // Next 16 deprecated `priority`; the first frame of a lead card is an LCP candidate.
@@ -568,9 +583,9 @@ function Gallery({
                     className="scale-[1.04] object-cover transition-[scale] duration-700 ease-out pointer-fine:group-hover/card:scale-100"
                   />
                 </div>
-              </div>
-            );
-          })}
+              ) : null}
+            </div>
+          ))}
         </div>
       </div>
 

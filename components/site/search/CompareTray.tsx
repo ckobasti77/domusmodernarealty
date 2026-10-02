@@ -4,11 +4,11 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { buttonClasses } from "@/components/site/Button";
-import type { ListingCard } from "@/convex/lib/dto";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { frameLoader } from "@/lib/image-loaders";
 import { pickL10n } from "@/lib/l10n";
+import { coverOf, type SearchCard } from "@/lib/search-cards";
 import { COMPARE_MIN, clearCompare, removeFromCompare, useCompareIds } from "@/lib/stores/compare";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
  * strip sliced at the button read as broken. There the cards' own "Uporedi"
  * toggles remove a listing.
  */
-export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard> }) {
+export function CompareTray({ known }: { known: ReadonlyMap<string, SearchCard> }) {
   const t = useTranslations("compare");
   const locale = useLocale() as Locale;
   const ids = useCompareIds();
@@ -52,13 +52,14 @@ export function CompareTray({ known }: { known: ReadonlyMap<string, ListingCard>
           {ids.map((id) => {
             const card = known.get(id);
             const title = card !== undefined ? pickL10n(card.title, locale).text : "";
+            const cover = card !== undefined ? coverOf(card) : undefined;
             return (
               <li key={id} className="relative flex shrink-0 items-center">
                 <span className="relative block h-11 w-16 overflow-hidden bg-ink-3">
-                  {card?.cover !== undefined ? (
+                  {cover !== undefined ? (
                     <Image
-                      src={card.cover.url}
-                      loader={frameLoader(card.cover.url, 11 / 16)}
+                      src={cover.url}
+                      loader={frameLoader(cover.url, 11 / 16)}
                       alt=""
                       fill
                       sizes="64px"

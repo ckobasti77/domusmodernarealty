@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
+import { useNow } from "@/components/admin/common/use-now";
 import { hasRole, LISTING_ROLES, MANAGER_ROLES, useMe } from "@/components/admin/shell/me";
 import { EditorWelcome } from "./EditorWelcome";
 import { Greeting } from "./Greeting";
 import { KpiCards } from "./KpiCards";
 import { RecentActivity } from "./RecentActivity";
 import { TodoLists } from "./TodoLists";
-import { useClock } from "./useClock";
 import { ViewsLeadsCard } from "./ViewsLeadsCard";
 
 /**
@@ -23,7 +23,7 @@ export function Dashboard() {
   // One timestamp for query arguments (stable subscriptions) and a ticking
   // clock for "pre 5 minuta" labels.
   const [now] = useState(() => Date.now());
-  const clock = useClock(30_000);
+  const clock = useNow(30_000);
   const isManager = hasRole(me, MANAGER_ROLES);
   const worksListings = hasRole(me, LISTING_ROLES);
 

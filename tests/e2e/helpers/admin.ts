@@ -8,8 +8,9 @@ import { api } from "../../../convex/_generated/api";
 /**
  * Shared helpers for the admin e2e suite (night-run step 08).
  *
- * Credentials come from night-run/state/admin.json at runtime (gitignored) and
- * are never logged: no helper puts the password into an error message.
+ * Credentials come from `E2E_ADMIN_EMAIL` + `E2E_ADMIN_PASSWORD`, or else from
+ * night-run/state/admin.json (gitignored, written by the night-run bootstrap),
+ * and are never logged: no helper puts the password into an error message.
  */
 
 const ROOT = process.cwd();
@@ -17,10 +18,20 @@ const CONVEX_CLI = path.join(ROOT, "node_modules", "convex", "bin", "main.js");
 
 export type Creds = { email: string; password: string };
 
-/** The bootstrap admin from night-run/state/admin.json. */
+/** An admin account on the dev deployment: the environment first, then the night-run file. */
 export function readAdminCreds(): Creds {
+  const email = process.env.E2E_ADMIN_EMAIL;
+  const password = process.env.E2E_ADMIN_PASSWORD;
+  if (email !== undefined && email.length > 0 && password !== undefined && password.length > 0) {
+    return { email, password };
+  }
   const file = path.join(ROOT, "night-run", "state", "admin.json");
-  if (!existsSync(file)) throw new Error("night-run/state/admin.json is missing (the admin bootstrap writes it)");
+  if (!existsSync(file)) {
+    throw new Error(
+      "No admin credentials: set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD (an admin on the dev deployment), " +
+        "or provide night-run/state/admin.json",
+    );
+  }
   const raw = JSON.parse(readFileSync(file, "utf8")) as Partial<Creds>;
   if (typeof raw.email !== "string" || typeof raw.password !== "string" || raw.password.length === 0) {
     throw new Error("night-run/state/admin.json must hold { email, password }");

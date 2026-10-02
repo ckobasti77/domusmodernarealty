@@ -2,6 +2,7 @@
 
 import { UserPlus, Users } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { EmptyState, FilterSelect, ListToolbar, optionsFrom, SearchInput } from "@/components/admin/common/ListToolbar";
 import { DotBadge } from "@/components/admin/common/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -21,9 +22,6 @@ const STATUS_OPTIONS = optionsFrom<Exclude<UserStatus, "invited">>({
   active: USER_STATUS_LABEL.active,
   disabled: USER_STATUS_LABEL.disabled,
 });
-/** Below Tailwind's `md`: the stacked list replaces the table. */
-const PHONE_QUERY = "(max-width: 767.98px)";
-
 function sortUsers(users: readonly TeamUser[]): TeamUser[] {
   return [...users].sort(
     (a, b) =>

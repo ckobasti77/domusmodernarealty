@@ -1,9 +1,9 @@
 /**
  * Viewing slots are agent office hours, entered as Belgrade wall-clock time
- * (`agentsAdmin.setAvailability`). The booking widget therefore works in
- * Europe/Belgrade regardless of where the visitor is, and passes the Belgrade
- * UTC offset to `agents.slots` / `viewings.request`, which validate in the same
- * local space.
+ * (`agentsAdmin.setAvailability`). The booking widget therefore labels days and
+ * times in Europe/Belgrade regardless of where the visitor is; slot instants come
+ * from `agents.slots`, and `viewings.request` re-validates them on the server
+ * with `convex/lib/belgradeTime.ts`.
  */
 export const BELGRADE_TZ = "Europe/Belgrade";
 const DAY_MS = 86_400_000;

@@ -11,6 +11,7 @@ import { breadcrumbJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n } from "@/lib/l10n";
 import { getPublicSettings } from "@/lib/listing-data";
 import { absoluteUrl, documentTitle, localizedAlternates, socialMetadata } from "@/lib/seo";
+import { toSearchCard } from "@/lib/search-cards";
 import { getLocationTree } from "@/lib/search-data";
 import { effectiveSlugs, indexLocations, resolveLocations, type LocationIndex } from "@/lib/search-locations";
 import {
@@ -115,7 +116,8 @@ export default async function PropertiesPage(props: Props) {
       <SearchExperience
         initial={{
           key: searchKey(parsed),
-          page: first.page,
+          // Props are serialized into the HTML: only what the cards draw, in this locale.
+          page: first.page.map((card) => toSearchCard(card, locale)),
           status: first.isDone ? "Exhausted" : "CanLoadMore",
           count,
         }}

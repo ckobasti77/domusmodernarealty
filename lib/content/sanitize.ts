@@ -31,7 +31,7 @@ const POST_PROFILE: Profile = {
     s: [],
     a: ["href", "title", "target", "rel"],
     ul: [],
-    ol: ["start"],
+    ol: ["start", "type"],
     li: [],
     blockquote: [],
     img: ["src", "alt", "width", "height"],

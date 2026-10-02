@@ -26,15 +26,17 @@
  *
  * CLEARING. Convex drops `undefined` keys from arguments, so an emptied
  * optional TOP-LEVEL field becomes an `Unset`: `listingsAdmin.update({ unset })`
- * for the fields in `CLEARABLE_FIELDS`, and the video URL / 360° tour / 3D
- * walkthrough through their own mutations. Nested optionals need nothing: the
- * parent object is sent whole without the key.
+ * for the fields in `CLEARABLE_FIELDS` (with the patch, in one call), and the
+ * video URL / 360° tour / 3D walkthrough through their own mutations. Nested
+ * optionals need nothing: the parent object is sent whole without the key.
+ * The brokerage contract cannot be cleared at all (`contractCleared`).
  */
 import type { FunctionArgs } from "convex/server";
 import { z } from "@/lib/admin/zod";
 import type { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { ChecklistListing } from "@/convex/lib/checklist";
+import { IMAGE_URL_HOSTS, isAllowedImageUrl } from "@/convex/lib/storage";
 import {
   TOUR_LIMITS,
   externalTourEmbedUrl,
@@ -42,7 +44,16 @@ import {
   isSitePanoPath,
   isValidFloorPolygon,
 } from "@/convex/lib/tours";
-import { FEATURE_KEYS, L10N_KEYS, type ImageRef, type L10n, type L10nKey, type L10nList } from "@/convex/lib/validators";
+import {
+  FEATURE_KEYS,
+  L10N_KEYS,
+  LISTING_TEXT_LIMITS,
+  type ImageRef,
+  type L10n,
+  type L10nKey,
+  type L10nList,
+} from "@/convex/lib/validators";
+import { parseVideoUrl } from "@/convex/lib/video";
 import { fromDateInput, toDateInput } from "@/lib/admin/format";
 import {
   ADDRESS_VISIBILITY_LABEL,
@@ -76,24 +87,27 @@ export type AssetFormat = AssetDoc["format"];
 
 /* ------------------------------------------------------------ constants */
 
-export const TITLE_MAX = 140;
-export const DESCRIPTION_MAX = 10_000;
-export const HIGHLIGHTS_MAX = 8;
-export const HIGHLIGHT_MAX = 90;
-export const VIEW_TAGS_MAX = 6;
-export const POI_MAX = 12;
+/** `listingsAdmin.update` refuses text past these limits; the form says so first. */
+const LIMITS = LISTING_TEXT_LIMITS;
+
+export const TITLE_MAX = LIMITS.title;
+export const DESCRIPTION_MAX = LIMITS.description;
+export const HIGHLIGHTS_MAX = LIMITS.highlightItems;
+export const HIGHLIGHT_MAX = LIMITS.highlightLength;
+export const VIEW_TAGS_MAX = LIMITS.viewTags;
+export const POI_MAX = LIMITS.poiCount;
 export const META_TITLE_SOFT = 60;
-export const META_TITLE_MAX = 70;
+export const META_TITLE_MAX = LIMITS.metaTitle;
 export const META_DESCRIPTION_SOFT = 155;
-export const META_DESCRIPTION_MAX = 170;
+export const META_DESCRIPTION_MAX = LIMITS.metaDescription;
 /** The publish checklist's minimum for the Serbian description. */
 export const DESCRIPTION_MIN_SR = 80;
 export const TITLE_MIN_SR = 10;
+/** `normalizeTour360` refuses a longer tour URL or ID (`convex/lib/tourAssets.ts`). */
+export const TOUR_TEXT_MAX = TOUR_LIMITS.text;
 
 /** The same test as `listingsAdmin.update` for URLs it stores. */
 export const HTTPS_PATTERN = /^https:\/\/\S+$/;
-export const VIDEO_URL_PATTERN =
-  /^https:\/\/(?:(?:www\.|m\.)?youtube\.com|youtu\.be|(?:www\.|player\.)?vimeo\.com)\/\S+$/;
 /** What `slugify` produces: lowercase ASCII words joined by single hyphens. */
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const SLUG_MAX = 80;
@@ -177,10 +191,12 @@ function text(max: number) {
   return z.string().max(max, { error: `Najviše ${groupFmt.format(max)} znakova.` });
 }
 
-const httpsOrEmpty = z
-  .string()
-  .max(2000, { error: "Adresa je predugačka." })
-  .refine((value) => value.trim() === "" || HTTPS_PATTERN.test(value.trim()), { error: MSG.https });
+function httpsOrEmpty(max: number) {
+  return z
+    .string()
+    .max(max, { error: "Adresa je predugačka." })
+    .refine((value) => value.trim() === "" || HTTPS_PATTERN.test(value.trim()), { error: MSG.https });
+}
 
 const dateOrEmpty = z
   .string()
@@ -219,7 +235,7 @@ const highlightList = z
 
 const mandateSchema = z
   .object({
-    number: text(60),
+    number: text(LIMITS.mandateNumber),
     type: enumOf(MANDATE_TYPE_LABEL),
     start: dateOrEmpty,
     end: dateOrEmpty,
@@ -242,7 +258,7 @@ const mandateSchema = z
 
 const assetSchema = z.object({
   // `prepareWalk3d`: the public viewer may only fetch models from the CSP's splat hosts.
-  url: httpsOrEmpty.refine((value) => value.trim() === "" || isAllowedSplatUrl(value), {
+  url: httpsOrEmpty(2000).refine((value) => value.trim() === "" || isAllowedSplatUrl(value), {
     error: "Model mora biti na serveru d28zzqy0iyovbz.cloudfront.net ili storage.googleapis.com (ili otpremljen fajl).",
   }),
   storageId: storageIdSchema.optional(),
@@ -292,10 +308,7 @@ const imageRefSchema = z.discriminatedUnion("kind", [
 
 const poiSchema = z.object({
   kind: enumOf(POI_KIND_LABEL),
-  name: z
-    .string()
-    .max(80, { error: "Najviše 80 znakova." })
-    .refine((value) => value.trim() !== "", { error: "Unesite naziv." }),
+  name: text(LIMITS.poiName).refine((value) => value.trim() !== "", { error: "Unesite naziv." }),
   distanceM: requiredNumber({ integer: true, max: 100_000 }),
 });
 
@@ -318,13 +331,12 @@ const shape = {
   highlights: z.object({ sr: highlightList, en: highlightList, ru: highlightList, de: highlightList }),
 
   price: requiredNumber({ max: 1_000_000_000 }),
-  priceOnRequest: z.boolean(),
   vatIncluded: z.boolean(),
   vatRefundEligible: z.boolean(),
   mortgageEligible: z.boolean(),
   developerInstallments: z.boolean(),
   urgent: z.boolean(),
-  commissionText: optionalL10nSchema(500),
+  commissionText: optionalL10nSchema(LIMITS.commissionText),
   costs: z.object({
     infostan: optionalNumber({ max: 100_000 }),
     maintenance: optionalNumber({ max: 100_000 }),
@@ -341,8 +353,8 @@ const shape = {
   municipalityId: z.union([idSchema<"locations">(), z.literal("")]),
   neighborhoodId: z.union([idSchema<"locations">(), z.literal("")]),
   location: z.object({
-    street: text(120),
-    streetNo: text(20),
+    street: text(LIMITS.street),
+    streetNo: text(LIMITS.streetNo),
     postalCode: z
       .string()
       .refine((value) => value === "" || /^\d{5}$/.test(value), { error: "Poštanski broj ima 5 cifara." }),
@@ -372,7 +384,7 @@ const shape = {
   outdoorAreaM2: optionalNumber({ max: 1_000_000 }),
   orientation: z.array(enumOf(ORIENTATION_LABEL)),
   view: z
-    .array(text(40))
+    .array(text(LIMITS.viewTagLength))
     .max(VIEW_TAGS_MAX, { error: `Najviše ${VIEW_TAGS_MAX} oznaka.` }),
   parking: z.array(enumOf(PARKING_LABEL)),
   furnishing: enumOf(FURNISHING_LABEL),
@@ -381,23 +393,25 @@ const shape = {
     registration: enumOf(REGISTRATION_LABEL),
     legalization: enumOf(LEGALIZATION_LABEL),
     occupancyPermit: z.boolean().nullable(),
-    encumbrance: text(1000),
-    ownershipShare: text(60),
+    encumbrance: text(LIMITS.encumbrance),
+    ownershipShare: text(LIMITS.ownershipShare),
     docsVerifiedAt: z.number().nullable(),
   }),
   availableFrom: dateOrEmpty,
   swapPossible: z.boolean(),
 
+  // `isVideoUrl` is the rule `listingsAdmin.update` and `media.setVideoUrl`
+  // apply; `parseVideoUrl` also wants a video the public player can embed.
   videoUrl: z
     .string()
-    .refine((value) => value.trim() === "" || VIDEO_URL_PATTERN.test(value.trim()), {
-      error: "Unesite https adresu videa sa YouTube-a ili Vimeo-a.",
+    .refine((value) => value.trim() === "" || parseVideoUrl(value.trim()) !== null, {
+      error: "Unesite adresu videa sa YouTube-a ili Vimeo-a (https://www.youtube.com/watch?v=… ili https://vimeo.com/…).",
     }),
   tour360: z
     .object({
       provider: z.union([enumOf(TOUR_PROVIDER_LABEL), z.literal("none")]),
       externalId: text(120),
-      url: httpsOrEmpty,
+      url: httpsOrEmpty(TOUR_TEXT_MAX),
       published: z.boolean(),
     })
     .superRefine((tour, ctx) => {
@@ -428,12 +442,13 @@ const shape = {
       desktop: assetSchema,
       mobile: assetSchema,
       collision: assetSchema,
-      // `prepareWalk3d`: an https image or one shipped with the site (the demo walk).
+      // `prepareWalk3d`: one shipped with the site (the demo walk), or an
+      // image on a host the public CSP allows (`assertImageRef`).
       posterUrl: z
         .string()
         .max(2000, { error: "Adresa je predugačka." })
-        .refine((value) => blank(value) || HTTPS_PATTERN.test(value.trim()) || isSitePanoPath(value.trim()), {
-          error: "Adresa mora počinjati sa https:// (ili biti slika sajta iz /media/tours/).",
+        .refine((value) => blank(value) || isSitePanoPath(value.trim()) || isAllowedImageUrl(value.trim()), {
+          error: `Slika mora biti sa ${IMAGE_URL_HOSTS.join(", ")} (https://…) ili iz /media/tours/; drugu sliku otpremite sa računara.`,
         }),
       posterStorageId: storageIdSchema.optional(),
       credits: text(300),
@@ -518,6 +533,18 @@ export const EDITOR_TABS = [
 ] as const;
 export type EditorTab = (typeof EDITOR_TABS)[number];
 
+export const EDITOR_TAB_LABEL: Record<EditorTab, string> = {
+  osnovno: "Osnovno",
+  lokacija: "Lokacija",
+  karakteristike: "Karakteristike",
+  cena: "Cena",
+  opis: "Opis",
+  mediji: "Mediji",
+  "3d": "360° / 3D",
+  pravno: "Pravno",
+  seo: "SEO",
+};
+
 /**
  * Which tab edits each field (error dots on tab triggers). Must name exactly
  * the keys of the `update` patch, minus `ownerContactId` (`setOwner`).
@@ -561,7 +588,6 @@ export const TAB_OF_KEY = {
   availableFrom: "karakteristike",
   swapPossible: "karakteristike",
   price: "cena",
-  priceOnRequest: "cena",
   vatIncluded: "cena",
   vatRefundEligible: "cena",
   mortgageEligible: "cena",
@@ -672,7 +698,6 @@ export function docToForm(doc: ListingDoc): ListingForm {
     highlights: l10nListIn(doc.highlights),
 
     price: doc.price,
-    priceOnRequest: doc.priceOnRequest === true,
     // `lib/costs.ts`: a missing flag means the new-build price includes VAT.
     vatIncluded: doc.vatIncluded !== false,
     vatRefundEligible: doc.vatRefundEligible === true,
@@ -782,11 +807,20 @@ export const CLEARABLE_FIELDS = [
 ] as const satisfies readonly (keyof ListingDoc)[];
 export type ClearableField = (typeof CLEARABLE_FIELDS)[number];
 
+/** Emptied fields with a mutation of their own (`media.setVideoUrl`, `toursAdmin.setTour360` / `setWalk3d`). */
+export type MediaUnset = "videoUrl" | "tour360" | "walk3d";
+
 /**
  * A top-level field the user emptied. Video, 360° tour and 3D walk go through
- * their own mutations; the rest through `update({ unset })`.
+ * their own mutations; the rest through `update({ unset })`, in the same call
+ * as the patch (the server checks the result as a whole: a new city and the
+ * cleared municipality must arrive together).
  */
-export type Unset = "videoUrl" | "tour360" | "walk3d" | ClearableField;
+export type Unset = MediaUnset | ClearableField;
+
+export function isClearableField(field: Unset): field is ClearableField {
+  return (CLEARABLE_FIELDS as readonly string[]).includes(field);
+}
 
 export type SavePlan = {
   patch: ListingPatch;
@@ -837,6 +871,14 @@ function l10nListOut(value: Record<L10nKey, string[]>): L10nList {
 
 export function mandateIsEmpty(mandate: MandateForm): boolean {
   return blank(mandate.number) && mandate.start === "" && mandate.end === "";
+}
+
+/** Shown on the contract when its fields are emptied: the server has no way to remove it. */
+export const MANDATE_KEEP_MESSAGE = "Ugovor o posredovanju se ne briše — izmenite datum isteka ili povucite oglas.";
+
+/** The form's contract was emptied while `saved` (what the server holds) is a real one. */
+export function contractCleared(mandate: MandateForm, saved: MandateForm): boolean {
+  return mandateIsEmpty(mandate) && !mandateIsEmpty(saved);
 }
 
 /** The stored contract, or `undefined` until number, start and end are all filled. */
@@ -952,7 +994,6 @@ export function buildSave(values: ListingForm, keys: readonly FormKey[]): SavePl
       case "condition":
       case "furnishing":
       case "floor":
-      case "priceOnRequest":
       case "vatIncluded":
       case "vatRefundEligible":
       case "mortgageEligible":
@@ -1356,7 +1397,12 @@ export function parseFloorPolygon(text: string): { ok: true; points: number[][] 
   return { ok: true, points };
 }
 
-/** Whole days from `now` until `ms` (negative once passed). */
+/**
+ * Belgrade calendar days from `now` to the day of `ms`: 0 on that day, 1 the
+ * day before, negative once it has passed, whatever the time of day.
+ */
 export function daysUntil(ms: number, now: number): number {
-  return Math.ceil((ms - now) / 86_400_000);
+  // Both at Belgrade noon of their day (10:00 UTC), so the gap is whole days.
+  const noonOf = (at: number) => fromDateInput(toDateInput(at)) ?? at;
+  return Math.round((noonOf(ms) - noonOf(now)) / 86_400_000);
 }

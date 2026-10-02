@@ -13,7 +13,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import type { Locale } from "@/i18n/routing";
 import { errorMessageKey } from "@/lib/errors";
 import { getSessionKey } from "@/lib/session";
-import { ConsentFields, contactFields, FormError, SuccessPanel } from "./shared";
+import { ConsentFields, contactFields, FormError, SuccessPanel, useSuccessFocus } from "./shared";
 
 /**
  * Listing inquiry (PRD A5) → `leads.createInquiry`. Validation runs on the
@@ -50,8 +50,10 @@ export function InquiryForm({ listingId, refCode }: { listingId: Id<"listings">;
     register,
     handleSubmit,
     reset,
+    setFocus,
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: defaults });
+  const successRef = useSuccessFocus(sent, () => setFocus("name"));
 
   async function onSubmit(values: Values) {
     setServerError(null);
@@ -78,22 +80,24 @@ export function InquiryForm({ listingId, refCode }: { listingId: Id<"listings">;
 
   if (sent) {
     return (
-      <SuccessPanel
-        heading={t("successHeading")}
-        body={t("success")}
-        action={
-          <Button
-            variant="outline"
-            size="compact"
-            onClick={() => {
-              reset(defaults);
-              setSent(false);
-            }}
-          >
-            {t("sendAnother")}
-          </Button>
-        }
-      />
+      <div ref={successRef} tabIndex={-1} className="scroll-mt-28 outline-none">
+        <SuccessPanel
+          heading={t("successHeading")}
+          body={t("success")}
+          action={
+            <Button
+              variant="outline"
+              size="compact"
+              onClick={() => {
+                reset(defaults);
+                setSent(false);
+              }}
+            >
+              {t("sendAnother")}
+            </Button>
+          }
+        />
+      </div>
     );
   }
 

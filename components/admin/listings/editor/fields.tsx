@@ -10,12 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { fromNumberInput, toNumberInput } from "@/lib/admin/format";
 import type { ListingForm } from "@/lib/admin/listing-form";
-import { parseLocaleNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type FieldName = FieldPath<ListingForm>;
-export type Option = { value: string; label: string };
+export type Option = { value: string; label: string; disabled?: boolean };
 
 /** Options from a label map, in its declaration order. */
 export function optionsOf<K extends string>(labels: Record<K, string>): Option[] {
@@ -278,25 +278,12 @@ export function TextAreaField({
   );
 }
 
-/** Empty → `null`; unparsable → `NaN` (the schema reports it); Serbian notation ("285.000", "2,5") accepted. */
-function textToNumber(text: string, native: boolean): number | null {
-  if (text.trim() === "") return null;
-  if (native) {
-    const value = Number(text);
-    return Number.isFinite(value) ? value : Number.NaN;
-  }
-  return parseLocaleNumber(text, "sr-Latn") ?? Number.NaN;
-}
-
-function numberToText(value: unknown, native: boolean): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "";
-  return native ? String(value) : String(value).replace(".", ",");
-}
-
 /**
- * A number held as a number in the form. The input keeps its own text so
- * half-typed values ("2,", "285.") survive, and resyncs when the value changes
- * from outside (a server update, rent/price sync).
+ * A number held as a number in the form. Always a text input: a native
+ * `type="number"` drops the decimal comma in Chromium, so "1,5" rooms arrived
+ * as 15. The input keeps its own text so half-typed values ("2,", "285.")
+ * survive, and resyncs when the value changes from outside (a server update,
+ * rent/price sync).
  */
 export function NumberField({
   name,
@@ -305,10 +292,6 @@ export function NumberField({
   hint,
   unit,
   className,
-  native = false,
-  step,
-  min,
-  max,
   deps,
   onBlur,
   placeholder,
@@ -320,11 +303,6 @@ export function NumberField({
   hint?: ReactNode;
   unit?: string;
   className?: string;
-  /** A native `type="number"` input with a spinner (small counts, halves). */
-  native?: boolean;
-  step?: number;
-  min?: number;
-  max?: number;
   deps?: FieldName[];
   onBlur?: () => void;
   placeholder?: string;
@@ -333,29 +311,26 @@ export function NumberField({
   const { field } = useController<ListingForm>({ name, rules: deps !== undefined ? { deps } : undefined });
   const error = useFieldError(name);
   const value: unknown = field.value;
-  const [draft, setDraft] = useState(() => numberToText(value, native));
+  const [draft, setDraft] = useState(() => toNumberInput(value));
   const [seen, setSeen] = useState<unknown>(value);
   if (!Object.is(seen, value)) {
     setSeen(value);
-    if (!Object.is(textToNumber(draft, native), value)) setDraft(numberToText(value, native));
+    if (!Object.is(fromNumberInput(draft), value)) setDraft(toNumberInput(value));
   }
 
   const inputProps = {
     id,
     name: field.name,
-    type: native ? "number" : "text",
+    type: "text",
     inputMode: "decimal" as const,
     autoComplete: "off",
-    step: native ? step : undefined,
-    min: native ? min : undefined,
-    max: native ? max : undefined,
     placeholder,
     value: draft,
     "aria-invalid": error !== undefined ? true : undefined,
     "aria-describedby": describedBy(id, hint !== undefined, error !== undefined),
     onChange: (event: ChangeEvent<HTMLInputElement>) => {
       const text = event.target.value;
-      const next = textToNumber(text, native);
+      const next = fromNumberInput(text);
       setDraft(text);
       setSeen(next);
       field.onChange(next);
@@ -434,7 +409,7 @@ export function SelectField({
         <SelectContent position="popper" className="max-h-80">
           {noneLabel !== undefined ? <SelectItem value={NONE}>{noneLabel}</SelectItem> : null}
           {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </SelectItem>
           ))}

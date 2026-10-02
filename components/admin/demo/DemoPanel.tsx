@@ -5,9 +5,9 @@ import { CircleCheck, Loader2, TriangleAlert } from "lucide-react";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
+import { useNow } from "@/components/admin/common/use-now";
 import { DashCard } from "@/components/admin/dashboard/DashCard";
 import { formatCount, pluralSr } from "@/components/admin/dashboard/format";
-import { useClock } from "@/components/admin/dashboard/useClock";
 import { ADMIN_ROLES } from "@/components/admin/shell/me";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
@@ -37,7 +37,7 @@ function DemoContent() {
     entity: "demo",
     paginationOpts: { numItems: 1, cursor: null },
   });
-  const clock = useClock(15_000);
+  const clock = useNow(15_000);
   const state = runs === undefined ? undefined : purgeStateOf(runs.page[0], clock);
   const total = counts?.total;
 

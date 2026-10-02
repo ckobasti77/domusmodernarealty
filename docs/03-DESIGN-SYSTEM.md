@@ -24,7 +24,7 @@ The owner picked this direction: a dark cinematic hero, ivory and charcoal with 
 - No box shadows on the public site. Depth comes from photography, overlap and scale.
 
 ## 2. Typography
-- **Display serif:** Cormorant Garamond via `next/font/google`.
+- **Display serif:** EB Garamond via `next/font/google` (replaced Cormorant Garamond, whose latin-ext subset misplaces the caron on lowercase č/š/ž; DECISIONS [04]).
   - Weights 300, 400, 500 + italic; subsets `latin`, `latin-ext`, `cyrillic`.
   - Headlines, big statements, numbers in editorial blocks.
   - Tracking −1% to −2% at large sizes, `font-feature-settings: "liga","dlig"` sparingly.
@@ -68,7 +68,7 @@ The owner picked this direction: a dark cinematic hero, ivory and charcoal with 
 - **Forms:** underline-style inputs on ivory, floating labels, clear error text, 44px min touch targets.
 - **Price** component: EUR per locale + optional RSD conversion.
 - **Logo:** wordmark "MIHAJLO ESTATE".
-  - Cormorant Garamond 500, letter-spacing 0.24em, uppercase, with a thin bronze rule or small "ME" monogram.
+  - Cormorant Garamond 500 letterforms drawn as SVG paths (uppercase only, so the caron issue in DECISIONS [04] does not apply), letter-spacing 0.24em, uppercase, with a thin bronze rule or small "ME" monogram.
   - Deliver it as an inline SVG component + favicon/app icons (monogram).
 
 ## 5. Imagery
@@ -121,7 +121,7 @@ Desktop choreography is described first; **Mobile** gives the phone version.
 
 ## 7. Admin look
 - shadcn "nova" preset, re-themed: light mode default (paper/ivory surfaces, ink text, bronze primary), dark mode optional.
-- Manrope for UI; Cormorant only for the admin login title and dashboard greeting.
+- Manrope for UI; EB Garamond only for the admin login title and dashboard greeting.
 - Dense, efficient, keyboard-friendly tables. No Lenis, no GSAP; CSS transitions only (≤ 200 ms).
 
 ## 8. How to use the design skills (installed; use them, but these rules win on conflict)

@@ -25,9 +25,7 @@ export function AgentAvatar({
   const style = SIZE[size];
   if (photoUrl !== undefined) {
     return (
-      // Storage or Unsplash URLs of unknown size; a 40 px avatar gains nothing
-      // from the image optimizer.
-      // eslint-disable-next-line @next/next/no-img-element
+      // eslint-disable-next-line @next/next/no-img-element -- storage or Unsplash URLs of unknown size; a 40 px avatar gains nothing from the image optimizer
       <img
         src={adminThumb(photoUrl, style.request)}
         alt=""

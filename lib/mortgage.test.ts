@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annuityPayment, computeMortgage } from "./mortgage";
+import { annuityPayment, computeMortgage, normalizeMortgageInput } from "./mortgage";
 
 describe("annuityPayment", () => {
   it("matches the textbook annuity for 100 000 € at 5.4% over 25 years", () => {
@@ -36,14 +36,42 @@ describe("computeMortgage", () => {
   });
 
   it("clamps nonsense inputs instead of producing NaN", () => {
-    const result = computeMortgage({ price: 100_000, downPct: 150, years: 0, ratePct: Number.NaN });
-    expect(result.downPayment).toBe(90_000);
+    const result = computeMortgage({ price: 100_000, downPct: -5, years: 0, ratePct: Number.NaN });
+    expect(result.downPayment).toBe(0);
     expect(result.months).toBe(12);
     expect(Number.isFinite(result.monthlyPayment)).toBe(true);
-    expect(result.monthlyPayment).toBeCloseTo(10_000 / 12, 6);
+    expect(result.monthlyPayment).toBeCloseTo(100_000 / 12, 6);
+  });
+
+  it("treats a 100% (or larger) down payment as a cash purchase", () => {
+    const result = computeMortgage({ price: 250_000, downPct: 150, years: 25, ratePct: 5 });
+    expect(result.downPayment).toBe(250_000);
+    expect(result.principal).toBe(0);
+    expect(result.monthlyPayment).toBe(0);
+    expect(result.totalInterest).toBe(0);
   });
 
   it("rounds a fractional term to whole years", () => {
     expect(computeMortgage({ price: 100_000, downPct: 20, years: 24.6, ratePct: 5 }).months).toBe(300);
+  });
+});
+
+describe("normalizeMortgageInput", () => {
+  it("returns what the maths uses: inside the admin's bounds, whole years", () => {
+    expect(normalizeMortgageInput({ price: -1, downPct: 120, years: 45.4, ratePct: 35 })).toEqual({
+      price: 0,
+      downPct: 100,
+      years: 40,
+      ratePct: 30,
+    });
+  });
+
+  it("leaves valid inputs untouched except for the whole-year term", () => {
+    expect(normalizeMortgageInput({ price: 180_000, downPct: 95, years: 24.6, ratePct: 25.5 })).toEqual({
+      price: 180_000,
+      downPct: 95,
+      years: 25,
+      ratePct: 25.5,
+    });
   });
 });

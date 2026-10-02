@@ -6,8 +6,11 @@ import { publishChecklist } from "@/convex/lib/checklist";
 import { fromDateInput } from "@/lib/admin/format";
 import {
   FORM_KEYS,
+  MANDATE_KEEP_MESSAGE,
+  TOUR_TEXT_MAX,
   buildSave,
   checklistListing,
+  daysUntil,
   deepEqual,
   detectAssetFormat,
   dirtyKeys,
@@ -479,6 +482,19 @@ describe("live checklist", () => {
 });
 
 describe("helpers", () => {
+  it("counts Belgrade calendar days to a contract's end, whatever the hour", () => {
+    // Stored the way the editor stores it: Belgrade noon of 2 October 2026.
+    const end = fromDateInput("2026-10-02") ?? 0;
+    const at = (iso: string) => Date.parse(iso);
+    expect(daysUntil(end, at("2026-10-02T07:00:00+02:00"))).toBe(0);
+    expect(daysUntil(end, at("2026-10-02T23:30:00+02:00"))).toBe(0);
+    expect(daysUntil(end, at("2026-10-01T23:30:00+02:00"))).toBe(1);
+    expect(daysUntil(end, at("2026-10-01T00:30:00+02:00"))).toBe(1);
+    expect(daysUntil(end, at("2026-10-03T00:30:00+02:00"))).toBe(-1);
+    // Across the switch to winter time (25 October 2026).
+    expect(daysUntil(fromDateInput("2026-10-30") ?? 0, at("2026-10-20T08:00:00+02:00"))).toBe(10);
+  });
+
   it("names Serbian room structures", () => {
     expect(structureName(0.5)).toBe("garsonjera");
     expect(structureName(2.5)).toBe("dvoiposoban");
@@ -621,9 +637,13 @@ describe("3D walkthrough and 360° tour", () => {
     ).toEqual([]);
   });
 
-  it("accepts an https poster or one shipped with the site", () => {
+  it("accepts a poster on an image host the server allows, or one shipped with the site", () => {
     expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "/media/tours/demo/living-room.jpg")))).toEqual([]);
     expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "https://images.unsplash.com/photo-1")))).toEqual([]);
+    // `assertImageRef` refuses any other host, so the form does too.
+    expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "https://cdn.agencija.rs/poster.jpg")))).toEqual([
+      "walk3d.posterUrl",
+    ]);
     expect(issuesFor(edit(valid, (d) => void (d.walk3d.posterUrl = "http://example.com/poster.jpg")))).toEqual([
       "walk3d.posterUrl",
     ]);
@@ -673,6 +693,9 @@ describe("3D walkthrough and 360° tour", () => {
     expect(issuesFor(tour({ provider: "kuula", url: "https://kuula.co/share/collection/7lVLq" }))).toEqual([]);
     expect(issuesFor(tour({ provider: "kuula", url: "https://kuula.co/x" }))).toEqual(["tour360.url"]);
     expect(issuesFor(tour({ provider: "self", published: true }))).toEqual([]);
+    // `normalizeTour360` refuses a URL or ID longer than 300 characters.
+    const long = `https://my.matterport.com/show/?m=SxQL3iGyoDo&utm=${"x".repeat(TOUR_TEXT_MAX)}`;
+    expect(issuesFor(tour({ url: long }))).toContain("tour360.url");
   });
 });
 
@@ -696,14 +719,20 @@ function harness(doc: ListingDoc = sampleDoc()) {
   const initial = docToForm(doc);
   let values = structuredClone(initial);
   const engine = new AutosaveEngine(initial, doc.updatedAt);
+  /** The `patch` of every `update`, and the fields each one cleared. */
   const calls: ListingPatch[] = [];
+  const cleared: string[][] = [];
+  /** Media fields cleared through their own mutations. */
   const unsets: string[] = [];
   const refused: string[][] = [];
   const revealed: string[][] = [];
+  /** What the engine shows on fields (server refusals, the contract rule). */
+  const fieldErrors = new Map<string, string>();
   let focused: string | null = null;
   let respond: (patch: ListingPatch) => Promise<{ slug: string }> = async (patch) => ({
     slug: patch.slug ?? values.slug,
   });
+  let respondToUnset: (field: string) => Promise<null> = async () => null;
 
   engine.connect({
     getValues: () => values,
@@ -712,12 +741,18 @@ function harness(doc: ListingDoc = sampleDoc()) {
       engine.changed();
     },
     revealErrors: (keys) => revealed.push(keys),
-    update: (patch) => {
+    setFieldError: (path, message) => {
+      if (message === null) fieldErrors.delete(path);
+      else fieldErrors.set(path, message);
+    },
+    update: (patch, unset) => {
       calls.push(patch);
+      cleared.push([...unset]);
       return respond(patch);
     },
-    unset: async (field) => {
+    unset: (field) => {
       unsets.push(field);
+      return respondToUnset(field);
     },
     onVisibilityRefused: (reasons) => refused.push(reasons),
     activeElementId: () => focused,
@@ -726,9 +761,11 @@ function harness(doc: ListingDoc = sampleDoc()) {
   return {
     engine,
     calls,
+    cleared,
     unsets,
     refused,
     revealed,
+    fieldErrors,
     get values() {
       return values;
     },
@@ -744,6 +781,9 @@ function harness(doc: ListingDoc = sampleDoc()) {
     },
     respondWith(fn: (patch: ListingPatch) => Promise<{ slug: string }>) {
       respond = fn;
+    },
+    respondToUnsetWith(fn: (field: string) => Promise<null>) {
+      respondToUnset = fn;
     },
   };
 }
@@ -907,9 +947,267 @@ describe("autosave engine", () => {
     const h = harness(doc);
     h.type((d) => void (d.yearBuilt = null));
     await h.engine.flush();
-    expect(h.calls).toEqual([]);
+    expect(h.calls).toEqual([{}]);
+    expect(h.cleared).toEqual([["yearBuilt"]]);
     h.engine.rebase({ ...doc, yearBuilt: 1950 });
     expect(h.values.yearBuilt).toBe(1950);
     expect(h.engine.isBusy()).toBe(false);
+  });
+});
+
+/* ----------------------------------------------------------------------
+ * Review 14: one refused field must not hold back the others, a save in
+ * flight is not undone by its own echo, and a stored brokerage contract
+ * cannot be emptied away.
+ * -------------------------------------------------------------------- */
+
+/** What a Convex mutation throws when it refuses (`convex/lib/errors.ts`). */
+function refusal(code: string, message: string, reasons: string[] = []) {
+  return new ConvexError({ code, message, reasons });
+}
+
+describe("autosave engine: refusals", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const HIDDEN_AGENT = "Objavljenu nekretninu možete dodeliti samo agentu koji je vidljiv na sajtu.";
+
+  /** The server refuses the hidden agent, alone or with anything else. */
+  function refuseAgent(h: ReturnType<typeof harness>) {
+    h.respondWith(async (patch) => {
+      if (patch.agentId === ("hidden" as Id<"agents">)) throw refusal("INVALID_INPUT", HIDDEN_AGENT);
+      return { slug: h.values.slug };
+    });
+  }
+
+  it("saves the other fields, marks the refused one and keeps it unsaved", async () => {
+    const h = harness();
+    refuseAgent(h);
+    h.type((d) => {
+      d.agentId = "hidden" as Id<"agents">;
+      d.title.sr = "Trosoban stan kod Hrama";
+    });
+    const result = await h.engine.flush();
+
+    // The combined update, then each field on its own.
+    expect(h.calls).toEqual([
+      { agentId: "hidden", title: { sr: "Trosoban stan kod Hrama", en: "Three-room flat in Vračar" } },
+      { agentId: "hidden" },
+      { title: { sr: "Trosoban stan kod Hrama", en: "Three-room flat in Vračar" } },
+    ]);
+    expect(result).toEqual({ ok: false, pending: ["agentId"] });
+    expect(h.fieldErrors.get("agentId")).toBe(HIDDEN_AGENT);
+    expect(h.engine.getSnapshot()).toMatchObject({
+      state: "error",
+      error: HIDDEN_AGENT,
+      refused: [{ key: "agentId", message: HIDDEN_AGENT }],
+    });
+  });
+
+  it("autosave leaves a refused value alone and keeps saving the rest; a flush retries it", async () => {
+    const h = harness();
+    refuseAgent(h);
+    h.type((d) => void (d.agentId = "hidden" as Id<"agents">));
+    await h.engine.flush();
+    h.calls.length = 0;
+
+    h.type((d) => void (d.areaM2 = 82));
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS);
+    expect(h.calls).toEqual([{ areaM2: 82 }]);
+    expect(h.engine.getSnapshot().state).toBe("error");
+
+    await h.engine.flush();
+    expect(h.calls).toEqual([{ areaM2: 82 }, { agentId: "hidden" }]);
+  });
+
+  it("forgets a refusal once the field is edited, and saves the new value", async () => {
+    const h = harness();
+    refuseAgent(h);
+    h.type((d) => void (d.agentId = "hidden" as Id<"agents">));
+    await h.engine.flush();
+    expect(h.fieldErrors.has("agentId")).toBe(true);
+
+    h.type((d) => void (d.agentId = "agent2" as Id<"agents">));
+    expect(h.fieldErrors.has("agentId")).toBe(false);
+    expect(h.engine.getSnapshot()).toMatchObject({ state: "dirty", refused: [] });
+    await vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS);
+    expect(h.calls.at(-1)).toEqual({ agentId: "agent2" });
+    expect(h.engine.getSnapshot()).toMatchObject({ state: "saved", error: null });
+  });
+
+  it("isolates a live listing's price the checklist refuses (PUBLISH_BLOCKED) from the other edits", async () => {
+    const message = "Izmena nije sačuvana: oglas je javan i mora ispunjavati uslove za objavu (Cena je uneta).";
+    const h = harness(sampleDoc({ status: "published", visibility: "public", scope: "listed:sale" }));
+    h.respondWith(async (patch) => {
+      if (patch.price === 0) throw refusal("PUBLISH_BLOCKED", message, ["Cena je uneta"]);
+      return { slug: h.values.slug };
+    });
+    h.type((d) => {
+      d.price = 0;
+      d.isExclusive = false;
+      d.bathrooms = 2;
+    });
+    const result = await h.engine.flush();
+    expect(result).toEqual({ ok: false, pending: ["price"] });
+    expect(h.calls.slice(1)).toEqual([{ price: 0 }, { isExclusive: false }, { bathrooms: 2 }]);
+    expect(h.fieldErrors.get("price")).toBe(message);
+    expect(h.refused).toEqual([]);
+  });
+
+  it("sends a new city and its cleared municipality in one update", async () => {
+    const h = harness();
+    h.type((d) => {
+      d.cityId = "city2" as Id<"locations">;
+      d.municipalityId = "";
+    });
+    await h.engine.flush();
+    expect(h.calls).toEqual([{ cityId: "city2" }]);
+    expect(h.cleared).toEqual([["municipalityId"]]);
+  });
+
+  it("keeps a group the server checks as a whole together when it splits a refused batch", async () => {
+    const h = harness();
+    h.respondWith(async (patch) => {
+      if (patch.videoUrl !== undefined) {
+        throw refusal("INVALID_INPUT", "Video mora biti YouTube ili Vimeo adresa (https://…).");
+      }
+      return { slug: h.values.slug };
+    });
+    h.type((d) => {
+      d.videoUrl = "https://youtu.be/dQw4w9WgXcQ";
+      d.cityId = "city2" as Id<"locations">;
+      d.municipalityId = "";
+    });
+    await h.engine.flush();
+    expect(h.calls).toEqual([
+      { cityId: "city2", videoUrl: "https://youtu.be/dQw4w9WgXcQ" },
+      { cityId: "city2" },
+      { videoUrl: "https://youtu.be/dQw4w9WgXcQ" },
+    ]);
+    expect(h.cleared).toEqual([["municipalityId"], ["municipalityId"], []]);
+    expect(h.engine.getSnapshot().refused.map((item) => item.key)).toEqual(["videoUrl"]);
+  });
+
+  it("does not split on a lost connection: everything stays dirty for the retry", async () => {
+    const h = harness();
+    h.respondWith(async () => {
+      throw new Error("fetch failed");
+    });
+    h.type((d) => {
+      d.agentId = "agent2" as Id<"agents">;
+      d.areaM2 = 70;
+    });
+    const result = await h.engine.flush();
+    expect(h.calls).toHaveLength(1);
+    expect(result).toEqual({ ok: false, pending: ["agentId", "areaM2"] });
+    expect(h.engine.getSnapshot()).toMatchObject({ state: "error", refused: [] });
+    expect(h.fieldErrors.size).toBe(0);
+  });
+
+  it("marks a media field whose own mutation refuses, and saves the rest", async () => {
+    const h = harness(sampleDoc({ videoUrl: "https://youtu.be/dQw4w9WgXcQ" }));
+    h.respondToUnsetWith(async () => {
+      throw refusal("FORBIDDEN", "Nemate dozvolu za ovu radnju.");
+    });
+    h.type((d) => {
+      d.videoUrl = "";
+      d.urgent = true;
+    });
+    const result = await h.engine.flush();
+    expect(h.calls).toEqual([{ urgent: true }]);
+    expect(h.unsets).toEqual(["videoUrl"]);
+    expect(result).toEqual({ ok: false, pending: ["videoUrl"] });
+    expect(h.fieldErrors.get("videoUrl")).toBe("Nemate dozvolu za ovu radnju.");
+  });
+});
+
+describe("autosave engine: a save in flight", () => {
+  it("does not let the echo of an update undo a revert typed while a clear is still running", async () => {
+    const doc = sampleDoc();
+    const saved: ListingDoc = { ...doc, title: { ...doc.title, sr: "Trosoban stan na Vračaru — NOVO" } };
+    const h = harness(doc);
+    let releaseClear: () => void = () => {};
+    h.respondToUnsetWith(
+      () =>
+        new Promise<null>((resolve) => {
+          releaseClear = () => resolve(null);
+        }),
+    );
+    h.type((d) => {
+      d.title.sr = "Trosoban stan na Vračaru — NOVO";
+      d.walk3d = docToForm(sampleDoc({ walk3d: undefined })).walk3d;
+    });
+    const saving = h.engine.flush();
+    await vi.waitFor(() => expect(h.unsets).toEqual(["walk3d"]));
+
+    // The update has landed (the query shows the new title); the clear has not.
+    // Meanwhile the user takes the title edit back.
+    h.type((d) => void (d.title.sr = "Trosoban stan na Vračaru"));
+    h.engine.rebase(saved);
+    expect(h.values.title.sr).toBe("Trosoban stan na Vračaru");
+
+    releaseClear();
+    await saving;
+    // The revert is still the user's, and still to be saved.
+    expect(h.values.title.sr).toBe("Trosoban stan na Vračaru");
+    expect(h.engine.isBusy()).toBe(true);
+    await h.engine.flush();
+    expect(h.calls.at(-1)).toEqual({ title: { sr: "Trosoban stan na Vračaru", en: "Three-room flat in Vračar" } });
+    expect(h.engine.isBusy()).toBe(false);
+  });
+});
+
+describe("autosave engine: a stored brokerage contract", () => {
+  it("is never reported as saved once emptied; the field says why and nothing is sent", async () => {
+    const doc = sampleDoc();
+    const h = harness(doc);
+    h.type((d) => {
+      d.mandate = { number: "", type: "exclusive", start: "", end: "" };
+    });
+    const result = await h.engine.flush();
+    expect(h.calls).toEqual([]);
+    expect(result).toEqual({ ok: true, pending: ["mandate"] });
+    expect(h.engine.getSnapshot().state).toBe("dirty");
+    expect(h.engine.isBusy()).toBe(true);
+    expect(h.fieldErrors.get("mandate.end")).toBe(MANDATE_KEEP_MESSAGE);
+    // What the live checklist judges is what the server still holds.
+    expect(checklistListing(doc, h.values).mandate).toEqual(doc.mandate);
+
+    // Undoing the edit takes the message away and leaves nothing to save.
+    h.type((d) => {
+      d.mandate = docToForm(doc).mandate;
+    });
+    expect(h.fieldErrors.has("mandate.end")).toBe(false);
+    expect(h.engine.isBusy()).toBe(false);
+  });
+
+  it("lets a contract that was never stored stay empty", async () => {
+    const h = harness(sampleDoc({ mandate: undefined, mandateEnd: undefined }));
+    h.type((d) => void (d.mandate.type = "open"));
+    const result = await h.engine.flush();
+    expect(result).toEqual({ ok: true, pending: [] });
+    expect(h.fieldErrors.size).toBe(0);
+  });
+
+  it("saves a replacement contract", async () => {
+    const h = harness();
+    h.type((d) => {
+      d.mandate = { number: "UP-18/2026", type: "open", start: "2026-10-01", end: "2027-04-01" };
+    });
+    expect(await h.engine.flush()).toEqual({ ok: true, pending: [] });
+    expect(h.calls).toEqual([
+      {
+        mandate: {
+          number: "UP-18/2026",
+          type: "open",
+          start: fromDateInput("2026-10-01"),
+          end: fromDateInput("2027-04-01"),
+        },
+      },
+    ]);
   });
 });

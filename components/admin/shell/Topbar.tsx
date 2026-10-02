@@ -1,9 +1,8 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
 import { ExternalLink, LogOut, Moon, Search, Sun } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useGuardedNavigation } from "@/components/admin/common/LeaveGuard";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ROLE_LABEL } from "@/lib/admin/labels";
+import { useSignOut } from "./AuthGate";
 import { AdminBreadcrumbs } from "./breadcrumbs";
 import { useMe } from "./me";
 
@@ -84,8 +84,8 @@ function initials(name: string): string {
 
 function UserMenu() {
   const me = useMe();
-  const { signOut } = useAuthActions();
-  const router = useRouter();
+  const signOut = useSignOut();
+  const { leave } = useGuardedNavigation();
   const display = me.name ?? me.email ?? "Korisnik";
 
   return (
@@ -106,12 +106,8 @@ function UserMenu() {
           <p className="mt-1 text-xs text-muted-foreground">{ROLE_LABEL[me.role]}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={async () => {
-            await signOut();
-            router.replace("/admin/login");
-          }}
-        >
+        {/* Unsaved work is saved (or asked about) before the session ends. */}
+        <DropdownMenuItem onSelect={() => leave(() => void signOut())}>
           <LogOut aria-hidden="true" />
           Odjavite se
         </DropdownMenuItem>

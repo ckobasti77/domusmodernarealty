@@ -271,7 +271,7 @@ describe("listings.search filters", () => {
     ).toBe("price");
   });
 
-  test("an unfiltered search pages exactly by numItems, a post-filtered one by window", async () => {
+  test("an unfiltered search pages exactly by numItems, a post-filtered one by its matches", async () => {
     const { t } = await fixture();
     const exact = await t.query(api.listings.search, {
       filters: { transaction: "sale" },
@@ -293,8 +293,9 @@ describe("listings.search filters", () => {
       sort: "newest",
       paginationOpts: { cursor: null, numItems: 1 },
     });
-    expect(filtered.page).toHaveLength(2);
-    expect(filtered.isDone).toBe(true);
+    // At most numItems cards per page (review 14, CVX-8); the cursor walk below covers the rest.
+    expect(filtered.page).toHaveLength(1);
+    expect(filtered.isDone).toBe(false);
   });
 
   test("walking the cursor returns every match once, with a tiny page size", async () => {

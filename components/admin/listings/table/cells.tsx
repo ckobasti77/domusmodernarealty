@@ -44,9 +44,7 @@ export function Cover({ row, size }: { row: AdminRow; size: keyof typeof THUMB }
     );
   }
   return (
-    // Covers are remote (Unsplash) or Convex storage URLs of unknown size; a
-    // thumbnail this small gains nothing from the image optimizer.
-    // eslint-disable-next-line @next/next/no-img-element
+    // eslint-disable-next-line @next/next/no-img-element -- remote (Unsplash) or Convex storage covers of unknown size; a thumbnail this small gains nothing from the image optimizer
     <img
       src={adminThumb(row.coverUrl, thumb.request)}
       alt=""

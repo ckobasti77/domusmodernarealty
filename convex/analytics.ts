@@ -26,6 +26,10 @@ const FUNNEL_CAP = 500;
 const OPEN_CAP = 1000;
 /** Leads of the last 7 days read for the dashboard KPI. */
 const RECENT_LEADS_CAP = 500;
+/** Today's viewings read for the dashboard KPI (it prints "200+" at the cap). */
+const TODAY_VIEWINGS_CAP = 200;
+/** Viewings that take place: a cancelled request or a no-show is not one. */
+const HELD_VIEWING_STATUSES = ["requested", "confirmed", "done"] as const;
 
 function clampDays(days: number | undefined, fallback: number): number {
   return Math.min(Math.max(Math.round(days ?? fallback), 7), 365);
@@ -78,10 +82,17 @@ export const dashboard = query({
     // midnight is computed on its own: a DST day is 23 or 25 hours long.
     const dayStart = belgradeMidnight(args.now);
     const dayEnd = belgradeMidnight(dayStart + 36 * 3_600_000);
-    const todayViewings = await ctx.db
-      .query("viewings")
-      .withIndex("by_start", (q) => q.gte("start", dayStart).lt("start", dayEnd))
-      .take(200);
+    let viewingsToday = 0;
+    for (const status of HELD_VIEWING_STATUSES) {
+      if (viewingsToday >= TODAY_VIEWINGS_CAP) break;
+      const rows = await ctx.db
+        .query("viewings")
+        .withIndex("by_status_and_start", (q) =>
+          q.eq("status", status).gte("start", dayStart).lt("start", dayEnd),
+        )
+        .take(TODAY_VIEWINGS_CAP - viewingsToday);
+      viewingsToday += rows.length;
+    }
 
     // Clamped at 0 like `responseTimes`: a response stamped before the row's
     // creation (imported or seeded leads) must not pull the average negative.
@@ -100,11 +111,12 @@ export const dashboard = query({
       .take(30);
 
     return {
-      activeListings: byStatus.published ?? 0,
+      // On the market: a reserved listing is still advertised.
+      activeListings: (byStatus.published ?? 0) + (byStatus.reserved ?? 0),
       draftListings: byStatus.draft ?? 0,
       newLeads7d: recentLeads.length,
       newLeads7dCapped: leadRows.length > RECENT_LEADS_CAP,
-      viewingsToday: todayViewings.length,
+      viewingsToday,
       ...(avgFirstResponseMinutes !== undefined ? { avgFirstResponseMinutes } : {}),
       series: rollups
         .slice()

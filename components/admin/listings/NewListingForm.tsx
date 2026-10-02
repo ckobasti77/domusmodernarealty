@@ -25,13 +25,12 @@ import type { Id } from "@/convex/_generated/dataModel";
 import type { PropertyType, Transaction } from "@/convex/lib/validators";
 import { adminErrorMessage } from "@/lib/admin/errors";
 import { PROPERTY_TYPE_LABEL, TRANSACTION_LABEL } from "@/lib/admin/labels";
+import { TITLE_MAX, TITLE_MIN_SR as TITLE_MIN } from "@/lib/admin/listing-form";
 import { LISTINGS_PATH, PROPERTY_TYPES, TRANSACTIONS, isPropertyType, isTransaction } from "./table/filters";
 import type { AgentOption } from "./table/types";
 
 type City = FunctionReturnType<typeof api.locations.tree>[number];
 
-const TITLE_MIN = 10;
-const TITLE_MAX = 120;
 const DEFAULT_CITY_SLUG = "beograd";
 
 /**

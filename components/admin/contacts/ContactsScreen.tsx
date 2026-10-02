@@ -3,11 +3,12 @@
 import { usePaginatedQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { SearchInput } from "@/components/admin/common/ListToolbar";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
-import { PHONE_QUERY, useNow } from "@/components/admin/leads/shared";
+import { useNow } from "@/components/admin/common/use-now";
 import { MANAGER_ROLES } from "@/components/admin/shell/me";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

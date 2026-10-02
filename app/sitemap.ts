@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { fetchQuery } from "convex/nextjs";
 import type { FunctionReturnType } from "convex/server";
+import { unstable_cache } from "next/cache";
+import { connection } from "next/server";
 import { api } from "@/convex/_generated/api";
 import type { PageKey, Transaction } from "@/convex/lib/validators";
 import { locales } from "@/i18n/routing";
@@ -15,10 +17,10 @@ import { localizedAlternates } from "@/lib/seo";
  * `noindex`), filter states of the search (`noindex` unless curated), the
  * styleguide, and sold/rented listings.
  *
- * Regenerated at most hourly; a published listing therefore reaches the
- * sitemap within the hour, and every page is reachable by links before that.
+ * Its data is refreshed at most hourly (see `sitemapData`); a published
+ * listing therefore reaches the sitemap within the hour, and every page is
+ * reachable by links before that.
  */
-export const revalidate = 3600;
 
 type Href = Parameters<typeof localizedAlternates>[0];
 type Entry = MetadataRoute.Sitemap[number];
@@ -87,13 +89,28 @@ async function listedListings(transaction: Transaction) {
   return out;
 }
 
+/**
+ * Everything the sitemap reads, kept in Next's data cache for the same hour,
+ * so crawler hits do not re-run these reads (`fetchQuery` alone fetches with
+ * `no-store`). The route itself renders at request time (`connection()` below):
+ * prerendering it would make `next build` depend on reaching Convex.
+ */
+const sitemapData = unstable_cache(
+  async () => {
+    const [content, sale, rent] = await Promise.all([
+      fetchQuery(api.sitemap.content, {}),
+      listedListings("sale"),
+      listedListings("rent"),
+    ]);
+    return { content, listings: [...sale, ...rent] };
+  },
+  ["sitemap"],
+  { revalidate: 3600 },
+);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [content, sale, rent] = await Promise.all([
-    fetchQuery(api.sitemap.content, {}),
-    listedListings("sale"),
-    listedListings("rent"),
-  ]);
-  const listings = [...sale, ...rent];
+  await connection();
+  const { content, listings } = await sitemapData();
 
   const pageUpdated = new Map(content.pages.map((page) => [page.key, page.updatedAt]));
   const newest = (times: readonly number[]) => (times.length > 0 ? Math.max(...times) : undefined);

@@ -143,7 +143,6 @@ type PinProperties = {
   id: string;
   price: number;
   transaction: MapPoint["transaction"];
-  priceOnRequest: boolean;
 };
 
 type ClusterItem = { id: number; count: number; lng: number; lat: number };
@@ -358,7 +357,6 @@ export default function SearchMap({
           id: point._id,
           price: point.price,
           transaction: point.transaction,
-          priceOnRequest: point.priceOnRequest === true,
         },
       })),
     }),
@@ -701,13 +699,11 @@ type PinMarkerProps = {
 const PinMarker = memo(function PinMarker({ point, stack, selected, onSelect }: PinMarkerProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("search.map");
-  const tListing = useTranslations("listing");
   const hovered = useIsHovered(point._id);
   const lifted = hovered || selected;
 
-  const onRequest = point.priceOnRequest === true;
-  const label = onRequest ? tListing("priceOnRequest") : formatPinPrice(point.price, locale);
-  const price = onRequest ? label : formatPrice(point.price, locale);
+  const label = formatPinPrice(point.price, locale);
+  const price = formatPrice(point.price, locale);
 
   return (
     <Marker
@@ -760,12 +756,10 @@ const PinMarker = memo(function PinMarker({ point, stack, selected, onSelect }: 
 function MiniCard({ point }: { point: MapPoint }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("search.map");
-  const tListing = useTranslations("listing");
   const tCard = useTranslations("card");
   const tUnits = useTranslations("units");
 
   const title = pickL10n(point.title, locale);
-  const onRequest = point.priceOnRequest === true;
   const facts = [formatArea(point.areaM2, locale, tUnits("m2"))];
   if (point.rooms > 0) facts.push(tCard("rooms", { rooms: point.rooms }));
 
@@ -791,23 +785,19 @@ function MiniCard({ point }: { point: MapPoint }) {
       ) : null}
 
       <div className="flex flex-col gap-1.5 p-4">
-        {onRequest ? (
-          <p className="text-body font-medium">{tListing("priceOnRequest")}</p>
-        ) : (
-          <p className="flex flex-wrap items-baseline gap-x-2">
-            <span data-numeric className="text-body font-medium">
-              {formatPrice(point.price, locale)}
-              {point.transaction === "rent" ? (
-                <span className="ml-1 text-small font-normal text-stone-text">{tUnits("perMonth")}</span>
-              ) : null}
-            </span>
-            {point.pricePerM2 > 0 ? (
-              <span data-numeric className="text-small text-stone-text">
-                {formatPricePerM2(point.pricePerM2, locale, tUnits("m2"))}
-              </span>
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span data-numeric className="text-body font-medium">
+            {formatPrice(point.price, locale)}
+            {point.transaction === "rent" ? (
+              <span className="ml-1 text-small font-normal text-stone-text">{tUnits("perMonth")}</span>
             ) : null}
-          </p>
-        )}
+          </span>
+          {point.pricePerM2 > 0 ? (
+            <span data-numeric className="text-small text-stone-text">
+              {formatPricePerM2(point.pricePerM2, locale, tUnits("m2"))}
+            </span>
+          ) : null}
+        </p>
 
         <p
           lang={title.lang === locale ? undefined : title.lang}

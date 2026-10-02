@@ -84,6 +84,27 @@ describe("parseLocaleNumber", () => {
     expect(parseLocaleNumber("5,4", "de")).toBe(5.4);
   });
 
+  it("reads one or two final digits after either mark as decimals in every locale", () => {
+    expect(parseLocaleNumber("5.4", "sr-Latn")).toBe(5.4);
+    expect(parseLocaleNumber("5,4", "en")).toBe(5.4);
+    expect(parseLocaleNumber("5,40", "en")).toBe(5.4);
+    expect(parseLocaleNumber("5.4", "ru")).toBe(5.4);
+    expect(parseLocaleNumber("5,4", "ru")).toBe(5.4);
+  });
+
+  it("reads a dot before groups of three digits as grouping in Russian", () => {
+    expect(parseLocaleNumber("430.000", "ru")).toBe(430000);
+    expect(parseLocaleNumber("1.250.000,5", "ru")).toBe(1250000.5);
+    expect(parseLocaleNumber("5,375", "ru")).toBe(5.375);
+  });
+
+  it("keeps each locale's own full notation", () => {
+    expect(parseLocaleNumber("1,250,000.50", "en")).toBe(1250000.5);
+    expect(parseLocaleNumber("5.375", "en")).toBe(5.375);
+    expect(parseLocaleNumber("1.250.000,50", "de")).toBe(1250000.5);
+    expect(parseLocaleNumber("1 250 000", "ru")).toBe(1250000);
+  });
+
   it("returns null for empty or junk input", () => {
     expect(parseLocaleNumber("", "sr-Latn")).toBeNull();
     expect(parseLocaleNumber("abc", "en")).toBeNull();

@@ -32,12 +32,6 @@ export function PriceTab({ data }: { data: EditorData }) {
           hint={<PricePerM2 rent={rent} />}
           onBlur={() => engine.schedule(250)}
         />
-        <SwitchField
-          name="priceOnRequest"
-          id="f-priceOnRequest"
-          label="Cena na upit"
-          hint="Na oglasu umesto iznosa piše „Cena na upit”. Iznos ostaje obavezan: koristi se u pretrazi i za €/m²."
-        />
         <SwitchField name="urgent" id="f-urgent" label={rent ? "Hitno izdavanje" : "Hitna prodaja"} />
         {rent ? null : (
           <>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useLenis } from "lenis/react";
 import { X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Dialog } from "radix-ui";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { useLenisLock } from "@/components/motion/lenis-lock";
 import { buttonClasses } from "@/components/site/Button";
 import type { Locale } from "@/i18n/routing";
 import { formatCount } from "@/lib/format";
@@ -50,13 +50,7 @@ export type FilterDialogProps = {
 
 export function FilterDialog({ mode, state, onApply, index, now, trigger }: FilterDialogProps) {
   const [open, setOpen] = useState(false);
-  const lenis = useLenis();
-
-  useEffect(() => {
-    if (!open || lenis === undefined) return;
-    lenis.stop();
-    return () => lenis.start();
-  }, [open, lenis]);
+  useLenisLock(open);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>

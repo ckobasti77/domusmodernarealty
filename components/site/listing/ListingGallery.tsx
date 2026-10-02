@@ -41,12 +41,19 @@ export type ListingGalleryProps = {
   variant?: "hero" | "plans";
 };
 
-/** Span classes for the small frames, by how many there are (1–4). */
-const SMALL_SPANS: Record<number, readonly string[]> = {
-  1: ["lg:col-span-2 lg:row-span-2"],
-  2: ["lg:col-span-2", "lg:col-span-2"],
-  3: ["lg:col-span-2", "", ""],
-  4: ["", "", "", ""],
+/**
+ * The small frames by how many there are (1–4): the grid span, and the
+ * `sizes` that span needs — two of the four columns are half the grid, like
+ * the lead frame, one is a quarter. Small frames only show from 1024px up.
+ */
+type SmallFrame = { span: string; sizes: string };
+const HALF: SmallFrame = { span: "lg:col-span-2", sizes: "(min-width: 1600px) 800px, 50vw" };
+const QUARTER: SmallFrame = { span: "", sizes: "(min-width: 1600px) 400px, 25vw" };
+const SMALL_FRAMES: Record<number, readonly SmallFrame[]> = {
+  1: [{ ...HALF, span: "lg:col-span-2 lg:row-span-2" }],
+  2: [HALF, HALF],
+  3: [HALF, QUARTER, QUARTER],
+  4: [QUARTER, QUARTER, QUARTER, QUARTER],
 };
 
 export function ListingGallery({ images, title, ribbon, variant = "hero" }: ListingGalleryProps) {
@@ -99,7 +106,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
 
   const [lead, ...rest] = filtered;
   const small = rest.slice(0, 4);
-  const spans = SMALL_SPANS[small.length] ?? [];
+  const frames = SMALL_FRAMES[small.length] ?? [];
   const hiddenCount = total - 1 - small.length;
 
   return (
@@ -155,6 +162,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
         {small.map((image, i) => {
           const index = i + 1;
           const isLast = i === small.length - 1 && hiddenCount > 0;
+          const frame = frames[i] ?? QUARTER;
           return (
             <button
               key={image.id}
@@ -163,7 +171,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
               aria-label={isLast ? t("galleryUi.showAll", { count: total }) : openLabel(index)}
               className={cn(
                 "group/frame relative hidden overflow-hidden bg-ink-2 lg:block",
-                spans[i],
+                frame.span,
                 "focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bronze",
               )}
             >
@@ -171,7 +179,7 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
                 src={image.url}
                 alt={altOf(image)}
                 fill
-                sizes="25vw"
+                sizes={frame.sizes}
                 className="object-cover transition-transform duration-700 ease-out pointer-fine:group-hover/frame:scale-[1.03]"
               />
               {isLast ? (

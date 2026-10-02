@@ -11,7 +11,6 @@ import { Eyebrow } from "@/components/site/Eyebrow";
 import { photoGrade } from "@/components/site/home/art-direction";
 import {
   childrenOf,
-  getLocationBySlug,
   listingTotal,
   placeFigures,
   placeName,
@@ -29,7 +28,7 @@ import { routing, type Locale } from "@/i18n/routing";
 import { fixTypography, fixWidows, formatCount } from "@/lib/format";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { pickL10n } from "@/lib/l10n";
-import { getLocations } from "@/lib/page-data";
+import { getLocationIntro, getLocations } from "@/lib/page-data";
 import { searchQuery } from "@/lib/search-params";
 import { localizedUrl, pageMetadata } from "@/lib/seo";
 
@@ -146,14 +145,13 @@ async function PrimaryPlace({
   districts: readonly LocationNode[];
   nodes: readonly LocationNode[];
 }) {
-  const [t, tUnits] = await Promise.all([
+  const [t, tUnits, introValue] = await Promise.all([
     getTranslations({ locale, namespace: "locations" }),
     getTranslations({ locale, namespace: "units" }),
+    getLocationIntro(node.slug),
   ]);
-  // The tree carries no introductions; the city's own read does (and is cached).
-  const detail = await getLocationBySlug(node.slug);
   const name = placeName(node, locale);
-  const intro = detail?.intro !== undefined ? pickL10n(detail.intro, locale) : null;
+  const intro = introValue !== null ? pickL10n(introValue, locale) : null;
   const href = { pathname: "/locations/[slug]" as const, params: { slug: node.slug } };
   const origin = { lat: node.lat, lng: node.lng };
 

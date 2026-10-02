@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { DashCard } from "@/components/admin/dashboard/DashCard";
 import { formatCount, formatDuration } from "@/components/admin/dashboard/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,9 +14,6 @@ import { CappedNote, formatShare, type Period } from "./shared";
 
 type Result = FunctionReturnType<typeof api.analytics.responseTimes>;
 type Row = Result["rows"][number];
-
-/** Below Tailwind's `md`: stacked rows instead of the wide table. */
-const PHONE_QUERY = "(max-width: 767.98px)";
 
 /** Share as a short meter plus the number; the number carries the meaning. */
 function ShareMeter({ part, whole }: { part: number; whole: number }) {

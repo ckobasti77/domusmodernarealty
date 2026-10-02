@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { useCallback, useState } from "react";
 import { ConfirmDialog } from "@/components/admin/common/ConfirmDialog";
 import { DotBadge } from "@/components/admin/common/StatusBadge";
+import { useNow } from "@/components/admin/common/use-now";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { PageKey } from "@/convex/lib/validators";
@@ -11,7 +12,6 @@ import { formatRelative } from "@/lib/admin/format";
 import { PAGE_KEY_LABEL } from "@/lib/admin/labels";
 import { cn } from "@/lib/utils";
 import { PageEditor } from "./PageEditor";
-import { useNow } from "./use-now";
 
 /**
  * Page picker + block editor. The picker is a vertical list beside the

@@ -8,7 +8,7 @@
 import { v } from "convex/values";
 import { externalTourEmbedUrl } from "./tours";
 import type { Infer } from "convex/values";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import {
   addressVisibilityV,
@@ -238,7 +238,6 @@ export const listingCardV = v.object({
   title: l10nV,
   price: v.number(),
   pricePerM2: v.number(),
-  priceOnRequest: v.optional(v.boolean()),
   previousPrice: v.optional(v.number()),
   areaM2: v.number(),
   rooms: v.number(),
@@ -283,7 +282,6 @@ export const mapPointV = v.object({
   lng: v.number(),
   price: v.number(),
   pricePerM2: v.number(),
-  priceOnRequest: v.optional(v.boolean()),
   transaction: transactionV,
   propertyType: propertyTypeV,
   title: l10nV,
@@ -354,7 +352,10 @@ export const listingDetailV = listingCardV.extend({
   street: v.optional(v.string()),
   streetNo: v.optional(v.string()),
   poi: v.optional(v.array(poiV)),
-  /** Oldest first; `from` is the price before that change. */
+  /**
+   * The latest `PRICE_HISTORY_MAX` changes since publication, oldest first;
+   * `from` is the price before that change.
+   */
   priceHistory: v.array(v.object({ at: v.number(), from: v.number(), price: v.number() })),
   agent: agentPublicV,
   city: v.optional(locationRefV),
@@ -362,20 +363,29 @@ export const listingDetailV = listingCardV.extend({
   neighborhood: v.optional(locationRefV),
   seoTitle: v.optional(l10nV),
   seoDescription: v.optional(l10nV),
+  seo: v.object({
+    /** The admin's share-image override (`seo.ogImage`) as a URL, when one is set. */
+    ogImageUrl: v.optional(v.string()),
+  }),
 });
 export type ListingDetail = Infer<typeof listingDetailV>;
 
-async function locationChain(ctx: QueryCtx, listing: Doc<"listings">) {
-  const city = await ctx.db.get("locations", listing.cityId);
-  const municipality =
-    listing.municipalityId !== undefined
-      ? await ctx.db.get("locations", listing.municipalityId)
-      : null;
-  const neighborhood =
-    listing.neighborhoodId !== undefined
-      ? await ctx.db.get("locations", listing.neighborhoodId)
-      : null;
-  return { city, municipality, neighborhood };
+/** Location documents one call has already read: a page of cards shares a few places. */
+export type LocationCache = Map<Id<"locations">, Doc<"locations"> | null>;
+
+async function locationChain(ctx: QueryCtx, listing: Doc<"listings">, cache?: LocationCache) {
+  const read = async (id: Id<"locations">): Promise<Doc<"locations"> | null> => {
+    const known = cache?.get(id);
+    if (known !== undefined) return known;
+    const doc = await ctx.db.get("locations", id);
+    cache?.set(id, doc);
+    return doc;
+  };
+  return {
+    city: await read(listing.cityId),
+    municipality: listing.municipalityId !== undefined ? await read(listing.municipalityId) : null,
+    neighborhood: listing.neighborhoodId !== undefined ? await read(listing.neighborhoodId) : null,
+  };
 }
 
 function labelOf(
@@ -389,6 +399,8 @@ function labelOf(
 export type CardOptions = {
   /** How many gallery frames to attach as `images` (0 = cover only). */
   gallery?: number;
+  /** Share one per query call so repeated places are read once. */
+  locations?: LocationCache;
 };
 
 export async function toCard(
@@ -396,7 +408,7 @@ export async function toCard(
   listing: Doc<"listings">,
   options: CardOptions = {},
 ): Promise<ListingCard> {
-  const { city, municipality, neighborhood } = await locationChain(ctx, listing);
+  const { city, municipality, neighborhood } = await locationChain(ctx, listing, options.locations);
   const ordered = [...listing.media].sort((a, b) => a.order - b.order);
   const coverItem =
     listing.media.find((item) => item.isCover === true) ?? ordered[0];
@@ -429,9 +441,6 @@ export async function toCard(
     title: listing.title,
     price: listing.price,
     pricePerM2: listing.pricePerM2,
-    ...(listing.priceOnRequest !== undefined
-      ? { priceOnRequest: listing.priceOnRequest }
-      : {}),
     ...(listing.previousPrice !== undefined && listing.previousPrice > listing.price
       ? { previousPrice: listing.previousPrice }
       : {}),
@@ -496,9 +505,6 @@ export async function toMapPoint(
     lng: coords.lng,
     price: listing.price,
     pricePerM2: listing.pricePerM2,
-    ...(listing.priceOnRequest !== undefined
-      ? { priceOnRequest: listing.priceOnRequest }
-      : {}),
     transaction: listing.transaction,
     propertyType: listing.propertyType,
     title: listing.title,
@@ -506,6 +512,28 @@ export async function toMapPoint(
     rooms: listing.rooms,
     ...(coverUrl !== null ? { coverUrl } : {}),
   };
+}
+
+/** Price changes the detail page lists. */
+const PRICE_HISTORY_MAX = 20;
+
+/**
+ * The latest price changes a buyer could have seen, oldest first. Edits made
+ * while the listing was a draft are corrections, not price changes, so the
+ * index range starts at publication — reading the oldest rows and filtering
+ * them afterwards lost every public change behind 20 draft edits.
+ */
+async function publicPriceChanges(ctx: QueryCtx, listing: Doc<"listings">) {
+  const publishedAt = listing.publishedAt;
+  if (publishedAt === undefined) return [];
+  const latest = await ctx.db
+    .query("priceChanges")
+    .withIndex("by_listingId_and_at", (q) =>
+      q.eq("listingId", listing._id).gte("at", publishedAt),
+    )
+    .order("desc")
+    .take(PRICE_HISTORY_MAX);
+  return latest.reverse();
 }
 
 export async function toDetail(
@@ -521,11 +549,9 @@ export async function toDetail(
     .query("tourScenes")
     .withIndex("by_listingId_and_order", (q) => q.eq("listingId", listing._id))
     .take(40);
-  const changes = await ctx.db
-    .query("priceChanges")
-    .withIndex("by_listingId_and_at", (q) => q.eq("listingId", listing._id))
-    .order("asc")
-    .take(20);
+  const changes = await publicPriceChanges(ctx, listing);
+  const ogImage = listing.seo?.ogImage;
+  const ogImageUrl = ogImage !== undefined ? await imageUrl(ctx, ogImage) : null;
 
   const showStreet = listing.location.addressVisibility === "exact";
   const tourPublished = listing.tour360?.published === true;
@@ -621,15 +647,11 @@ export async function toDetail(
     ...(listing.poi !== undefined
       ? { poi: publicPoi(listing.poi, listing.location.addressVisibility) }
       : {}),
-    // Edits made while the listing was a draft are corrections, not price
-    // changes a buyer saw.
-    priceHistory: changes
-      .filter((change) => listing.publishedAt !== undefined && change.at >= listing.publishedAt)
-      .map((change) => ({
-        at: change.at,
-        from: change.from,
-        price: change.to,
-      })),
+    priceHistory: changes.map((change) => ({
+      at: change.at,
+      from: change.from,
+      price: change.to,
+    })),
     agent: agentDoc.isPublic
       ? await toAgentPublic(ctx, agentDoc)
       : await agencyContact(ctx, agentDoc),
@@ -642,5 +664,6 @@ export async function toDetail(
     ...(listing.seo?.metaDescription !== undefined
       ? { seoDescription: listing.seo.metaDescription }
       : {}),
+    seo: ogImageUrl !== null ? { ogImageUrl } : {},
   };
 }

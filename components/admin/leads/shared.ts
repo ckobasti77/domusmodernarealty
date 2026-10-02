@@ -1,7 +1,4 @@
-"use client";
-
 import type { FunctionReturnType } from "convex/server";
-import { useEffect, useState } from "react";
 import type { DotTone } from "@/components/admin/common/StatusBadge";
 import { pluralSr } from "@/components/admin/dashboard/format";
 import type { api } from "@/convex/_generated/api";
@@ -49,19 +46,6 @@ export const LOCALE_LABEL: Record<Locale, string> = {
 
 /** A first answer is due within this long (PRD B2: "not contacted > 1 h"). */
 export const RESPONSE_DUE_MS = 3_600_000;
-
-/** Below Tailwind's `md`: stacked cards replace the table. */
-export const PHONE_QUERY = "(max-width: 767.98px)";
-
-/** Wall clock as state, refreshed every `tickMs` (relative times, timers). */
-export function useNow(tickMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), tickMs);
-    return () => window.clearInterval(timer);
-  }, [tickMs]);
-  return now;
-}
 
 /** `12 min`, `3 h`, `2 dana` — how long a lead has waited, in one unit. */
 export function formatWait(ms: number): string {

@@ -1,5 +1,11 @@
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
-import type { NamedTableInfo, OrderedQuery } from "convex/server";
+import type {
+  IndexRange,
+  NamedTableInfo,
+  OrderedQuery,
+  PaginationOptions,
+  PaginationResult,
+} from "convex/server";
 import { v } from "convex/values";
 import type { DataModel, Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
@@ -12,7 +18,8 @@ import {
   toDetail,
   toMapPoint,
 } from "./lib/dto";
-import type { ListingCard } from "./lib/dto";
+import type { ListingCard, LocationCache } from "./lib/dto";
+import { invalidInput } from "./lib/errors";
 import {
   COUNT_SCAN,
   MAX_POINTS,
@@ -23,13 +30,14 @@ import {
   driverDescending,
   effectiveSort,
   isPublicScope,
+  isUnsearchableQuery,
   listedScope,
   matches,
   normalizeText,
   pickDriver,
   rangeDriver,
 } from "./lib/search";
-import type { DriverPlan } from "./lib/search";
+import type { Driver, DriverPlan } from "./lib/search";
 import { searchFiltersV, sortV } from "./lib/validators";
 import type { SearchFilters, Sort } from "./lib/validators";
 
@@ -39,12 +47,66 @@ const SEARCH_CARD_FRAMES = 5;
 /* ------------------------------------------------------------ driver queries */
 
 type ListingQuery = OrderedQuery<NamedTableInfo<DataModel, "listings">>;
+type Order = "asc" | "desc";
+
+/** The field each driver's index orders by, after its equality prefix. */
+type OrderedField = "price" | "pricePerM2" | "areaM2" | "publishedAt";
+
+/** Text search has no index order: Convex returns it by relevance. */
+const ORDERED_FIELD: Record<Driver, OrderedField | undefined> = {
+  price: "price",
+  cityPrice: "price",
+  municipalityPrice: "price",
+  pricePerM2: "pricePerM2",
+  areaM2: "areaM2",
+  publishedAt: "publishedAt",
+  neighborhoodPublishedAt: "publishedAt",
+  text: undefined,
+};
+
+type Bounds = { lower: number | undefined; upper: number | undefined };
 
 /**
- * The index range for a driver, ordered and ready to `.paginate()` or
- * `.take()`. Every branch is written out so the Convex index-range types stay
- * exact; `pickDriver` guarantees a range filter only ever lands on the last
- * indexed field. Text search is handled by the callers (relevance order only).
+ * A filter's range on the ordered field. `from` — a value read from inside
+ * that range, where a page resumes — replaces the bound the index is walked
+ * from; it is inclusive, and `windowLength` skips the ties already read.
+ */
+function bounds(
+  min: number | undefined,
+  max: number | undefined,
+  order: Order,
+  from: number | undefined,
+): Bounds {
+  return order === "asc" ? { lower: from ?? min, upper: max } : { lower: min, upper: from ?? max };
+}
+
+/**
+ * The tail of an index range: the bounds on the field the index orders by.
+ * Typed against Convex's builder, so naming a field the index does not order
+ * by does not compile.
+ */
+type OrderedRange<Field extends string> = IndexRange & {
+  gte(field: Field, value: number): IndexRange & { lte(field: Field, value: number): IndexRange };
+  lte(field: Field, value: number): IndexRange;
+};
+
+function within<Field extends string>(
+  range: OrderedRange<Field>,
+  field: Field,
+  { lower, upper }: Bounds,
+): IndexRange {
+  if (lower !== undefined && upper !== undefined) return range.gte(field, lower).lte(field, upper);
+  if (lower !== undefined) return range.gte(field, lower);
+  if (upper !== undefined) return range.lte(field, upper);
+  return range;
+}
+
+/**
+ * The index range for a driver, ordered and ready to `.paginate()` or read.
+ * `pickDriver` guarantees a range filter only ever lands on the field the
+ * index orders by. `from` starts the walk where a page resumes instead of at
+ * the range's own start. Text search is handled by the callers (relevance
+ * order only).
  */
 function driverQuery(
   ctx: QueryCtx,
@@ -52,9 +114,11 @@ function driverQuery(
   filters: SearchFilters,
   plan: DriverPlan,
   sort: Sort,
+  from?: number,
 ): ListingQuery {
-  const order = driverDescending(sort) ? "desc" : "asc";
-  const { priceMin, priceMax, areaMin, areaMax } = filters;
+  const order: Order = driverDescending(sort) ? "desc" : "asc";
+  const price = bounds(filters.priceMin, filters.priceMax, order, from);
+  const published = bounds(filters.publishedAfter, undefined, order, from);
   const listings = ctx.db.query("listings");
 
   switch (plan.driver) {
@@ -62,15 +126,9 @@ function driverQuery(
       const cityId = filters.cityId?.[0];
       if (cityId === undefined) break;
       return listings
-        .withIndex("by_scope_and_cityId_and_price", (q) => {
-          const base = q.eq("scope", scope).eq("cityId", cityId);
-          if (priceMin !== undefined && priceMax !== undefined) {
-            return base.gte("price", priceMin).lte("price", priceMax);
-          }
-          if (priceMin !== undefined) return base.gte("price", priceMin);
-          if (priceMax !== undefined) return base.lte("price", priceMax);
-          return base;
-        })
+        .withIndex("by_scope_and_cityId_and_price", (q) =>
+          within(q.eq("scope", scope).eq("cityId", cityId), "price", price),
+        )
         .order(order);
     }
 
@@ -78,15 +136,9 @@ function driverQuery(
       const municipalityId = filters.municipalityId?.[0];
       if (municipalityId === undefined) break;
       return listings
-        .withIndex("by_scope_and_municipalityId_and_price", (q) => {
-          const base = q.eq("scope", scope).eq("municipalityId", municipalityId);
-          if (priceMin !== undefined && priceMax !== undefined) {
-            return base.gte("price", priceMin).lte("price", priceMax);
-          }
-          if (priceMin !== undefined) return base.gte("price", priceMin);
-          if (priceMax !== undefined) return base.lte("price", priceMax);
-          return base;
-        })
+        .withIndex("by_scope_and_municipalityId_and_price", (q) =>
+          within(q.eq("scope", scope).eq("municipalityId", municipalityId), "price", price),
+        )
         .order(order);
     }
 
@@ -94,31 +146,24 @@ function driverQuery(
       const neighborhoodId = filters.neighborhoodId?.[0];
       if (neighborhoodId === undefined) break;
       return listings
-        .withIndex("by_scope_and_neighborhoodId_and_publishedAt", (q) => {
-          const base = q.eq("scope", scope).eq("neighborhoodId", neighborhoodId);
-          return filters.publishedAfter !== undefined
-            ? base.gte("publishedAt", filters.publishedAfter)
-            : base;
-        })
+        .withIndex("by_scope_and_neighborhoodId_and_publishedAt", (q) =>
+          within(q.eq("scope", scope).eq("neighborhoodId", neighborhoodId), "publishedAt", published),
+        )
         .order(order);
     }
 
     case "areaM2":
       return listings
-        .withIndex("by_scope_and_areaM2", (q) => {
-          const base = q.eq("scope", scope);
-          if (areaMin !== undefined && areaMax !== undefined) {
-            return base.gte("areaM2", areaMin).lte("areaM2", areaMax);
-          }
-          if (areaMin !== undefined) return base.gte("areaM2", areaMin);
-          if (areaMax !== undefined) return base.lte("areaM2", areaMax);
-          return base;
-        })
+        .withIndex("by_scope_and_areaM2", (q) =>
+          within(q.eq("scope", scope), "areaM2", bounds(filters.areaMin, filters.areaMax, order, from)),
+        )
         .order(order);
 
     case "pricePerM2":
       return listings
-        .withIndex("by_scope_and_pricePerM2", (q) => q.eq("scope", scope))
+        .withIndex("by_scope_and_pricePerM2", (q) =>
+          within(q.eq("scope", scope), "pricePerM2", bounds(undefined, undefined, order, from)),
+        )
         .order(order);
 
     case "publishedAt":
@@ -127,30 +172,17 @@ function driverQuery(
 
     case "price":
       return listings
-        .withIndex("by_scope_and_price", (q) => {
-          const base = q.eq("scope", scope);
-          if (priceMin !== undefined && priceMax !== undefined) {
-            return base.gte("price", priceMin).lte("price", priceMax);
-          }
-          if (priceMin !== undefined) return base.gte("price", priceMin);
-          if (priceMax !== undefined) return base.lte("price", priceMax);
-          return base;
-        })
+        .withIndex("by_scope_and_price", (q) => within(q.eq("scope", scope), "price", price))
         .order(order);
   }
 
   // A location driver whose id went missing falls back to the date index; a
   // price range cannot, so it keeps the global price index.
   if (plan.driver === "cityPrice" || plan.driver === "municipalityPrice") {
-    return driverQuery(ctx, scope, filters, { ...plan, driver: "price" }, sort);
+    return driverQuery(ctx, scope, filters, { ...plan, driver: "price" }, sort, from);
   }
   return listings
-    .withIndex("by_scope_and_publishedAt", (q) => {
-      const base = q.eq("scope", scope);
-      return filters.publishedAfter !== undefined
-        ? base.gte("publishedAt", filters.publishedAfter)
-        : base;
-    })
+    .withIndex("by_scope_and_publishedAt", (q) => within(q.eq("scope", scope), "publishedAt", published))
     .order(order);
 }
 
@@ -187,19 +219,271 @@ const MAX_QUERY_TERMS = 8;
 /** Largest page a client may ask for (`usePaginatedQuery` asks for 24). */
 const MAX_PAGE = 100;
 
+/* ---------------------------------------------------------------- page cursors */
+
+/** A position in a driver index: the ordered field's value, then `_creationTime`. */
+type IndexKey = { value: number; creationTime: number };
+
+/**
+ * Where a post-filtered index page starts: Convex's own cursor, plus the index
+ * key of the last document before it, so the page can find where its
+ * `numItems`-th match lies before it reads (`windowLength`).
+ */
+type IndexCursor = { native: string | null; after?: IndexKey };
+
+/** Marks the cursors this module writes; any other cursor is Convex's own. */
+const CURSOR_TAG = "listings.search";
+
+function indexCursor(native: string, after: IndexKey | undefined): string {
+  return JSON.stringify({
+    tag: CURSOR_TAG,
+    native,
+    ...(after !== undefined ? { after: [after.value, after.creationTime] } : {}),
+  });
+}
+
+function textCursor(offset: number): string {
+  return JSON.stringify({ tag: CURSOR_TAG, offset });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** The fields of a cursor this module wrote, or null for one of Convex's. */
+function ownCursor(cursor: string): Record<string, unknown> | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cursor);
+  } catch {
+    return null;
+  }
+  return isRecord(parsed) && parsed.tag === CURSOR_TAG ? parsed : null;
+}
+
+function invalidCursor(): never {
+  return invalidInput("Nevažeći kursor pretrage.");
+}
+
+/** Convex's cursors (a page split by `usePaginatedQuery`) pass through as they are. */
+function readIndexCursor(cursor: string | null): IndexCursor {
+  if (cursor === null) return { native: null };
+  const own = ownCursor(cursor);
+  if (own === null) return { native: cursor };
+  if (typeof own.native !== "string") return invalidCursor();
+  const after = own.after;
+  return Array.isArray(after) &&
+    after.length === 2 &&
+    typeof after[0] === "number" &&
+    typeof after[1] === "number"
+    ? { native: own.native, after: { value: after[0], creationTime: after[1] } }
+    : { native: own.native };
+}
+
+function readTextOffset(cursor: string | null): number {
+  if (cursor === null) return 0;
+  const offset = ownCursor(cursor)?.offset;
+  return typeof offset === "number" && Number.isInteger(offset) && offset >= 0 ? offset : invalidCursor();
+}
+
+function keyOf(doc: Doc<"listings">, field: OrderedField): IndexKey | undefined {
+  const value = doc[field];
+  return value === undefined ? undefined : { value, creationTime: doc._creationTime };
+}
+
+/* ------------------------------------------------------------------- paging */
+
+/** One page of documents, before they become cards. */
+type SearchWindow = {
+  docs: Doc<"listings">[];
+  isDone: boolean;
+  continueCursor: string;
+  splitCursor: string | null;
+  pageStatus: NonNullable<PaginationResult<Doc<"listings">>["pageStatus"]> | null;
+  /** Documents the page covers in the index, for the "approximate" UI hint. */
+  scanned: number;
+};
+
+/** What a resumed page has already read: the resume key and the ties before it. */
+type Resume = { field: OrderedField; after: IndexKey; order: Order };
+
+function readBefore(doc: Doc<"listings">, { field, after, order }: Resume): boolean {
+  if (doc[field] !== after.value) return false;
+  return order === "asc" ? doc._creationTime <= after.creationTime : doc._creationTime >= after.creationTime;
+}
+
+/**
+ * How many documents a post-filtered page spans from its start: through its
+ * `numItems`-th match, so the page ends on that match and Convex's cursor
+ * resumes right after it. At most `limit` documents; a range that ends inside
+ * the window is counted one past its end, so the page reports `isDone`.
+ * Keys are compared without `_id`, so identical creation times can only make
+ * a page shorter, never longer.
+ */
+async function windowLength(
+  scan: ListingQuery,
+  filters: SearchFilters,
+  numItems: number,
+  limit: number,
+  resume?: Resume,
+): Promise<number> {
+  let read = 0;
+  let found = 0;
+  let skipped = 0;
+  for await (const doc of scan) {
+    if (resume !== undefined && readBefore(doc, resume)) {
+      skipped += 1;
+      // A long run of ties: a plain window of `numItems` documents cannot
+      // hold more than `numItems` matches.
+      if (skipped > limit) return numItems;
+      continue;
+    }
+    if (found === numItems || read === limit) return read;
+    read += 1;
+    if (matches(doc, filters)) found += 1;
+  }
+  return read + 1;
+}
+
+/**
+ * How many documents a post-filtered page starting at `start` paginates over
+ * (see `indexPage`).
+ */
+async function pageLength(
+  ctx: QueryCtx,
+  scope: string,
+  filters: SearchFilters,
+  plan: DriverPlan,
+  sort: Sort,
+  start: IndexCursor,
+  numItems: number,
+): Promise<number> {
+  const limit = Math.max(numItems, SEARCH_SCAN);
+  if (start.native === null) {
+    return await windowLength(driverQuery(ctx, scope, filters, plan, sort), filters, numItems, limit);
+  }
+  const field = ORDERED_FIELD[plan.driver];
+  if (start.after === undefined || field === undefined) {
+    // Convex's own cursor carries no key to read from; a page of `numItems`
+    // documents cannot hold more than `numItems` matches.
+    return numItems;
+  }
+  return await windowLength(
+    driverQuery(ctx, scope, filters, plan, sort, start.after.value),
+    filters,
+    numItems,
+    limit,
+    { field, after: start.after, order: driverDescending(sort) ? "desc" : "asc" },
+  );
+}
+
+/**
+ * One page from a driver index.
+ *  - When the index range expresses every filter (`coveredByDriver`), the
+ *    page is `paginationOpts` as is: `numItems` long with an exact cursor.
+ *  - Otherwise the page is post-filtered (`matches`). A first read finds how
+ *    far its `numItems`-th match lies (at most `SEARCH_SCAN` documents), and
+ *    the page paginates exactly that far: it holds at most `numItems` cards,
+ *    and Convex's cursor resumes right after the last one, so pages never skip
+ *    or repeat a listing. A window with fewer matches comes back short and
+ *    `usePaginatedQuery` reads on.
+ * Convex allows ONE `.paginate()` per function, and only `.paginate()` keeps a
+ * page's range fixed while it re-runs reactively (the page may then grow or
+ * shrink, never shift), so the first read is a plain one and the page itself
+ * is the one `.paginate()`. `paginationOpts` is forwarded whole apart from
+ * `cursor`, `endCursor` and `numItems`, so `id` and the read limits keep
+ * their native behaviour.
+ */
+async function indexPage(
+  ctx: QueryCtx,
+  scope: string,
+  filters: SearchFilters,
+  plan: DriverPlan,
+  sort: Sort,
+  options: PaginationOptions,
+  numItems: number,
+): Promise<SearchWindow> {
+  const covered = coveredByDriver(filters, plan);
+  const start: IndexCursor = covered ? { native: options.cursor } : readIndexCursor(options.cursor);
+  // A page split by `usePaginatedQuery` arrives with `endCursor`: its range is
+  // already fixed, and Convex ignores `numItems`.
+  const end = options.endCursor;
+  const length =
+    covered || typeof end === "string"
+      ? numItems
+      : await pageLength(ctx, scope, filters, plan, sort, start, numItems);
+
+  const window = await driverQuery(ctx, scope, filters, plan, sort).paginate({
+    ...options,
+    cursor: start.native,
+    ...(typeof end === "string" && !covered ? { endCursor: readIndexCursor(end).native } : {}),
+    numItems: length,
+  });
+  if (covered) {
+    return {
+      docs: window.page,
+      isDone: window.isDone,
+      continueCursor: window.continueCursor,
+      splitCursor: window.splitCursor ?? null,
+      pageStatus: window.pageStatus ?? null,
+      scanned: window.page.length,
+    };
+  }
+
+  // The window holds every document up to its cursor, so its last one is the
+  // key the next page resumes after (an empty window resumes where it began).
+  const field = ORDERED_FIELD[plan.driver];
+  const last = window.page.at(-1);
+  const after = last === undefined ? start.after : field !== undefined ? keyOf(last, field) : undefined;
+  return {
+    docs: window.page.filter((doc) => matches(doc, filters)),
+    isDone: window.isDone,
+    continueCursor: indexCursor(window.continueCursor, after),
+    splitCursor: window.splitCursor ?? null,
+    pageStatus: window.pageStatus ?? null,
+    scanned: window.page.length,
+  };
+}
+
+/**
+ * One page of a text search. The search index returns a bounded,
+ * relevance-ordered window (`TEXT_TAKE`), so every page reads that window,
+ * filters and orders it the same way, and takes its slice by offset. All
+ * loaded pages re-run together on the same data, so their slices stay
+ * contiguous.
+ */
+async function textPage(
+  ctx: QueryCtx,
+  scope: string,
+  filters: SearchFilters,
+  plan: DriverPlan,
+  sort: Sort,
+  cursor: string | null,
+  numItems: number,
+): Promise<SearchWindow> {
+  const found = await textMatches(ctx, scope, filters);
+  const matched = found.filter((doc) => matches(doc, filters));
+  const ordered = plan.orderedInWindow ? matched.sort((a, b) => compareListings(a, b, sort)) : matched;
+  const offset = readTextOffset(cursor);
+  const docs = ordered.slice(offset, offset + numItems);
+  const next = offset + docs.length;
+  const isDone = next >= ordered.length;
+  return {
+    docs,
+    isDone,
+    continueCursor: isDone ? "" : textCursor(next),
+    splitCursor: null,
+    pageStatus: null,
+    scanned: found.length,
+  };
+}
+
 /* ------------------------------------------------------------------- queries */
 
 /**
- * One page of results. Convex allows ONE `.paginate()` per function, so a page
- * is a single window of the driver index:
- *  - when the index range expresses every filter (`coveredByDriver`), the page
- *    is exactly `paginationOpts` — `numItems` long with an exact cursor;
- *  - otherwise the window widens to at least `SEARCH_SCAN` documents and is
- *    post-filtered by `matches()`, so a selective filter can return a short
- *    (even empty) page with `isDone: false`; `usePaginatedQuery` handles
- *    short pages and "load more" reads the next window.
- * `paginationOpts` is forwarded whole (only `numItems` may widen), so `cursor`,
- * `endCursor`, `id` and `maximumRowsRead` keep their native behaviour.
+ * One page of results, at most `numItems` cards (`indexPage`, `textPage`).
+ * `splitCursor`/`pageStatus` are passed through, so `usePaginatedQuery` can
+ * split a page Convex reports as incomplete instead of skipping its rest.
  */
 export const search = query({
   args: {
@@ -207,51 +491,49 @@ export const search = query({
     sort: sortV,
     paginationOpts: paginationOptsValidator,
   },
-  // `splitCursor`/`pageStatus` are passed through, so `usePaginatedQuery` can
-  // split a page Convex reports as incomplete instead of skipping its rest.
   returns: paginationResultValidator(listingCardV).extend({
-    /** Documents read from the index, for the "approximate" UI hint. */
+    /** Documents the page covers in the index, for the "approximate" UI hint. */
     scanned: v.number(),
     /** True when the driver index could not honour `sort` on its own (text search). */
     orderedInWindow: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const plan = pickDriver(args.filters, args.sort);
+    // A query that folds to nothing matches nothing (`matches` rejects every
+    // listing for it): answer without reading. `count` and `mapPoints` too.
+    if (isUnsearchableQuery(args.filters.q)) {
+      return {
+        page: [],
+        isDone: true,
+        continueCursor: "",
+        splitCursor: null,
+        pageStatus: null,
+        scanned: 0,
+        orderedInWindow: plan.orderedInWindow,
+      };
+    }
     const sort = effectiveSort(args.filters, args.sort);
     const scope = listedScope(args.filters.transaction);
     const numItems = Math.min(Math.max(Math.floor(args.paginationOpts.numItems) || 1, 1), MAX_PAGE);
 
     const window =
       plan.driver === "text"
-        ? {
-            page: await textMatches(ctx, scope, args.filters),
-            isDone: true,
-            continueCursor: "",
-            splitCursor: null,
-            pageStatus: null,
-          }
-        : await driverQuery(ctx, scope, args.filters, plan, sort).paginate({
-            ...args.paginationOpts,
-            numItems: coveredByDriver(args.filters, plan) ? numItems : Math.max(numItems, SEARCH_SCAN),
-          });
-
-    const matched = window.page.filter((doc) => matches(doc, args.filters));
-    const ordered = plan.orderedInWindow
-      ? matched.sort((a, b) => compareListings(a, b, sort))
-      : matched;
+        ? await textPage(ctx, scope, args.filters, plan, sort, args.paginationOpts.cursor, numItems)
+        : await indexPage(ctx, scope, args.filters, plan, sort, args.paginationOpts, numItems);
 
     const cards: ListingCard[] = [];
-    for (const doc of ordered) {
-      cards.push(await toCard(ctx, doc, { gallery: SEARCH_CARD_FRAMES }));
+    const locations: LocationCache = new Map();
+    for (const doc of window.docs) {
+      cards.push(await toCard(ctx, doc, { gallery: SEARCH_CARD_FRAMES, locations }));
     }
 
     return {
       page: cards,
       isDone: window.isDone,
       continueCursor: window.continueCursor,
-      splitCursor: window.splitCursor ?? null,
-      pageStatus: window.pageStatus ?? null,
-      scanned: window.page.length,
+      splitCursor: window.splitCursor,
+      pageStatus: window.pageStatus,
+      scanned: window.scanned,
       orderedInWindow: plan.orderedInWindow,
     };
   },
@@ -266,6 +548,7 @@ export const count = query({
   args: { filters: searchFiltersV },
   returns: v.object({ count: v.number(), exact: v.boolean() }),
   handler: async (ctx, args) => {
+    if (isUnsearchableQuery(args.filters.q)) return { count: 0, exact: true };
     const plan = rangeDriver(args.filters);
     const scope = listedScope(args.filters.transaction);
     if (plan.driver === "text") {
@@ -296,6 +579,7 @@ export const mapPoints = query({
     truncated: v.boolean(),
   }),
   handler: async (ctx, args) => {
+    if (isUnsearchableQuery(args.filters.q)) return { points: [], truncated: false };
     // The same driver as `search` and `count` (text search included), so a
     // text query puts the same listings on the map as in the list.
     const plan = rangeDriver(args.filters);
@@ -330,9 +614,12 @@ export const bySlug = query({
       .unique();
 
     if (listing === null) {
+      // A slug can be renamed away more than once (A leaves it, B takes it and
+      // leaves it too): the latest rename is where the URL last pointed.
       const redirect = await ctx.db
         .query("slugRedirects")
         .withIndex("by_from", (q) => q.eq("from", args.slug))
+        .order("desc")
         .first();
       if (redirect === null) return { kind: "missing" as const };
       const target = await ctx.db.get("listings", redirect.listingId);
@@ -484,10 +771,11 @@ export const byIds = query({
   returns: v.array(listingCardV),
   handler: async (ctx, args) => {
     const cards: ListingCard[] = [];
+    const locations: LocationCache = new Map();
     for (const id of args.ids.slice(0, 50)) {
       const doc = await ctx.db.get("listings", id);
       if (doc === null || !isPublicScope(doc.scope)) continue;
-      cards.push(await toCard(ctx, doc));
+      cards.push(await toCard(ctx, doc, { locations }));
     }
     return cards;
   },

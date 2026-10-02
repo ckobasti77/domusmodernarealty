@@ -3,10 +3,12 @@
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { Loader2, Plus } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { PageHeader } from "@/components/admin/common/PageHeader";
 import { QueryErrorBoundary } from "@/components/admin/common/QueryErrorBoundary";
 import { RequireRole } from "@/components/admin/common/RequireRole";
+import { useNow } from "@/components/admin/common/use-now";
 import { hasRole, LISTING_ROLES, MANAGER_ROLES, useMe } from "@/components/admin/shell/me";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,18 +35,6 @@ const NEW_LISTING_HREF = "/admin/nekretnine/nova";
 const MAX_AUTO_LOADS = 8;
 /** Relative "updated" times refresh once a minute. */
 const NOW_TICK_MS = 60_000;
-/** Below Tailwind's `md`: the stacked list replaces the table. */
-const PHONE_QUERY = "(max-width: 767.98px)";
-
-function useNow(tickMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), tickMs);
-    return () => window.clearInterval(timer);
-  }, [tickMs]);
-  return now;
-}
-
 /**
  * While a new filter's first page loads, keep showing the previous result
  * instead of flashing an empty table. `usePaginatedQuery` memoizes `results`,

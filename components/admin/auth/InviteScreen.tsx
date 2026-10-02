@@ -3,6 +3,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useConvexAuth, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,10 +42,17 @@ type Values = z.infer<typeof schema>;
 const LEDE = "Postavite lozinku za svoj nalog. Uloga i ovlašćenja dolaze iz pozivnice.";
 const FOOTER = "Pozivnica važi 7 dana i može se iskoristiti samo jednom.";
 
+type ValidInvite = Extract<FunctionReturnType<typeof api.invites.checkToken>, { valid: true }>;
+
 export function InviteScreen({ token }: { token: string }) {
   // A query must not read the clock, so the page passes "now" in once.
   const [now] = useState(() => Date.now());
-  const invite = useQuery(api.invites.checkToken, { token, now });
+  const checked = useQuery(api.invites.checkToken, { token, now });
+  // The first valid answer is kept: a successful sign-up uses the invite up,
+  // and the live check would flip to "already used" before `signIn` resolves.
+  const [validInvite, setValidInvite] = useState<ValidInvite | null>(null);
+  if (validInvite === null && checked?.valid === true) setValidInvite(checked);
+  const invite = validInvite ?? checked;
   const { isAuthenticated } = useConvexAuth();
   const { signIn, signOut } = useAuthActions();
   const router = useRouter();
@@ -91,7 +99,8 @@ export function InviteScreen({ token }: { token: string }) {
     );
   }
 
-  if (isAuthenticated && !accepted) {
+  // While the sign-up runs, its own new session must not read as "another account".
+  if (isAuthenticated && !accepted && !isSubmitting) {
     return (
       <AuthCard eyebrow="Pozivnica u tim" lede={LEDE}>
         <div className="space-y-5">

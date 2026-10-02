@@ -10,6 +10,7 @@ import { DetailSheet } from "@/components/admin/common/DetailSheet";
 import { describedBy, FieldShell, FormSection } from "@/components/admin/common/form";
 import { ImageField } from "@/components/admin/common/ImageField";
 import { fromL10nValue, L10nInput, toL10nValue, type L10nValue } from "@/components/admin/common/L10nInput";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { useMutationAction } from "@/components/admin/common/useMutationAction";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -232,6 +233,7 @@ function AgentForm({
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+  useLeaveGuard({ dirty, description: "Izmene na ovom profilu još nisu sačuvane. Ako sada napustite stranicu, biće izgubljene." });
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }));

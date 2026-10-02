@@ -1,5 +1,7 @@
 import { v } from "convex/values";
+import type { Doc, Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import {
   BOOKING_DAYS,
   belgradeMidnight,
@@ -10,6 +12,42 @@ import {
 } from "./lib/belgradeTime";
 import { agentPublicV, listingCardV, toAgentPublic, toCard } from "./lib/dto";
 import type { ListingCard } from "./lib/dto";
+import { isPublicScope } from "./lib/search";
+import type { ListingStatus } from "./lib/validators";
+
+/** Cards per section of an agent's profile (PRD A9). */
+const ACTIVE_CARDS = 12;
+const CLOSED_CARDS = 6;
+
+/**
+ * The agent's most recently updated public listings in `statuses`, newest
+ * first: one bounded read per status on `by_agentId_and_status_and_updatedAt`,
+ * so archived or withdrawn listings can never crowd the live ones out. Each
+ * status reads three times the cards, so the odd row skipped for its
+ * `visibility` (unlisted, private) does not leave a section short.
+ */
+async function profileCards(
+  ctx: QueryCtx,
+  agentId: Id<"agents">,
+  statuses: readonly ListingStatus[],
+  cards: number,
+): Promise<ListingCard[]> {
+  const docs: Doc<"listings">[] = [];
+  for (const status of statuses) {
+    const rows = await ctx.db
+      .query("listings")
+      .withIndex("by_agentId_and_status_and_updatedAt", (q) =>
+        q.eq("agentId", agentId).eq("status", status),
+      )
+      .order("desc")
+      .take(cards * 3);
+    docs.push(...rows.filter((doc) => isPublicScope(doc.scope)));
+  }
+  docs.sort((a, b) => b.updatedAt - a.updatedAt);
+  const out: ListingCard[] = [];
+  for (const doc of docs.slice(0, cards)) out.push(await toCard(ctx, doc));
+  return out;
+}
 
 export const list = query({
   args: {},
@@ -42,23 +80,12 @@ export const bySlug = query({
       .unique();
     if (doc === null || !doc.isPublic) return null;
 
-    const own = await ctx.db
-      .query("listings")
-      .withIndex("by_agentId", (q) => q.eq("agentId", doc._id))
-      .take(120);
-
-    const active: ListingCard[] = [];
-    const closed: ListingCard[] = [];
-    for (const listing of own) {
-      if (listing.visibility !== "public") continue;
-      if (listing.scope.startsWith("listed:")) {
-        if (active.length < 12) active.push(await toCard(ctx, listing));
-      } else if (listing.scope.startsWith("closed:")) {
-        if (closed.length < 6) closed.push(await toCard(ctx, listing));
-      }
-    }
-
-    return { agent: await toAgentPublic(ctx, doc), active, closed };
+    return {
+      agent: await toAgentPublic(ctx, doc),
+      // On the market (the `listed` scope) and sold or let (`closed`).
+      active: await profileCards(ctx, doc._id, ["published", "reserved"], ACTIVE_CARDS),
+      closed: await profileCards(ctx, doc._id, ["sold", "rented"], CLOSED_CARDS),
+    };
   },
 });
 

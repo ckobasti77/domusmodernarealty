@@ -604,8 +604,17 @@ export const backfillSearchText = internalMutation({
  */
 const SEPARATOR = ";";
 
+/**
+ * An international phone number: "+" and then only digits and spaces. It
+ * cannot hold a function call, a cell reference or a DDE link, so it is
+ * written as typed (quoted, which spreadsheets that honour quotes read as
+ * text) instead of with the visible quote prefix below.
+ */
+const PLAIN_PHONE = /^\+\d[\d ]*$/;
+
 function csvCell(value: string | undefined): string {
   if (value === undefined || value.length === 0) return "";
+  if (PLAIN_PHONE.test(value)) return `"${value}"`;
   let text = value;
   // Names arrive from a public form. A leading =, +, - or @ (or a tab/CR)
   // makes Excel and LibreOffice evaluate the cell as a formula; the quote

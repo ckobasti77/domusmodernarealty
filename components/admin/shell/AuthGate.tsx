@@ -3,11 +3,22 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
+import { adminErrorMessage } from "@/lib/admin/errors";
 import { MeProvider } from "./me";
+
+const SignOutContext = createContext<(() => Promise<void>) | null>(null);
+
+/** Signs out on purpose: straight to the login page, with no `next` back to this one. */
+export function useSignOut(): () => Promise<void> {
+  const signOut = useContext(SignOutContext);
+  if (signOut === null) throw new Error("useSignOut() must be used inside <AuthGate>.");
+  return signOut;
+}
 
 /**
  * Client-side gate for every `/admin/*` screen except login and invite
@@ -16,27 +27,45 @@ import { MeProvider } from "./me";
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated } = useConvexAuth();
+  const { signOut } = useAuthActions();
   const me = useQuery(api.users.getMe, isAuthenticated ? {} : "skip");
   const router = useRouter();
   const pathname = usePathname();
+  // Set while signing out on purpose: the next person to sign in on this
+  // browser should land on the dashboard, not on the page left behind.
+  const signingOut = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace(`/admin/login?next=${encodeURIComponent(pathname)}`);
-    }
+    if (isLoading || isAuthenticated || signingOut.current) return;
+    // An expired session: back to this very view (filters, open record) after signing in.
+    router.replace(`/admin/login?next=${encodeURIComponent(`${pathname}${window.location.search}`)}`);
   }, [isLoading, isAuthenticated, pathname, router]);
 
+  const signOutNow = useCallback(async () => {
+    signingOut.current = true;
+    try {
+      await signOut();
+    } catch (error) {
+      signingOut.current = false;
+      toast.error(adminErrorMessage(error, "Odjava nije uspela. Pokušajte ponovo."));
+      return;
+    }
+    router.replace("/admin/login");
+  }, [signOut, router]);
+
   if (isLoading || !isAuthenticated || me === undefined) return <ShellSkeleton />;
-  if (me === null) return <AccountProblem text="Vaš nalog nije pronađen." />;
+  if (me === null) return <AccountProblem text="Vaš nalog nije pronađen." onSignOut={signOutNow} />;
   if (me.status === "disabled") {
-    return <AccountProblem text="Pristup panelu je onemogućen za ovaj nalog." />;
+    return <AccountProblem text="Pristup panelu je onemogućen za ovaj nalog." onSignOut={signOutNow} />;
   }
-  return <MeProvider me={me}>{children}</MeProvider>;
+  return (
+    <SignOutContext.Provider value={signOutNow}>
+      <MeProvider me={me}>{children}</MeProvider>
+    </SignOutContext.Provider>
+  );
 }
 
-function AccountProblem({ text }: { text: string }) {
-  const { signOut } = useAuthActions();
-  const router = useRouter();
+function AccountProblem({ text, onSignOut }: { text: string; onSignOut: () => Promise<void> }) {
   return (
     <main className="grid min-h-svh place-items-center px-6 text-center">
       <div className="max-w-sm">
@@ -45,14 +74,7 @@ function AccountProblem({ text }: { text: string }) {
         <p className="mt-2 text-sm text-muted-foreground">
           Obratite se administratoru agencije.
         </p>
-        <Button
-          variant="outline"
-          className="mt-6"
-          onClick={async () => {
-            await signOut();
-            router.replace("/admin/login");
-          }}
-        >
+        <Button variant="outline" className="mt-6" onClick={() => void onSignOut()}>
           Odjavite se
         </Button>
       </div>

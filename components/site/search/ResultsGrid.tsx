@@ -4,10 +4,10 @@ import { X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { buttonClasses } from "@/components/site/Button";
 import { PropertyCard, type CardMortgage } from "@/components/site/PropertyCard";
-import type { ListingCard } from "@/convex/lib/dto";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { formatCount } from "@/lib/format";
+import type { SearchCard } from "@/lib/search-cards";
 import { activeChips, clearFilters, removeChip, type SearchState } from "@/lib/search-params";
 import { chipLabel, searchSummary, type PlaceName } from "@/lib/search-text";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ export function ResultsGrid({
   wide,
   hoverSync,
 }: {
-  cards: readonly ListingCard[];
+  cards: readonly SearchCard[];
   status: ResultsStatus;
   busy: boolean;
   count: ResultCount | undefined;

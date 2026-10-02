@@ -1,7 +1,6 @@
 "use client";
 
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { Bold, Heading3, Italic, Link2, List, ListOrdered, Quote, Redo2, Undo2, type LucideIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,16 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { PAGE_SAFE_HREF, pageSectionExtensions } from "./section-extensions";
 
 /**
  * A compact rich-text editor (Tiptap 3) for page sections: subheadings (H3),
  * paragraphs, bold, italic, lists, quotes and links — exactly the HTML
- * `convex/pagesAdmin.ts` accepts. Loaded with `next/dynamic` (`ssr: false`)
- * by `RichTextInput`, one instance per visible locale.
+ * `convex/pagesAdmin.ts` accepts, pasted content included
+ * (`pageSectionExtensions`). Loaded with `next/dynamic` (`ssr: false`) by
+ * `RichTextInput`, one instance per visible locale.
  */
-
-/** http(s), mailto, tel, site-relative paths and anchors (the server's rule). */
-const SAFE_HREF = /^(https?:\/\/|mailto:|tel:|\/(?![/\\])|#.)/i;
 
 const PROSE = [
   "text-sm leading-6 text-foreground break-words",
@@ -65,28 +63,12 @@ export function RichTextEditor({
   // The HTML this editor last reported: a value coming back from the form
   // must not reset the document (and the caret) on every keystroke.
   const emitted = useRef(value);
+  // Stable: `useEditor` would otherwise re-apply a fresh list on every render.
+  const [extensions] = useState(pageSectionExtensions);
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [3] },
-        code: false,
-        codeBlock: false,
-        horizontalRule: false,
-        strike: false,
-        underline: false,
-        link: {
-          openOnClick: false,
-          autolink: true,
-          linkOnPaste: true,
-          defaultProtocol: "https",
-          isAllowedUri: (url) => SAFE_HREF.test(url),
-          shouldAutoLink: (url) => SAFE_HREF.test(url),
-          HTMLAttributes: { target: null, rel: null, class: null },
-        },
-      }),
-    ],
+    extensions,
     content: value,
     editorProps: {
       attributes: {
@@ -222,7 +204,7 @@ function LinkButton({ editor, active, href }: { editor: Editor; active: boolean;
     // submit must still not reach the page form.
     event.stopPropagation();
     const target = withScheme(draft);
-    if (!SAFE_HREF.test(target)) {
+    if (!PAGE_SAFE_HREF.test(target)) {
       setError("Unesite adresu koja počinje sa https://, mailto:, tel: ili / za stranicu sajta.");
       return;
     }

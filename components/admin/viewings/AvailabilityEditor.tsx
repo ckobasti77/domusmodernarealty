@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { CopyPlus, Loader2, Plus, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { useLeaveGuard } from "@/components/admin/common/LeaveGuard";
 import { useMutationAction } from "@/components/admin/common/useMutationAction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,6 +230,7 @@ function WeekForm({ agent, onDirtyChange }: { agent: AgentOption; onDirtyChange:
     onDirtyChange(dirty);
   }, [dirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+  useLeaveGuard({ dirty, description: "Radno vreme još nije sačuvano. Ako sada napustite stranicu, izmene će biti izgubljene." });
 
   const checks = new Map<number, Check>();
   for (const { weekday } of WEEKDAYS_MON_FIRST) {

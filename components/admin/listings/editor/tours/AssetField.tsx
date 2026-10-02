@@ -9,6 +9,7 @@ import { fileProblem, UploadError } from "@/components/admin/listings/media/uplo
 import { ACCEPT_ATTR } from "@/components/admin/listings/media/shared";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { IMAGE_URL_HOSTS } from "@/convex/lib/storage";
 import { isAllowedSplatUrl, isSitePanoPath } from "@/convex/lib/tours";
 import { adminErrorMessage } from "@/lib/admin/errors";
 import { adminThumb } from "@/lib/admin/images";
@@ -285,7 +286,7 @@ export function PosterField() {
           autoComplete="off"
           spellCheck={false}
           placeholder="https://…"
-          hint="Prikazuje se dok se model učitava. Adresa slike ili otpremljen fajl."
+          hint={`Prikazuje se dok se model učitava. Slika sa ${IMAGE_URL_HOSTS.join(", ")} ili otpremljen fajl.`}
         />
       )}
       {preview !== null ? (

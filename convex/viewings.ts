@@ -36,6 +36,15 @@ const LONGEST_VIEWING_MS = 3 * 60 * 60 * 1000;
  * hours are Belgrade wall-clock time): a web request is exactly one slot of
  * the agent's hourly grid, at least `BOOKING_LEAD_MS` ahead and at most
  * `BOOKING_DAYS` out, on a listing that is still on the market.
+ *
+ * It returns nothing. A repeat request from an address that already holds an
+ * open one for this listing gets the same answer and is not stored: an error
+ * there told anyone who knew an e-mail address whether its owner was looking
+ * at the property and, being a throw, refunded the rate-limit tokens, so it
+ * could be asked without limit. The open request stands. (The repeat's slot
+ * stays free in `agents.slots`, so a determined prober can still infer it,
+ * but only at the price of a rate-limited request that books a real slot in
+ * the owner's name whenever there was no open request.)
  */
 export const request = mutation({
   args: {
@@ -55,7 +64,7 @@ export const request = mutation({
     privacy: v.boolean(),
     hp: v.optional(v.string()),
   },
-  returns: v.object({ viewingId: v.id("viewings"), leadId: v.id("leads") }),
+  returns: v.null(),
   handler: async (ctx, args) => {
     assertHoneypotEmpty(args.hp);
     if (!args.privacy) {
@@ -66,7 +75,9 @@ export const request = mutation({
     const now = Date.now();
     if (args.end - args.start !== VIEWING_SLOT_MS) invalidInput("Termin nije ispravan.");
     if (args.start < now + BOOKING_LEAD_MS) {
-      invalidInput("Termin mora biti najmanje dva sata unapred.");
+      // Usually a widget left open past the slot's lead time: for the visitor
+      // the slot is simply gone, the same answer as a taken one.
+      appError("SLOT_TAKEN", "Termin mora biti najmanje dva sata unapred.");
     }
     // PRD A5: the widget offers the next 14 days.
     if (args.start > now + BOOKING_DAYS * DAY_MS) {
@@ -148,14 +159,15 @@ export const request = mutation({
     let submittedPhone: string | undefined;
     if (existing !== null) {
       // One open request per visitor and listing: the agent answers it before
-      // the same address can hold a second slot on this property.
+      // the same address can hold a second slot on this property. The repeat
+      // is answered like a success (see above) and the tokens stay spent.
       const open = await ctx.db
         .query("leads")
         .withIndex("by_contactId", (q) => q.eq("contactId", existing._id))
         .order("desc")
         .take(50);
       if (open.some((lead) => lead.type === "viewing" && lead.listingId === listing._id && lead.status === "new")) {
-        appError("ALREADY_REQUESTED", "Zahtev za razgledanje ove nekretnine je već poslat.");
+        return null;
       }
       contactId = existing._id;
       if (phone !== undefined && phone !== existing.phone) submittedPhone = phone;
@@ -228,6 +240,6 @@ export const request = mutation({
       summary: `Zahtev za razgledanje ${listing.ref}`,
     });
 
-    return { viewingId, leadId };
+    return null;
   },
 });

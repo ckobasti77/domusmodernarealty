@@ -9,6 +9,7 @@ import { ContactForm } from "@/components/site/contact/ContactForm";
 import { FaqSection } from "@/components/site/contact/FaqSection";
 import { managedFaq, managedIntro } from "@/components/site/contact/managed";
 import { OfficeDetails } from "@/components/site/contact/OfficeDetails";
+import { prefillMessage } from "@/components/site/contact/prefill";
 import { Container, Grid, Section } from "@/components/site/Container";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { JsonLdScript } from "@/components/site/page/JsonLd";
@@ -26,7 +27,8 @@ import { localizedUrl, pageMetadata, siteOrigin } from "@/lib/seo";
  * (lead type `general`), the office with its hours and map, and the managed
  * questions. Channels, address, hours and the map pin all come from Settings,
  * so the owner edits them once; a channel that is not set is not shown, and
- * the map is left out until the office has coordinates.
+ * the map is left out until the office has coordinates. A `?message=` (the
+ * empty search result's call to action) pre-fills the form.
  */
 
 type Props = PageProps<"/[locale]/contact">;
@@ -38,15 +40,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata({ locale, href: "/contact", title: t("metaTitle"), description: t("metaDescription") });
 }
 
-export default async function ContactPage({ params }: Props) {
+export default async function ContactPage({ params, searchParams }: Props) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  const [t, tNav, page, settings] = await Promise.all([
+  const [t, tNav, page, settings, query] = await Promise.all([
     getTranslations({ locale, namespace: "contact" }),
     getTranslations({ locale, namespace: "nav" }),
     getSitePage("contact"),
     getPublicSettings(),
+    searchParams,
   ]);
 
   const values = placeholderValues(settings);
@@ -120,7 +123,7 @@ export default async function ContactPage({ params }: Props) {
             {/* Column 6 is the page's right-hand spine: the form, the map and
                 the questions all start on it, as on the sell page. */}
             <div className="col-span-4 lg:col-span-7 lg:col-start-6">
-              <ContactForm />
+              <ContactForm initialMessage={prefillMessage(query.message)} />
             </div>
           </Grid>
         </Container>

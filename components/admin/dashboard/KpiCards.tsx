@@ -1,14 +1,11 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { formatDate } from "@/lib/admin/format";
-import { cn } from "@/lib/utils";
 import { formatCapped, formatCount, formatDuration } from "./format";
 
 type Kpi = {
@@ -17,15 +14,14 @@ type Kpi = {
   /** Undefined while loading. */
   value: string | undefined;
   hint: ReactNode;
-  href?: string;
 };
 
 /**
  * Agency-wide KPIs (managers only — `analytics.dashboard` refuses anyone else).
  * Listing counts are exact (denormalized counters); new leads and today's
  * viewings are read with `.take(n)`, so a value at that limit reads `n+`.
- * A card links only where a screen exists for it (today: the listings table),
- * and every linked card carries the same arrow; the rest are plain.
+ * The cards do not link: no screen lists exactly what they count (the
+ * listings table filters one status, "active" is published plus reserved).
  */
 export function KpiCards({ now }: { now: number }) {
   const stats = useQuery(api.analytics.dashboard, { now });
@@ -35,8 +31,7 @@ export function KpiCards({ now }: { now: number }) {
       key: "active",
       label: "Aktivne nekretnine",
       value: stats === undefined ? undefined : formatCount(stats.activeListings),
-      hint: stats === undefined ? undefined : `${formatCount(stats.draftListings)} u nacrtu`,
-      href: "/admin/nekretnine?status=published",
+      hint: stats === undefined ? undefined : `Objavljene i rezervisane · ${formatCount(stats.draftListings)} u nacrtu`,
     },
     {
       key: "leads",
@@ -80,16 +75,7 @@ export function KpiCards({ now }: { now: number }) {
       <ul className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {kpis.map((kpi) => (
           <li key={kpi.key} className="min-w-0">
-            {kpi.href !== undefined ? (
-              <Link
-                href={kpi.href}
-                className="group block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <KpiCard kpi={kpi} linked />
-              </Link>
-            ) : (
-              <KpiCard kpi={kpi} linked={false} />
-            )}
+            <KpiCard kpi={kpi} />
           </li>
         ))}
       </ul>
@@ -97,23 +83,12 @@ export function KpiCards({ now }: { now: number }) {
   );
 }
 
-function KpiCard({ kpi, linked }: { kpi: Kpi; linked: boolean }) {
+function KpiCard({ kpi }: { kpi: Kpi }) {
   return (
-    <Card
-      className={cn(
-        // Compact on phones, where two cards share a row.
-        "h-full max-sm:[--card-spacing:--spacing(3)]",
-        linked && "transition-colors duration-150 group-hover:bg-muted/70",
-      )}
-    >
-      <CardContent className="relative">
-        <p className={cn("text-xs font-medium text-muted-foreground", linked && "pr-6")}>{kpi.label}</p>
-        {linked ? (
-          <ArrowUpRight
-            aria-hidden="true"
-            className="absolute top-0 right-(--card-spacing) size-4 text-muted-foreground transition-colors duration-150 group-hover:text-primary"
-          />
-        ) : null}
+    // Compact on phones, where two cards share a row.
+    <Card className="h-full max-sm:[--card-spacing:--spacing(3)]">
+      <CardContent>
+        <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
         {kpi.value === undefined ? (
           <Skeleton className="mt-2 h-8 w-20 sm:h-9 sm:w-24" />
         ) : (

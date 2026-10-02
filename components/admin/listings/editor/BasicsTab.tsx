@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
+import { isPublicScope } from "@/convex/lib/search";
 import {
   PROPERTY_TYPE_LABEL,
   SUBTYPE_LABEL,
@@ -20,12 +21,15 @@ const VISIBILITY_OPTIONS = optionsOf(VISIBILITY_LABEL);
 export function BasicsTab({ data }: { data: EditorData }) {
   const { canAssignAgent } = useEditor();
   const agents = useQuery(api.agentsAdmin.list, canAssignAgent ? {} : "skip");
+  // `listingsAdmin.update`: a listing on the site keeps an agent visitors can book.
+  const live = isPublicScope(data.listing.scope);
   const agentOptions =
     agents === undefined
       ? [{ value: data.listing.agentId, label: data.agentName }]
       : agents.map((agent) => ({
           value: agent._id,
           label: agent.isPublic ? agent.name : `${agent.name} (nije vidljiv na sajtu)`,
+          disabled: live && !agent.isPublic && agent._id !== data.listing.agentId,
         }));
 
   return (
@@ -57,7 +61,11 @@ export function BasicsTab({ data }: { data: EditorData }) {
             id="f-agentId"
             label="Agent"
             options={agentOptions}
-            hint="Agent se prikazuje na oglasu i prima upite i zahteve za razgledanje."
+            hint={
+              live
+                ? "Agent se prikazuje na oglasu i prima upite i zahteve za razgledanje. Oglas je na sajtu, pa se dodeljuje samo agentu vidljivom na sajtu."
+                : "Agent se prikazuje na oglasu i prima upite i zahteve za razgledanje."
+            }
           />
         ) : (
           <Field id="f-agentId" label="Agent" hint="Nekretninu može preraspodeliti menadžer ili administrator.">

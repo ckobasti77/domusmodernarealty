@@ -1,4 +1,5 @@
 import type { Id } from "@/convex/_generated/dataModel";
+import { floorToNumber } from "@/convex/lib/money";
 import type {
   ConstructionType,
   Heating,
@@ -25,8 +26,6 @@ import type {
 
 export type SearchTransaction = Transaction;
 
-export const TRANSACTIONS = ["sale", "rent"] as const satisfies readonly Transaction[];
-
 export const PROPERTY_TYPES = [
   "apartment",
   "house",
@@ -37,8 +36,8 @@ export const PROPERTY_TYPES = [
   "cottage",
 ] as const satisfies readonly PropertyType[];
 
-/** PRD A3 structure chips. `5` means "5 or more". */
-export const ROOM_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5] as const;
+/** PRD A3 structure chips, every structure a listing can have. `5` means "5 or more". */
+export const ROOM_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const;
 export const ROOMS_PLUS = 5;
 
 /** The heating kinds PRD A3 lists as filters (AC/pellet/other stay detail-only). */
@@ -57,18 +56,15 @@ export const CONSTRUCTION_OPTIONS = [
   "under_construction",
 ] as const satisfies readonly ConstructionType[];
 
-/**
- * Floor codes for the min/max selects, in storey order. The named floors map
- * onto `listings.floorNum` exactly as `convex/lib/money.ts::floorToNumber` does.
- */
+/** Floor codes for the min/max selects, in storey order. */
 export const FLOOR_CODES = ["SUT", "PSUT", "PR", "VPR"] as const;
 export type FloorCode = (typeof FLOOR_CODES)[number];
 export type FloorValue = FloorCode | number;
 export const MAX_FLOOR = 30;
-const FLOOR_NUM: Record<FloorCode, number> = { SUT: -1, PSUT: -0.5, PR: 0, VPR: 0.5 };
 
+/** A floor-select value on the `listings.floorNum` scale: the server's own mapping. */
 export function floorToNum(value: FloorValue): number {
-  return typeof value === "number" ? value : FLOOR_NUM[value];
+  return floorToNumber(value);
 }
 
 /** Every value the floor selects offer, lowest first. */
@@ -223,6 +219,33 @@ function parseBbox(raw: string): { west: number; south: number; east: number; no
 
 const flag = (raw: string | undefined) => raw === "1" || raw === "true";
 
+/** Own keys only: `in` would also take "constructor" or "__proto__" from the prototype. */
+function isAddedWithin(raw: string): raw is AddedWithin {
+  return Object.hasOwn(ADDED_WINDOWS, raw);
+}
+
+/** A lone UTF-16 surrogate (half an emoji); `u` mode sees a whole pair as one code point. */
+const LONE_SURROGATE = /\p{Cs}/gu;
+
+/**
+ * Without lone surrogates: Convex rejects such a string as an argument
+ * ("Invalid arguments provided") and `encodeURIComponent` throws on it.
+ */
+function wellFormed(value: string): string {
+  return value.replace(LONE_SURROGATE, "");
+}
+
+/**
+ * The text query as it may travel: well-formed, trimmed and cut to
+ * `LIMITS.qLength` code points (a cut in UTF-16 units can halve an emoji);
+ * `undefined` when nothing is left.
+ */
+function cleanQuery(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const q = Array.from(wellFormed(raw).trim()).slice(0, LIMITS.qLength).join("").trimEnd();
+  return q.length > 0 ? q : undefined;
+}
+
 function ordered<T extends number | undefined>(low: T, high: T): [T, T] {
   if (low !== undefined && high !== undefined && low > high) return [high, low];
   return [low, high];
@@ -245,7 +268,7 @@ export function parseSearchParams(input: RawParams): SearchState {
     [floorMin, floorMax] = [floorMax, floorMin];
   }
 
-  const q = readParam(input, "q")?.trim().slice(0, LIMITS.qLength);
+  const q = cleanQuery(readParam(input, "q"));
   const sortRaw = readParam(input, "sort");
   const sort =
     sortRaw !== undefined && ([...SORT_OPTIONS, "relevance"] as readonly string[]).includes(sortRaw)
@@ -265,7 +288,7 @@ export function parseSearchParams(input: RawParams): SearchState {
     transaction,
     types: stringList(readParam(input, "type"), PROPERTY_TYPES),
     locations,
-    ...(q !== undefined && q.length > 0 ? { q } : {}),
+    ...(q !== undefined ? { q } : {}),
     ...(priceMin !== undefined ? { priceMin } : {}),
     ...(priceMax !== undefined ? { priceMax } : {}),
     ...(areaMin !== undefined ? { areaMin } : {}),
@@ -278,7 +301,7 @@ export function parseSearchParams(input: RawParams): SearchState {
     heating: stringList(readParam(input, "heating"), HEATING_OPTIONS),
     construction: stringList(readParam(input, "construction"), CONSTRUCTION_OPTIONS),
     toggles: TOGGLE_KEYS.filter((key) => flag(readParam(input, key))),
-    ...(addedRaw !== undefined && addedRaw in ADDED_WINDOWS ? { added: addedRaw as AddedWithin } : {}),
+    ...(addedRaw !== undefined && isAddedWithin(addedRaw) ? { added: addedRaw } : {}),
     ...(sort !== undefined ? { sort } : {}),
     ...(bbox !== undefined ? { bbox } : {}),
   };
@@ -294,10 +317,11 @@ const round4 = (value: number) => Math.round(value * 10_000) / 10_000;
  */
 export function toQuery(state: SearchState): Record<string, string> {
   const out: Record<string, string> = {};
+  const q = cleanQuery(state.q);
   if (state.transaction !== "sale") out.transaction = state.transaction;
   if (state.types.length > 0) out.type = state.types.join(",");
   if (state.locations.length > 0) out.location = state.locations.join(",");
-  if (state.q !== undefined && state.q.length > 0) out.q = state.q;
+  if (q !== undefined) out.q = q;
   if (state.priceMin !== undefined) out.priceMin = String(state.priceMin);
   if (state.priceMax !== undefined) out.priceMax = String(state.priceMax);
   if (state.areaMin !== undefined) out.areaMin = String(state.areaMin);
@@ -322,11 +346,12 @@ export function toQuery(state: SearchState): Record<string, string> {
 /**
  * The query string, with commas left literal: `rooms=2,3&location=vracar,dorcol`
  * reads better in a shared link than `%2C`, and a comma is a legal sub-delimiter
- * in a query (RFC 3986).
+ * in a query (RFC 3986). Every value is made well-formed first, so a state built
+ * by hand can never make it (or `searchKey`) throw.
  */
 export function toQueryString(state: SearchState): string {
   return Object.entries(toQuery(state))
-    .map(([key, value]) => `${key}=${encodeURIComponent(value).replace(/%2C/gi, ",")}`)
+    .map(([key, value]) => `${key}=${encodeURIComponent(wellFormed(value)).replace(/%2C/gi, ",")}`)
     .join("&");
 }
 
@@ -377,13 +402,14 @@ export function toConvexFilters(
   now: number,
 ): SearchFilters {
   const has = (key: ToggleKey) => state.toggles.includes(key);
+  const q = cleanQuery(state.q);
   const floorBands: NonNullable<SearchFilters["floorBands"]> = [];
   if (state.notGround) floorBands.push("not_ground");
   if (state.notTop) floorBands.push("not_top");
 
   return {
     transaction: state.transaction,
-    ...(state.q !== undefined && state.q.length > 0 ? { q: state.q } : {}),
+    ...(q !== undefined ? { q } : {}),
     ...(state.types.length > 0 ? { propertyType: state.types } : {}),
     ...(locations.cityId.length > 0 ? { cityId: locations.cityId } : {}),
     ...(locations.municipalityId.length > 0 ? { municipalityId: locations.municipalityId } : {}),

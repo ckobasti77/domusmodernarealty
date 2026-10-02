@@ -1,9 +1,11 @@
 "use client";
 
 import { ReactLenis, useLenis, type LenisRef } from "lenis/react";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { gsap, ScrollTrigger } from "./gsap";
+import { isLenisHeld } from "./lenis-lock";
 
 const OPTIONS = {
   autoRaf: false,
@@ -35,7 +37,17 @@ function LenisDriver() {
     };
   }, []);
 
-  useLenis(() => ScrollTrigger.update());
+  const lenis = useLenis(() => ScrollTrigger.update());
+
+  // Safety net: a new route never inherits a stopped scroll. Overlays hold
+  // Lenis through `lenis-lock`, so a stop nobody holds any more is a leak
+  // (an overlay that stopped it directly and was unmounted mid-way). This runs
+  // after the old route's cleanups and before the new route's own effects, so
+  // an overlay the new page opens at once still takes its hold afterwards.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (lenis !== undefined && !isLenisHeld()) lenis.start();
+  }, [lenis, pathname]);
 
   return <ReactLenis root options={OPTIONS} ref={lenisRef} />;
 }

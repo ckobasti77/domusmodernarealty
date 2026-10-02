@@ -333,7 +333,7 @@ async function threeComparableListings(): Promise<ListingCard[]> {
   });
   const picked: ListingCard[] = [];
   for (const card of result.page) {
-    if (card.priceOnRequest === true || card.pricePerM2 <= 0) continue;
+    if (card.pricePerM2 <= 0) continue;
     const clash = picked.some(
       (other) => other.price === card.price || other.areaM2 === card.areaM2 || other.pricePerM2 === card.pricePerM2,
     );

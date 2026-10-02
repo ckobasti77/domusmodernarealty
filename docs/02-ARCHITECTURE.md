@@ -32,7 +32,7 @@ app/
   api/…                     # only if needed
   sitemap.ts  robots.ts
 components/
-  site/  admin/  ui/  motion/  map/  tours/  forms/  seo/
+  site/  admin/  ui/  motion/  map/  tours/  forms/  providers/   # JSON-LD: components/site/page/JsonLd.tsx
 convex/
   schema.ts  auth.ts  auth.config.ts  http.ts  convex.config.ts
   lib/{auth.ts,validators.ts,slug.ts,search.ts,money.ts}
@@ -41,7 +41,7 @@ convex/
   seed/…  crons.ts
 i18n/  routing.ts  request.ts  navigation.ts
 messages/  sr-Latn.json  en.json  ru.json  de.json
-lib/  format.ts  seo.ts  jsonld.ts  cn.ts  mortgage.ts  costs.ts  consent.ts
+lib/  format.ts  seo.ts  jsonld.ts  utils.ts (cn)  cn-tables.ts  mortgage.ts  costs.ts  csp.ts  stores/ (consent, favorites, compare)
 scripts/  shots.mjs  i18n-check.mjs  optimize-media.mjs  copy-maplibre-worker.mjs
 tests/e2e/…  playwright.config.ts
 media-src/                  # raw hero media dropped in by the owner (gitignored); optimized into public/media
@@ -101,6 +101,8 @@ Localized pathnames (the internal segment is in English):
 ## 5. Convex data model (`convex/schema.ts`)
 Use `authTables` from `@convex-dev/auth/server`, and extend `users` with `role`, `status`, `agentId`. Types below are shorthand.
 
+> **As built (see DECISIONS [03]):** localized fields are stored under the key `sr`, not `sr-Latn` (Convex rejects hyphenated object keys; `LOCALE_FIELD` maps the next-intl locale to the key). `cityId` / `municipalityId` / `neighborhoodId` are top-level listing fields, and public search runs on a derived `scope` (`listed|closed|hidden:sale|rent`) with `by_scope_and_*` indexes instead of the `by_status_*` indexes below. There is no "price on request": Art. 18 requires the price on every ad (review 14). `convex/schema.ts` is the source of truth.
+
 ```
 L10n = { "sr-Latn": string, en?: string, ru?: string, de?: string }   // v.object with optional fields
 Image = { kind: "storage", storageId: Id<_storage> } | { kind: "url", url: string }
@@ -118,7 +120,7 @@ listings: {
   agentId: Id<agents>, ownerContactId?: Id<contacts>
   mandate?: { number, type: "exclusive"|"open", start: number, end: number }   // brokerage contract, REQUIRED to publish
   title: L10n, description: L10n, highlights: { "sr-Latn": string[], en?: string[], ru?: string[], de?: string[] }
-  price: number (EUR), pricePerM2: number (derived), priceHistory: {date:number, price:number}[], priceOnRequest?: false
+  price: number (EUR), pricePerM2: number (derived), priceHistory: {date:number, price:number}[]
   vatIncluded?, vatRefundEligible?, mortgageEligible?, developerInstallments?, urgent?
   commissionText?: L10n, costs?: { infostan?, maintenance?, utilitiesIncluded? }
   rent?: { monthly, deposit?, minLeaseMonths?, petsAllowed?, utilitiesIncluded? }
@@ -217,7 +219,7 @@ savedSearches (prepared, V2): { email, locale, query: any, frequency, lastSentAt
 - `app/sitemap.ts`: static pages × locales + listings + locations + posts, with alternates, images and lastmod. Add `generateSitemaps` if listings exceed 10k.
 - `app/robots.ts`: disallow `/admin`, `/api`, `/*/styleguide`.
 - JSON-LD helpers in `lib/jsonld.ts`: `RealEstateAgent` (sitewide, with `identifier` = registry number), `RealEstateListing` + `Offer` + `Accommodation` subtype, `BreadcrumbList`, `Article` for posts, `Person` for agents.
-- OG images via `opengraph-image.tsx` (`next/og`). Load a TTF/OTF font with Latin-Extended + Cyrillic; WOFF2 is not supported by Satori.
+- OG images via `next/og`, served by Route Handlers at the localized public paths (`app/[locale]/**/opengraph-image/route.tsx`, drawn by `lib/og.tsx`) rather than the `opengraph-image.tsx` file convention, whose URL would point at the internal `/sr-Latn/…` path (DECISIONS [07], [12]). Load a TTF/OTF font with Latin-Extended + Cyrillic; WOFF2 is not supported by Satori.
 
 ## 10. Security headers (next.config `headers()`)
 - CSP:

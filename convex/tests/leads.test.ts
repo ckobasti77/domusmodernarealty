@@ -192,7 +192,7 @@ describe("viewing requests", () => {
   test("a slot inside the agent's hours is accepted and creates a lead", async () => {
     const { t, ids } = await setup();
     const start = nextMonday10Utc();
-    const { viewingId, leadId } = await t.mutation(api.viewings.request, {
+    const result = await t.mutation(api.viewings.request, {
       sessionKey: session("v1"),
       locale: "sr-Latn",
       listingId: ids.listing,
@@ -204,11 +204,15 @@ describe("viewing requests", () => {
       privacy: true,
     });
 
-    const state = await t.run(async (ctx) => ({
-      viewing: await ctx.db.get("viewings", viewingId),
-      lead: await ctx.db.get("leads", leadId),
-    }));
+    // A public caller gets no internal ids back (review 14, SEC-5).
+    expect(result).toBeNull();
+    const state = await t.run(async (ctx) => {
+      const viewing = await ctx.db.query("viewings").first();
+      const lead = viewing?.leadId !== undefined ? await ctx.db.get("leads", viewing.leadId) : null;
+      return { viewing, lead };
+    });
     expect(state.viewing?.status).toBe("requested");
+    expect(state.viewing?.start).toBe(start);
     expect(state.lead?.type).toBe("viewing");
   });
 

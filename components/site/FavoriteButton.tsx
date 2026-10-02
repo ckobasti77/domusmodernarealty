@@ -1,7 +1,11 @@
 "use client";
 
+import { useMutation } from "convex/react";
 import { Heart } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { isListingId } from "@/components/site/compare/listing-ids";
+import { api } from "@/convex/_generated/api";
+import { getSessionKey } from "@/lib/session";
 import { useFavorite } from "@/lib/stores/favorites";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +21,9 @@ import { cn } from "@/lib/utils";
  * same chrome as the card's carousel controls: a bare outline, or a bronze
  * fill, falls below 3:1 on a bright interior. The saved heart keeps its ivory
  * outline there, so the shape stays legible whatever the plate shows through.
+ *
+ * Adding a listing also reports it once per session for the admin funnel
+ * (`stats.trackFavorite`, PRD B12); removing reports nothing.
  */
 export function FavoriteButton({
   listingId,
@@ -32,6 +39,12 @@ export function FavoriteButton({
 }) {
   const t = useTranslations("listing");
   const [isFavorite, toggle] = useFavorite(listingId);
+  const trackFavorite = useMutation(api.stats.trackFavorite);
+  const onClick = () => {
+    if (!toggle() || !isListingId(listingId)) return;
+    // Fire and forget: the heart never waits for, or fails on, the counter.
+    trackFavorite({ listingId, sessionKey: getSessionKey() }).catch(() => {});
+  };
   // A toggle keeps one name; `aria-pressed` says whether it is on.
   const label = `${t("addToFavorites")}: ${title}`;
   const dark = tone === "dark";
@@ -39,7 +52,7 @@ export function FavoriteButton({
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={onClick}
       aria-pressed={isFavorite}
       aria-label={label}
       className={cn(

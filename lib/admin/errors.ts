@@ -40,6 +40,22 @@ export function adminErrorMessage(error: unknown, fallback: string = FALLBACK): 
   return fallback;
 }
 
+/** Codes meaning the server refused the data itself, so resending it unchanged cannot succeed. */
+const REFUSAL_CODES: ReadonlySet<string> = new Set(["INVALID_INPUT", "PUBLISH_BLOCKED", "FORBIDDEN", "NOT_FOUND", "CONFLICT"]);
+
+/** The server refused what was sent (not a lost connection or an expired session). */
+export function isRefusal(error: unknown): boolean {
+  const code = errorData(error)?.code;
+  return code !== undefined && REFUSAL_CODES.has(code);
+}
+
+/** A refusal as one line: the server's message, plus any checklist reasons it does not name already. */
+export function refusalMessage(error: unknown): string {
+  const message = adminErrorMessage(error);
+  const missing = (errorData(error)?.reasons ?? []).filter((reason) => !message.includes(reason));
+  return missing.length > 0 ? `${message} ${missing.join("; ")}.` : message;
+}
+
 /** The failed checklist items of a `PUBLISH_BLOCKED` error, else null. */
 export function publishBlockers(error: unknown): string[] | null {
   const data = errorData(error);

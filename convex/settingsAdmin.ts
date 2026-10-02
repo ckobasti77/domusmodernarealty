@@ -9,6 +9,7 @@ import { isPlaceholderRegistry } from "./lib/checklist";
 import { imageUrl } from "./lib/dto";
 import { invalidInput } from "./lib/errors";
 import { assertImageRef, assertPdfUpload, releaseReplacedImage, deleteBlobIfPresent } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import { availabilitySlotV, imageV, l10nV } from "./lib/validators";
 import type { ImageRef, L10n } from "./lib/validators";
 import { loadSettings } from "./settings";
@@ -185,13 +186,6 @@ function officeHours(slots: readonly Settings["officeHours"][number][]): Setting
     }
   }
   return sorted;
-}
-
-function sameImage(a: ImageRef | undefined, b: ImageRef | undefined): boolean {
-  if (a === undefined || b === undefined) return a === b;
-  if (a.kind === "storage" && b.kind === "storage") return a.storageId === b.storageId;
-  if (a.kind === "url" && b.kind === "url") return a.url === b.url;
-  return false;
 }
 
 /** The seeded placeholders: PIB, MB or registry number made of zeros only. */

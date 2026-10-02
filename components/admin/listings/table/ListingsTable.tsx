@@ -98,7 +98,12 @@ export function ListingsTable({
   return (
     <>
       {canManage && selected.length > 0 ? (
-        <BulkBar selected={selected} agents={agents} onClear={() => table.resetRowSelection()} />
+        <BulkBar
+          selected={selected}
+          agents={agents}
+          onClear={() => table.resetRowSelection()}
+          onDone={(unprocessed) => setRowSelection(Object.fromEntries(unprocessed.map((id) => [id, true])))}
+        />
       ) : null}
       <div
         role="region"

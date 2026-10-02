@@ -4,11 +4,14 @@ import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { logActivity } from "./lib/activity";
 import { assertCanEditListing, requireRole } from "./lib/auth";
+import { checklistBlockers, publishChecklist } from "./lib/checklist";
 import { applyDerived, locationNamesFor } from "./lib/derive";
-import { invalidInput, notFound } from "./lib/errors";
+import { appError, invalidInput, notFound } from "./lib/errors";
+import { isPublicScope } from "./lib/search";
 import { imageV, l10nV, mediaItemV, roomTagV } from "./lib/validators";
 import type { MediaItem } from "./lib/validators";
 import { assertFresh, assertImageRef, deleteBlobIfPresent } from "./lib/storage";
+import { sameImage } from "./lib/images";
 import { isVideoUrl } from "./lib/video";
 
 const EDITORS = ["admin", "manager", "agent"] as const;
@@ -305,8 +308,29 @@ export const remove = mutation({
       remaining[0] = { ...remaining[0], isCover: true };
     }
 
+    // A listing the public can see keeps what publishing required of its
+    // gallery: the checklist's photo minimum and a cover.
+    if (args.target === "gallery" && isPublicScope(listing.scope)) {
+      const reasons = checklistBlockers(
+        publishChecklist({ ...listing, media: remaining }, Date.now()).filter(
+          (item) => item.code === "photos" || item.code === "cover",
+        ),
+      );
+      if (reasons.length > 0) {
+        appError(
+          "PUBLISH_BLOCKED",
+          `Fotografija nije uklonjena: oglas je javan i mora ispunjavati uslove za objavu (${reasons.join("; ")}). Prvo dodajte novu fotografiju.`,
+          { reasons },
+        );
+      }
+    }
+
+    // A share-image override that pointed at this photo would outlive it.
+    const ogImage = listing.seo?.ogImage;
+    const orphanedOg = ogImage !== undefined && sameImage(ogImage, victim.image);
     await ctx.db.patch("listings", listing._id, {
       ...(args.target === "gallery" ? { media: remaining } : { floorPlans: remaining }),
+      ...(orphanedOg ? { seo: { ...listing.seo, ogImage: undefined } } : {}),
       updatedAt: Date.now(),
     });
 

@@ -10,7 +10,7 @@ import {
   type CostPropertyType,
 } from "@/lib/costs";
 import { formatInputNumber, formatPrice, parseLocaleNumber } from "@/lib/format";
-import { computeMortgage, DOWN_PAYMENT_PRESETS, MORTGAGE_LIMITS } from "@/lib/mortgage";
+import { computeMortgage, DOWN_PAYMENT_PRESETS, MORTGAGE_LIMITS, normalizeMortgageInput } from "@/lib/mortgage";
 import { cn } from "@/lib/utils";
 import { TextField } from "../Field";
 
@@ -21,6 +21,10 @@ import { TextField } from "../Field";
  * Inputs are kept as the strings the visitor typed, so clearing a field to
  * retype it does not snap back to 0; the number is parsed per render, and the
  * results carry `aria-live` so a screen reader hears the new monthly payment.
+ * A mortgage field left empty or unreadable falls back to its default, and a
+ * value outside the limits (a 150% down payment, a 45-year term) is computed
+ * at the limit; either way the field shows the number used once the visitor
+ * leaves it, so what is on screen is what the payment was computed from.
  */
 
 /** Reads "430.000" / "5,4" in the page's own notation; falls back while a field is empty. */
@@ -54,13 +58,18 @@ export function MortgageCalculator({
   const [yearsInput, setYearsInput] = useState(() => formatInputNumber(defaults.years, locale));
   const [rateInput, setRateInput] = useState(() => formatInputNumber(defaults.rate, locale));
 
-  const downPct = toNumber(downInput, defaults.downPct, locale);
-  const result = computeMortgage({
+  const used = normalizeMortgageInput({
     price: toNumber(priceInput, price, locale),
-    downPct,
+    downPct: toNumber(downInput, defaults.downPct, locale),
     years: toNumber(yearsInput, defaults.years, locale),
     ratePct: toNumber(rateInput, defaults.rate, locale),
   });
+  const result = computeMortgage(used);
+
+  /** On leaving a field: unless it holds exactly the number used, show that number. */
+  const settle = (input: string, value: number, set: (next: string) => void) => () => {
+    if (parseLocaleNumber(input, locale) !== value) set(formatInputNumber(value, locale));
+  };
 
   return (
     <section aria-labelledby="mortgage-heading" className="flex flex-col gap-6" data-testid="mortgage-calculator">
@@ -68,28 +77,47 @@ export function MortgageCalculator({
         {t("heading")}
       </h3>
       <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-        <TextField label={t("price")} inputMode="numeric" value={priceInput} onChange={(e) => setPriceInput(e.target.value)} />
+        <TextField
+          label={t("price")}
+          inputMode="numeric"
+          value={priceInput}
+          onChange={(e) => setPriceInput(e.target.value)}
+          onBlur={settle(priceInput, used.price, setPriceInput)}
+        />
         <TextField
           label={t("downPct")}
           inputMode="decimal"
           value={downInput}
           onChange={(e) => setDownInput(e.target.value)}
+          onBlur={settle(downInput, used.downPct, setDownInput)}
           min={MORTGAGE_LIMITS.downPct.min}
           max={MORTGAGE_LIMITS.downPct.max}
         />
-        <TextField label={t("years")} inputMode="numeric" value={yearsInput} onChange={(e) => setYearsInput(e.target.value)} />
-        <TextField label={t("rate")} inputMode="decimal" value={rateInput} onChange={(e) => setRateInput(e.target.value)} />
+        <TextField
+          label={t("years")}
+          inputMode="numeric"
+          value={yearsInput}
+          onChange={(e) => setYearsInput(e.target.value)}
+          onBlur={settle(yearsInput, used.years, setYearsInput)}
+        />
+        <TextField
+          label={t("rate")}
+          inputMode="decimal"
+          value={rateInput}
+          onChange={(e) => setRateInput(e.target.value)}
+          onBlur={settle(rateInput, used.ratePct, setRateInput)}
+        />
       </div>
       <div role="group" aria-label={t("presetsLabel")} className="flex flex-wrap gap-2">
         {DOWN_PAYMENT_PRESETS.map((pct) => (
           <button
             key={pct}
             type="button"
-            aria-pressed={downPct === pct}
+            aria-pressed={used.downPct === pct}
             onClick={() => setDownInput(formatInputNumber(pct, locale))}
             className={cn(
               "inline-flex min-h-11 items-center border px-4 font-sans text-label font-medium uppercase tracking-[0.12em] transition-colors duration-200",
-              downPct === pct ? "border-ink bg-ink text-ivory" : "border-ink/30 text-ink pointer-fine:hover:border-bronze",
+              used.downPct === pct ? "border-ink bg-ink text-ivory" : "border-ink/30 text-ink pointer-fine:hover:border-bronze",
             )}
           >
             {t("preset", { pct })}

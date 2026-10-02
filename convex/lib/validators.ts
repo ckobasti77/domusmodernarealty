@@ -23,8 +23,9 @@ export const localeV = v.union(
 
 /**
  * Stored localized content uses the field key `sr` for the `sr-Latn` locale:
- * Convex identifiers cannot contain a hyphen. `LOCALE_FIELD` is the only mapping
- * between the two, and `lib/derive.ts::pickLocale` is the only reader.
+ * Convex identifiers cannot contain a hyphen. `LOCALE_FIELD` is the one mapping
+ * between the two; the site reads content through its browser-side twin in
+ * `lib/l10n.ts`, which mirrors it.
  */
 export const L10N_KEYS = ["sr", "en", "ru", "de"] as const;
 export type L10nKey = (typeof L10N_KEYS)[number];
@@ -368,6 +369,31 @@ export const seoV = v.object({
   metaDescription: v.optional(l10nV),
   ogImage: v.optional(imageV),
 });
+
+/**
+ * Caps on the listing editor's free text, enforced by `listingsAdmin`. Lengths
+ * are characters per string (each locale of a localized text counts on its
+ * own), the rest are items per list (per locale for highlights). The editor's
+ * form checks the same numbers, so a field turns red before the server refuses.
+ */
+export const LISTING_TEXT_LIMITS = {
+  title: 140,
+  description: 10_000,
+  highlightItems: 8,
+  highlightLength: 90,
+  viewTags: 6,
+  viewTagLength: 40,
+  poiCount: 12,
+  poiName: 80,
+  metaTitle: 70,
+  metaDescription: 170,
+  commissionText: 500,
+  street: 120,
+  streetNo: 20,
+  mandateNumber: 60,
+  ownershipShare: 60,
+  encumbrance: 1000,
+} as const;
 
 /* ------------------------------------------------------------- people, CRM */
 

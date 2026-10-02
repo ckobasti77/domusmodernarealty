@@ -1,6 +1,5 @@
 "use client";
 
-import { useLenis } from "lenis/react";
 import { useLocale, useTranslations } from "next-intl";
 import type { HTMLAttributes } from "react";
 import Lightbox, { type SlideImage } from "yet-another-react-lightbox";
@@ -10,6 +9,7 @@ import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
+import { useLenisLock } from "@/components/motion/lenis-lock";
 import type { PublicImage } from "@/convex/lib/dto";
 import type { Locale } from "@/i18n/routing";
 import { pickL10n } from "@/lib/l10n";
@@ -20,6 +20,11 @@ import { srcSetFor } from "./media";
  * carry the room tag plus the localized alt text. yet-another-react-lightbox
  * handles focus trapping, Escape, arrow keys and swipe; this component only
  * localizes it and keeps Lenis from scrolling the page underneath.
+ *
+ * The Lenis hold lives as long as this component, not in the library's
+ * `entering` / `exited` callbacks: `exited` only fires on a close from inside
+ * the lightbox, so a browser Back (which unmounts the page with the gallery
+ * open) left the previous page unscrollable.
  *
  * Loaded with `next/dynamic` from `ListingGallery`, so neither the library nor
  * its CSS reaches the first paint.
@@ -39,7 +44,7 @@ export type ListingLightboxProps = {
 export default function ListingLightbox({ images, index, onClose, onIndexChange }: ListingLightboxProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("listing");
-  const lenis = useLenis();
+  useLenisLock(true);
 
   const slides: SlideImage[] = images.map((image) => {
     const alt = pickL10n(image.alt, locale).text;
@@ -89,11 +94,7 @@ export default function ListingLightbox({ images, index, onClose, onIndexChange 
         // The library fills {index}/{total} itself, so they are passed through verbatim.
         "{index} of {total}": t("lightbox.position", { index: "{index}", total: "{total}" }),
       }}
-      on={{
-        entering: () => lenis?.stop(),
-        exited: () => lenis?.start(),
-        view: ({ index: current }) => onIndexChange?.(current),
-      }}
+      on={{ view: ({ index: current }) => onIndexChange?.(current) }}
       styles={{
         container: { backgroundColor: "rgba(14, 13, 11, 0.97)" },
         thumbnailsContainer: { backgroundColor: "rgba(14, 13, 11, 0.97)" },

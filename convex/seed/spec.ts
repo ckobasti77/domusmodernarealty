@@ -98,10 +98,10 @@ export type SeedListing = {
   /** Photo categories, in gallery order; the seeder picks distinct photos. */
   photos: PhotoCategory[];
   /**
-   * A verified photo (base URL from `media.generated.ts`) pinned as the cover,
-   * for a listing whose title the next photo of its first category would
-   * contradict. It takes the first gallery slot, so its category should match
-   * `photos[0]`.
+   * For a listing whose title its planned cover would contradict: the base URL
+   * of a photo its plan already includes (a later slot of the same category as
+   * `photos[0]`, usually the last one). That photo leads the gallery and the
+   * displaced cover moves to the end, so no other listing's photos change.
    */
   coverPhoto?: string;
   /** Room tag per photo slot, same length as `photos`. */
@@ -290,8 +290,11 @@ export const SEED_LISTINGS: SeedListing[] = [
     isPenthouse: true,
     mortgageEligible: true,
     agent: "milica-jovanovic",
-    photos: ["living", "living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "terrace", "building"],
-    roomTags: ["living", "living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "view", "building"],
+    // The plan's first living photo looks onto a lake, an inland rooftop penthouse cannot:
+    // a neutral living room leads and that slot comes last.
+    photos: ["living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "terrace", "building", "living"],
+    coverPhoto: "https://images.unsplash.com/photo-1628744876497-eb30460be9f6",
+    roomTags: ["living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "view", "building", "living"],
     mandateMonths: 12,
     hasTourScenes: true,
     poi: [

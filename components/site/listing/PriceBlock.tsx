@@ -2,7 +2,7 @@
 
 import { ChevronDown, TrendingDown } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import { useId, useState, type ReactNode } from "react";
+import { Fragment, useId, useState, type ReactNode } from "react";
 import type { Locale } from "@/i18n/routing";
 import { formatPrice, formatPricePerM2, formatRsd, priceDeltaPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,11 @@ export type PriceBlockProps = {
   action?: ReactNode;
   tone?: "dark" | "light";
 };
+
+/** The Art. 18 line's two facts: the broker, then its register entry. */
+function complianceParts(line: string): string[] {
+  return line.split(" · ").filter((part) => part.length > 0);
+}
 
 export function PriceBlock({
   price,
@@ -188,12 +193,22 @@ export function PriceBlock({
           data-testid="listing-compliance"
           className={cn("text-balance pt-3 text-small", dark ? "hairline-t-dark text-mist" : "hairline-t text-stone-text")}
         >
-          {/* Wrapped, the line splits into two even halves after the "·"
-              (never before it): the company, then the register reference.
-              The registry number never wraps away from "br." */}
-          {t("compliance", { company: company.name, registryNo: company.registryNo })
-            .replace(" · ", "\u00A0· ")
-            .replace(/ (\S+)$/, "\u00A0$1")}
+          {/* The company, then the register reference: one line with a "·"
+              where they fit, two lines without it on a phone, so the separator
+              never dangles at a line end. The registry number never wraps
+              away from "br." */}
+          {complianceParts(t("compliance", { company: company.name, registryNo: company.registryNo })).map(
+            (part, index) => (
+              <Fragment key={part}>
+                {index > 0 ? (
+                  <span aria-hidden="true" className="max-sm:hidden">
+                    {" · "}
+                  </span>
+                ) : null}
+                <span className="max-sm:block">{part.replace(/ (\S+)$/, "\u00A0$1")}</span>
+              </Fragment>
+            ),
+          )}
         </p>
       ) : null}
     </div>

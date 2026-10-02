@@ -4,7 +4,7 @@
  * `scripts/verify-demo-media.mjs`; nothing here invents an image URL.
  */
 import type { L10n, MediaItem, RoomTag } from "../lib/validators";
-import { DEMO_PHOTOS, DEMO_PHOTOS_BY_CATEGORY } from "./media.generated";
+import { DEMO_PHOTOS_BY_CATEGORY } from "./media.generated";
 import type { DemoPhoto } from "./media.generated";
 import type { PhotoCategory } from "./specTypes";
 
@@ -75,21 +75,8 @@ export function buildPhotoPlan(
 
   const usedPerListing = listings.map(() => new Set<string>());
 
-  // Pass 0 — covers pinned by the spec claim their photos before anyone else.
+  // Pass 1 — the cover of every listing, so covers get first claim on the pools.
   for (const [index, listing] of listings.entries()) {
-    if (listing.coverPhoto === undefined) continue;
-    const photo = DEMO_PHOTOS.find((candidate) => candidate.url === listing.coverPhoto);
-    if (photo === undefined) {
-      throw new Error(`Seed listing ${index} pins an unverified cover photo`);
-    }
-    usedGlobally.add(photo.url);
-    usedPerListing[index].add(photo.url);
-    plan[index].push(photo);
-  }
-
-  // Pass 1 — the cover of every other listing, so covers get first claim on the pools.
-  for (const [index, listing] of listings.entries()) {
-    if (listing.coverPhoto !== undefined) continue;
     const category = listing.photos[0];
     if (category === undefined) continue;
     const photo = next(category, usedPerListing[index]);
@@ -108,6 +95,20 @@ export function buildPhotoPlan(
       usedPerListing[index].add(photo.url);
       plan[index].push(photo);
     }
+  }
+
+  // Pinned covers: the spec names a photo the plan already gives this listing
+  // (a later slot of its first category). It leads and the photo it displaces
+  // goes last, so the draws, and every other listing's photos, stay the same.
+  for (const [index, listing] of listings.entries()) {
+    if (listing.coverPhoto === undefined) continue;
+    const photos = plan[index];
+    const at = photos.findIndex((photo) => photo.url === listing.coverPhoto);
+    if (at < 0) throw new Error(`Seed listing ${index} pins a cover its plan does not include`);
+    if (at === 0) continue;
+    const [pinned] = photos.splice(at, 1);
+    const [displaced] = photos.splice(0, 1, pinned);
+    photos.push(displaced);
   }
 
   return plan;

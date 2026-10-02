@@ -205,8 +205,9 @@ export const seedSettings = internalMutation({
         { weekday: 5, from: "09:00", to: "17:00" },
         { weekday: 6, from: "10:00", to: "14:00" },
       ],
-      officeLat: 44.7996,
-      officeLng: 20.4712,
+      // Njegoševa 1 (reverse-geocoded on OpenStreetMap), the address above.
+      officeLat: 44.80626,
+      officeLng: 20.46512,
       commissionText: l10n(SETTINGS_COPY.commissionText),
       mortgage: { rate: 5.4, years: 25, downPct: 20 },
       eurRsd: 117.2,

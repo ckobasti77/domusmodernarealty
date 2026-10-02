@@ -95,6 +95,13 @@ const STACK_STEP_PX = 28;
 /** Where a pin's label ends above its point, so the card never covers it. */
 const PIN_TOP_PX = POINTER_PX + PIN_LABEL_PX + 8;
 /**
+ * Bottom edge of the chips over the map's top-left corner: the search-as-move
+ * toggle (`top-3`, 44 px; `SearchMapLoader`), and under it the "+N van
+ * Beograda" chip (`top-[4.25rem]`, 44 px) while the frame leaves places out.
+ */
+const CHIPS_BOTTOM_PX = 12 + 44;
+const CHIPS_BOTTOM_WITH_OUTSIDE_PX = 68 + 44;
+/**
  * A cluster is centred at the height of a pin's label, not on its own point:
  * pins stand above their points, so a centred cluster sat lower than the pins
  * around it and reached into one standing below it. On one centre line, the
@@ -224,7 +231,13 @@ function belgradeFocus(points: readonly MapPoint[]): MapPoint[] | null {
  * buttons top-right, and page chrome the host declares over the bottom edge as
  * `--map-inset-bottom` (px), e.g. the phone List/Mapa switch.
  */
-function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number, first: boolean) {
+function frame(
+  map: MapLibreMap,
+  points: readonly MapPoint[],
+  duration: number,
+  first: boolean,
+  chipsBottom: number,
+) {
   const container = map.getContainer();
   const width = container.clientWidth;
   const height = container.clientHeight;
@@ -240,7 +253,8 @@ function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number, 
     ? Math.min(Math.max(0, container.getBoundingClientRect().bottom - window.innerHeight), Math.floor(height * 0.35))
     : 0;
   const padding = {
-    top: Math.min(pad + 64, Math.floor(height / 4)),
+    // A pin stands above its point, so the topmost one must clear the chips.
+    top: Math.min(Math.max(pad + 64, chipsBottom + PIN_TOP_PX + 8), Math.floor(height / 4)),
     right: pad + Math.min(24, Math.floor(width / 16)),
     bottom: pad + inset + fold,
     left: pad,
@@ -433,7 +447,14 @@ export default function SearchMap({
     fitted.current = frameKey;
     if (searchAsMove || (first && restored)) return;
     const framed = scope.all ? null : belgradeFocus(result.points);
-    frame(map, framed ?? result.points, first || reduced ? 0 : EASE_MS, first);
+    const leavesOut = framed !== null && framed.length < result.points.length;
+    frame(
+      map,
+      framed ?? result.points,
+      first || reduced ? 0 : EASE_MS,
+      first,
+      leavesOut ? CHIPS_BOTTOM_WITH_OUTSIDE_PX : CHIPS_BOTTOM_PX,
+    );
   }, [active, frameKey, loaded, reduced, restored, result, scope.all, searchAsMove]);
 
   function handleStyleData(event: MapStyleDataEvent) {

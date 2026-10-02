@@ -389,7 +389,13 @@ export const seedContent = internalMutation({
         .unique();
       if (existing !== null) continue;
 
-      const cover = pickPhoto(post.coverCategory, index * 3);
+      const cover =
+        post.coverPhoto !== undefined
+          ? DEMO_PHOTOS.find((candidate) => candidate.url === post.coverPhoto)
+          : pickPhoto(post.coverCategory, index * 3);
+      if (post.coverPhoto !== undefined && cover === undefined) {
+        throw new Error(`Post "${post.slug}" names an unverified cover photo`);
+      }
       await ctx.db.insert("posts", {
         slug: post.slug,
         title: l10n(post.title),

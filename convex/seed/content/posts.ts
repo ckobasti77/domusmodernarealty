@@ -14,6 +14,11 @@ export type SeedPostCopy = {
   slug: string;
   category: "guide" | "neighborhood" | "market" | "legal" | "interior";
   tags: string[];
+  /**
+   * A verified photo (base URL from `media.generated.ts`) pinned as the cover,
+   * when the category's pick would repeat an image the landing already shows.
+   */
+  coverPhoto?: string;
   /** Photo category from docs/assets/demo-media.json used for the cover. */
   coverCategory:
     | "living"
@@ -41,6 +46,8 @@ export const POST_COPY: SeedPostCopy[] = [
     category: "guide",
     tags: ["Kupovina", "Stranci", "Dokumentacija", "Porezi"],
     coverCategory: "belgrade",
+    // The category's first pick, the Pobednik at Kalemegdan, is already Dorćol's cover on the landing.
+    coverPhoto: "https://images.unsplash.com/photo-1643285677419-986d88603216",
     readingMinutes: 7,
     featured: true,
     title: {

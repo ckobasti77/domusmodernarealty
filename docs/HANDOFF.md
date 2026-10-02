@@ -181,6 +181,8 @@ The step-15 design critics' high and most medium findings were fixed (DECISIONS 
 | low | Cards show the floor as a bare fraction ("3 / 5", "PK / 4"), unclear to foreign buyers; seeded contact e-mails end in `.local` and are set large in the closing call to action. | A word with the fraction ("sprat 3/5", "Floor 3/5"); enter the real contacts (go-live checklist). |
 | low | Managed rich text (About sections, legal pages, journal bodies) is rendered without the site's typography pass, so lines can end on one-letter words ("i", "o", "u"). | Run `fixTypography` over the text nodes in `components/site/page/RichText.tsx` after sanitizing. |
 | low | ME-1049's gallery still holds demo photos that read as other homes (a period dining room, an attic bedroom); the location row of non-Belgrade cards shows the district without the city ("Centar", "Grbavica"). | Real photography; append the city when it is not Belgrade. |
+| medium | Demo covers that contradict their listings remain where the verified pool had nothing better: ME-1060 (Profesorska kolonija house) and ME-1069 (Zlatibor cottage) open on pool villas they do not have; ME-1043 ("u originalnom stanju") and ME-1046 ("za renoviranje") open on staged designer interiors. | Pin each listing's own living-room or building photo with `coverPhoto` in `convex/seed/spec.ts` (the displaced photo is then left out) and apply it in Admin → Nekretnine → Mediji; real photography replaces all of them. |
+| low | Copy and labels: the listing page's nav does not mark NEKRETNINE as the current section; the "Osveženi prevodi demo sadržaja" activity row prints counts without Serbian plurals; "Spoljni prostor" vs "Spoljašnji prostor" on one listing page; commercial listings count "sobe" instead of "prostorije"; About's "Standardi rada" repeats the four-languages point. | Section match in `Header.tsx`; `pluralSr` in `contentMigrations.ts`; one message key; an ICU plural for commercial types; seed copy. |
 | low | Landing details: the vertical "SKROLUJTE" cue stays after the first scroll; footer links are 36 px tall on phones (44 px is the house rule); "prvi stan" can split across lines in a journal title; Novi Sad has no region line in the neighbourhood index; the journal lead's caption plate covers the photo's warm bottom on phones. | Fade the cue with the hero copy; `min-h-11` below `lg`; a no-break space; a "Vojvodina" line; no negative margin on phones. |
 | medium | Search cards: one badge instead of two, location as an eyebrow, the reference row folded into the meta row. | Two badges by priority is a logged decision (DECISIONS [06]); the card structure is shared by five pages and their specs. |
 | medium | The landing mixes warm owner renders with cooler Unsplash editorial photos; a warmer `photo-grade` or golden-hour picks would unify them. | A grading change touches every editorial photo; real photography replaces the demo pool anyway. |
@@ -516,3 +518,16 @@ Make this code change before launch. Commit it, then deploy.
 - **Keep Convex changes backward compatible for one release.** The functions are pushed before Vercel switches traffic, so for a moment the old frontend talks to the new backend.
 - **Data:** `npx convex import --prod --replace-all <snapshot.zip>` restores an export. It is destructive (it replaces every table), so use it only as a last resort and rehearse it on the dev deployment first.
 - **Env vars:** a change on Vercel needs a redeploy (`NEXT_PUBLIC_*` values are inlined at build). Never regenerate the Convex auth keys to "fix" sign-in on a deployment with users.
+
+## 5. Final gate (step 15, 2026-10-02)
+
+Run after the last code change, on the production build:
+
+| Check | Result |
+|---|---|
+| `npm run verify` | exit 0: Convex push → `next typegen` → `tsc` → eslint → `npm run check` → `next build` |
+| `npm run check` (inside verify) | i18n 1222 keys × 4 locales; `audit-convex` no problems; `cn-tables` up to date; vitest 47 files, 520/520 |
+| `npm run i18n:check` | ok, 1222 keys × 4 locales (sr-Latn, en, ru, de) |
+| `npm run test:e2e` | E2E_RESULT |
+| Design critique | Final `design-critic` pass on the six money pages (landing incl. a real-time video of the first seconds, search, listing detail, valuation, about, admin dashboard) at 390 and 1440: no high-severity issues. Remaining medium/low items are listed in §2. |
+| Tag | `night-run/complete` on the commit that closes step 15 |

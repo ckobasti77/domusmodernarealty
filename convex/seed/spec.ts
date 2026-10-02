@@ -559,8 +559,9 @@ export const SEED_LISTINGS: SeedListing[] = [
     city: "beograd",
     municipality: "savski-venac",
     neighborhood: "beograd-na-vodi",
-    lat: 44.8071,
-    lng: 20.4436,
+    // Hercegovačka in Beograd na vodi (Nominatim), on the Savski venac bank of the Sava.
+    lat: 44.8056,
+    lng: 20.4491,
     addressVisibility: "exact",
     status: "published",
     transaction: "sale",
@@ -609,10 +610,11 @@ export const SEED_LISTINGS: SeedListing[] = [
     vatRefundEligible: true,
     mortgageEligible: true,
     agent: "milica-jovanovic",
-    photos: ["living", "living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "belgrade", "building"],
-    // The plan's next living photo looks onto a lawn and a garden fence: wrong for a 24th floor.
+    // The plan's next living photo looks onto a lawn and a garden fence: wrong for a 24th floor,
+    // so a pinned cover leads and that second living slot comes last in the gallery.
+    photos: ["living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "belgrade", "building", "living"],
     coverPhoto: "https://images.unsplash.com/photo-1678762200388-51e11225d4de",
-    roomTags: ["living", "living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "view", "building"],
+    roomTags: ["living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "view", "building", "living"],
     mandateMonths: 12,
     hasTourScenes: true,
     has3dWalk: true,
@@ -629,8 +631,9 @@ export const SEED_LISTINGS: SeedListing[] = [
     city: "beograd",
     municipality: "savski-venac",
     neighborhood: "beograd-na-vodi",
-    lat: 44.8055,
-    lng: 20.4452,
+    // Bulevar Vudroa Vilsona in Beograd na vodi (Nominatim).
+    lat: 44.8093,
+    lng: 20.4518,
     addressVisibility: "exact",
     status: "published",
     transaction: "sale",

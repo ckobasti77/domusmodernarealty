@@ -169,6 +169,22 @@ These are de-duplicated. Nothing critical or high is open, and severity uses the
 | low | ARC-15 (partly fixed): `@types/react` resolves to 19.3.0 while React is 19.2.8, and some 0.x packages use caret pins. ARC-17 (partly fixed): the deprecated `next/image` `priority` prop in `app/[locale]/{agents,journal}/[slug]/page.tsx` and the `ImageReveal`/`ParallaxImage` kit, plus 3 unexplained eslint-disables in the share-image routes. | `package.json`, as named | Pin the types and exact 0.x versions; use `preload`/`fetchPriority`. | REVIEW |
 | low | On Windows a Playwright run can die with worker exit `3221225794` when the session ends. | — | Re-run; it is not a test failure. | 14 |
 
+### Final design pass (step 15): suggestions not taken
+
+The step-15 design critics' high and most medium findings were fixed (DECISIONS [15]). These were left, with the reason:
+
+| Sev | Suggestion | Why not now |
+|---|---|---|
+| medium | Card titles are the long SEO titles (three lines at most on 3:2 cards, two on the landing rail, where some end in an ellipsis); a short per-locale card title ("Penthaus, Beograd na vodi") would read less like a portal. | Needs a new admin field and a translation pass; content work. |
+| medium | The dashboard's "Pregledi i upiti" chart reads the daily rollup (`dailyStats`), which nothing corrects when leads are deleted (QA purges, re-seeds, the demo purge): after the step-15 dev clean-up its "Upiti" total is above the 7-day KPI, and after the pre-launch demo purge it would keep showing demo traffic for up to 30 days. | Count chart leads live from `leads` by creation time, or recompute the affected `dailyStats` rows in the delete and demo-purge paths. |
+| low | After the first-visit consent decision the hero keeps the banner's reserved band for the rest of that page view (so nothing moves), leaving extra dark floor under the search on phones. | Release the hold once the hero has scrolled out of view. |
+| low | Cards show the floor as a bare fraction ("3 / 5", "PK / 4"), unclear to foreign buyers; the Art. 18 line wraps after its "·" on phones; seeded contact e-mails end in `.local` and are set large in the closing call to action. | A word with the fraction ("sprat 3/5", "Floor 3/5"); two lines without the separator on phones; enter the real contacts (go-live checklist). |
+| medium | Search cards: one badge instead of two, location as an eyebrow, the reference row folded into the meta row. | Two badges by priority is a logged decision (DECISIONS [06]); the card structure is shared by five pages and their specs. |
+| medium | The landing mixes warm owner renders with cooler Unsplash editorial photos; a warmer `photo-grade` or golden-hour picks would unify them. | A grading change touches every editorial photo; real photography replaces the demo pool anyway. |
+| low | Phone "Poznajemo svaku ulicu." band crops to an overcast sky. | The photo is already upscaled there; a different photo is the fix. |
+| low | The featured section's title rides out with the pinned track; the 3D section repeats its CTA; the journal lead plate's notch; the phone headline sits at the clamp floor; the search filter bar mixes three control styles. | Cosmetic; logged for the next design iteration. |
+| low | The seeded journal posts store links as `href='…'` (single quotes), which the server's HTML allowlist would refuse on an API save. | The admin editor re-serializes with double quotes, so staff saves work; re-seeding would fix the source strings. |
+
 **Owner decisions (not defects):**
 - The wordmark is drawn as sans-serif paths (`components/site/Logo.tsx`), while DESIGN §4 says serif.
 - `hero.mp4` and `city.mp4` are withdrawn by hash in `scripts/optimize-media.mjs`; a corrected re-render (from a Belgrade reference) is picked up automatically.

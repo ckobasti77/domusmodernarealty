@@ -11,6 +11,7 @@ import { requireRole } from "./lib/auth";
 import { imageUrl } from "./lib/dto";
 import { appError, invalidInput, notFound } from "./lib/errors";
 import { htmlProblem, postHtml } from "./lib/html";
+import { readingMinutes, textOf } from "./lib/readingTime";
 import { foldDiacritics, slugify } from "./lib/slug";
 import {
   assertImageRef,
@@ -66,8 +67,6 @@ const PUBLISH_BODY_MIN = 150;
 const SCHEDULE_MIN_LEAD_MS = 2 * 60_000;
 const SCHEDULE_MAX_AHEAD_MS = 366 * 86_400_000;
 
-const WORDS_PER_MINUTE = 200;
-
 /* -------------------------------------------------------------- validators */
 
 const l10nKeyV = v.union(v.literal("sr"), v.literal("en"), v.literal("ru"), v.literal("de"));
@@ -101,31 +100,6 @@ const adminRowV = v.object({
 });
 
 /* ----------------------------------------------------------------- helpers */
-
-const ENTITIES: Record<string, string> = {
-  "&nbsp;": " ",
-  "&amp;": "&",
-  "&lt;": "<",
-  "&gt;": ">",
-  "&quot;": '"',
-  "&#39;": "'",
-};
-
-/** The readable text of stored HTML, whitespace collapsed. */
-function textOf(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity] ?? " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Reading time of the Serbian body at 200 words a minute, at least one. */
-function readingMinutes(html: string): number {
-  const text = textOf(html);
-  const words = text.length === 0 ? 0 : text.split(" ").length;
-  return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
-}
 
 function filledLocales(doc: Pick<Doc<"posts">, "title" | "body">): L10nKey[] {
   return L10N_KEYS.filter(

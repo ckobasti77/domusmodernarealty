@@ -32,7 +32,6 @@ export type SeedPostCopy = {
     | "villa"
     | "belgrade"
     | "novisad";
-  readingMinutes: number;
   featured: boolean;
   title: { sr: string; en: string; ru: string; de: string };
   excerpt: { sr: string; en: string; ru: string; de: string };
@@ -46,9 +45,9 @@ export const POST_COPY: SeedPostCopy[] = [
     category: "guide",
     tags: ["Kupovina", "Stranci", "Dokumentacija", "Porezi"],
     coverCategory: "belgrade",
-    // The category's first pick, the Pobednik at Kalemegdan, is already Dorćol's cover on the landing.
-    coverPhoto: "https://images.unsplash.com/photo-1643285677419-986d88603216",
-    readingMinutes: 7,
+    // The category's first pick, the Pobednik at Kalemegdan, is already Dorćol's cover on the landing;
+    // a warm Novi Sad sunset instead of a cold winter shot.
+    coverPhoto: "https://images.unsplash.com/photo-1635183529733-df2fc30650be",
     featured: true,
     title: {
       sr: "Kupovina nekretnine u Srbiji: vodič za strane kupce",
@@ -74,7 +73,6 @@ export const POST_COPY: SeedPostCopy[] = [
     category: "neighborhood",
     tags: ["Vračar", "Dorćol", "Kvartovi", "Beograd"],
     coverCategory: "building",
-    readingMinutes: 6,
     featured: false,
     title: {
       sr: "Vračar ili Dorćol: vodič kroz dva kvarta",
@@ -100,7 +98,6 @@ export const POST_COPY: SeedPostCopy[] = [
     category: "legal",
     tags: ["PDV", "Prvi stan", "Novogradnja", "Porezi"],
     coverCategory: "living",
-    readingMinutes: 6,
     featured: false,
     title: {
       sr: "Povraćaj PDV-a za prvi stan: uslovi, obrasci, primer",

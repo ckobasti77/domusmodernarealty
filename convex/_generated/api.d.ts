@@ -40,6 +40,7 @@ import type * as lib_listingCascade from "../lib/listingCascade.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_readingTime from "../lib/readingTime.js";
 import type * as lib_search from "../lib/search.js";
 import type * as lib_slug from "../lib/slug.js";
 import type * as lib_storage from "../lib/storage.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "lib/money": typeof lib_money;
   "lib/password": typeof lib_password;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/readingTime": typeof lib_readingTime;
   "lib/search": typeof lib_search;
   "lib/slug": typeof lib_slug;
   "lib/storage": typeof lib_storage;

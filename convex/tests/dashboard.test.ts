@@ -124,6 +124,13 @@ describe("recent activity wording", () => {
     expect(activitySummary("tour.360.set", "ME-1048: Matterport (objavljeno)")).toBe("ME-1048: Matterport (objavljeno)");
   });
 
+  test("a page-copy refresh names the pages, not their keys, and does not restate its label", () => {
+    expect(activitySummary("page.seedRefreshed", "Osvežen početni sadržaj: about")).toBe("O nama");
+    expect(activitySummary("page.seedRefreshed", "Osvežen početni sadržaj: home, privacy")).toBe(
+      "Početna, Politika privatnosti",
+    );
+  });
+
   test("a summary that restates the label keeps only the record", () => {
     expect(activitySummary("viewing.requested", "Zahtev za razgledanje ME-1042")).toBe("ME-1042");
   });

@@ -5,13 +5,20 @@
  * and what the public site wrote is credited to the site.
  */
 import { actionLabel, type ActivityRow } from "@/components/admin/activity/labels";
-import type { ListingStatus } from "@/convex/lib/validators";
-import { STATUS_LABEL } from "@/lib/admin/labels";
+import type { ListingStatus, PageKey } from "@/convex/lib/validators";
+import { PAGE_KEY_LABEL, STATUS_LABEL } from "@/lib/admin/labels";
 import { pluralSr } from "./format";
 
 function isListingStatus(value: string): value is ListingStatus {
   return Object.hasOwn(STATUS_LABEL, value);
 }
+
+function isPageKey(value: string): value is PageKey {
+  return Object.hasOwn(PAGE_KEY_LABEL, value);
+}
+
+/** `convex/contentMigrations.ts` logs the page keys it refreshed: `Osvežen početni sadržaj: about, home`. */
+const SEED_REFRESH_SUMMARY = /^Osvežen početni sadržaj:\s*(.+)$/;
 
 const STATUS_WORD = /\b(draft|review|published|reserved|sold|rented|withdrawn|archived)\b/g;
 const MEDIA_TARGET: Record<string, string> = { gallery: "galerija", floorPlans: "osnove" };
@@ -110,6 +117,14 @@ function rawSummary(action: string, summary: string): string {
       LEGACY_TOUR_SUMMARY,
       (_, listing: string, source: string, state: string) => `${listing}: ${TOUR_SOURCE[source] ?? source} (${state})`,
     );
+  }
+  if (action === "page.seedRefreshed") {
+    const keys = SEED_REFRESH_SUMMARY.exec(summary)?.[1];
+    if (keys === undefined) return summary;
+    return keys
+      .split(/,\s*/)
+      .map((key) => (isPageKey(key) ? PAGE_KEY_LABEL[key] : key))
+      .join(", ");
   }
   if (action.startsWith("listing.status.")) {
     return summary.replace(STATUS_WORD, (word) => (isListingStatus(word) ? STATUS_LABEL[word] : word));

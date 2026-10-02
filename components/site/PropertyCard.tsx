@@ -205,15 +205,18 @@ export function PropertyCard({
 
       <div className="mt-5 flex flex-1 flex-col gap-3">
         {/* Two lines reserved, so cards in a row keep their prices, meta rows
-            and references on the same baselines, and two lines at most: the
-            4:5 card's title is already clipped to two, and a third line made
-            the 3:2 search card's text column taller than its photograph. The
-            link keeps the whole title for assistive technology. The card
-            fills its grid cell (`h-full`) and a shorter title's spare height
-            sits under it (`mb-auto`), so the row's baselines still meet. */}
+            and references on the same baselines. The 4:5 rail card clips at
+            two lines; the 3:2 card allows three, because two cut a quarter of
+            the demo titles mid-phrase (one mid-word). The link keeps the whole
+            title for assistive technology. The card fills its grid cell
+            (`h-full`) and a shorter title's spare height sits under it
+            (`mb-auto`), so the row's baselines still meet. */}
         <h3
           id={`card-title-${listing._id}`}
-          className="mb-auto line-clamp-2 min-h-[2lh] text-pretty font-display text-h3 font-normal"
+          className={cn(
+            "mb-auto min-h-[2lh] text-pretty font-display text-h3 font-normal",
+            ratio === "4/5" ? "line-clamp-2" : "line-clamp-3",
+          )}
         >
           <Link
             href={{

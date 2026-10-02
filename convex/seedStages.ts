@@ -35,6 +35,7 @@ import type { SeedListingCopy } from "./seed/content/listings1";
 import { POST_COPY, TESTIMONIAL_COPY } from "./seed/content/posts";
 import { PAGE_CONTENT, SETTINGS_COPY } from "./seed/content/pages";
 import { contactSearchText } from "./lib/contactSearch";
+import { readingMinutes } from "./lib/readingTime";
 
 const LISTING_COPY: SeedListingCopy[] = [
   ...LISTING_COPY_1,
@@ -410,7 +411,7 @@ export const seedContent = internalMutation({
         status: "published",
         publishedAt: now - (index + 1) * 9 * DAY,
         featured: post.featured,
-        readingMinutes: post.readingMinutes,
+        readingMinutes: readingMinutes(post.body.sr),
         isDemo: true,
       });
       posts += 1;

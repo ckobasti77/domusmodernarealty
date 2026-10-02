@@ -480,7 +480,7 @@ const ABOUT: SeedPage = {
           "Cena iz podataka — predlog cene posle obilaska oslanja se na ostvarene transakcije, ne na osećaj.",
           "Bez skrivenih troškova — provizija i troškovi dogovaraju se pisano i unapred.",
           "Diskrecija — podatke o klijentima i nekretninama ne delimo bez dogovora.",
-          "Brz odgovor, na četiri jezika — odgovaramo istog radnog dana, a najkasnije u roku od 24 sata.",
+          "Brz odgovor, na četiri jezika — srpski, engleski, ruski i nemački.",
         ],
         en: [
           "Fewer properties, more checking — we do not advertise what we have not seen.",
@@ -488,7 +488,7 @@ const ABOUT: SeedPage = {
           "A price from data — after a visit, our proposal rests on completed transactions, not on a feeling.",
           "No hidden costs — commission and expenses are agreed in writing, in advance.",
           "Discretion — we do not share client or property details without agreement.",
-          "A quick reply, in four languages — we reply the same working day, and within 24 hours at the latest.",
+          "A quick reply, in four languages — Serbian, English, Russian and German.",
         ],
         ru: [
           "Меньше объектов, больше проверок — мы не рекламируем то, чего не видели сами.",
@@ -496,7 +496,7 @@ const ABOUT: SeedPage = {
           "Цена из данных — после осмотра наше предложение опирается на состоявшиеся сделки, а не на ощущения.",
           "Без скрытых расходов — комиссия и издержки согласуются письменно и заранее.",
           "Конфиденциальность — сведения о клиентах и объектах не передаём без согласия.",
-          "Быстрый ответ на четырёх языках — мы отвечаем в тот же рабочий день, самое позднее — в течение 24 часов.",
+          "Быстрый ответ на четырёх языках — сербском, английском, русском и немецком.",
         ],
         de: [
           "Weniger Objekte, mehr Prüfung — wir bewerben nichts, was wir nicht selbst gesehen haben.",
@@ -504,7 +504,7 @@ const ABOUT: SeedPage = {
           "Ein Preis aus Daten — nach der Besichtigung beruht unser Vorschlag auf abgeschlossenen Verkäufen, nicht auf Gefühl.",
           "Keine versteckten Kosten — Provision und Auslagen werden vorab schriftlich vereinbart.",
           "Diskretion — Angaben zu Kunden und Objekten geben wir nicht ohne Absprache weiter.",
-          "Schnelle Antwort, in vier Sprachen — wir antworten noch am selben Werktag, spätestens innerhalb von 24 Stunden.",
+          "Schnelle Antwort, in vier Sprachen — Serbisch, Englisch, Russisch und Deutsch.",
         ],
       },
     },

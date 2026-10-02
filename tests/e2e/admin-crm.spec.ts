@@ -87,6 +87,9 @@ test.describe("CRM and content modules @admin", () => {
 
   test.beforeAll(async ({ browser }, testInfo) => {
     desktopOnly(testInfo);
+    // An HTTP sign-in, a public mutation, a `convex run` child process and a UI
+    // sign-in: under a full parallel run this setup alone can pass 45 s.
+    testInfo.setTimeout(120_000);
     admin = await adminHttpClient();
 
     // A real web inquiry, through the public mutation the listing page uses.

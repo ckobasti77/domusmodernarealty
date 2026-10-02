@@ -1059,7 +1059,11 @@ test.describe("journal (PRD A11)", () => {
     await shellHydrated(page);
 
     const minutes = card?.readingMinutes;
-    await expect(page.getByText(minutes !== undefined ? `${minutes} min čitanja` : /^\d+ min čitanja$/)).toBeVisible();
+    // The article's own meta line comes first; related-article cards further
+    // down can show the same figure.
+    await expect(
+      page.getByText(minutes !== undefined ? `${minutes} min čitanja` : /^\d+ min čitanja$/).first(),
+    ).toBeVisible();
     const canonical = (await page.locator('link[rel="canonical"]').getAttribute("href")) ?? "";
     expect(canonical).toMatch(new RegExp(`/sr/magazin/${post}$`));
     await expectShareActions(page, canonical);

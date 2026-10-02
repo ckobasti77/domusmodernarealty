@@ -12,7 +12,7 @@ import { deleteBlobIfPresent } from "./lib/storage";
  * They only ever touch contacts whose address matches `E2E_EMAIL`, so a typo in
  * a spec cannot read or delete a real client.
  */
-const E2E_EMAIL = /^e2e\+[a-z0-9-]{4,64}@mihajlo-estate\.local$/;
+const E2E_EMAIL = /^e2e\+[a-z0-9-]{3,64}@mihajlo-estate\.local$/;
 
 function assertE2EEmail(email: string): void {
   if (!E2E_EMAIL.test(email)) throw new Error(`Not an e2e address: ${email}`);

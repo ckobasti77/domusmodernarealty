@@ -83,8 +83,8 @@ export function PurgeDemoDialog({ total, disabled }: { total: number; disabled: 
               <span data-numeric>
                 {formatCount(total)} {pluralSr(total, "demo zapis", "demo zapisa")}
               </span>
-              , zajedno sa fotografijama i 360° scenama demo nekretnina. Ova radnja se ne može
-              poništiti.
+              , zajedno sa fotografijama i 360° scenama demo nekretnina. Pravni tekstovi (privatnost,
+              uslovi, kolačići) ostaju. Ova radnja se ne može poništiti.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="grid gap-2">

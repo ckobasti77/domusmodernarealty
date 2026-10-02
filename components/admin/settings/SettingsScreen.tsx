@@ -68,7 +68,7 @@ function SettingsLoader() {
   if (data === null) {
     return (
       <p className="max-w-xl rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-        Podešavanja još nisu kreirana. Pokrenite početni seed (<code className="font-mono">npx convex run seed:run</code>)
+        Podešavanja još nisu kreirana. Pokrenite početni seed (<code className="font-mono">npx convex run seed:all</code>)
         pa osvežite stranicu.
       </p>
     );
@@ -192,7 +192,7 @@ function LegalSection() {
   return (
     <FormSection
       title="Pravni podaci agencije"
-      description="Prikazuju se u podnožju svake stranice, na svakom oglasu i u pravnim tekstovima (Zakon o trgovini, čl. 6; Zakon o posredovanju u prometu i zakupu nepokretnosti, čl. 18)."
+      description="Prikazuju se u podnožju svake stranice, na svakom oglasu i u pravnim tekstovima (Zakon o elektronskoj trgovini, čl. 6; Zakon o posredovanju u prometu i zakupu nepokretnosti, čl. 18)."
     >
       <TextField
         name="companyName"

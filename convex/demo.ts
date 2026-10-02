@@ -2,7 +2,7 @@ import { deleteListingTours } from "./lib/tourBlobs";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { logActivity } from "./lib/activity";
 import { requireRole } from "./lib/auth";
@@ -10,6 +10,7 @@ import { applyCountDelta } from "./lib/counts";
 import { invalidInput } from "./lib/errors";
 import { demoListingKeepReason } from "./lib/listingCascade";
 import { deleteBlobIfPresent } from "./lib/storage";
+import type { PageKey } from "./lib/validators";
 
 const ADMINS = ["admin"] as const;
 
@@ -31,6 +32,19 @@ export const DEMO_TABLES = [
   "locations",
 ] as const;
 export type DemoTable = (typeof DEMO_TABLES)[number];
+
+/**
+ * The privacy, terms and cookie pages are seeded as drafts for the owner's
+ * lawyer, so they carry `isDemo` and the content screen shows them as
+ * unreviewed until staff save them. The purge never deletes them: the forms
+ * ask for consent to the privacy policy and the cookie banner links to it, so
+ * the site may not run without them. They are not counted as demo records.
+ */
+const KEPT_PAGES: ReadonlySet<PageKey> = new Set(["privacy", "terms", "cookies"]);
+
+function isPurgeablePage(doc: Doc<"pages">): boolean {
+  return doc.isDemo && !KEPT_PAGES.has(doc.key);
+}
 
 async function countDemo(ctx: QueryCtx, table: DemoTable): Promise<number> {
   // Written out per table: a union table name loses Convex's per-table typing.
@@ -86,8 +100,7 @@ async function countDemo(ctx: QueryCtx, table: DemoTable): Promise<number> {
         (doc) => doc.isDemo,
       ).length;
     case "pages":
-      return (await ctx.db.query("pages").take(200)).filter((doc) => doc.isDemo)
-        .length;
+      return (await ctx.db.query("pages").take(200)).filter(isPurgeablePage).length;
   }
 }
 
@@ -296,9 +309,7 @@ export async function purgeDemoTable(
     }
 
     case "pages": {
-      const docs = (await ctx.db.query("pages").take(200))
-        .filter((doc) => doc.isDemo)
-        .slice(0, limit);
+      const docs = (await ctx.db.query("pages").take(200)).filter(isPurgeablePage).slice(0, limit);
       for (const doc of docs) await ctx.db.delete("pages", doc._id);
       return docs.length;
     }

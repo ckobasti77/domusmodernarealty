@@ -220,8 +220,8 @@ Admin → **Podešavanja** (`/admin/podesavanja`, ekran „Podešavanja agencije
 
 | Polje | Napomena |
 |---|---|
-| Naziv agencije (brend) | Ime koje posetioci vide na sajtu; stoji i uz broj iz Registra na svakom oglasu |
-| Poslovno ime | Tačno kao u APR-u, npr. „… d.o.o. Beograd“; prikazuje se u podnožju |
+| Naziv agencije (brend) | Ime koje posetioci vide na sajtu (logo, naslovi, kontakt) |
+| Poslovno ime | Tačno kao u APR-u, npr. „… d.o.o. Beograd“; stoji uz broj iz Registra na svakom oglasu i u podnožju |
 | Adresa sedišta | U podnožju i na pravnim stranicama |
 | PIB | Tačno 9 cifara; panel upozorava ako kontrolna cifra ne odgovara |
 | Matični broj | Tačno 8 cifara |
@@ -230,7 +230,7 @@ Admin → **Podešavanja** (`/admin/podesavanja`, ekran „Podešavanja agencije
 
 U istom ekranu su i „Kontakt“ (do 5 telefona, „E-pošta“, Viber, WhatsApp, koordinate kancelarije), „Radno vreme“, „Društvene mreže“ (Instagram, Facebook, LinkedIn, YouTube), „Provizija i opšti uslovi“ („Tekst o proviziji“ i „Opšti uslovi poslovanja (PDF)“, samo PDF do 15 MB), „Kalkulator kredita i kurs“, „Podrazumevani SEO“ i „Analitika i oglašavanje“ (Plausible, Google Analytics 4 i Meta Pixel; skripte se učitavaju tek kada posetilac pristane na kolačiće). Izmene se čuvaju dugmetom „Sačuvaj“ u traci na dnu ekrana.
 
-**Zašto su obavezni.** Zakon o posredovanju u prometu i zakupu nepokretnosti, čl. 18, traži da svaki oglas sadrži poslovno ime posrednika i broj upisa u Registar posrednika, uz cenu, lokaciju, površinu i strukturu, i zabranjuje oglašavanje bez ugovora o posredovanju. Podatke o firmi u podnožju (naziv, adresa, PIB, MB, kontakt) traži i zakon o elektronskoj trgovini, čl. 6 (`docs/04-CONTENT.md`). Na sajtu, pored cene svakog oglasa stoji „{Naziv agencije} · Registar posrednika br. {broj}“, a poslovno ime, adresa, PIB i MB su u podnožju svake stranice i na pravnim stranicama.
+**Zašto su obavezni.** Zakon o posredovanju u prometu i zakupu nepokretnosti, čl. 18, traži da svaki oglas sadrži poslovno ime posrednika i broj upisa u Registar posrednika, uz cenu, lokaciju, površinu i strukturu, i zabranjuje oglašavanje bez ugovora o posredovanju. Podatke o firmi u podnožju (naziv, adresa, PIB, MB, kontakt) traži i zakon o elektronskoj trgovini, čl. 6 (`docs/04-CONTENT.md`). Na sajtu, ispod cene svakog oglasa stoji „{Poslovno ime} · Registar posrednika br. {broj}“ (dok poslovno ime nije uneto, naziv agencije), a poslovno ime, adresa, PIB i MB su i u podnožju svake stranice i na pravnim stranicama.
 
 **Dok su vrednosti probne.** Seed upisuje nule u PIB, matični broj i broj iz Registra. Dok je bar jedno od ta tri polja probno (same nule), podešavanja su u demo režimu (`convex/settingsAdmin.ts`):
 - administrator i menadžer na svakom ekranu panela vide baner „Podaci agencije su još probni.“, a i ekran Podešavanja ima isto upozorenje;

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
-import { Suspense, type ReactNode } from "react";
+import { Fragment, Suspense, type ReactNode } from "react";
 import { ContactForms } from "@/components/forms/ContactForms";
 import { Reveal } from "@/components/motion/Reveal";
 import { Badge } from "@/components/site/Badge";
@@ -31,7 +31,7 @@ import { Tour360Slot, Walk3DSlot } from "@/components/tours/TourSlot";
 import type { Id } from "@/convex/_generated/dataModel";
 import { getPathname, Link, permanentRedirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { fixTypography, fixWidows, formatArea } from "@/lib/format";
+import { fixProse, fixTypography, fixWidows, formatArea } from "@/lib/format";
 import { breadcrumbJsonLd, listingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
 import {
@@ -165,8 +165,12 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
           ? t("statusReserved")
           : undefined;
   const pageUrl = absoluteUrl(getPathname({ locale, href: href(listing.slug) }));
+  // Art. 18 names the registered business name ("poslovno ime"), not the
+  // brand; the brand stands in only while the legal name is still blank.
   const company =
-    settings !== null ? { name: settings.companyName, registryNo: settings.registryNo } : null;
+    settings !== null
+      ? { name: settings.legalName.trim() || settings.companyName, registryNo: settings.registryNo }
+      : null;
 
   /* ------------------------------------------------------------ media tabs */
   const gallery = <ListingGallery images={listing.media} title={title.text} ribbon={ribbon} />;
@@ -273,15 +277,13 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
   ];
 
   // "Trosoban" / "3-комнатная" agree with "stan" / "квартира", so the structure
-  // word is for apartments; every other type states its area, as its
-  // structure title does ("Kancelarija, 145 m²").
+  // word is for apartments; every type then ends on its area, which keeps the
+  // size in view beside the price ("Prodaja · Stan · Trosoban · 86 m²").
   const eyebrow = [
     t(`transaction.${listing.transaction}`),
     t(`propertyType.${listing.propertyType}`),
-    listing.propertyType === "apartment"
-      ? structureShort(t, tUnits, listing.rooms)
-      : formatArea(listing.areaM2, locale, m2),
-  ].join(" · ");
+    ...(listing.propertyType === "apartment" ? [structureShort(t, tUnits, listing.rooms)] : []),
+  ];
 
   const showFinance = listing.transaction === "sale" && !closed;
 
@@ -331,12 +333,23 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
         {/* Title and price sit directly under the photographs, inside the first
             viewport at 1440×900 and 390×844, on the same 8/4 split as the
             content grid below. */}
-        <Container className="pb-12 pt-10 md:pb-16 lg:pt-12">
+        <Container className="pb-12 pt-6 md:pb-16 lg:pt-12">
           {/* Three grid items so a phone reads title → price → badges, while a
               desktop keeps the badges under the title and the price beside it. */}
           <header className="grid gap-6 lg:grid-cols-12 lg:gap-x-16 lg:gap-y-5">
             <div className="min-w-0 lg:col-span-8 lg:row-start-1">
-              <Eyebrow tone="accentDark">{eyebrow}</Eyebrow>
+              {/* A term never breaks inside itself, and a line breaks only
+                  after a "·". The area keeps its case: the eyebrow's capitals
+                  would make "m²" read "M²". */}
+              <Eyebrow tone="accentDark">
+                {eyebrow.map((term) => (
+                  <Fragment key={term}>
+                    <span className="whitespace-nowrap">{term}</span>
+                    {"\u00A0· "}
+                  </Fragment>
+                ))}
+                <span className="whitespace-nowrap normal-case">{formatArea(listing.areaM2, locale, m2)}</span>
+              </Eyebrow>
               <h1 lang={title.lang} className="mt-4 max-w-[22ch] font-display text-display-m text-ivory">
                 {displayTitle(title.text)}
               </h1>
@@ -355,6 +368,10 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
                 {...(listing.rent?.deposit !== undefined ? { deposit: listing.rent.deposit } : {})}
                 {...(closed && ribbon !== undefined ? { closedLabel: ribbon } : {})}
                 company={company}
+                // The same saved-list heart as on the cards (the favorites page
+                // tells visitors they can tap it here too), on the price's own
+                // line of actions.
+                action={<FavoriteButton listingId={listing._id} title={title.text} tone="dark" />}
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 lg:col-span-8 lg:row-start-2">
@@ -371,9 +388,6 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
               {listing.constructionType !== "old" ? (
                 <Badge className="border-ivory/30 text-ivory">{t(`construction.${listing.constructionType}`)}</Badge>
               ) : null}
-              {/* The same saved-list heart as on the cards (the favorites page
-                  tells visitors they can tap it here too). */}
-              <FavoriteButton listingId={listing._id} title={title.text} tone="dark" className="ml-auto" />
             </div>
           </header>
         </Container>
@@ -413,14 +427,17 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
                 </div>
               ) : null}
               {/* The first paragraph is set as a serif lede; the rest keep a
-                  ~65-character measure. */}
-              <div lang={description.lang} className="mt-10 flex max-w-[40rem] flex-col gap-5 text-body-l text-ink">
+                  ~65-character measure. Only one-letter words are tied to the
+                  next one (and numbers to their units): tying "na", "sa", "od"
+                  as well left long runs of prose with lines ending well short
+                  of the measure. */}
+              <div lang={description.lang} className="mt-10 flex max-w-[40rem] flex-col gap-5 text-pretty text-body-l text-ink">
                 {paragraphs.map((paragraph, index) => (
                   <p
                     key={paragraph.slice(0, 48)}
                     className={index === 0 ? "font-display text-[1.5rem] leading-[1.3] md:text-[1.75rem]" : undefined}
                   >
-                    {fixTypography(paragraph)}
+                    {fixProse(paragraph)}
                   </p>
                 ))}
               </div>
@@ -462,7 +479,11 @@ export default async function ListingPage({ params, searchParams }: { params: Pa
           </div>
 
           <div className="lg:col-span-4">
-            <div className="flex flex-col gap-8 lg:sticky lg:top-28">
+            {/* Sticky only where the whole column fits under the header: the
+                agent card and the share links run ~740-790px from 112px down,
+                and a sticky column taller than the screen hides its own end
+                (the share links) until the content beside it runs out. */}
+            <div className="flex flex-col gap-8 lg:top-28 lg:[@media(min-height:56.25rem)]:sticky">
               <AgentCard agent={listing.agent} locale={locale} refCode={listing.ref} closed={closed} />
               <ShareButtons url={pageUrl} title={title.text} />
             </div>
@@ -520,11 +541,15 @@ async function SimilarListings({
   const similar = await getSimilarListings(id);
   if (similar.length === 0) return null;
   return (
-    <section aria-labelledby="similar-heading" className="hairline-t bg-ivory">
-      <Container className="py-16 lg:py-24">
-        <Reveal stagger={0} distance={24} skipInView>
-          <SimilarRail heading={heading} listings={similar} now={now} {...(mortgage !== undefined ? { mortgage } : {})} />
-        </Reveal>
+    <section aria-labelledby="similar-heading" className="bg-ivory">
+      {/* The rule sits inside the gutters, stopping at the page margins as
+          every other rule on the page does. */}
+      <Container className="pb-16 lg:pb-24">
+        <div className="hairline-t pt-16 lg:pt-24">
+          <Reveal stagger={0} distance={24} skipInView>
+            <SimilarRail heading={heading} listings={similar} now={now} {...(mortgage !== undefined ? { mortgage } : {})} />
+          </Reveal>
+        </div>
       </Container>
     </section>
   );

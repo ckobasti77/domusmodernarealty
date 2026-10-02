@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { fixTypography, fixWidows, formatPinPrice, parseLocaleNumber } from "./format";
+import { fixProse, fixTypography, fixWidows, formatPinPrice, parseLocaleNumber } from "./format";
 
 const NBSP = " ";
+
+describe("fixProse", () => {
+  it("keeps numbers with their units but leaves two-letter words free to break", () => {
+    expect(fixProse("terasa od 9 m², park na 120 metara")).toBe(`terasa od 9${NBSP}m², park na 120${NBSP}metara`);
+    expect(fixProse("stan u Neimaru sa terasom")).toBe(`stan u${NBSP}Neimaru sa terasom`);
+  });
+});
 
 describe("fixTypography", () => {
   it("keeps numbers with their units", () => {

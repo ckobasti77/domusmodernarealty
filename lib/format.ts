@@ -209,10 +209,18 @@ const NUMERIC_PREFIX_HYPHEN = /(\d[\p{L}°]{0,2})-(?=\p{L})/gu;
 const WORD_JOINER = String.fromCharCode(0x2060);
 
 export function fixTypography(text: string): string {
+  return fixProse(text).replace(TWO_LETTER, "$1\u00A0").replace(RU_TWO_LETTER, "$1\u00A0");
+}
+
+/**
+ * `fixTypography` without the two-letter glue, for long paragraphs set in a
+ * narrow measure (listing descriptions): chaining every "sa", "na", "po" to the
+ * next word left lines visibly short. Numbers still keep their units and
+ * prefixes their hyphens.
+ */
+export function fixProse(text: string): string {
   return fixOrphans(text)
     .replace(NUMBER_UNIT, "$1\u00A0")
-    .replace(TWO_LETTER, "$1\u00A0")
-    .replace(RU_TWO_LETTER, "$1\u00A0")
     .replace(PREFIX_HYPHEN, `$1$2-${WORD_JOINER}`)
     .replace(NUMERIC_PREFIX_HYPHEN, `$1-${WORD_JOINER}`);
 }

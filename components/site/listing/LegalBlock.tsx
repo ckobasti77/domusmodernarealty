@@ -54,7 +54,8 @@ export async function LegalBlock({
         {t("legal")}
       </h2>
 
-      <div className="hairline-t hairline-b mt-6 flex items-start gap-3 py-5">
+      {/* No rule under the note: the first row's own top rule follows it. */}
+      <div className="hairline-t mt-6 flex items-start gap-3 pt-5">
         {verified ? (
           <ShieldCheck aria-hidden="true" strokeWidth={1.5} className="mt-0.5 size-5 shrink-0 text-success-text" />
         ) : null}

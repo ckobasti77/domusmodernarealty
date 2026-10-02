@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import type { PublicImage } from "@/convex/lib/dto";
 import type { RoomTag } from "@/convex/lib/validators";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { Locale } from "@/i18n/routing";
 import { pickL10n } from "@/lib/l10n";
 import { cn } from "@/lib/utils";
@@ -17,16 +18,16 @@ const ListingLightbox = dynamic(() => import("./ListingLightbox"), { ssr: false 
 
 /**
  * The editorial hero gallery (PRD A5): one large frame plus up to four smaller
- * ones, a "all photos" button on the last visible frame, and room-filter chips
- * that narrow both the grid and the lightbox. Every frame is a real `<button>`,
- * so the grid is keyboard-operable before the lightbox code has even loaded.
+ * ones, a "all photos" button on the last visible frame, and room filters that
+ * narrow both the grid and the lightbox. Every frame is a real `<button>`, so
+ * the grid is keyboard-operable before the lightbox code has even loaded.
  *
  * Below 1024px only the large frame is shown, at 3:2 (edge to edge on a
- * phone); the lightbox is where a phone or a tablet swipes through the set,
- * and the room chips become one horizontally scrolling row so the title and
- * price still reach the first screen. A tablet-wide mosaic cropped every
- * photograph to a portrait sliver and enlarged it. The grid is capped at ~48%
- * of the viewport height for the same reason on desktop.
+ * phone), and no room filters: the lightbox, which names each photo's room,
+ * is where a phone or a tablet swipes through the set, and the filter row
+ * would push the title and price under the phone's action bar. A tablet-wide
+ * mosaic cropped every photograph to a portrait sliver and enlarged it. The
+ * grid is capped at ~48% of the viewport height for the same reason on desktop.
  *
  * `variant="plans"` reuses the same machinery for floor plans: a plain grid of
  * contained drawings instead of cropped photographs.
@@ -61,9 +62,13 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
   const t = useTranslations("listing");
   const [room, setRoom] = useState<RoomTag | "all">("all");
   const [open, setOpen] = useState<number | null>(null);
+  // The filters exist from 1024px up, so a room picked on a landscape tablet
+  // lapses in portrait, where there would be no way to clear it.
+  const filtersShown = useMediaQuery("(min-width: 1024px)");
 
   const rooms = variant === "hero" ? roomsIn(images) : [];
-  const filtered = room === "all" ? images : images.filter((image) => image.room === room);
+  const shownRoom = filtersShown ? room : "all";
+  const filtered = shownRoom === "all" ? images : images.filter((image) => image.room === shownRoom);
   const total = filtered.length;
   if (images.length === 0) return null;
 
@@ -196,13 +201,14 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
         <div
           role="group"
           aria-label={t("galleryUi.filterLabel")}
-          // One scrolling row, gutter to gutter, until the desktop width can
-          // hold the chips on a line; wrapped on a tablet they stacked into
-          // two ragged rows of boxes.
-          className="-mx-gutter mt-3 flex gap-2 overflow-x-auto overscroll-x-contain px-gutter pb-1 [scrollbar-width:none] md:-mx-gutter-md md:px-gutter-md lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0"
+          // Text tabs in the media tabs' language, one size down: no boxes, a
+          // bronze rule under the room on show. The side padding widens each
+          // hit area and is pulled back into the margin, so the first label
+          // starts on the photographs' edge.
+          className="-mx-3 mt-2 hidden flex-wrap lg:flex"
         >
           {(["all", ...rooms] as const).map((value) => {
-            const active = room === value;
+            const active = shownRoom === value;
             return (
               <button
                 key={value}
@@ -210,11 +216,11 @@ export function ListingGallery({ images, title, ribbon, variant = "hero" }: List
                 aria-pressed={active}
                 onClick={() => setRoom(value)}
                 className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center border px-4 font-sans text-label font-medium uppercase tracking-[0.12em]",
+                  "relative inline-flex min-h-11 items-center whitespace-nowrap px-3 font-sans text-label font-medium uppercase tracking-[0.12em]",
                   "transition-colors duration-200 ease-out",
-                  active
-                    ? "border-ivory bg-ivory text-ink"
-                    : "border-ivory/40 text-ivory pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze",
+                  "after:absolute after:inset-x-3 after:bottom-2 after:h-px after:origin-left after:bg-bronze",
+                  "after:transition-transform after:duration-300 after:ease-out",
+                  active ? "text-ivory after:scale-x-100" : "text-mist after:scale-x-0 pointer-fine:hover:text-ivory",
                 )}
               >
                 {value === "all" ? t("galleryUi.all") : t(`room.${value}`)}

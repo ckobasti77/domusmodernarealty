@@ -2,7 +2,7 @@
 
 import { ChevronDown, TrendingDown } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import type { Locale } from "@/i18n/routing";
 import { formatPrice, formatPricePerM2, formatRsd, priceDeltaPct } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,11 @@ export type PriceBlockProps = {
   company: { name: string; registryNo: string } | null;
   /** "Prodato" / "Izdato" when the listing is closed. */
   closedLabel?: string;
+  /**
+   * A control at the end of the link row (the listing's favourite heart),
+   * held to the price column's right edge. Shown on a closed listing too.
+   */
+  action?: ReactNode;
   tone?: "dark" | "light";
 };
 
@@ -47,6 +52,7 @@ export function PriceBlock({
   deposit,
   company,
   closedLabel,
+  action,
   tone = "dark",
 }: PriceBlockProps) {
   const locale = useLocale() as Locale;
@@ -68,6 +74,7 @@ export function PriceBlock({
   const closed = closedLabel !== undefined;
   const reduced = !closed && previousPrice !== undefined && previousPrice > price;
   const showRsd = !closed && rsd && eurRsd !== undefined;
+  const rsdToggle = !closed && eurRsd !== undefined;
   const showHistory = !closed && history.length > 0;
   const date = (at: number) => format.dateTime(new Date(at), { dateStyle: "medium" });
 
@@ -110,7 +117,7 @@ export function PriceBlock({
       ) : null}
       {vatIncluded === true && !closed ? <p className={cn("text-small", muted)}>{t("price.vatIncluded")}</p> : null}
 
-      {!closed && (reduced || showHistory || eurRsd !== undefined) ? (
+      {reduced || showHistory || rsdToggle || action !== undefined ? (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           {reduced ? (
             <span
@@ -139,11 +146,13 @@ export function PriceBlock({
               />
             </button>
           ) : null}
-          {eurRsd !== undefined ? (
+          {rsdToggle ? (
             <button type="button" aria-pressed={rsd} onClick={() => setRsd((value) => !value)} className={link}>
               {rsd ? t("price.showEur") : t("price.showRsd")}
             </button>
           ) : null}
+          {/* `-mr-3` sets a 44px icon button's glyph, not its hit area, on the column edge. */}
+          {action !== undefined ? <div className="-mr-3 ml-auto">{action}</div> : null}
         </div>
       ) : null}
 
@@ -177,10 +186,14 @@ export function PriceBlock({
       {company !== null ? (
         <p
           data-testid="listing-compliance"
-          className={cn("pt-3 text-small", dark ? "hairline-t-dark text-mist" : "hairline-t text-stone-text")}
+          className={cn("text-balance pt-3 text-small", dark ? "hairline-t-dark text-mist" : "hairline-t text-stone-text")}
         >
-          {/* The registry number never wraps away from "br." */}
-          {t("compliance", { company: company.name, registryNo: company.registryNo }).replace(/ (\S+)$/, "\u00A0$1")}
+          {/* Wrapped, the line splits into two even halves after the "·"
+              (never before it): the company, then the register reference.
+              The registry number never wraps away from "br." */}
+          {t("compliance", { company: company.name, registryNo: company.registryNo })
+            .replace(" · ", "\u00A0· ")
+            .replace(/ (\S+)$/, "\u00A0$1")}
         </p>
       ) : null}
     </div>

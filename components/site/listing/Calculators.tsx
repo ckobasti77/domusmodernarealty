@@ -127,7 +127,7 @@ export function MortgageCalculator({
 
       <div aria-live="polite">
         <p className="eyebrow text-stone-text">{t("monthly")}</p>
-        <p data-numeric data-testid="mortgage-monthly" className="mt-1 font-display text-[2.5rem] leading-none">
+        <p data-numeric data-testid="mortgage-monthly" className="mt-1 font-sans text-[2rem] font-medium leading-tight">
           {formatPrice(result.monthlyPayment, locale)}
         </p>
         <p className="mt-2 text-small text-stone-text">
@@ -198,7 +198,7 @@ export function CostCalculator({
       />
       <div aria-live="polite">
         <p className="eyebrow text-stone-text">{t("total")}</p>
-        <p data-numeric data-testid="cost-total" className="mt-1 font-display text-[2.5rem] leading-none">
+        <p data-numeric data-testid="cost-total" className="mt-1 font-sans text-[2rem] font-medium leading-tight">
           {formatPrice(result.total, locale)}
         </p>
       </div>

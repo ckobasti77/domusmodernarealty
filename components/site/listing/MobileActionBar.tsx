@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, MessageCircle, Phone } from "lucide-react";
+import { CalendarDays, MessageCircle, MessagesSquare, Phone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { telHref, viberHref, whatsappHref } from "./contact-links";
 
@@ -10,6 +10,7 @@ import { telHref, viberHref, whatsappHref } from "./contact-links";
  * fill, DESIGN §1). It
  * sits above the cookie banner via `--consent-h`, respects the home-indicator
  * safe area, and drops "Zakaži" on sold/rented listings, which take no bookings.
+ * Viber and WhatsApp carry the agent card's two glyphs, so they are told apart.
  */
 export function MobileActionBar({
   phone,
@@ -48,7 +49,7 @@ export function MobileActionBar({
       ) : null}
       {viber !== undefined ? (
         <a href={viberHref(viber)} className={item}>
-          <MessageCircle aria-hidden="true" strokeWidth={1.25} className="size-5" />
+          <MessagesSquare aria-hidden="true" strokeWidth={1.25} className="size-5" />
           {tCommon("viber")}
         </a>
       ) : null}

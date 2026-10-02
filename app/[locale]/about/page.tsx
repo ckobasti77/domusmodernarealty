@@ -4,12 +4,15 @@ import { notFound } from "next/navigation";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { ClipReveal } from "@/components/motion/ClipReveal";
-import { AboutNumbers, type AboutStat } from "@/components/site/about/AboutNumbers";
+import { AboutNumbers } from "@/components/site/about/AboutNumbers";
 import { OfficeSection } from "@/components/site/about/OfficeSection";
+import { StoryImage } from "@/components/site/about/StoryImage";
 import { ValuesList } from "@/components/site/about/ValuesList";
 import { AgentCard } from "@/components/site/agents/AgentCard";
 import { Container } from "@/components/site/Container";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { buildHomeCopy, headingNode } from "@/components/site/home/copy";
+import { FinalCta } from "@/components/site/home/FinalCta";
 import { Straddle } from "@/components/site/locations/Straddle";
 import { JsonLdScript } from "@/components/site/page/JsonLd";
 import { PageHero } from "@/components/site/page/PageHero";
@@ -19,7 +22,7 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { textLinkClasses } from "@/components/site/TextLink";
 import { Link } from "@/i18n/navigation";
 import { htmlLang, routing, type Locale } from "@/i18n/routing";
-import { findBlock, HOME_BLOCKS, localizedText, type PublicPage } from "@/lib/content/pages";
+import { findBlock, localizedText } from "@/lib/content/pages";
 import { fillPlaceholders, placeholderValues } from "@/lib/content/placeholders";
 import { agencyRef, breadcrumbJsonLd, type JsonLd } from "@/lib/jsonld";
 import { pickL10n, pickL10nList } from "@/lib/l10n";
@@ -33,7 +36,10 @@ import { absoluteUrl, localizedUrl, pageMetadata, siteOrigin } from "@/lib/seo";
  * their `{{placeholders}}`; the figures are the landing's `numbers` block, the
  * single source of the agency's numbers, flagged while they are demo values.
  * Then a team teaser, the office on the map and the compliance block from
- * Podešavanja. A missing block drops its section instead of inventing copy.
+ * Podešavanja, and the page closes on the landing's final call to action
+ * (DESIGN §6.13), which flows into the footer. The figures and that CTA
+ * resolve their managed copy exactly as the landing does (`buildHomeCopy`).
+ * A missing block drops its section instead of inventing copy.
  */
 
 /** "Ornate historic facades and a street lamp in central Belgrade" (docs/assets/demo-media.json). */
@@ -47,20 +53,6 @@ function managed(value: Parameters<typeof localizedText>[0], locale: Locale): { 
   if (text === null) return null;
   return text.lang !== locale ? text : { text: text.text };
 }
-
-function stats(home: PublicPage | null, settingsStats: readonly AboutStatSource[], locale: Locale): AboutStat[] {
-  const block = findBlock(home, HOME_BLOCKS.numbers.key, HOME_BLOCKS.numbers.type);
-  return (block?.items ?? settingsStats).map((stat) => {
-    const label = pickL10n(stat.label, locale);
-    return {
-      value: stat.value,
-      label: label.lang !== locale ? { text: label.text, lang: label.lang } : { text: label.text },
-      isDemo: stat.isDemo,
-    };
-  });
-}
-
-type AboutStatSource = { value: string; label: Parameters<typeof pickL10n>[0]; isDemo: boolean };
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/about">): Promise<Metadata> {
   const { locale } = await params;
@@ -102,14 +94,12 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
   const methodTitle = managed(method?.title, locale);
   const methodBody = method?.body !== undefined ? pickL10n(method.body, locale) : null;
 
-  const numbers = stats(home, settings?.stats ?? [], locale);
-  const numbersTitle =
-    managed(findBlock(home, HOME_BLOCKS.numbers.key, HOME_BLOCKS.numbers.type)?.title, locale) ?? {
-      text: tHome("numbersHeading"),
-    };
+  const homeCopy = buildHomeCopy(home, locale, settings?.stats ?? [], tHome);
+  const numbers = homeCopy.numbers.stats;
   const team = agents.slice(0, TEAM_TEASER);
 
   const art = mediaImage("about");
+  const storyImageAlt = t("storyImageAlt");
   const pageUrl = localizedUrl("/about", locale);
 
   const hasStory = storyBody !== null && storyBody.text.trim().length > 0;
@@ -174,9 +164,12 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
         <div className="bg-ivory py-section text-ink lg:py-section-lg">
           <Container className="grid grid-cols-4 gap-x-6 gap-y-8 lg:grid-cols-12">
             <div className="col-span-4 lg:col-span-4">
-              <Eyebrow index={indexOf("story")} className="lg:sticky lg:top-28">
-                {t("storyEyebrow")}
-              </Eyebrow>
+              {/* On a desktop the photograph holds the story's left columns,
+                  riding under the eyebrow while the text scrolls past. */}
+              <div className="lg:sticky lg:top-28">
+                <Eyebrow index={indexOf("story")}>{t("storyEyebrow")}</Eyebrow>
+                <StoryImage frame="column" alt={storyImageAlt} className="mt-10 hidden lg:block" />
+              </div>
             </div>
             <RichText
               html={fillPlaceholders(storyBody.text, values)}
@@ -185,6 +178,8 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
               // The opening paragraph is the story's thesis, set as a serif lead.
               className="col-span-4 lg:col-span-7 lg:col-start-6 [&>p:first-child]:font-display [&>p:first-child]:text-[clamp(1.5rem,2.2vw,2rem)] [&>p:first-child]:leading-[1.3]"
             />
+            {/* Below 1024px it follows the story instead. */}
+            <StoryImage frame="inline" alt={storyImageAlt} className="col-span-4 mt-4 lg:hidden" />
           </Container>
         </div>
       ) : null}
@@ -251,13 +246,7 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
               id="numbers-title"
               eyebrow={t("numbersEyebrow")}
               eyebrowIndex={indexOf("numbers")}
-              title={
-                numbersTitle.lang !== undefined ? (
-                  <span lang={numbersTitle.lang}>{numbersTitle.text}</span>
-                ) : (
-                  numbersTitle.text
-                )
-              }
+              title={headingNode(homeCopy.numbers.heading)}
             />
             <div className="mt-12 lg:mt-16">
               <AboutNumbers stats={numbers} demoNote={tHome("numbersDemo")} />
@@ -300,6 +289,9 @@ export default async function AboutPage({ params }: PageProps<"/[locale]/about">
       ) : null}
 
       {settings !== null ? <OfficeSection settings={settings} locale={locale} index={indexOf("office")} /> : null}
+
+      {/* Its lede carries the site's one reply-time promise, so the office block above does not repeat it. */}
+      <FinalCta locale={locale} settings={settings} copy={homeCopy.final} />
     </>
   );
 }

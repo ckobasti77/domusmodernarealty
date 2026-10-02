@@ -166,7 +166,14 @@ export function SelectField({ label, hint, error, className, children, ...rest }
           id={id}
           aria-invalid={error !== undefined}
           aria-describedby={describedBy}
-          className={cn(CONTROL, "appearance-none pr-8")}
+          className={cn(
+            CONTROL,
+            "appearance-none pr-8",
+            // While the empty choice ("Izaberite…", "Nije navedeno") is selected
+            // the control reads as unanswered, in the muted tone of an empty
+            // input's label; the open list keeps every option in ink.
+            "has-[option[value='']:checked]:text-stone-text *:text-ink",
+          )}
           {...rest}
         >
           {children}

@@ -157,8 +157,9 @@ export function ValuationFunnel({
               register={property.register}
               errors={property.formState.errors}
             />
-            <div className="flex justify-end hairline-t pt-6">
-              <Button type="submit" data-testid="valuation-next">
+            {/* Full width on a phone, where it closes a long column of fields. */}
+            <div className="flex hairline-t pt-6 sm:justify-end">
+              <Button type="submit" data-testid="valuation-next" className="w-full sm:w-auto">
                 {t("next")}
               </Button>
             </div>
@@ -204,12 +205,20 @@ export function ValuationFunnel({
             </div>
             <ConsentFields register={contact.register} errors={contact.formState.errors} />
             <FormError message={serverError} />
-            <div className="flex flex-wrap items-center justify-between gap-4 hairline-t pt-6">
-              <Button variant="ghost" size="compact" data-testid="valuation-back" onClick={() => go("property")}>
+            {/* A phone stacks Back over a full-width submit, in reading and focus
+                order; from `sm` they share one row. `-ml-5` lines the ghost
+                button's arrow up with the form's left edge. */}
+            <div className="flex flex-col items-start gap-4 hairline-t pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <Button variant="ghost" size="compact" data-testid="valuation-back" onClick={() => go("property")} className="-ml-5">
                 <ArrowLeft aria-hidden="true" strokeWidth={1.25} className="mr-2 inline size-4 align-[-0.15em]" />
                 {t("previous")}
               </Button>
-              <Button type="submit" disabled={contact.formState.isSubmitting} data-testid="valuation-submit">
+              <Button
+                type="submit"
+                disabled={contact.formState.isSubmitting}
+                data-testid="valuation-submit"
+                className="w-full sm:w-auto"
+              >
                 {contact.formState.isSubmitting ? t("submitting") : t("submit")}
               </Button>
             </div>

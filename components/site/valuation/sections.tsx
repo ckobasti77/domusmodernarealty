@@ -32,27 +32,49 @@ function headingNode(copy: Copy) {
 
 const FACTS = ["duration", "cost", "result"] as const;
 
+/** The two facts the lede does not state; the result is its very subject. */
+const PHONE_FACTS = ["cost", "duration"] as const;
+
 /**
  * Three facts set like a specification, at the foot of the ink band. On wide
  * screens they skip the first of the hero's five aside columns, so they share
  * a left edge with "how we calculate" (columns 9–12) just below the seam.
+ * A phone gets them as one quiet line under the lede and goes on to the funnel.
  */
 export async function HeroFacts({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "valuation" });
   return (
-    // Phones go straight to the funnel; the lede already says the same in a sentence.
-    <div className="hidden sm:block lg:grid lg:grid-cols-5 lg:gap-x-6">
-      <dl className="hairline-t-dark lg:col-span-4 lg:col-start-2">
-        {FACTS.map((fact) => (
-          <div key={fact} className="flex items-baseline justify-between gap-6 hairline-b-dark py-4">
-            <dt className="shrink-0 font-mono text-label uppercase text-mist">{t(`facts.${fact}Label`)}</dt>
-            <dd className="text-balance text-right font-display text-h3 font-normal text-ivory">
+    <>
+      {/* `-mt-4` brings the line from the hero grid's 40px gap to the 24px
+          rhythm of the title column it continues. */}
+      <dl className="-mt-4 flex flex-wrap gap-y-2 font-mono text-label uppercase text-ivory sm:hidden">
+        {PHONE_FACTS.map((fact, index) => (
+          <div key={fact}>
+            <dt className="sr-only">{t(`facts.${fact}Label`)}</dt>
+            <dd>
               {t(`facts.${fact}Value`)}
+              {index < PHONE_FACTS.length - 1 ? (
+                <span aria-hidden="true" className="px-3 text-bronze">
+                  ·
+                </span>
+              ) : null}
             </dd>
           </div>
         ))}
       </dl>
-    </div>
+      <div className="hidden sm:block lg:grid lg:grid-cols-5 lg:gap-x-6">
+        <dl className="hairline-t-dark lg:col-span-4 lg:col-start-2">
+          {FACTS.map((fact) => (
+            <div key={fact} className="flex items-baseline justify-between gap-6 hairline-b-dark py-4">
+              <dt className="shrink-0 font-mono text-label uppercase text-mist">{t(`facts.${fact}Label`)}</dt>
+              <dd className="text-balance text-right font-display text-h3 font-normal text-ivory">
+                {t(`facts.${fact}Value`)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </>
   );
 }
 

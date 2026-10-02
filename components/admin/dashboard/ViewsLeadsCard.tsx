@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { formatShortDay } from "@/lib/admin/format";
 import { DashCard } from "./DashCard";
 import { formatCount } from "./format";
-import { CHART_HEIGHT, chartWindow, SHORT_HISTORY_DAYS } from "./series";
+import { CHART_HEIGHT, chartWindow } from "./series";
 
 function ChartSkeleton() {
   return <Skeleton className="w-full" style={{ height: CHART_HEIGHT }} />;
@@ -20,9 +20,11 @@ const ViewsLeadsChart = dynamic(
 );
 
 /**
- * 30-day views & leads from the nightly `dailyStats` rollup. Uses the same
- * `analytics.dashboard` subscription as the KPI cards (Convex dedupes
- * identical queries), so it costs no extra round trip.
+ * Daily views & leads from the nightly `dailyStats` rollup: the last 30 days,
+ * or, while the record is younger, from the day before it starts (the
+ * description names the span). Uses the same `analytics.dashboard`
+ * subscription as the KPI cards (Convex dedupes identical queries), so it
+ * costs no extra round trip.
  */
 export function ViewsLeadsCard({ now, className }: { now: number; className?: string }) {
   const stats = useQuery(api.analytics.dashboard, { now });
@@ -30,10 +32,6 @@ export function ViewsLeadsCard({ now, className }: { now: number; className?: st
   const ready = range !== null && range.recorded >= 2;
   const first = range?.days[0];
   const last = range?.days[range.days.length - 1];
-  // A young record says where it starts, so the flat stone span before it is
-  // not read as thirty quiet days.
-  const since =
-    ready && range.recorded < SHORT_HISTORY_DAYS ? range.days[range.firstRecorded] : undefined;
 
   return (
     <DashCard
@@ -53,14 +51,7 @@ export function ViewsLeadsCard({ now, className }: { now: number; className?: st
         </div>
       ) : ready ? (
         <>
-          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-            <Legend views={range.totalViews} leads={range.totalLeads} />
-            {since !== undefined ? (
-              <p className="text-xs text-muted-foreground" data-numeric>
-                Podaci od {formatShortDay(since.ms)}
-              </p>
-            ) : null}
-          </div>
+          <Legend views={range.totalViews} leads={range.totalLeads} />
           <ViewsLeadsChart days={range.days} />
         </>
       ) : (
@@ -78,10 +69,10 @@ export function ViewsLeadsCard({ now, className }: { now: number; className?: st
   );
 }
 
-/** Legend with 30-day totals. Identity is carried by the mark shape too, never colour alone. */
+/** Legend with the window's totals. Identity is carried by the mark shape too, never colour alone. */
 function Legend({ views, leads }: { views: number; leads: number }) {
   return (
-    <ul className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
+    <ul className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
       <li className="flex items-center gap-2">
         <svg aria-hidden="true" width="18" height="10" viewBox="0 0 18 10" className="shrink-0">
           <rect x="0" y="3" width="18" height="7" className="fill-chart-1/20" />

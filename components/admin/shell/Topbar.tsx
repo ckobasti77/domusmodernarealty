@@ -78,8 +78,11 @@ function ThemeToggle() {
 }
 
 function initials(name: string): string {
-  // Letters only: "Mihajlo (admin)" must read "MA", not "M(".
-  const parts = name.split(/[^\p{L}]+/u).filter(Boolean);
+  // Letters of the name itself, not of a note in parentheses:
+  // "Mihajlo (admin)" reads "M", "Ana Petrović" reads "AP".
+  const words = (text: string) => text.split(/[^\p{L}]+/u).filter(Boolean);
+  const named = words(name.replace(/\([^)]*\)?/g, " "));
+  const parts = named.length > 0 ? named : words(name);
   const letters = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "");
   return letters.join("") || "?";
 }

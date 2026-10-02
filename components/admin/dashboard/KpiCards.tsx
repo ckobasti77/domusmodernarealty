@@ -6,7 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { formatDate } from "@/lib/admin/format";
-import { formatCapped, formatCount, formatDuration } from "./format";
+import { formatCapped, formatCount, formatDuration, pluralSr } from "./format";
+
+/** `leadsAdmin.awaitingResponse` returns at most this many leads. */
+const AWAITING_CAP = 20;
 
 type Kpi = {
   key: string;
@@ -17,6 +20,17 @@ type Kpi = {
 };
 
 /**
+ * The response-time hint. The average covers answered leads only, so the
+ * leads still waiting (the "bez odgovora duže od 1 h" queue) are named next
+ * to it rather than read into a fast average.
+ */
+function responseHint(answered: boolean, waiting: number): string {
+  const scope = answered ? "Samo odgovoreni upiti iz 7 dana" : "Još nema odgovorenih upita";
+  if (waiting === 0) return scope;
+  return `${scope} · ${formatCapped(waiting, AWAITING_CAP)} ${pluralSr(waiting, "čeka", "čeka", "čekaju")}`;
+}
+
+/**
  * Agency-wide KPIs (managers only — `analytics.dashboard` refuses anyone else).
  * Listing counts are exact (denormalized counters); new leads and today's
  * viewings are read with `.take(n)`, so a value at that limit reads `n+`.
@@ -25,6 +39,8 @@ type Kpi = {
  */
 export function KpiCards({ now }: { now: number }) {
   const stats = useQuery(api.analytics.dashboard, { now });
+  // The leads card's own subscription (same arguments): Convex shares it.
+  const awaiting = useQuery(api.leadsAdmin.awaitingResponse, { now });
 
   const kpis: Kpi[] = [
     {
@@ -59,16 +75,18 @@ export function KpiCards({ now }: { now: number }) {
             ? "—"
             : formatDuration(stats.avgFirstResponseMinutes),
       hint:
-        stats === undefined
+        stats === undefined || awaiting === undefined
           ? undefined
-          : stats.avgFirstResponseMinutes === undefined
-            ? "Još nema odgovorenih upita"
-            : "Do prvog odgovora, upiti iz 7 dana",
+          : responseHint(stats.avgFirstResponseMinutes !== undefined, awaiting.length),
     },
   ];
 
   return (
-    <section aria-labelledby="kpi-heading" data-testid="kpi-cards" aria-busy={stats === undefined}>
+    <section
+      aria-labelledby="kpi-heading"
+      data-testid="kpi-cards"
+      aria-busy={stats === undefined || awaiting === undefined}
+    >
       <h2 id="kpi-heading" className="sr-only">
         Ključni pokazatelji
       </h2>

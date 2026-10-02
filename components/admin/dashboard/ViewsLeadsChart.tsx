@@ -4,14 +4,15 @@ import { useEffect, useId, useState, type PointerEvent } from "react";
 import { formatShortDay } from "@/lib/admin/format";
 import { cn } from "@/lib/utils";
 import { formatCount, pluralSr } from "./format";
-import { CHART_HEIGHT, niceMax, type ChartDay } from "./series";
+import { CHART_HEIGHT, dayTicks, niceMax, type ChartDay } from "./series";
 
 /*
  * Small multiples on one shared day axis: views (area + line) on top, leads
  * (columns) below, each on its own y scale — two measures of very different
  * size, and never a dual-axis chart. Hand-written SVG: no chart library.
  * Days before the first rollup row are not data: they are drawn as a stone
- * hairline on the baseline, and bronze starts where the record does.
+ * hairline on the baseline, and bronze starts where the record does. The axis
+ * is 30 days, or shorter while the record is (see `chartWindow`).
  */
 const LEFT = 40;
 const RIGHT = 16;
@@ -68,7 +69,8 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
   const maxLeads = niceMax(peakLeads);
   const plotWidth = Math.max(0, width - LEFT - RIGHT);
   const step = count > 0 ? plotWidth / count : 0;
-  const barWidth = Math.max(2, Math.min(24, step * 0.6, step - 2));
+  // Slender at any axis length: a short record's wide days keep 16px columns.
+  const barWidth = Math.max(2, Math.min(16, step * 0.6, step - 2));
 
   const xAt = (index: number) => LEFT + step * (index + 0.5);
   const yViews = (value: number) => VIEWS_BOTTOM - (value / maxViews) * (VIEWS_BOTTOM - VIEWS_TOP);
@@ -89,8 +91,7 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
 
   const viewTicks = [0, maxViews, ...(Number.isInteger(maxViews / 2) && maxViews > 1 ? [maxViews / 2] : [])];
   const leadTicks = [0, maxLeads];
-  const dayTicks =
-    width < 420 ? [0, Math.floor((count - 1) / 2), count - 1] : [0, 7, 14, 21, count - 1];
+  const ticks = dayTicks(count, width < 420 ? 3 : 5);
 
   const totalViews = days.reduce((sum, day) => sum + day.views, 0);
   const totalLeads = days.reduce((sum, day) => sum + day.leads, 0);
@@ -218,7 +219,7 @@ export function ViewsLeadsChart({ days }: { days: ChartDay[] }) {
           })}
 
           {/* Shared day axis */}
-          {dayTicks.map((index) => {
+          {ticks.map((index) => {
             const day = days[index];
             if (day === undefined) return null;
             return (

@@ -94,8 +94,12 @@ export function priceParts(row: AdminRow): { main: string; unit: string | null; 
 
 /** `Stefan Petrović` → `SP`; one word → its first letter. */
 export function initialsOf(name: string): string {
-  // Letters and digits only: "Mihajlo (admin)" is MA, not M(.
-  const words = name.split(/[^\p{L}\p{N}]+/u).filter((word) => word.length > 0);
+  // Letters and digits only, and a parenthesized note is not part of the name:
+  // "Mihajlo (admin)" is M, like the top-bar avatar.
+  const words = name
+    .replace(/\([^)]*\)/g, " ")
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((word) => word.length > 0);
   const first = words[0]?.charAt(0) ?? "";
   const last = words.length > 1 ? (words[words.length - 1]?.charAt(0) ?? "") : "";
   return `${first}${last}`.toLocaleUpperCase("sr-Latn");

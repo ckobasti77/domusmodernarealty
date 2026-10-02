@@ -8,23 +8,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import { formatRelative } from "@/lib/admin/format";
 import { actionLabel, targetHref } from "@/components/admin/activity/labels";
-import { activitySummary, diffCountLabel } from "./activity-labels";
+import { activityActor, diffCountLabel, feedSummary } from "./activity-labels";
 import { DashCard } from "./DashCard";
 import { isoOf } from "./format";
 
 type ActivityRow = FunctionReturnType<typeof api.activity.list>["page"][number];
+type TargetKind = NonNullable<ActivityRow["target"]>["kind"];
 
 /** Lines shown after collapsing repeats. */
 const FEED_ROWS = 6;
 /** Rows read to fill those lines when bursts (e.g. several leads) collapse. */
 const FEED_READ = 30;
 
+/** Link text for a line whose summary adds nothing: what the link opens. */
+const OPEN_TARGET: Record<TargetKind, string> = {
+  listing: "otvori nekretninu",
+  lead: "otvori upit",
+  viewing: "otvori razgledanje",
+  post: "otvori tekst",
+  location: "otvori lokaciju",
+  contact: "otvori kontakt",
+  settings: "otvori podešavanja",
+};
+
 type FeedItem = {
   key: string;
   label: string;
-  summary: string | undefined;
+  /** What follows the label: the summary, else what the link opens. */
+  subject: string | undefined;
   href: string | null;
-  byName: string | undefined;
+  actor: string;
   /** Newest time in the run. */
   at: number;
   count: number;
@@ -34,14 +47,16 @@ type FeedItem = {
 
 /**
  * Consecutive rows with the same action, wording, target and author read as
- * one line with a count ("3× Novi upit · Sa sajta: upit o nekretnini").
+ * one line with a count ("3× Izmenjena nekretnina · ME-1042").
  */
 function collapse(rows: readonly ActivityRow[]): FeedItem[] {
   const items: FeedItem[] = [];
   for (const row of rows) {
-    const summary = activitySummary(row.action, row.summary);
-    const href = row.target !== undefined && row.action !== "listing.deleted" ? targetHref(row.target) : null;
-    const key = [row.action, summary ?? "", href ?? "", row.byName ?? ""].join("\u0000");
+    const target = row.action !== "listing.deleted" ? row.target : undefined;
+    const href = target !== undefined ? targetHref(target) : null;
+    const subject = feedSummary(row) ?? (target !== undefined ? OPEN_TARGET[target.kind] : undefined);
+    const actor = activityActor(row);
+    const key = [row.action, subject ?? "", href ?? "", actor].join("\u0000");
     const last = items[items.length - 1];
     if (last !== undefined && last.key === key) {
       last.count += 1;
@@ -51,9 +66,9 @@ function collapse(rows: readonly ActivityRow[]): FeedItem[] {
     items.push({
       key,
       label: actionLabel(row.action),
-      summary,
+      subject,
       href,
-      byName: row.byName,
+      actor,
       at: row.at,
       count: 1,
       changed: row.action === "listing.updated" && row.diff !== undefined ? row.diff.length : 0,
@@ -111,8 +126,6 @@ export function RecentActivity({ clock, className }: { clock: number; className?
 }
 
 function ActivityItem({ item, clock }: { item: FeedItem; clock: number }) {
-  const subject = item.summary ?? "otvori nekretninu";
-
   return (
     <li className="py-2 first:pt-0 last:pb-0">
       <p className="text-sm leading-snug">
@@ -123,7 +136,7 @@ function ActivityItem({ item, clock }: { item: FeedItem; clock: number }) {
           </span>
         ) : null}
         <span className="font-medium">{item.label}</span>
-        {item.summary !== undefined || item.href !== null ? (
+        {item.subject !== undefined ? (
           <>
             <span aria-hidden="true" className="text-muted-foreground">
               {" · "}
@@ -133,17 +146,17 @@ function ActivityItem({ item, clock }: { item: FeedItem; clock: number }) {
                 href={item.href}
                 className="rounded-sm text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors duration-150 outline-none hover:decoration-primary focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                {withUnbrokenRefs(subject)}
+                {withUnbrokenRefs(item.subject)}
               </Link>
             ) : (
-              <span className="text-muted-foreground">{withUnbrokenRefs(subject)}</span>
+              <span className="text-muted-foreground">{withUnbrokenRefs(item.subject)}</span>
             )}
           </>
         ) : null}
         {item.changed > 0 ? <span className="text-muted-foreground"> ({diffCountLabel(item.changed)})</span> : null}
       </p>
       <p className="mt-0.5 text-xs text-muted-foreground">
-        {item.byName ?? "sistem"}
+        {item.actor}
         <span aria-hidden="true">{" · "}</span>
         <time dateTime={isoOf(item.at)} data-numeric>
           {formatRelative(Math.min(item.at, clock), clock)}

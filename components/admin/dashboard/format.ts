@@ -42,9 +42,15 @@ export function formatCapped(value: number, limit: number): string {
   return value >= limit ? `${countFmt.format(limit)}+` : countFmt.format(value);
 }
 
-/** Serbian noun after a number: 1, 21, 31… take the singular, the rest the plural. */
-export function pluralSr(count: number, one: string, many: string): string {
-  return count % 10 === 1 && count % 100 !== 11 ? one : many;
+/**
+ * Serbian word after a number: 1, 21, 31… take `one`; 2–4, 22–24… take `few`
+ * where it differs ("2 fotografije", "3 čekaju"); the rest take `many`.
+ */
+export function pluralSr(count: number, one: string, many: string, few: string = many): string {
+  const units = count % 10;
+  const tens = count % 100;
+  if (units === 1 && tens !== 11) return one;
+  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? few : many;
 }
 
 /** 0 → `do 1 min`, 45 → `45 min`, 135 → `2 h 15 min`, 1500 → `1 dan 1 h`. */

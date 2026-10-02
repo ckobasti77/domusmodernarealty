@@ -46,7 +46,7 @@ export function Dashboard() {
       )}
 
       {isManager ? (
-        <div className="grid items-start gap-4 xl:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-3">
           <QueryErrorBoundary>
             <ViewsLeadsCard now={now} className="xl:col-span-2" />
           </QueryErrorBoundary>

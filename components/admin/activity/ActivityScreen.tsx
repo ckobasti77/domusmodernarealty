@@ -5,7 +5,7 @@ import { ChevronDown, History } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useCallback, useId, useState } from "react";
-import { activitySummary } from "@/components/admin/dashboard/activity-labels";
+import { activityActor, activitySummary } from "@/components/admin/dashboard/activity-labels";
 import { PHONE_QUERY } from "@/components/admin/common/breakpoints";
 import { EmptyState, ListToolbar, LoadMore } from "@/components/admin/common/ListToolbar";
 import { PageHeader } from "@/components/admin/common/PageHeader";
@@ -377,7 +377,7 @@ function ActivityTable({ rows, clock }: { rows: readonly ActivityRow[]; clock: n
                 <td className="w-40 px-3 py-2.5">
                   <When at={row.at} clock={clock} />
                 </td>
-                <td className="w-40 px-3 py-2.5 break-words">{row.byName ?? "sistem"}</td>
+                <td className="w-40 px-3 py-2.5 break-words">{activityActor(row)}</td>
                 <td className="w-32 px-3 py-2.5">
                   <EntityCell row={row} />
                 </td>
@@ -421,7 +421,7 @@ function ActivityList({ rows, clock }: { rows: readonly ActivityRow[]; clock: nu
             <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
               <EntityCell row={row} />
               <span aria-hidden="true">·</span>
-              <span>{row.byName ?? "sistem"}</span>
+              <span>{activityActor(row)}</span>
               <span aria-hidden="true">·</span>
               <time dateTime={new Date(row.at).toISOString()} className="tabular-nums">
                 {formatDateTime(row.at)} ({formatRelative(Math.min(row.at, clock), clock)})

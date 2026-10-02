@@ -1672,14 +1672,21 @@ export const setOwner = mutation({
   },
 });
 
+/** A dashboard to-do row: the listing's id, ref and Serbian title. */
+const todoRowV = v.object({ id: v.id("listings"), ref: v.string(), title: v.string() });
+
+function todoRow(doc: Doc<"listings">): Infer<typeof todoRowV> {
+  return { id: doc._id, ref: doc.ref, title: doc.title.sr };
+}
+
 /** Dashboard to-do lists (PRD B2). `now` is an argument: queries stay pure. */
 export const todos = query({
   args: { now: v.number() },
   returns: v.object({
-    missingPhotos: v.array(v.object({ id: v.id("listings"), ref: v.string(), count: v.number() })),
-    missingFloorPlan: v.array(v.object({ id: v.id("listings"), ref: v.string() })),
-    missingTranslations: v.array(v.object({ id: v.id("listings"), ref: v.string(), locales: v.array(v.string()) })),
-    mandateExpiring: v.array(v.object({ id: v.id("listings"), ref: v.string(), end: v.number() })),
+    missingPhotos: v.array(todoRowV.extend({ count: v.number() })),
+    missingFloorPlan: v.array(todoRowV),
+    missingTranslations: v.array(todoRowV.extend({ locales: v.array(v.string()) })),
+    mandateExpiring: v.array(todoRowV.extend({ end: v.number() })),
   }),
   handler: async (ctx, args) => {
     const viewer = await requireRole(ctx, EDITORS);
@@ -1727,10 +1734,10 @@ export const todos = query({
     for (const doc of [...docs, ...reserved]) {
       if (!visibleToViewer(viewer, doc)) continue;
       if (doc.media.length < 8) {
-        missingPhotos.push({ id: doc._id, ref: doc.ref, count: doc.media.length });
+        missingPhotos.push({ ...todoRow(doc), count: doc.media.length });
       }
       if (doc.floorPlans.length === 0) {
-        missingFloorPlan.push({ id: doc._id, ref: doc.ref });
+        missingFloorPlan.push(todoRow(doc));
       }
       const missing: string[] = [];
       for (const locale of ["en", "ru", "de"] as const) {
@@ -1746,7 +1753,7 @@ export const todos = query({
         }
       }
       if (missing.length > 0) {
-        missingTranslations.push({ id: doc._id, ref: doc.ref, locales: missing });
+        missingTranslations.push({ ...todoRow(doc), locales: missing });
       }
     }
 
@@ -1765,7 +1772,7 @@ export const todos = query({
           .take(200);
         for (const doc of ending) {
           if (doc.mandateEnd === undefined || !visibleToViewer(viewer, doc)) continue;
-          mandateExpiring.push({ id: doc._id, ref: doc.ref, end: doc.mandateEnd });
+          mandateExpiring.push({ ...todoRow(doc), end: doc.mandateEnd });
         }
       }
       mandateExpiring.sort((a, b) => a.end - b.end);

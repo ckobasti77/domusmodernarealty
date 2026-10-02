@@ -1,5 +1,5 @@
 /**
- * The 30-day window behind the views & leads chart. `dailyStats` rows are keyed
+ * The day window behind the views & leads chart. `dailyStats` rows are keyed
  * by UTC day (`yyyy-mm-dd`, written by the 03:05 UTC rollup), so the window is
  * built in UTC days too.
  */
@@ -8,8 +8,6 @@ const DAY_MS = 86_400_000;
 export const CHART_DAYS = 30;
 /** Pixel height of the plot, shared by the chart and its loading skeleton. */
 export const CHART_HEIGHT = 280;
-/** Below this many recorded days the card says where the data starts. */
-export const SHORT_HISTORY_DAYS = 7;
 
 export type SeriesRow = { day: string; views: number; leads: number };
 /**
@@ -22,8 +20,6 @@ export type ChartWindow = {
   days: ChartDay[];
   /** Days in the window that have a real rollup row (the rest are filled with 0). */
   recorded: number;
-  /** Index of the first day with a rollup row, or -1 when there is none. */
-  firstRecorded: number;
   totalViews: number;
   totalLeads: number;
 };
@@ -39,29 +35,36 @@ function dayKey(ms: number): string {
 }
 
 /**
- * A continuous 30-day axis ending on the latest rolled-up day (yesterday once
- * the nightly job has run), missing days filled with 0. Anchoring on the
- * latest row keeps the tail honest before 03:05 UTC, when "yesterday" has not
- * been counted yet and a trailing 0 would be a fabricated value.
+ * A continuous axis ending on the latest rolled-up day (yesterday once the
+ * nightly job has run), missing days filled with 0. Anchoring on the latest
+ * row keeps the tail honest before 03:05 UTC, when "yesterday" has not been
+ * counted yet and a trailing 0 would be a fabricated value.
+ *
+ * The axis spans 30 days. A record younger than that starts the axis the day
+ * before its first row instead, so a few days of data fill the chart rather
+ * than sitting at the right edge of a flat, empty month.
  */
 export function chartWindow(series: readonly SeriesRow[], now: number): ChartWindow {
   const byDay = new Map<string, SeriesRow>();
+  let earliest: number | null = null;
   let latest: number | null = null;
   for (const row of series) {
     const start = parseDay(row.day);
     if (start === null) continue;
     byDay.set(row.day, row);
+    if (earliest === null || start < earliest) earliest = start;
     if (latest === null || start > latest) latest = start;
   }
   const todayStart = parseDay(dayKey(now)) ?? now;
   const end = latest ?? todayStart - DAY_MS;
+  const monthStart = end - (CHART_DAYS - 1) * DAY_MS;
+  const first = earliest === null ? monthStart : Math.max(monthStart, earliest - DAY_MS);
 
   const days: ChartDay[] = [];
   let recorded = 0;
   let totalViews = 0;
   let totalLeads = 0;
-  for (let offset = CHART_DAYS - 1; offset >= 0; offset -= 1) {
-    const start = end - offset * DAY_MS;
+  for (let start = first; start <= end; start += DAY_MS) {
     const key = dayKey(start);
     const row = byDay.get(key);
     if (row !== undefined) recorded += 1;
@@ -71,8 +74,23 @@ export function chartWindow(series: readonly SeriesRow[], now: number): ChartWin
     totalLeads += leads;
     days.push({ day: key, ms: start + DAY_MS / 2, views, leads, recorded: row !== undefined });
   }
-  const firstRecorded = days.findIndex((day) => day.recorded);
-  return { days, recorded, firstRecorded, totalViews, totalLeads };
+  return { days, recorded, totalViews, totalLeads };
+}
+
+/**
+ * Indices of the days that get an axis label: the first, the last, and days
+ * evenly spaced between them, about `slots` in all (weekly on a 30-day axis).
+ * A regular label too close to the last one gives way to it.
+ */
+export function dayTicks(count: number, slots: number): number[] {
+  if (count <= 0) return [];
+  const last = count - 1;
+  const stride = Math.max(1, Math.floor(last / Math.max(1, slots - 1)));
+  const ticks: number[] = [];
+  for (let index = 0; index < last; index += stride) ticks.push(index);
+  if (ticks.length > 1 && last - ticks[ticks.length - 1] < stride) ticks.pop();
+  ticks.push(last);
+  return ticks;
 }
 
 /** A clean integer axis maximum at or above `value` (never below 1). */

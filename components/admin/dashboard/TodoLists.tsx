@@ -2,17 +2,16 @@
 
 import { useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { L10nKey } from "@/convex/lib/validators";
 import { formatDate, formatRelative } from "@/lib/admin/format";
-import { L10N_SHORT } from "@/lib/admin/labels";
+import { L10N_SHORT, LEAD_TYPE_LABEL } from "@/lib/admin/labels";
 import { DashCard } from "./DashCard";
-import { LEAD_TYPE_LABEL } from "@/lib/admin/labels";
-import { formatCount, isoOf } from "./format";
+import { formatCount, isoOf, pluralSr } from "./format";
 
 type Todos = FunctionReturnType<typeof api.listingsAdmin.todos>;
 type AwaitingLead = FunctionReturnType<typeof api.leadsAdmin.awaitingResponse>[number];
@@ -27,7 +26,8 @@ const LEAD_ROWS = 8;
 /**
  * The work queues (PRD B2). Agents get only their own leads and listings —
  * the server scopes both queries by role. Leads and expiring contracts share
- * a column (both are usually short); listing fixes get their own.
+ * a column (both are usually short); listing fixes get their own. Side by
+ * side, both columns end on one line: the contracts card takes up the slack.
  */
 export function TodoLists({ now, clock, showAgent }: { now: number; clock: number; showAgent: boolean }) {
   const leads = useQuery(api.leadsAdmin.awaitingResponse, { now });
@@ -38,8 +38,8 @@ export function TodoLists({ now, clock, showAgent }: { now: number; clock: numbe
       <h2 id="todo-heading" className="sr-only">
         Zadaci
       </h2>
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <div className="grid min-w-0 gap-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid min-w-0 grid-rows-[auto_1fr] gap-4">
           <LeadsCard leads={leads} clock={clock} showAgent={showAgent} />
           <MandatesCard rows={todos?.mandateExpiring} clock={clock} />
         </div>
@@ -56,8 +56,12 @@ function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
 }
 
+/**
+ * Compact text links whose hit area reaches past the text: 32px tall on a
+ * desktop, 44px on phones and touch screens.
+ */
 const CONTACT_LINK =
-  "rounded-sm text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors duration-150 outline-none hover:decoration-primary focus-visible:ring-3 focus-visible:ring-ring/50";
+  "-mx-2 inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors duration-150 outline-none hover:decoration-primary focus-visible:ring-3 focus-visible:ring-ring/50 max-sm:min-h-11 pointer-coarse:min-h-11";
 
 function LeadsCard({
   leads,
@@ -110,15 +114,21 @@ function LeadsCard({
                     ) : null}
                   </p>
                   {lead.contactEmail !== undefined || lead.contactPhone !== undefined ? (
-                    <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                    <p className="flex flex-wrap gap-x-4">
                       {lead.contactEmail !== undefined ? (
                         <a href={`mailto:${lead.contactEmail}`} className={CONTACT_LINK}>
-                          E-pošta<span className="sr-only">: {lead.contactName}</span>
+                          <Mail className="size-3.5 shrink-0" aria-hidden="true" />
+                          <span>
+                            E-pošta<span className="sr-only">: {lead.contactName}</span>
+                          </span>
                         </a>
                       ) : null}
                       {lead.contactPhone !== undefined ? (
                         <a href={telHref(lead.contactPhone)} className={CONTACT_LINK}>
-                          Pozovi<span className="sr-only"> {lead.contactName}</span>
+                          <Phone className="size-3.5 shrink-0" aria-hidden="true" />
+                          <span>
+                            Pozovi<span className="sr-only"> {lead.contactName}</span>
+                          </span>
                         </a>
                       ) : null}
                     </p>
@@ -134,7 +144,7 @@ function LeadsCard({
               </li>
             ))}
           </ul>
-          <MoreRows hidden={leads.length - LEAD_ROWS} capped={leads.length >= SERVER_CAP} />
+          <MoreRows hidden={leads.length - LEAD_ROWS} />
         </>
       )}
     </DashCard>
@@ -151,22 +161,15 @@ function localeShort(locale: string): string {
   return isL10nKey(locale) ? L10N_SHORT[locale] : locale.toUpperCase();
 }
 
-type Fix = {
-  id: string;
-  ref: string;
+type TodoRow = { id: string; ref: string; title: string };
+
+type Fix = TodoRow & {
   noFloorPlan: boolean;
   /** Photo count when below the recommendation. */
   photos: number | null;
   /** Locales missing a title or description. */
   locales: string[];
 };
-
-/** 1 fotografija, 2–4 fotografije, 0 / 5+ fotografija. */
-function photosWord(count: number): string {
-  const tens = count % 100;
-  const units = count % 10;
-  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? "fotografije" : "fotografija";
-}
 
 function problemCount(fix: Fix): number {
   return Number(fix.noFloorPlan) + Number(fix.photos !== null) + Number(fix.locales.length > 0);
@@ -179,16 +182,16 @@ function problemCount(fix: Fix): number {
  */
 function mergeFixes(todos: Todos): { fixes: Fix[]; capped: boolean } {
   const byId = new Map<string, Fix>();
-  const entry = (id: string, ref: string): Fix => {
+  const entry = ({ id, ref, title }: TodoRow): Fix => {
     const existing = byId.get(id);
     if (existing !== undefined) return existing;
-    const created: Fix = { id, ref, noFloorPlan: false, photos: null, locales: [] };
+    const created: Fix = { id, ref, title, noFloorPlan: false, photos: null, locales: [] };
     byId.set(id, created);
     return created;
   };
-  for (const row of todos.missingFloorPlan) entry(row.id, row.ref).noFloorPlan = true;
-  for (const row of todos.missingPhotos) entry(row.id, row.ref).photos = row.count;
-  for (const row of todos.missingTranslations) entry(row.id, row.ref).locales = row.locales;
+  for (const row of todos.missingFloorPlan) entry(row).noFloorPlan = true;
+  for (const row of todos.missingPhotos) entry(row).photos = row.count;
+  for (const row of todos.missingTranslations) entry(row).locales = row.locales;
   const fixes = [...byId.values()].sort((a, b) => problemCount(b) - problemCount(a));
   const capped =
     todos.missingFloorPlan.length >= SERVER_CAP ||
@@ -222,10 +225,20 @@ function ListingFixesCard({ todos }: { todos: Todos | undefined }) {
               </li>
             ))}
           </ul>
-          <MoreRows hidden={merged.fixes.length - FIX_ROWS} capped={merged.capped} />
+          <MoreRows hidden={merged.fixes.length - FIX_ROWS} />
         </>
       )}
     </DashCard>
+  );
+}
+
+/** A to-do row's listing: its Serbian title (truncated), then its ref in mono. */
+function ListingName({ row }: { row: TodoRow }) {
+  return (
+    <span className="flex min-w-0 items-baseline gap-2">
+      <span className="truncate text-sm font-medium">{row.title.length > 0 ? row.title : "Bez naslova"}</span>
+      <span className="shrink-0 font-mono text-xs text-muted-foreground">{row.ref}</span>
+    </span>
   );
 }
 
@@ -233,14 +246,14 @@ function FixRow({ fix }: { fix: Fix }) {
   return (
     <Link
       href={`/admin/nekretnine/${fix.id}`}
-      className="-mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors duration-150 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="-mx-2 flex flex-col gap-1 rounded-md px-2 py-2 transition-colors duration-150 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
     >
-      <span className="font-mono text-xs font-medium whitespace-nowrap">{fix.ref}</span>
-      <span className="flex flex-wrap justify-end gap-1">
+      <ListingName row={fix} />
+      <span className="flex flex-wrap gap-1 sm:shrink-0 sm:justify-end">
         {fix.noFloorPlan ? <FixTag>Bez osnove</FixTag> : null}
         {fix.photos !== null ? (
           <FixTag
-            label={`${fix.photos} ${photosWord(fix.photos)}, preporuka ${PHOTO_TARGET}+`}
+            label={`${fix.photos} ${pluralSr(fix.photos, "fotografija", "fotografija", "fotografije")}, preporuka ${PHOTO_TARGET}+`}
           >
             {fix.photos}/{PHOTO_TARGET} foto
           </FixTag>
@@ -304,10 +317,14 @@ function MandatesCard({
             <li key={row.id}>
               <Link
                 href={`/admin/nekretnine/${row.id}`}
-                className="-mx-2 flex items-baseline justify-between gap-3 rounded-md px-2 py-2 transition-colors duration-150 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="-mx-2 flex flex-col gap-0.5 rounded-md px-2 py-2 transition-colors duration-150 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3"
               >
-                <span className="font-mono text-xs font-medium whitespace-nowrap">{row.ref}</span>
-                <time dateTime={isoOf(row.end)} className="truncate text-xs text-muted-foreground" data-numeric>
+                <ListingName row={row} />
+                <time
+                  dateTime={isoOf(row.end)}
+                  className="text-xs whitespace-nowrap text-muted-foreground sm:shrink-0"
+                  data-numeric
+                >
                   {formatDate(row.end)} · {formatRelative(row.end, clock)}
                 </time>
               </Link>
@@ -333,11 +350,12 @@ function CountPill({ count, capped }: { count: number; capped: boolean }) {
   );
 }
 
-function MoreRows({ hidden, capped }: { hidden: number; capped: boolean }) {
+/** Rows past the list's length. A capped total already reads `27+` in the card's pill. */
+function MoreRows({ hidden }: { hidden: number }) {
   if (hidden <= 0) return null;
   return (
     <p className="mt-2 text-xs text-muted-foreground" data-numeric>
-      +{formatCount(hidden)} još{capped ? " (i više)" : ""}
+      +{formatCount(hidden)} još
     </p>
   );
 }

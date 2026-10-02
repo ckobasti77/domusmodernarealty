@@ -61,6 +61,7 @@ const ACTION_LABEL: Record<string, string> = {
   "invite.renewed": "Pozivnica obnovljena",
   "user.role": "Promenjena uloga",
   "user.status": "Promenjen status naloga",
+  "user.password": "Promenjena lozinka",
   "user.agentLinked": "Nalog povezan sa profilom agenta",
   "agent.created": "Dodat agent",
   "agent.updated": "Izmenjen profil agenta",

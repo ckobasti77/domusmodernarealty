@@ -344,6 +344,9 @@ export const removeScene = mutation({
   },
 });
 
+/** Staff read the activity log, so its summary names the tour source in Serbian. */
+const TOUR_SOURCE_SR = { self: "sopstvene panorame", matterport: "Matterport", kuula: "Kuula" } as const;
+
 export const setTour360 = mutation({
   args: { listingId: v.id("listings"), tour360: v.optional(tour360V) },
   returns: v.null(),
@@ -359,7 +362,7 @@ export const setTour360 = mutation({
       entity: "tour",
       entityId: listing._id,
       action: "tour.360.set",
-      summary: `${listing.ref}: ${args.tour360?.provider ?? "none"} (${args.tour360?.published === true ? "objavljeno" : "skriveno"})`,
+      summary: `${listing.ref}: ${args.tour360 === undefined ? "bez ture" : TOUR_SOURCE_SR[args.tour360.provider]} (${args.tour360?.published === true ? "objavljeno" : "skriveno"})`,
       by: viewer._id,
     });
     return null;

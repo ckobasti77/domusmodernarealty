@@ -336,11 +336,15 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
           translate: "0 calc(-1 * var(--consent-h, 0px))",
         }}
       >
+        {/* An ink bar, like the listing page's action bar: a paper switch
+            over paper cards read as one more line of card text, and the
+            public site floats nothing on a shadow (DESIGN §1). The hairline
+            keeps its edge over a dark photograph. */}
         <div
           role="group"
           aria-label={t("view.label")}
           className={cn(
-            "pointer-events-auto flex border border-ink/30 bg-paper p-0.5 text-ink transition-[opacity,translate] duration-200",
+            "pointer-events-auto flex border border-hairline-dark bg-ink p-0.5 transition-[opacity,translate] duration-200",
             // Over the footer it would sit on ink links; it steps aside there.
             footerInView && "pointer-events-none translate-y-[150%] opacity-0",
           )}
@@ -357,9 +361,11 @@ export function SearchExperience({ initial, tree, mortgage, now, titleTemplate }
               data-testid={`view-${option}`}
               className={cn(
                 "inline-flex h-11 items-center gap-2 px-5 font-sans text-small uppercase tracking-[0.12em] transition-colors duration-200",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze-text",
-                // Pressed is ink, like the transaction switch and every chip.
-                view === option ? "bg-ink text-paper" : "text-ink",
+                // The ring fills the bar's 2px gutter, so it is drawn on ink
+                // (bronze is the focus colour on ink) and never off the bar.
+                "focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-bronze",
+                // Pressed is the bar's one ivory block, as "Zakaži" is on the action bar.
+                view === option ? "bg-ivory text-ink" : "text-ivory",
               )}
             >
               {option === "list" ? (

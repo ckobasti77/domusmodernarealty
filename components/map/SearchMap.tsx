@@ -76,17 +76,31 @@ const INTERACTIVE_LAYERS = [POINTS_LAYER];
 /** Belgrade, where most of the stock is (brief), for a search with no results. */
 const DEFAULT_VIEW = { latitude: 44.8125, longitude: 20.4612, zoom: 11 };
 const FIT_MAX_ZOOM = 14;
-const CLUSTER_RADIUS = 36;
+/**
+ * Screen pixels at the tiles' zoom (MapLibre floors a GeoJSON source's zoom,
+ * so between levels markers only spread further). A price pin beside a
+ * cluster spans ≈ 56 + 32 px across and 24 + 32 px down, centre to centre
+ * about 52 px on the diagonal; at 36 they overprinted in central Belgrade.
+ */
+const CLUSTER_RADIUS = 60;
 const CLUSTER_MAX_ZOOM = 15;
 const MAX_HTML_PINS = 150;
 const MOVE_DEBOUNCE_MS = 400;
 const EASE_MS = 600;
 
-/** The pin's pointer triangle, and the rise per listing that shares a spot. */
+/** The pin's pointer triangle, its label's height, and the rise per listing that shares a spot. */
 const POINTER_PX = 5;
+const PIN_LABEL_PX = 24;
 const STACK_STEP_PX = 28;
 /** Where a pin's label ends above its point, so the card never covers it. */
-const PIN_TOP_PX = POINTER_PX + 24 + 8;
+const PIN_TOP_PX = POINTER_PX + PIN_LABEL_PX + 8;
+/**
+ * A cluster is centred at the height of a pin's label, not on its own point:
+ * pins stand above their points, so a centred cluster sat lower than the pins
+ * around it and reached into one standing below it. On one centre line, the
+ * radius above keeps them apart.
+ */
+const CLUSTER_OFFSET: [number, number] = [0, -(POINTER_PX + PIN_LABEL_PX / 2)];
 
 const INK = "#0e0d0b";
 const PAPER = "#fbf9f5";
@@ -205,10 +219,10 @@ function belgradeFocus(points: readonly MapPoint[]): MapPoint[] | null {
 
 /**
  * Frame points; one listing gets a street-level zoom instead of a degenerate
- * box. The padding keeps every pin clear of the map's own chrome: the toggle
- * top-left (a pin stands ABOVE its point), the zoom buttons top-right, and page
- * chrome the host declares over the bottom edge as `--map-inset-bottom` (px),
- * e.g. the phone List/Mapa switch.
+ * box. The padding keeps every marker clear of the map's own chrome: the
+ * toggle top-left (pins and clusters stand ABOVE their points), the zoom
+ * buttons top-right, and page chrome the host declares over the bottom edge as
+ * `--map-inset-bottom` (px), e.g. the phone List/Mapa switch.
  */
 function frame(map: MapLibreMap, points: readonly MapPoint[], duration: number, first: boolean) {
   const container = map.getContainer();
@@ -667,7 +681,7 @@ const ClusterMarker = memo(function ClusterMarker({
   const t = useTranslations("search.map");
   const size = cluster.count < 10 ? "size-8" : cluster.count < 100 ? "size-10" : "size-12";
   return (
-    <Marker longitude={cluster.lng} latitude={cluster.lat} anchor="center">
+    <Marker longitude={cluster.lng} latitude={cluster.lat} anchor="center" offset={CLUSTER_OFFSET}>
       <button
         type="button"
         data-testid="map-cluster"

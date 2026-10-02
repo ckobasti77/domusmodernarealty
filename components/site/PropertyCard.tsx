@@ -170,16 +170,25 @@ export function PropertyCard({
         {/* DESIGN 5 scrims the bottom 40% of dark-section media, but the badges
             and the favorite sit at the TOP — over whatever the photograph happens
             to be there. This is their scrim. */}
+        {/* Layers: the title's stretched link is z-10, and on a touch screen
+            the photo strip rises over it to z-11 so a swipe reaches Embla. This
+            scrim and the badges are z-12, above both (under the strip, a phone
+            showed a reserved home without "Rezervisano"); the favorite and the
+            carousel chrome are z-20. The scrim and the badges take no pointer
+            events, so a tap or a swipe on them reaches what is under them. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-linear-to-b from-ink/40 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 z-[12] h-20 bg-linear-to-b from-ink/40 to-transparent"
         />
 
         {/* At most two badges, most decisive first. Text, not colour, carries the meaning. */}
         {/* One row only: a badge that would wrap (long Russian or German
             words) falls onto a clipped second row and disappears whole. The
             row stops 8px short of the favorite's plate. */}
-        <div className="pointer-events-none absolute left-4 right-14 top-4 z-10 flex max-h-[1.625rem] flex-wrap gap-2 overflow-hidden">
+        <div
+          data-testid="card-badges"
+          className="pointer-events-none absolute left-4 right-14 top-4 z-[12] flex max-h-[1.625rem] flex-wrap gap-2 overflow-hidden"
+        >
           {badges}
         </div>
 
@@ -196,17 +205,15 @@ export function PropertyCard({
 
       <div className="mt-5 flex flex-1 flex-col gap-3">
         {/* Two lines reserved, so cards in a row keep their prices, meta rows
-            and references on the same baselines. The 4:5 card's title is
-            already clipped to two lines; the 3:2 card may take a third rather
-            than cut off the floor, the terrace or the VAT refund. The card
+            and references on the same baselines, and two lines at most: the
+            4:5 card's title is already clipped to two, and a third line made
+            the 3:2 search card's text column taller than its photograph. The
+            link keeps the whole title for assistive technology. The card
             fills its grid cell (`h-full`) and a shorter title's spare height
             sits under it (`mb-auto`), so the row's baselines still meet. */}
         <h3
           id={`card-title-${listing._id}`}
-          className={cn(
-            "mb-auto min-h-[2lh] text-pretty font-display text-h3 font-normal",
-            ratio === "4/5" ? "line-clamp-2" : "line-clamp-3",
-          )}
+          className="mb-auto line-clamp-2 min-h-[2lh] text-pretty font-display text-h3 font-normal"
         >
           <Link
             href={{

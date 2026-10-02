@@ -98,8 +98,9 @@ export function buildPhotoPlan(
   }
 
   // Pinned covers: the spec names a photo the plan already gives this listing
-  // (a later slot of its first category). It leads and the photo it displaces
-  // goes last, so the draws, and every other listing's photos, stay the same.
+  // (a later slot of its first category). It leads, and the photo it displaces
+  // (the one that contradicted the title) is left out. The draws stay the same,
+  // so every other listing's photos do too.
   for (const [index, listing] of listings.entries()) {
     if (listing.coverPhoto === undefined) continue;
     const photos = plan[index];
@@ -107,8 +108,7 @@ export function buildPhotoPlan(
     if (at < 0) throw new Error(`Seed listing ${index} pins a cover its plan does not include`);
     if (at === 0) continue;
     const [pinned] = photos.splice(at, 1);
-    const [displaced] = photos.splice(0, 1, pinned);
-    photos.push(displaced);
+    photos.splice(0, 1, pinned);
   }
 
   return plan;

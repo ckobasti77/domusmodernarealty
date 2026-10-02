@@ -5,20 +5,25 @@ import { SEED_LISTINGS } from "../seed/spec";
 /**
  * Step 15: two demo penthouses got covers their titles contradict (a lawn and a
  * garden fence on the 24th floor of ME-1049, a lake behind inland ME-1044). A
- * spec can now pin one of the listing's own planned photos as the cover.
+ * spec can now pin one of the listing's own planned photos as the cover; the
+ * photo it replaces is left out of the gallery.
  */
 describe("seed photo plan", () => {
   const plan = buildPhotoPlan(SEED_LISTINGS);
   const unpinned = buildPhotoPlan(SEED_LISTINGS.map(({ coverPhoto: _pin, ...spec }) => spec));
   const pinnedIndexes = SEED_LISTINGS.flatMap((spec, index) => (spec.coverPhoto === undefined ? [] : [index]));
 
-  test("a pinned cover leads its gallery and the displaced cover goes last", () => {
+  test("a pinned cover leads its gallery and the cover it displaces is left out", () => {
     expect(pinnedIndexes.length).toBeGreaterThan(0);
     for (const index of pinnedIndexes) {
-      expect(plan[index][0]?.url).toBe(SEED_LISTINGS[index].coverPhoto);
-      expect(plan[index].at(-1)?.url).toBe(unpinned[index][0]?.url);
-      expect([...plan[index]].map((photo) => photo.url).sort()).toEqual(
-        [...unpinned[index]].map((photo) => photo.url).sort(),
+      const urls = plan[index].map((photo) => photo.url);
+      expect(urls[0]).toBe(SEED_LISTINGS[index].coverPhoto);
+      expect(urls).not.toContain(unpinned[index][0]?.url);
+      expect([...urls].sort()).toEqual(
+        unpinned[index]
+          .slice(1)
+          .map((photo) => photo.url)
+          .sort(),
       );
     }
   });
@@ -35,10 +40,10 @@ describe("seed photo plan", () => {
     expect(new Set(covers).size).toBe(covers.length);
   });
 
-  test("every listing still gets one photo per category slot, without repeats inside a listing", () => {
+  test("every listing gets one photo per category slot (less a left-out cover), without repeats", () => {
     for (const [index, spec] of SEED_LISTINGS.entries()) {
       const urls = plan[index].map((photo) => photo.url);
-      expect(urls).toHaveLength(spec.photos.length);
+      expect(urls).toHaveLength(spec.photos.length - (spec.coverPhoto === undefined ? 0 : 1));
       expect(new Set(urls).size).toBe(urls.length);
     }
   });

@@ -101,7 +101,7 @@ export type SeedListing = {
    * For a listing whose title its planned cover would contradict: the base URL
    * of a photo its plan already includes (a later slot of the same category as
    * `photos[0]`, usually the last one). That photo leads the gallery and the
-   * displaced cover moves to the end, so no other listing's photos change.
+   * displaced cover is left out; no other listing's photos change.
    */
   coverPhoto?: string;
   /** Room tag per photo slot, same length as `photos`. */
@@ -290,8 +290,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     isPenthouse: true,
     mortgageEligible: true,
     agent: "milica-jovanovic",
-    // The plan's first living photo looks onto a lake, an inland rooftop penthouse cannot:
-    // a neutral living room leads and that slot comes last.
+    // The plan's first living photo looks onto a lake, which an inland rooftop penthouse cannot:
+    // the neutral living room the last slot draws leads instead and the lake photo is left out.
     photos: ["living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "terrace", "building", "living"],
     coverPhoto: "https://images.unsplash.com/photo-1628744876497-eb30460be9f6",
     roomTags: ["living", "kitchen", "dining", "bedroom", "bedroom", "bathroom", "terrace", "view", "building", "living"],
@@ -613,8 +613,8 @@ export const SEED_LISTINGS: SeedListing[] = [
     vatRefundEligible: true,
     mortgageEligible: true,
     agent: "milica-jovanovic",
-    // The plan's next living photo looks onto a lawn and a garden fence: wrong for a 24th floor,
-    // so a pinned cover leads and that second living slot comes last in the gallery.
+    // The plan's first living photo looks onto a lawn and a garden fence: wrong for a 24th floor,
+    // so the photo the last living slot draws leads instead and that one is left out.
     photos: ["living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "belgrade", "building", "living"],
     coverPhoto: "https://images.unsplash.com/photo-1678762200388-51e11225d4de",
     roomTags: ["living", "kitchen", "dining", "bedroom", "bathroom", "terrace", "view", "building", "living"],

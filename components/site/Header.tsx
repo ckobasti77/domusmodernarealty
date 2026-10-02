@@ -15,10 +15,18 @@ import { Logo } from "./Logo";
  * Site header. Transparent over the hero, solid ink once the visitor has scrolled
  * past it, plus the full-screen mobile menu (DESIGN §4 and the step-04 brief).
  *
- * The solid/transparent flip is a class change driven by one ScrollTrigger, not
- * a scroll listener: it shares Lenis's ticker, so it cannot fall out of sync with
- * the smooth scroll.
+ * The solid/transparent flip is driven by one ScrollTrigger, not a scroll
+ * listener: it shares Lenis's ticker, so it cannot fall out of sync with the
+ * smooth scroll. It writes `data-solid` straight onto the node in that callback
+ * and the styles key off the attribute, so the bar starts turning solid in the
+ * very frame the scroll passes 80px. (It used to be React state: the render
+ * landed a frame or more later and, with a 300ms fade on top, the hero
+ * headline slid under a still transparent wordmark on a fast first flick.)
+ * It turns solid in 150ms and clears again in 300ms.
  */
+
+/** Scroll distance (px) past which the bar is solid. */
+const SOLID_AFTER = 80;
 
 /** Internal (canonical) pathnames; next-intl maps each to its localized segment. */
 const NAV = [
@@ -35,7 +43,6 @@ export function Header() {
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
   const pathname = usePathname();
-  const [solid, setSolid] = useState(false);
   // The open flag is stored with the pathname it was opened on, so a browser
   // back/forward that changes the route closes the overlay during render — no
   // effect, and no frame where the menu covers the new page.
@@ -48,16 +55,18 @@ export function Header() {
 
   useGSAP(
     () => {
+      const node = header.current;
+      if (node === null) return;
+      // On the node, not in React state: see the component doc.
+      const sync = (self: ScrollTrigger) => {
+        const next = self.scroll() > SOLID_AFTER ? "true" : "false";
+        if (node.dataset.solid !== next) node.dataset.solid = next;
+      };
       // `onUpdate` over the whole document, NOT `onToggle` over [80, max]: a
       // trigger is inactive at exactly `scroll === maxScroll`, so the toggle
       // version dropped the header back to transparent at the bottom of every
       // page and the footer's text showed through the bar.
-      const trigger = ScrollTrigger.create({
-        start: 0,
-        end: "max",
-        onUpdate: (self) => setSolid(self.scroll() > 80),
-        onRefresh: (self) => setSolid(self.scroll() > 80),
-      });
+      const trigger = ScrollTrigger.create({ start: 0, end: "max", onUpdate: sync, onRefresh: sync });
       return () => trigger.kill();
     },
     { scope: header },
@@ -84,16 +93,20 @@ export function Header() {
   return (
     <header
       ref={header}
-      data-solid={solid ? "true" : "false"}
+      // Server markup and the resting state only. From hydration on the scroll
+      // callback owns this attribute; React never rewrites a prop that does not
+      // change, so a re-render (menu, favourites) cannot reset it.
+      data-solid="false"
       className={cn(
-        "fixed inset-x-0 top-0 transition-[background-color,border-color] duration-300 ease-out",
+        "group/header fixed inset-x-0 top-0 border-b border-transparent bg-transparent",
+        "transition-[background-color,border-color] duration-300 ease-out",
+        "data-[solid=true]:border-hairline-dark data-[solid=true]:bg-ink data-[solid=true]:duration-150",
         // The overlay menu is a CHILD of this element, so it is trapped in the
         // header's stacking context — at z-header (30) the cookie banner
         // (z-overlay, 40) painted over it and swallowed every click. Lifting the
         // whole header to z-menu while the overlay is open is the fix; the bar
         // itself never overlaps the banner, so nothing else changes.
         menuOpen ? "z-(--z-menu)" : "z-(--z-header)",
-        solid ? "border-b border-hairline-dark bg-ink" : "border-b border-transparent bg-transparent",
       )}
     >
       <div className="mx-auto flex max-w-content items-center justify-between gap-6 px-gutter py-5 md:px-gutter-md lg:px-gutter-lg">
@@ -148,7 +161,7 @@ export function Header() {
             ) : null}
           </Link>
 
-          <LocaleSwitcher className="hidden lg:block" />
+          <LocaleSwitcher className="hidden lg:block" variant="compact" />
 
           <button
             type="button"
@@ -165,7 +178,7 @@ export function Header() {
 
       {/* Reading-progress hairline, visible only once the header is solid so it
           never draws a line across the hero. */}
-      <ScrollProgress className={cn("transition-opacity duration-300", solid ? "opacity-100" : "opacity-0")} />
+      <ScrollProgress className="opacity-0 transition-opacity duration-300 group-data-[solid=true]/header:opacity-100" />
 
       <MobileMenu open={menuOpen} onClose={close} />
     </header>

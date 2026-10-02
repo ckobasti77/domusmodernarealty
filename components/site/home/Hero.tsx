@@ -90,6 +90,7 @@ export async function Hero({
   copy: HomeCopy["hero"];
 }) {
   const t = await getTranslations({ locale, namespace: "home" });
+  const scrollCue = t("scrollCue");
   const { poster, posterMobile } = heroMedia();
   preloadPoster(poster, posterMobile);
 
@@ -99,38 +100,44 @@ export async function Hero({
         {/* Bottom-aligned over the photograph; the top padding clears the fixed
             header. The bottom padding holds the copy above the cookie banner on a
             first visit: `--consent-reserve` is set by the pre-paint gate, so it is
-            already in the first frame. (Padding by the banner's own measured
-            height, known only after hydration, lifted the whole hero copy by
-            240-300px at ~400ms: CLS 0.15-0.35.) */}
+            already in the first frame, and HeroStage keeps it for the rest of the
+            page view, so the click that answers the banner moves nothing here.
+            (Padding by the banner's own measured height, known only after
+            hydration, lifted the whole hero copy by 240-300px at ~400ms: CLS
+            0.15-0.35.) */}
         {/* Short screens (a 360x740 phone, a 1280x800 laptop) tighten the top
             padding, the gaps and, on a laptop, the headline, so a three-line
             German or Russian headline still clears the banner. */}
         <Container className="pb-[calc(2.5rem+var(--consent-reserve,0px))] pt-28 max-lg:[@media(max-height:47rem)]:pt-24 lg:pb-[calc(3.5rem+var(--consent-reserve,0px))] lg:pt-36 lg:[@media(max-height:51rem)]:pt-28">
-          <div data-hero-reveal="eyebrow" className="[text-shadow:0_0_1.5rem_rgb(14_13_11/0.7)]">
-            {/* Mist, not bronze: a 12px label over a lit photograph needs the
-                lighter tone to stay legible. */}
-            <Eyebrow tone="dark">{t("heroEyebrow")}</Eyebrow>
-          </div>
+          {/* The headline group, which HeroStage dims out on its way under the
+              fixed header. A plain block: it changes no spacing. */}
+          <div data-hero-exit="">
+            <div data-hero-reveal="eyebrow" className="[text-shadow:0_0_1.5rem_rgb(14_13_11/0.7)]">
+              {/* Mist, not bronze: a 12px label over a lit photograph needs the
+                  lighter tone to stay legible. */}
+              <Eyebrow tone="dark">{t("heroEyebrow")}</Eyebrow>
+            </div>
 
-          <div className="mt-6 grid grid-cols-4 items-end gap-x-6 gap-y-8 lg:mt-8 lg:grid-cols-12">
-            <h1
-              id="hero-title"
-              lang={copy.headline.lang}
-              data-testid="hero-headline"
-              data-hero-title=""
-              data-hero-reveal="title"
-              className="col-span-4 max-w-[14ch] font-display text-display-xl font-normal text-ivory max-lg:[@media(max-height:47rem)]:text-[3rem] md:max-lg:portrait:text-[11.5vw] lg:col-span-8 lg:[@media(max-height:51rem)]:text-[min(9vw,12svh)]"
-            >
-              {/* Display-xl: only a pair this short may be joined, or it would not fit a phone. */}
-              {fixWidows(copy.headline.text, 10)}
-            </h1>
-            <p
-              lang={copy.lede.lang}
-              data-hero-reveal="lede"
-              className="col-span-4 max-w-[40ch] text-pretty text-body-l text-ivory/85 lg:col-span-4 lg:pb-3"
-            >
-              {fixTypography(copy.lede.text)}
-            </p>
+            <div className="mt-6 grid grid-cols-4 items-end gap-x-6 gap-y-8 lg:mt-8 lg:grid-cols-12">
+              <h1
+                id="hero-title"
+                lang={copy.headline.lang}
+                data-testid="hero-headline"
+                data-hero-title=""
+                data-hero-reveal="title"
+                className="col-span-4 max-w-[14ch] font-display text-display-xl font-normal text-ivory max-lg:[@media(max-height:47rem)]:text-[3rem] md:max-lg:portrait:text-[11.5vw] lg:col-span-8 lg:[@media(max-height:51rem)]:text-[min(9vw,12svh)]"
+              >
+                {/* Display-xl: only a pair this short may be joined, or it would not fit a phone. */}
+                {fixWidows(copy.headline.text, 10)}
+              </h1>
+              <p
+                lang={copy.lede.lang}
+                data-hero-reveal="lede"
+                className="col-span-4 max-w-[40ch] text-pretty text-body-l text-ivory/85 lg:col-span-4 lg:pb-3"
+              >
+                {fixTypography(copy.lede.text)}
+              </p>
+            </div>
           </div>
 
           {/* On the 12-column grid: from 1440px the bar spans the columns under
@@ -142,14 +149,22 @@ export async function Hero({
               <HeroSearch locations={locations} />
             </div>
 
-            {/* DESIGN §6.2 scroll cue: a thin line with a travelling segment. */}
+            {/* DESIGN §6.2 scroll cue: a thin line with a travelling segment.
+                It is the tallest thing in this row, so its label's length sets
+                where all the copy above it sits. JetBrains Mono is not preloaded
+                and its fallback set the word ~40% longer, so the headline dropped
+                28px when the face arrived. The label is sized to the mono face's
+                own metrics instead (0.6em advance + 0.08em tracking a letter). */}
             <div
               data-hero-reveal="cue"
               aria-hidden="true"
               className="hidden shrink-0 flex-col items-center gap-3 lg:col-start-12 lg:flex lg:justify-self-end"
             >
-              <span className="font-mono text-label uppercase text-mist [writing-mode:vertical-rl]">
-                {t("scrollCue")}
+              <span
+                className="whitespace-nowrap font-mono text-label uppercase text-mist [writing-mode:vertical-rl]"
+                style={{ height: `${(Array.from(scrollCue).length * 0.68).toFixed(2)}em` }}
+              >
+                {scrollCue}
               </span>
               <span className="relative block h-16 w-px overflow-hidden bg-ivory/20">
                 <span className="scroll-cue-line absolute inset-x-0 top-0 block h-1/2 bg-bronze" />

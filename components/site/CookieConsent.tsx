@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 import { ScrollTrigger } from "@/components/motion/gsap";
 import { isIntroDone, subscribeIntroDone } from "@/components/motion/intro";
 import { useHydrated } from "@/hooks/useHydrated";
+import { prefersReducedMotion } from "@/hooks/useReducedMotion";
 import { fixOrphans } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
 import {
@@ -33,7 +34,16 @@ import { CheckboxField } from "./Field";
  * paint (`html[data-consent="pending"]` sets `--consent-reserve` in
  * globals.css), so the hero copy is never covered and nothing shifts when it
  * arrives. On a first visit it waits for the intro curtain and the hero's entrance, then slides in.
+ *
+ * A decision is calm: the choice is stored at once, the banner slides back
+ * off the bottom edge (200ms, faster than its 300ms entrance; with reduced
+ * motion it is simply gone), and the hero keeps its reservation for the rest
+ * of the page view (HeroStage), so nothing in view moves.
  */
+
+/** The exit slide; the entrance is 300ms. */
+const EXIT_MS = 200;
+
 export function CookieConsent() {
   const t = useTranslations("consent");
   const tLegal = useTranslations("legal");
@@ -43,24 +53,32 @@ export function CookieConsent() {
   const [showSettings, setShowSettings] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  /** Set by a decision; the banner stays mounted while it slides away. */
+  const [leaving, setLeaving] = useState(false);
+  const leaveTimer = useRef(0);
   const headingId = useId();
   const settingsId = useId();
   const panel = useRef<HTMLDivElement>(null);
 
   const visible = hydrated && record === null && introDone;
-  useConsentHeight(panel, visible);
+  // Re-opened from the footer mid-exit, it is simply visible again.
+  const exiting = leaving && record !== null;
+  const mounted = visible || exiting;
+  // Kept until the banner is gone, so the space it leaves never closes under it.
+  useConsentHeight(panel, mounted);
 
   // The pre-paint gate set this from storage; from here on the store owns it.
-  // A decision removes the hero's reservation, so the hero copy moves down
-  // right after the click: a shift caused by input, which CLS excludes.
+  // A decision drops the reservation from <html> (the 3D-tours stage below the
+  // fold gets its full screen back); the landing hero holds its own copy of it
+  // for the rest of the page view, so the click moves nothing in view.
   useEffect(() => {
     if (!hydrated) return;
     const root = document.documentElement;
     const next = record === null ? "pending" : "decided";
     if (root.dataset.consent === next) return;
     root.dataset.consent = next;
-    // On a short screen the reservation can change the hero's height, so the
-    // pinned sections below it measure again.
+    // The reservation sets the tours stage's height (and, when the banner is
+    // re-opened, the hero's), so the pinned sections measure again.
     const frame = requestAnimationFrame(() => ScrollTrigger.refresh());
     return () => cancelAnimationFrame(frame);
   }, [hydrated, record]);
@@ -68,12 +86,18 @@ export function CookieConsent() {
   // The server cannot know the stored choice, so the banner only appears once
   // the client has hydrated. Otherwise a visitor who already decided would see
   // the banner flash for one frame.
-  if (!visible) return null;
+  if (!mounted) return null;
 
   const save = (categories: ConsentCategories) => {
-    // The banner unmounts on a decision; a keyboard user inside it would be
+    // The banner leaves on a decision; a keyboard user inside it would be
     // dropped on <body>. Hand focus to the page's main landmark instead.
     const hadFocus = panel.current?.contains(document.activeElement) === true;
+    if (!prefersReducedMotion()) {
+      setLeaving(true);
+      // `transitionend` unmounts it; this is the net if that never fires.
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = window.setTimeout(() => setLeaving(false), EXIT_MS + 150);
+    }
     setConsent(categories);
     if (!hadFocus) return;
     // `<main>` carries tabIndex={-1} (locale layout), so it can take focus.
@@ -85,6 +109,12 @@ export function CookieConsent() {
       ref={panel}
       role="dialog"
       aria-labelledby={headingId}
+      // On its way out it is already answered: nothing in it takes focus,
+      // clicks or the screen reader.
+      inert={exiting}
+      onTransitionEnd={(event) => {
+        if (exiting && event.target === event.currentTarget && event.propertyName === "translate") setLeaving(false);
+      }}
       // The settings list can overflow on a short phone; Lenis must not take it.
       data-lenis-prevent
       className={cn(
@@ -94,9 +124,12 @@ export function CookieConsent() {
         "border-t border-hairline-dark bg-ink text-ivory",
         // Rises from the bottom edge once, after the hero's own entrance has
         // settled (the curtain signals at 1.8 s, the hero copy lands by ~2.5 s),
-        // so the two never move at the same time. The global reduced-motion
-        // rule flattens the movement.
-        "transition-[translate] delay-700 duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] starting:translate-y-full",
+        // so the two never move at the same time, and leaves the same way,
+        // faster. The global reduced-motion rule flattens the movement (and
+        // `save` then skips the exit altogether).
+        exiting
+          ? "translate-y-full transition-[translate] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          : "transition-[translate] delay-700 duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] starting:translate-y-full",
       )}
     >
       <div className="mx-auto flex max-w-content flex-col gap-3 px-gutter py-4 md:px-gutter-md lg:flex-row lg:items-center lg:gap-12 lg:px-gutter-lg lg:py-5">

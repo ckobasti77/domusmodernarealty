@@ -20,15 +20,50 @@ import { PORTRAIT } from "./art-direction";
  *     poster, so the hand-off is invisible;
  *  3. it pauses whenever the hero leaves the viewport.
  * Portrait viewports, data-saver connections and reduced motion keep the
- * still, which carries the shot on its own with a slow Ken Burns (1.12 → 1 over 12s), so a
- * missing `hero.mp4` degrades to exactly the design's fallback.
+ * still, which carries the shot on its own with a slow Ken Burns (1.06 → 1.02
+ * over 5 s), so a missing `hero.mp4` degrades to exactly the design's fallback.
  *
  * The copy is marked up by the server: `[data-hero-reveal]` elements start
  * transparent (globals.css, only when motion is allowed) and `[data-hero-title]`
  * is the headline that is split into masked lines. The entrance waits for the
  * preloader's curtain (`onIntroReveal`), so the hero is already moving when the
  * curtain lifts.
+ *
+ * On scroll the headline group (`[data-hero-exit]`: eyebrow, headline, lede)
+ * dims out before it reaches the fixed header, so it never slides under the
+ * wordmark while the bar is still turning solid on a fast first flick.
+ *
+ * On a first visit the hero holds the cookie banner's reservation for the
+ * rest of the page view (`data-consent-held`, globals.css), so answering the
+ * banner moves nothing in it.
  */
+
+/**
+ * Seconds the copy waits behind a playing curtain, counted from the lift's
+ * start. The 1 s in-out lift in globals.css uncovers the headline from ~0.48 s
+ * (its last line) to ~0.55 s (its first) at 390 and 1440 alike; the lines
+ * start 0.1 s after this lead, so they rise as the curtain's edge passes them.
+ */
+const INTRO_LEAD = 0.38;
+/** A skipped curtain fades out in 0.2 s instead (Preloader marks `data-intro-skipped`). */
+const SKIP_LEAD = 0.1;
+
+/** The fixed header's height, published by the Header as `--header-h`. */
+function headerHeight(): number {
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h"));
+  return Number.isFinite(value) && value > 0 ? value : 80;
+}
+
+/** `el`'s top inside `ancestor` from layout alone: no transform (drift, entrance) counts. */
+function layoutTop(el: HTMLElement, ancestor: HTMLElement): number {
+  let top = 0;
+  let node: HTMLElement | null = el;
+  while (node !== null && node !== ancestor) {
+    top += node.offsetTop;
+    node = node.offsetParent instanceof HTMLElement ? node.offsetParent : null;
+  }
+  return top;
+}
 
 export type HeroStageProps = {
   poster: ResponsiveImage;
@@ -98,6 +133,24 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
     return () => observer.disconnect();
   }, [mountVideo]);
 
+  // Once this hero has painted with the cookie banner's reservation, it keeps
+  // it until the page view ends (the node goes away with it). Answering the
+  // banner drops the reservation from <html>, which used to drop the whole
+  // copy by 112-200px in one frame on the click.
+  useEffect(() => {
+    const stage = root.current;
+    if (stage === null) return;
+    const html = document.documentElement;
+    const hold = () => {
+      if (html.dataset.consent === "pending") stage.setAttribute("data-consent-held", "");
+    };
+    hold();
+    // The banner can also come back mid-visit (the footer's settings link).
+    const observer = new MutationObserver(hold);
+    observer.observe(html, { attributes: true, attributeFilter: ["data-consent"] });
+    return () => observer.disconnect();
+  }, []);
+
   useGSAP(
     () => {
       const section = root.current;
@@ -112,6 +165,7 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
       const [lede] = q('[data-hero-reveal="lede"]');
       const [search] = q('[data-hero-reveal="search"]');
       const [cue] = q('[data-hero-reveal="cue"]');
+      const [exit] = q("[data-hero-exit]");
       if (parallax === undefined || frame === undefined || scrim === undefined || content === undefined) return;
       const copy = [eyebrow, title, lede, search, cue].filter((el): el is HTMLElement => el !== undefined);
 
@@ -141,6 +195,30 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
           .to(scrim, { opacity: 0.6, ease: "none" }, 0)
           .to(content, { yPercent: tuning.drift, ease: "none" }, 0)
           .to(parallax, { yPercent: tuning.depth, ease: "none" }, 0);
+
+        // The headline group dims out on its way to the fixed header and is
+        // gone by the scroll at which its top meets the bar, so it never
+        // crosses the wordmark, however fast the first flick. Measured from
+        // layout on every refresh, so the cookie reservation and each
+        // breakpoint get their own range. Its own element, so it never fights
+        // the entrance's opacity tweens inside it.
+        if (exit !== undefined) {
+          const reach = () => Math.max(1, layoutTop(exit, section) - headerHeight());
+          gsap.fromTo(
+            exit,
+            { opacity: 1 },
+            {
+              opacity: 0,
+              ease: "none",
+              scrollTrigger: {
+                trigger: section,
+                start: () => `top+=${Math.round(reach() * 0.3)} top`,
+                end: () => `top+=${Math.round(reach())} top`,
+                scrub: true,
+              },
+            },
+          );
+        }
 
         if (entered) {
           gsap.set(copy, { opacity: 1 });
@@ -190,9 +268,11 @@ export function HeroStage({ poster, posterMobile, video, alt, children }: HeroSt
           // Paused until a painted frame: a long task at hydration would
           // otherwise make GSAP jump over the first part of the entrance.
           const tl = gsap.timeline({ paused: true, defaults: { ease: "expo.out" } });
-          // Behind the curtain the copy waits until the lift has uncovered it
-          // (about a third of a second), so the headline rises in view.
-          const lead = document.documentElement.dataset.intro === "play" && !isIntroDone() ? 0.32 : 0;
+          // Behind the curtain the copy waits until the lift has uncovered it,
+          // so the headline rises in view.
+          const html = document.documentElement;
+          const curtain = html.dataset.intro === "play" && !isIntroDone();
+          const lead = !curtain ? 0 : html.hasAttribute("data-intro-skipped") ? SKIP_LEAD : INTRO_LEAD;
 
           // The media moves from the first frame, so the curtain lifts onto movement.
           if (stillOnly) {

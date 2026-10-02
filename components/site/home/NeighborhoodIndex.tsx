@@ -18,8 +18,10 @@ import type { NeighborhoodItem } from "./types";
  *    viewport, so the section has a focal point without a pointer; hovering a
  *    row brings that row's photograph up instead, and the picture leans a few
  *    pixels toward the pointer. Rows reveal with a hairline drawn from the left.
- *  - Below 1024px: the same links become stacked image cards, at most six so
- *    the section stays a section on a phone, and an odd last card spans the row.
+ *  - Below 1024px: the same links become image cards, two columns on a phone
+ *    and, on a tablet, the column count the cards fill exactly (eight → four
+ *    by two), so no grid ends on an orphan. Every place is a card (one less
+ *    when the count is odd, see `neighborhoodItems`).
  *  - Reduced motion: no reveals and no lean; the photograph still follows the
  *    reading position and the pointer, but switches without a fade.
  *
@@ -30,6 +32,20 @@ import type { NeighborhoodItem } from "./types";
 
 const HOVER = "(min-width: 1024px) and (hover: hover) and (pointer: fine)";
 const WIDE = "(min-width: 1024px)";
+
+/** Tablet (768-1023px) columns, and the card width each gives the image loader. */
+const TABLET_GRID = {
+  2: { grid: "md:grid-cols-2", sizes: "46vw" },
+  3: { grid: "md:grid-cols-3", sizes: "30vw" },
+  4: { grid: "md:grid-cols-4", sizes: "23vw" },
+} as const;
+
+/** The tablet column count a card count fills exactly: 8 → 4, 6 → 3, 4 → 4, 2 → 2. */
+function tabletColumns(cards: number): keyof typeof TABLET_GRID {
+  if (cards % 4 === 0) return 4;
+  if (cards % 3 === 0) return 3;
+  return 2;
+}
 
 export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[] }) {
   const t = useTranslations("home");
@@ -183,15 +199,17 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
   );
 
   const pictured = items.filter((item) => item.image !== undefined);
+  const tablet = TABLET_GRID[tabletColumns(items.filter((item) => item.onPhone).length)];
 
   return (
     <div ref={root} className="lg:grid lg:grid-cols-12 lg:gap-x-6">
       <ul
         data-hood-list=""
         className={cn(
-          "grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 md:gap-x-6",
-          // Below 1024px only the places marked for phones (six at most, the
-          // busiest ones) are shown.
+          "grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6",
+          tablet.grid,
+          // Below 1024px only the places marked as cards are shown (all of
+          // them, unless their count is odd).
           "max-lg:[&>li[data-phone=false]]:hidden",
           "lg:col-span-8 lg:block lg:border-t lg:border-hairline-dark",
         )}
@@ -209,7 +227,7 @@ export function NeighborhoodIndex({ items }: { items: readonly NeighborhoodItem[
                     loader={frameLoader(item.image, 1.25)}
                     alt=""
                     fill
-                    sizes="(min-width: 768px) 30vw, 46vw"
+                    sizes={`(min-width: 768px) ${tablet.sizes}, 46vw`}
                     className={cn(photoGrade(item.image), "object-cover")}
                   />
                 </span>

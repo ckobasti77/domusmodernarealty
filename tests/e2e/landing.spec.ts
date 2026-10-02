@@ -18,7 +18,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *  4. with motion on a desktop, the featured rail and the tours stage pin, and
  *     the rail's "01 / 06" counter follows the scroll;
  *  5. axe finds nothing serious or critical, with the cookie banner open and
- *     after the choice, once every section has been scrolled through.
+ *     after the choice, once every section has been scrolled through;
+ *  6. masked line reveals move no text (the hero headline across its revert,
+ *     every split heading against its reduced-motion layout), and answering
+ *     the first-visit banner moves nothing in the hero.
  */
 
 /** Every titled section, in page order. The intro statement has no heading. */
@@ -188,13 +191,16 @@ test.describe("landing content", () => {
     expect(rowCount).toBeGreaterThan(0);
     expect(rowCount).toBeLessThanOrEqual(8);
     for (let i = 0; i < rowCount; i += 1) {
-      // `locator("a")`, not the link role: below 1024px places 7+ are hidden
-      // by design (a phone shows six), which removes them from the a11y tree.
+      // `locator("a")`, not the link role: below 1024px an odd count hides one
+      // place by design (the card grid never ends on an orphan), which removes
+      // it from the a11y tree.
       await expect(rows.nth(i).locator("a")).toHaveAttribute("href", /^\/sr\/lokacije\/[a-z0-9-]+$/);
       await expect(rows.nth(i)).toContainText(/\d+ nekretnin[ae]/);
     }
     if (testInfo.project.name === "mobile") {
-      await expect(rows.filter({ visible: true })).toHaveCount(Math.min(rowCount, 6));
+      // Every place is a card on a phone (an even count of them): a "six
+      // busiest" rule used to drop Dedinje and Senjak, the quietest two.
+      await expect(rows.filter({ visible: true })).toHaveCount(rowCount - (rowCount % 2));
     }
 
     // Services: the six numbered services.
@@ -559,7 +565,9 @@ test.describe("desktop choreography", () => {
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "pinning only exists from 1024px up");
-    // `visit` answers the banner, which clears `--consent-h` and shortens the hero above the rail.
+    // `visit` answers the banner, which clears `--consent-h` and gives the tours
+    // stage below the rail its full screen back (the hero keeps its reservation
+    // for the page view), and the pins are measured again.
     await visit(page);
 
     const rail = page.locator("[data-featured-pin]");
@@ -575,6 +583,129 @@ test.describe("desktop choreography", () => {
         message: "top of [data-featured-pin] 10px into its pin range (0 = pinned; negative = scrolled off, the pin engages late)",
       })
       .toBeCloseTo(0, 0);
+  });
+});
+
+/* ------------------------------------------------------- split headlines */
+
+/** One animation frame of the hero headline: its box and whether it is split. */
+type HeroFrame = { split: boolean; top: number; height: number };
+
+/**
+ * The visible SplitReveal headings in document order: their text (spaces
+ * dropped, so only the words are compared), split line count, and the height
+ * of their text block. That height is read with the element briefly made its
+ * own formatting context (`flow-root`): otherwise the first and last masks'
+ * negative margins collapse through it and its box is 0.3em taller than its
+ * lines while nothing visible moves. As a formatting context it measures
+ * exactly lines × line pitch, split or not, unless the masks shift the lines.
+ * `offsetHeight`, so no reveal transform on an ancestor can scale it.
+ */
+function splitHeadings(page: Page): Promise<{ text: string; lines: number; height: number }[]> {
+  return page.locator("[data-split]").evaluateAll((elements) =>
+    elements
+      .filter((element) => element.getClientRects().length > 0)
+      .map((element) => {
+        const block = element as HTMLElement;
+        const display = block.style.display;
+        block.style.display = "flow-root";
+        const height = block.offsetHeight;
+        block.style.display = display;
+        return {
+          text: (block.textContent ?? "").replace(/\s+/g, "").slice(0, 32),
+          lines: block.querySelectorAll(".split-line").length,
+          height,
+        };
+      }),
+  );
+}
+
+/**
+ * Masked line reveals must not move text. The masks are grown with padding
+ * and handed back with negative margins (`.split-line-mask` in globals.css);
+ * while two masks' margins collapsed instead of adding up, every split line
+ * sat 0.08em low, so the hero headline and the eyebrow above it jumped ~10px
+ * (4px on a phone) on every load when the split was reverted, and every split
+ * section heading had a looser line pitch than with reduced motion.
+ */
+test.describe("split headlines", () => {
+  test("the hero headline keeps its box when the reveal hands its lines back to text @public", async ({ page }) => {
+    // Every frame from the first one: the headline's box and whether it is split.
+    await page.addInitScript(() => {
+      window.sessionStorage.setItem("me.preloaded.v1", "1");
+      const frames: { split: boolean; top: number; height: number }[] = [];
+      Object.defineProperty(window, "__heroFrames", { value: frames });
+      const sample = () => {
+        const title = document.querySelector("[data-hero-title]");
+        if (title !== null) {
+          const box = title.getBoundingClientRect();
+          frames.push({ split: title.querySelector(".split-line") !== null, top: box.top, height: box.height });
+        }
+        requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.goto("/sr");
+
+    const read = () => page.evaluate(() => (window as unknown as { __heroFrames: HeroFrame[] }).__heroFrames);
+    // The last split frame and the first frame of plain text after it.
+    const aroundRevert = (frames: HeroFrame[]) => {
+      const first = frames.findIndex((frame) => frame.split);
+      const reverted = first < 0 ? -1 : frames.findIndex((frame, index) => index > first && !frame.split);
+      return reverted < 0 ? null : { split: frames[reverted - 1], text: frames[reverted] };
+    };
+    await expect
+      .poll(async () => aroundRevert(await read()) !== null, {
+        message: "the hero headline is split for its entrance and handed back to text after it",
+        timeout: 15_000,
+      })
+      .toBe(true);
+
+    const pair = aroundRevert(await read());
+    const split = pair?.split;
+    const text = pair?.text;
+    if (split === undefined || text === undefined) throw new Error("no frames around the revert");
+    expect(Math.abs(text.top - split.top), `headline top: ${split.top}px split, ${text.top}px as text`).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(text.height - split.height),
+      `headline height: ${split.height}px split, ${text.height}px as text`,
+    ).toBeLessThanOrEqual(1);
+  });
+
+  test("a split section heading measures what it does unsplit with reduced motion @public", async ({ page }) => {
+    await page.addInitScript(() => window.sessionStorage.setItem("me.preloaded.v1", "1"));
+    await page.goto("/sr");
+
+    // SplitReveal splits every heading as soon as the webfonts are in; only the
+    // rise waits for the scroll, and a transform does not move the box.
+    await expect
+      .poll(
+        () =>
+          page.locator("[data-split]").evaluateAll((elements) => {
+            const shown = elements.filter((element) => element.getClientRects().length > 0);
+            return shown.length > 0 && shown.every((element) => element.querySelector(".split-line") !== null);
+          }),
+        { message: "every visible SplitReveal heading is split", timeout: 15_000 },
+      )
+      .toBe(true);
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    const split = await splitHeadings(page);
+    expect(split.some((heading) => heading.lines >= 2), "a heading that wraps, or the line pitch goes untested").toBe(true);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.reload();
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    const plain = await splitHeadings(page);
+    expect(plain.map((heading) => heading.text)).toEqual(split.map((heading) => heading.text));
+
+    for (const [index, heading] of split.entries()) {
+      const unsplit = plain[index];
+      expect(unsplit?.lines, `"${heading.text}" is plain text with reduced motion`).toBe(0);
+      expect(
+        Math.abs((unsplit?.height ?? 0) - heading.height),
+        `"${heading.text}" (${heading.lines} lines): ${heading.height}px split, ${unsplit?.height}px unsplit`,
+      ).toBeLessThanOrEqual(1);
+    }
   });
 });
 
@@ -627,6 +758,35 @@ test.describe("first visit: the cookie banner never covers the hero", () => {
       });
     }
   }
+});
+
+/**
+ * Answering the banner is calm: the banner slides away and the hero keeps
+ * the reservation it painted with for the rest of the page view. Dropping it
+ * on the click used to drop the whole hero copy by 112px (200px on a phone)
+ * in one frame.
+ */
+test.describe("first visit: answering the banner", () => {
+  test("moves nothing in the hero, and the banner leaves @public", async ({ page }) => {
+    await page.addInitScript(() => window.sessionStorage.setItem("me.preloaded.v1", "1"));
+    await page.goto("/sr");
+    await expect(page.locator("html")).toHaveAttribute("data-consent", "pending");
+    const banner = page.getByRole("dialog", { name: "Kolačići" });
+    await expect(banner).toBeVisible();
+
+    // The entrance is over: the headline is opaque and plain text again.
+    const title = page.locator("#hero-title");
+    await expect(title).toHaveCSS("opacity", "1");
+    await expect(title.locator(".split-line")).toHaveCount(0);
+    const top = () => title.evaluate((element) => element.getBoundingClientRect().top);
+    const before = await top();
+
+    await banner.getByRole("button", { name: "Samo neophodni" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-consent", "decided");
+    await expect(banner).toHaveCount(0);
+    const after = await top();
+    expect(Math.abs(after - before), `hero headline top: ${before}px before the decision, ${after}px after`).toBeLessThanOrEqual(1);
+  });
 });
 
 /* ------------------------------------------------------------ accessibility */

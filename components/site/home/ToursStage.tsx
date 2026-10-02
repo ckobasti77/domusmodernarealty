@@ -169,22 +169,27 @@ export function ToursStage({ backdrop, backdropAlt, film, cta }: ToursStageProps
 
       {/* The film loops for as long as the stage is on screen, so it can be held
           still (WCAG 2.2.2). Only where the film can play at all: from 768px,
-          with motion allowed. Below the fixed header's height. It sits on its
-          own ink plate, so it reads over the film's sunlit walls as well as
-          over the dark margin (WCAG 1.4.11). */}
+          with motion allowed. Below the fixed header's height, on the content
+          grid's right edge (the header's icons above it share that edge). It
+          sits on its own ink plate, so it reads over the film's sunlit walls as
+          well as over the dark margin (WCAG 1.4.11). */}
       {film !== null ? (
-        <button
-          type="button"
-          onClick={() => setFilmPaused((value) => !value)}
-          className="absolute right-6 top-28 z-10 hidden size-11 items-center justify-center border border-ivory/60 bg-ink/60 text-ivory transition-colors duration-200 motion-safe:md:flex pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze"
-        >
-          {filmPaused ? (
-            <Play aria-hidden="true" strokeWidth={1.25} className="size-4" />
-          ) : (
-            <Pause aria-hidden="true" strokeWidth={1.25} className="size-4" />
-          )}
-          <span className="sr-only">{t(filmPaused ? "toursFilmPlay" : "toursFilmPause")}</span>
-        </button>
+        <div className="pointer-events-none absolute inset-x-0 top-28 z-10">
+          <div className="mx-auto flex max-w-content justify-end px-gutter md:px-gutter-md lg:px-gutter-lg">
+            <button
+              type="button"
+              onClick={() => setFilmPaused((value) => !value)}
+              className="pointer-events-auto hidden size-11 items-center justify-center border border-ivory/60 bg-ink/60 text-ivory transition-colors duration-200 motion-safe:md:flex pointer-fine:hover:border-bronze pointer-fine:hover:text-bronze"
+            >
+              {filmPaused ? (
+                <Play aria-hidden="true" strokeWidth={1.25} className="size-4" />
+              ) : (
+                <Pause aria-hidden="true" strokeWidth={1.25} className="size-4" />
+              )}
+              <span className="sr-only">{t(filmPaused ? "toursFilmPlay" : "toursFilmPause")}</span>
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {cta !== null ? (

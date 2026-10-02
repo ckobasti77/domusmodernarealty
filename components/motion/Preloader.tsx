@@ -9,8 +9,9 @@ import { holdLenis } from "./lenis-lock";
 
 /**
  * First-visit preloader (DESIGN §6.1): the wordmark's letters rise one by one
- * behind a mask over a bronze hairline, then the ink curtain lifts on
- * `expo.inOut` to reveal the hero already in motion. 1.8s end to end.
+ * behind a mask over a bronze hairline, then the ink curtain lifts (a full
+ * second on an in-out curve, so it lifts rather than whips) to reveal the hero
+ * already in motion. 1.8s end to end.
  *
  * The whole sequence is server-rendered and runs on CSS keyframes
  * (`me-preloader-*` in globals.css), not on hydration:
@@ -29,8 +30,8 @@ import { holdLenis } from "./lenis-lock";
 
 const KEY = "me.preloaded.v1";
 
-/** Mirrors the keyframe timings in globals.css. */
-const LIFT_AT_MS = 1000;
+/** Mirrors the keyframe timings in globals.css (the lift runs 0.8-1.8s). */
+const LIFT_AT_MS = 800;
 const DONE_AT_MS = 1800;
 /** A skipped curtain fades instead of lifting (a UI response, so <= 300 ms). */
 const SKIP_FADE_MS = 200;
@@ -68,9 +69,16 @@ export function Preloader() {
   const lockUntil = useRef(0);
   /** Ends the Lenis hold early when the visitor skips the curtain. */
   const releaseLenis = useRef<(() => void) | null>(null);
+  /** The hand-off an unmount scheduled (see the effect's cleanup). */
+  const handOff = useRef(0);
   const lenis = useLenis();
 
   useEffect(() => {
+    // In development React runs this effect, its cleanup and the effect again
+    // (StrictMode). The cleanup's hand-off is a task away, so this second run
+    // cancels it: the hero and the banner wait for the curtain on the dev
+    // server exactly as they do in production.
+    window.clearTimeout(handOff.current);
     const curtain = root.current;
     // From here on this effect owns the skip; the gate script's listener stands down.
     document.documentElement.setAttribute("data-intro-ready", "");
@@ -119,6 +127,9 @@ export function Preloader() {
       skipped = true;
       for (const type of SKIP_EVENTS) window.removeEventListener(type, skip, true);
       for (const timer of timers) window.clearTimeout(timer);
+      // The hero times its copy to the lift; after a skip it only waits out
+      // the short fade (HeroStage reads this).
+      html.setAttribute("data-intro-skipped", "");
       revealIntro();
       html.style.overflow = previous;
       lockUntil.current = 0;
@@ -148,8 +159,14 @@ export function Preloader() {
       for (const type of SKIP_EVENTS) window.removeEventListener(type, skip, true);
       for (const timer of timers) window.clearTimeout(timer);
       html.style.overflow = previous;
-      revealIntro();
-      finishIntro();
+      // An unmount mid-intro must not leave the hero and the banner waiting on
+      // a curtain that is gone. (Called right here, StrictMode's dev-only
+      // remount revealed the hero and the banner behind the curtain at
+      // hydration, half a second before the lift.)
+      handOff.current = window.setTimeout(() => {
+        revealIntro();
+        finishIntro();
+      }, 0);
     };
   }, []);
 

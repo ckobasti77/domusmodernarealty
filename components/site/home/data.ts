@@ -118,17 +118,19 @@ export function neighborhoodItems(nodes: readonly LocationNode[], locale: Locale
   // DESIGN §6.5 names eight places; more rows turn the index into a wall.
   const shown = featured.slice(0, 8);
 
-  // A phone gets the six with the most listings (an even count, so the card
-  // grid never ends on an orphan); on a tie a city wins, since it is the only
-  // proof of "all of Serbia", then the editorial order.
-  const phoneCount = shown.length >= 6 ? 6 : shown.length > 1 ? shown.length - (shown.length % 2) : shown.length;
+  // Below 1024px the cards keep every place when their count is even, so the
+  // two-column phone grid (and the tablet grid NeighborhoodIndex picks) never
+  // ends on an orphan. A "six busiest" rule used to cut exactly Dedinje and
+  // Senjak, the addresses a premium agency is asked about first, because they
+  // had the fewest listings. An odd count leaves out the quietest place that is
+  // not a city (Novi Sad is the only proof of "all of Serbia"), the latest in
+  // the editorial order on a tie.
   const total = (node: LocationNode) => node.saleCount + node.rentCount;
-  const onPhone = new Set(
-    [...shown]
-      .sort((a, b) => total(b) - total(a) || rank(b) - rank(a) || a.order - b.order)
-      .slice(0, phoneCount)
-      .map((node) => node._id as string),
-  );
+  const leftOut =
+    shown.length % 2 === 1 && shown.length > 1
+      ? [...shown].sort((a, b) => rank(a) - rank(b) || total(a) - total(b) || b.order - a.order)[0]
+      : undefined;
+  const onPhone = new Set(shown.filter((node) => node !== leftOut).map((node) => node._id as string));
 
   return shown.map((node) => {
     const name = pickL10n(node.name, locale);

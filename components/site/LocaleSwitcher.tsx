@@ -26,9 +26,14 @@ const FULL_NAMES: Record<Locale, string> = {
  * Switches locale while staying on the same route — next-intl resolves the
  * localized pathname for the target locale (`/sr/nekretnine` -> `/de/immobilien`).
  *
- * Two presentations, because one does not fit both places:
- *  - `inline` is the four tracked codes in the desktop header (fine pointer,
- *    plenty of room, and the 44px rule is met by the row's own height);
+ * Three presentations, because one does not fit every place:
+ *  - `inline` is the four tracked codes in the footer, where a phone reaches
+ *    them too: each code sits in its own 44×44 hit area (WCAG 2.5.5, Apple's
+ *    44pt), centred, and the row is pulled back by the padding so the first
+ *    code still lines up with the column and the row keeps its height. Only
+ *    the space between the codes grows; the type is unchanged;
+ *  - `compact` is the same codes in the desktop header (fine pointer, a tight
+ *    nav row), 36px tall;
  *  - `stacked` is what the mobile overlay menu uses — full-width serif rows
  *    with the language's own name, each one a comfortable touch target. Four
  *    15×11px codes beside a hamburger fail WCAG 2.5.8 and read as clutter.
@@ -38,7 +43,7 @@ export function LocaleSwitcher({
   variant = "inline",
 }: {
   className?: string;
-  variant?: "inline" | "stacked";
+  variant?: "inline" | "compact" | "stacked";
 }) {
   const active = useLocale() as Locale;
   const t = useTranslations("nav");
@@ -65,7 +70,14 @@ export function LocaleSwitcher({
 
   return (
     <nav aria-label={t("languageLabel")} className={className}>
-      <ul className={cn(stacked ? "flex flex-col" : "flex items-center gap-4")}>
+      <ul
+        className={cn(
+          variant === "stacked" && "flex flex-col",
+          variant === "compact" && "flex items-center gap-4",
+          // 14px = (44px box - 15px code) / 2; 4px = (44 - 36) / 2.
+          variant === "inline" && "-mx-3.5 -my-1 flex items-center",
+        )}
+      >
         {locales.map((locale) => {
           const isActive = locale === active;
           return (
@@ -77,9 +89,11 @@ export function LocaleSwitcher({
                 onClick={() => switchTo(locale)}
                 className={cn(
                   "transition-colors duration-200",
-                  stacked
-                    ? "flex min-h-12 w-full items-baseline justify-between gap-4 py-2 font-display text-h3 font-normal"
-                    : "inline-flex min-h-9 items-center font-mono text-label uppercase",
+                  variant === "stacked" &&
+                    "flex min-h-12 w-full items-baseline justify-between gap-4 py-2 font-display text-h3 font-normal",
+                  variant === "compact" && "inline-flex min-h-9 items-center font-mono text-label uppercase",
+                  variant === "inline" &&
+                    "inline-flex min-h-11 min-w-11 items-center justify-center font-mono text-label uppercase",
                   isActive ? "text-bronze" : "text-mist pointer-fine:hover:text-ivory focus-visible:text-ivory",
                 )}
               >

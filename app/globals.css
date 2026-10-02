@@ -385,9 +385,12 @@
    The gate script writes `<html data-intro="play|skip">` before the curtain is
    parsed; without it (no JS, reduced motion, a repeat visit) the curtain never
    renders at all. Timings: the thirteen letters of the wordmark rise one by
-   one behind the SVG's own clip (0.5s each, 0.04s apart, a beat between the
-   two words: 0-1.02s), hairline 0.1-0.9s, curtain lift 1.0-1.8s on
-   expo.inOut. Keep LIFT_AT_MS / DONE_AT_MS in sync.
+   one behind the SVG's own clip (0.45s each, 0.03s apart, a beat between the
+   two words: 0-0.84s), hairline 0.1-0.75s, curtain lift 0.8-1.8s. The lift
+   is a full second on an in-out quart: an 0.8s expo curve covered 540px of
+   a 900px screen in 120ms and read as a whip, this one peaks at ~380px and
+   lifts like a camera move. HeroStage times the headline to it (INTRO_LEAD).
+   Keep LIFT_AT_MS / DONE_AT_MS in sync.
 --------------------------------------------------------------------------- */
 [data-preloader] {
   display: none;
@@ -396,15 +399,15 @@
 html[data-intro="play"] [data-preloader] {
   display: flex;
   animation:
-    me-preloader-lift 0.8s cubic-bezier(0.87, 0, 0.13, 1) 1s both,
+    me-preloader-lift 1s cubic-bezier(0.76, 0, 0.24, 1) 0.8s both,
     me-preloader-done 0s linear 1.8s both;
 }
 
 /* A percentage translate on an SVG child resolves against the SVG's viewBox,
    so 110% puts each letter just below the mark, where the <svg> clips it. */
 html[data-intro="play"] [data-preloader-mark] path {
-  animation: me-preloader-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(var(--letter, 0) * 0.04s);
+  animation: me-preloader-rise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--letter, 0) * 0.03s);
 }
 html[data-intro="play"] [data-preloader-mark] g:nth-of-type(1) path:nth-child(1) { --letter: 0; }
 html[data-intro="play"] [data-preloader-mark] g:nth-of-type(1) path:nth-child(2) { --letter: 1; }
@@ -421,7 +424,7 @@ html[data-intro="play"] [data-preloader-mark] g:nth-of-type(2) path:nth-child(5)
 html[data-intro="play"] [data-preloader-mark] g:nth-of-type(2) path:nth-child(6) { --letter: 13; }
 
 html[data-intro="play"] [data-preloader-rule] {
-  animation: me-preloader-rule 0.8s linear 0.1s both;
+  animation: me-preloader-rule 0.65s linear 0.1s both;
 }
 
 @keyframes me-preloader-rise {
@@ -464,19 +467,27 @@ html[data-intro="play"] [data-preloader-rule] {
    banner from the very first frame. Each value is a little taller than the
    compact banner at that width in the longest locale, so the banner never
    covers the copy and the hero never moves before the visitor clicks.
+   The decision drops it from <html> (the 3D-tours stage gets its full screen
+   back), but the hero that painted with it keeps it for the rest of the page
+   view (`data-consent-held`, set by HeroStage): the click must not drop the
+   whole hero copy by 112-200px in one frame. The next page view starts
+   without it.
 --------------------------------------------------------------------------- */
-html[data-consent="pending"] {
+html[data-consent="pending"],
+[data-consent-held] {
   --consent-reserve: 12.5rem;
 }
 
 @media (width >= 40rem) {
-  html[data-consent="pending"] {
+  html[data-consent="pending"],
+  [data-consent-held] {
     --consent-reserve: 11rem;
   }
 }
 
 @media (width >= 64rem) {
-  html[data-consent="pending"] {
+  html[data-consent="pending"],
+  [data-consent-held] {
     --consent-reserve: 7rem;
   }
 }
@@ -556,14 +567,28 @@ html[data-consent="pending"] {
    SplitText line masks (SplitReveal, HeroStage). Each mask clips at its line
    box, and the display sizes set line-height below 1, so descenders (g, j, p,
    y) and diacritics were cut off for good once the reveal had played. The
-   padding grows the clip box past the glyphs; the equal negative margin keeps
-   the lines exactly where they were. The reveals start at yPercent 130, below
-   the grown box, so a line is still fully hidden before it rises.
+   padding grows the clip box past the glyphs (0.08em above, 0.22em below) and
+   negative margins hand exactly that space back, so split lines sit where the
+   unsplit text puts them.
+   Where two masks meet, their margins are adjoining and COLLAPSE to the more
+   negative one instead of adding up: a -0.22em bottom over a -0.08em top gave
+   back only 0.22em of the 0.30em, so every line sat 0.08em lower than its
+   text and the hero headline jumped ~10px when its split was reverted. So the
+   whole 0.30em goes on the lower mask's top margin, and only the outer edges
+   take back their own padding. Split and unsplit now measure the same
+   (tests/e2e/landing.spec.ts "hero headline"). The reveals start at yPercent
+   130, below the grown box, so a line is still fully hidden before it rises.
 --------------------------------------------------------------------------- */
 @layer components {
   .split-line-mask {
     padding-block: 0.08em 0.22em;
-    margin-block: -0.08em -0.22em;
+    margin-block: -0.3em 0;
+  }
+  .split-line-mask:first-child {
+    margin-top: -0.08em;
+  }
+  .split-line-mask:last-child {
+    margin-bottom: -0.22em;
   }
 }
 

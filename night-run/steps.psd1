@@ -40,5 +40,6 @@
         @{ Id = '13';  Title = 'Full QA sweep (workflow)';     File = '13-qa-sweep.md';           Model = 'opus'; Effort = 'ultracode'; Session = 'new';      Mode = 'goal'; TimeoutMin = 210; Gate = 'verify' }
         @{ Id = '14';  Title = 'Independent code review';      File = '14-cross-review.md';       Model = 'opus'; Effort = 'max';       Session = 'new';      Mode = 'goal'; TimeoutMin = 150; Gate = 'verify' }
         @{ Id = '15';  Title = 'Final polish and handoff';     File = '15-handoff.md';            Model = 'opus'; Effort = 'max';       Session = 'new';      Mode = 'goal'; TimeoutMin = 120; Gate = 'verify' }
+        @{ Id = '16';  Title = 'Rebrand to Domus Moderna Realty'; File = '16-rebrand-domus-moderna.md'; Model = 'opus'; Effort = 'xhigh';     Session = 'new';      Mode = 'goal'; TimeoutMin = 150; Gate = 'verify' }
     )
 }
